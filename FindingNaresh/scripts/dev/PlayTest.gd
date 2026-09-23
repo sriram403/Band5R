@@ -151,7 +151,7 @@ func _run() -> void:
 		str(Input.get_connected_joypads())])
 	log_line("route length %.0f m, %d samples" % [boot.builder.route.total_length, boot.builder.route.point_count()])
 
-	var all := ["mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf"]
+	var all := ["overview", "tour", "climb", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf"]
 	for s in all:
 		if only != "" and only != s:
 			continue
@@ -326,7 +326,7 @@ func t_solid() -> void:
 			break
 	var roses: Node = boot.world.get_node("FiveRoses")
 	for c in roses.get_children():
-		if c.name.begins_with("Rose"):
+		if c.name.begins_with("Rose") and c is Node3D and c.get_child_count() > 3 and not (c is StaticBody3D):
 			targets.append({"name": "rose monument", "pos": (c as Node3D).global_position})
 			break
 	targets.append({"name": "rose plaza", "pos": LevelBuilder.ROSE_CENTRE + Vector3(0, 0, 0)})
@@ -563,9 +563,135 @@ func t_pad() -> void:
 	boot._set_layout(2)
 
 
+## Stand at each landmark and look at the next one: a picture of the journey.
+func t_tour() -> void:
+	var b: LevelBuilder = boot.builder
+	var stops := [
+		["tour_01_start", b.player_spawns[0].origin, b.poi["camper_spawn"] + Vector3(0, 0, -30)],
+		["tour_02_windmill_junction", b.poi["j1"] + Vector3(-14, 0, 22), b.poi["windmill"]],
+		["tour_03_mirror_lake", b.network.road("valley_road").point(110) + Vector3(0, 0, 0), b.poi["dock"]],
+		["tour_04_billboard", b.network.road("valley_road").point(215), b.poi["billboard"]],
+		["tour_05_barn", b.network.road("valley_road").point(330), b.poi["barn"]],
+		["tour_06_ridge_climb", b.network.road("ridge_track").point(40), b.poi["lookout"]],
+		["tour_07_lookout_view", b.poi["lookout_deck"], Vector3(LevelBuilder.ROSE_CENTRE.x, 30, LevelBuilder.ROSE_CENTRE.z)],
+		["tour_08_wreck", b.network.road("ridge_track").point(240), b.poi["wreck"]],
+		["tour_09_last_fuel", b.network.road("pump_house_road").point(18), b.poi["gas_station"]],
+		["tour_10_water_works", b.network.road("pump_house_road").point(110), b.poi["facility"]],
+		["tour_11_broken_bridge", b.poi["bridge_barrier_near"], b.poi["bridge"]],
+		["tour_12_bessi", b.poi["bessi_join"], b.poi["roses"] + Vector3(0, 20, 0)],
+		["tour_13_radio_mast", b.poi["j2"], b.poi["radio_mast"] + Vector3(0, 30, 0)],
+	]
+	var p := p1()
+	for s in stops:
+		var at: Vector3 = s[1]
+		at.y = maxf(at.y, Landscape.ground(at.x, at.z) + 0.3)
+		var look: Vector3 = s[2]
+		var d: Vector3 = look - (at + Vector3.UP * 1.56)
+		await place_player(p, at, atan2(-d.x, -d.z))
+		p.pitch = clampf(atan2(d.y, Vector2(d.x, d.z).length()), -0.5, 0.5)
+		await wait(0.5)
+		await shot(s[0])
+
+
+## Orthographic shots from straight above: whole map, then close-ups.
+func t_overview() -> void:
+	var b: LevelBuilder = boot.builder
+	var cam := Camera3D.new()
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.far = 2000.0
+	cam.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	boot.viewports[0].add_child(cam)
+	var views := [
+		["overview_map", Vector3(0, 0, 0), 1600.0],
+		["overview_j1", b.poi["j1"], 160.0],
+		["overview_billboard", b.poi["billboard"], 160.0],
+		["overview_bridge", b.poi["bridge"], 160.0],
+	]
+	for v in views:
+		var c: Vector3 = v[1]
+		cam.size = v[2]
+		cam.global_transform = Transform3D(Basis.looking_at(Vector3.DOWN, Vector3.FORWARD), Vector3(c.x, 600, c.z))
+		cam.current = true
+		await wait(0.4)
+		await shot(v[0])
+	cam.queue_free()
+	p1().cam.current = true
+
+
+## Walk from the foot of the lookout ramp up onto the deck.
+func t_climb() -> void:
+	var b: LevelBuilder = boot.builder
+	var foot: Vector3 = b.poi["lookout_ramp_foot"]
+	var deck: Vector3 = b.poi["lookout_deck"]
+	foot.y = Landscape.ground(foot.x, foot.z) + 0.3
+	var d := deck - foot
+	var p := p1()
+	await place_player(p, foot, atan2(-d.x, -d.z))
+	key(KEY_W, true)
+	await wait(5.0)
+	key(KEY_W, false)
+	await wait(0.5)
+	log_line("lookout climb: feet at %.1f m, deck at %.1f m, %.1f m from the deck centre" % [p.global_position.y, deck.y - 0.2, Vector2(p.global_position.x - deck.x, p.global_position.z - deck.z).length()])
+	check(p.global_position.y > deck.y - 0.6, "the lookout ramp can be walked up to the deck")
+	await shot("lookout_climbed")
+
+
+## Drive from the homestead to the bridge barrier by each route, by keyboard.
+func t_journey() -> void:
+	var b: LevelBuilder = boot.builder
+	for way in [["ridge_track", "ridge"], ["valley_road", "valley"]]:
+		var path := b.network.chain([["home_lane"], [way[0]], ["pump_house_road"]])
+		var stop_at: int = int(path.nearest(b.poi["bridge_barrier_near"].x, b.poi["bridge_barrier_near"].z)["index"]) - 10
+		var c := camper()
+		c.freeze = false
+		var p0 := path.point(4)
+		var f := path.forward(4)
+		c.linear_velocity = Vector3.ZERO
+		c.angular_velocity = Vector3.ZERO
+		c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP), p0 + Vector3.UP * 0.9)
+		c.reset_physics_interpolation()
+		c.fuel = 52.0
+		c.temp = Camper.TEMP_NORMAL
+		await physics_frames(30)
+		await seat_p1_driver()
+		if not c.engine_on:
+			c.toggle_engine()
+		var ad := AutoDriver.new(self, path, c)
+		var t := 0.0
+		var stuck := 0.0
+		var max_tilt := 0.0
+		var temp_max := c.temp
+		var fuel0 := c.fuel
+		var shot_done := false
+		while t < 420.0:
+			await get_tree().physics_frame
+			t += 1.0 / 60.0
+			ad.step(-1.0)
+			temp_max = maxf(temp_max, c.temp)
+			max_tilt = maxf(max_tilt, rad_to_deg(acos(clampf(c.global_transform.basis.y.y, -1, 1))))
+			stuck = stuck + 1.0 / 60.0 if kmh() < 2.0 else 0.0
+			if stuck > 8.0 or ad.idx >= stop_at:
+				break
+			if not shot_done and t > 45.0:
+				shot_done = true
+				await shot("journey_" + way[1])
+		ad.release()
+		key(KEY_S, true)
+		await wait(3.0)
+		key(KEY_S, false)
+		var arrived := ad.idx >= stop_at
+		log_line("%s route: arrived=%s in %.0f s (%.0f m), off-road max %.1f m, tilt max %.0f deg, fuel %.1f L, temp max %.0f" % [
+			way[1], arrived, t, ad.idx * Route.SAMPLE_SPACING, ad.max_off, max_tilt, fuel0 - c.fuel, temp_max])
+		check(arrived, "keyboard driver reaches the bridge by the %s route" % way[1])
+		check(ad.max_off < 6.0, "stays on the road along the %s route" % way[1])
+
+
 ## Mouse travel must map to the same turn however it is split across frames.
 func t_mouse() -> void:
 	var p := p1()
+	if p.seat != null:
+		p.force_exit = true
+		await physics_frames(3)
 	for pattern in [[1, 400], [20, 20], [100, 4]]:
 		var yaw0 := p.yaw
 		for _i in int(pattern[0]):

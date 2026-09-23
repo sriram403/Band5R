@@ -107,7 +107,7 @@ func _spawn_players() -> void:
 		cam.name = "Cam%d" % (i + 1)
 		cam.fov = FOV_SIDE_BY_SIDE
 		cam.near = 0.06
-		cam.far = 900.0
+		cam.far = 1800.0
 		cam.cull_mask = PlayerRig.cull_mask_for(i)
 		# The rig places this camera itself every rendered frame from
 		# interpolated transforms; engine interpolation on top would add lag.
@@ -430,7 +430,7 @@ func _move_to_roses() -> void:
 	# stand on the far side of the loop and look back at the destination hill
 	var idx := 220
 	var rp: Vector3 = builder.route.point(idx) + builder.route.right(idx) * 7.0
-	rp.y = Landscape.sample_height(builder.route, rp.x, rp.z, LevelBuilder.PONDS, LevelBuilder.MOUNDS) + 0.3
+	rp.y = Landscape.ground(rp.x, rp.z) + 0.3
 	players[0].global_position = rp
 	var dir := (LevelBuilder.ROSE_CENTRE - rp)
 	players[0].yaw = atan2(-dir.x, -dir.z)
