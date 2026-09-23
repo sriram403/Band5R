@@ -116,6 +116,11 @@ func place_player(p: PlayerRig, pos: Vector3, yaw: float) -> void:
 	p.velocity = Vector3.ZERO
 	if p.has_method("reset_physics_interpolation"):
 		p.reset_physics_interpolation()
+	# a teleport must bring whatever is in your hands along
+	if p.held != null:
+		p.held.global_position = p.hold_point(p.held)
+		p.held.linear_velocity = Vector3.ZERO
+		p.held.reset_physics_interpolation()
 	await physics_frames(3)
 
 
@@ -151,7 +156,7 @@ func _run() -> void:
 		str(Input.get_connected_joypads())])
 	log_line("route length %.0f m, %d samples" % [boot.builder.route.total_length, boot.builder.route.point_count()])
 
-	var all := ["overview", "tour", "climb", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf"]
+	var all := ["overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf"]
 	for s in all:
 		if only != "" and only != s:
 			continue
@@ -616,6 +621,148 @@ func t_overview() -> void:
 		await shot(v[0])
 	cam.queue_free()
 	p1().cam.current = true
+
+
+## Stand `dist` metres from a point and look straight at it.
+func face_point(p: PlayerRig, target: Vector3, dist: float, side := Vector3.ZERO) -> void:
+	var dir := side if side != Vector3.ZERO else Vector3(1, 0, 0.3)
+	dir.y = 0.0
+	dir = dir.normalized()
+	var stand := target + dir * dist
+	stand.y = Landscape.ground(stand.x, stand.z) + 0.1
+	var d := target - stand
+	await place_player(p, stand, atan2(-d.x, -d.z))
+	var eye := stand + Vector3.UP * (PlayerRig.STAND_HEIGHT - 0.16)
+	p.pitch = atan2(target.y - eye.y, Vector2(target.x - eye.x, target.z - eye.z).length())
+	await physics_frames(3)
+
+
+func find_can(tag: String) -> FuelCan:
+	return boot.world.get_node("FuelCan_" + tag) as FuelCan
+
+
+## Pick up, carry, drop, throw, pour into the van, stow on the rack, drive off
+## with it, take it back.
+func t_carry() -> void:
+	var p := p1()
+	if p.seat != null:
+		p.force_exit = true
+		await physics_frames(3)
+	var can := find_can("home_can")
+	await face_point(p, can.global_position + Vector3.UP * 0.25, 2.0)
+	log_line("looking at the home can: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("Pick up fuel can (full)"), "a fuel can offers 'Pick up fuel can (full)'")
+	await tap(KEY_E)
+	await physics_frames(10)
+	check(p.held == can, "E picks the can up")
+	await wait(0.6)
+	p.pitch = -0.1
+	await wait(0.3)
+	await shot("carry_holding")
+	log_line("while holding: '%s'" % p.prompt_text)
+	# carry it across open ground, sprint held
+	# turn away from the garage wall and carry it across the open yard
+	p.yaw = wrapf(p.yaw + PI, -PI, PI)
+	p.pitch = 0.0
+	await wait(0.5)
+	var start := p.global_position
+	key(KEY_W, true)
+	key(KEY_SHIFT, true)
+	await wait(2.0)
+	var loaded_speed := planar_speed(p)
+	key(KEY_SHIFT, false)
+	key(KEY_W, false)
+	await wait(0.4)
+	var lag := can.global_position.distance_to(p.hold_point(can))
+	log_line("carrying a full can (%.0f kg): %.2f m/s with sprint held, can %.2f m from the hold point" % [can.mass, loaded_speed, lag])
+	check(p.held == can, "the can is still held after walking")
+	check(loaded_speed < PlayerRig.WALK and loaded_speed > 2.0, "a full can slows you below walking pace and blocks sprint")
+	await tap(KEY_E)
+	await wait(1.0)
+	check(p.held == null and can.global_position.distance_to(p.global_position) < 3.0, "E drops the can at your feet")
+
+	# the empty can at the station: light, and throwable
+	var empty := find_can("station_can_empty")
+	await face_point(p, empty.global_position + Vector3.UP * 0.25, 2.0)
+	log_line("looking at the empty can: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("(empty)"), "an empty can says it is empty before you lift it")
+	await tap(KEY_E)
+	await physics_frames(10)
+	p.pitch = 0.0
+	await wait(0.4)
+	var t0 := empty.global_position
+	await tap(KEY_G)
+	await wait(2.0)
+	var thrown := Vector2(empty.global_position.x - t0.x, empty.global_position.z - t0.z).length()
+	log_line("empty can thrown %.1f m" % thrown)
+	check(p.held == null and thrown > 3.0, "throwing sends a light can a few metres")
+
+	# pour a full can into the van
+	var c := camper()
+	c.freeze = false
+	await reset_camper(6)
+	c.fuel = 20.0
+	var full := find_can("station_can_a")
+	full.global_position = c.global_transform * Vector3(-2.4, 0.2, 1.0)
+	full.reset_physics_interpolation()
+	await physics_frames(20)
+	await face_point(p, full.global_position + Vector3.UP * 0.25, 1.8, -c.global_transform.basis.x)
+	await tap(KEY_E)
+	await physics_frames(10)
+	var inlet := c.global_transform * (Vector3(-1.2, 1.40, 1.9) + Vector3(0, Camper.BODY_Y, 0))
+	await face_point(p, inlet, 1.9, -c.global_transform.basis.x)
+	await wait(0.5)
+	log_line("holding a full can at the filler: '%s'" % p.prompt_text)
+	await shot("carry_filler")
+	check(p.prompt_text.contains("pour"), "the filler offers to pour when you hold a can")
+	var f0 := c.fuel
+	key(KEY_E, true)
+	await wait(3.0)
+	key(KEY_E, false)
+	await physics_frames(3)
+	log_line("poured %.1f L in 3 s; can now %.1f L" % [c.fuel - f0, full.litres])
+	check(c.fuel - f0 > 12.0 and full.litres < 6.0, "holding E pours the can into the tank")
+	check(p.held == full, "pouring keeps the can in your hands")
+
+	# stow it on the rear rack
+	var slot: Node3D = c.storage_slots[0]
+	var slot_look := slot.global_position + Vector3.UP * 0.3
+	await face_point(p, slot_look, 1.9, c.global_transform.basis.z)
+	await wait(0.4)
+	log_line("at the rack: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("Stow"), "the rack offers to stow the can")
+	await tap(KEY_E)
+	await physics_frames(5)
+	check(c.stowed_item(slot) == full and p.held == null, "E stows the can on the rack")
+	log_line("cargo on the rack: %.1f kg" % c.cargo_mass())
+	# drive 60 m with it
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
+	var ad := AutoDriver.new(self, boot.builder.route, c)
+	var rel0 := c.global_transform.affine_inverse() * full.global_position
+	for _i in 60 * 6:
+		await get_tree().physics_frame
+		ad.step(40.0)
+	ad.release()
+	key(KEY_S, true)
+	await wait(3.0)
+	key(KEY_S, false)
+	var rel1 := c.global_transform.affine_inverse() * full.global_position
+	log_line("stowed can moved %.3f m relative to the van while driving" % rel0.distance_to(rel1))
+	check(rel0.distance_to(rel1) < 0.05, "a stowed can rides along with the van")
+	await wait(1.0)
+	p.force_exit = true
+	await physics_frames(5)
+	await face_point(p, slot.global_position + Vector3.UP * 0.3, 1.9, c.global_transform.basis.z)
+	await wait(0.4)
+	log_line("at the loaded rack: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await physics_frames(10)
+	check(p.held == full and c.stowed_item(slot) == null, "E takes the can back off the rack")
+	await tap(KEY_E)
+	await wait(0.5)
+	await shot("carry_done")
 
 
 ## Walk from the foot of the lookout ramp up onto the deck.

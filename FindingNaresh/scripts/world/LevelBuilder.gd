@@ -100,6 +100,7 @@ func build() -> Node3D:
 	t = _lap("roads", t)
 	world = Node3D.new()
 	world.name = "World"
+	world.add_to_group("world_root")
 
 	world.add_child(_environment())
 	world.add_child(_sun())
@@ -119,6 +120,7 @@ func build() -> Node3D:
 	_backdrop()
 	_landmarks()
 	_signage()
+	_items()
 	_spawns()
 	_lap("landmarks", t)
 	return world
@@ -1151,6 +1153,29 @@ func _signage() -> void:
 		n.add_child(Build.box(Vector3(1.7, 1.1, 0.1), ToonMat.make(Color(0.94, 0.92, 0.86)), Vector3(0, 2.5, 0), Vector3.ZERO, "Plate"))
 		n.add_child(Build.label3d(str(s["text"]), Vector3(0, 2.5, 0.08), Vector3.ZERO, 0.30, Color(0.20, 0.24, 0.30)))
 		world.add_child(n)
+
+
+# --- items ---------------------------------------------------------------------
+
+## Loose things to pick up. Fuel: one can by the homestead garage for the
+## tutorial, and a stash behind the Last Fuel kiosk (the pumps are dead) -
+## including one empty can, so players learn to check before lugging.
+func _items() -> void:
+	var home: Node3D = world.get_node("Homestead")
+	_place_can(home.transform * Vector3(-6.2, 0, 4.6), FuelCan.CAPACITY, "home_can")
+	var station: Node3D = world.get_node("LastFuel")
+	_place_can(station.transform * Vector3(2.2, 0, -10.8), FuelCan.CAPACITY, "station_can_a")
+	_place_can(station.transform * Vector3(2.8, 0, -10.6), FuelCan.CAPACITY, "station_can_b")
+	_place_can(station.transform * Vector3(-3.4, 0, -10.9), 0.0, "station_can_empty")
+
+
+func _place_can(at: Vector3, fill: float, tag: String) -> void:
+	var can := FuelCan.create(fill)
+	can.name = "FuelCan_" + tag
+	world.add_child(can)
+	can.position = Vector3(at.x, _h(at.x, at.z) + 0.05, at.z)
+	can.rotation.y = float(tag.length()) * 0.37
+	poi[tag] = can.position
 
 
 # --- helpers -------------------------------------------------------------------

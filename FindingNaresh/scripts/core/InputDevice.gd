@@ -30,14 +30,16 @@ const KEYS := {
 	"sprint": KEY_SHIFT, "crouch": KEY_CTRL, "jump": KEY_SPACE,
 	"interact": KEY_E, "flashlight": KEY_F, "map": KEY_M,
 	"handbrake": KEY_SPACE, "ignition": KEY_X, "headlights": KEY_L,
-	"horn": KEY_H, "swap_seat": KEY_C, "recover": KEY_R,
+	"horn": KEY_H, "swap_seat": KEY_C, "recover": KEY_R, "throw": KEY_G,
 }
+## Mouse buttons that also trigger an action (checked alongside KEYS).
+const MOUSE := {"throw": MOUSE_BUTTON_LEFT}
 
 # --- Controller bindings (Xbox layout) -----------------------------------------
 const BUTTONS := {
 	"jump": JOY_BUTTON_A, "interact": JOY_BUTTON_X, "crouch": JOY_BUTTON_B,
 	"flashlight": JOY_BUTTON_Y, "sprint": JOY_BUTTON_LEFT_STICK,
-	"map": JOY_BUTTON_RIGHT_SHOULDER, "swap_seat": JOY_BUTTON_LEFT_SHOULDER,
+	"map": JOY_BUTTON_DPAD_DOWN, "throw": JOY_BUTTON_RIGHT_SHOULDER, "swap_seat": JOY_BUTTON_LEFT_SHOULDER,
 	"handbrake": JOY_BUTTON_B, "ignition": JOY_BUTTON_DPAD_UP,
 	"headlights": JOY_BUTTON_DPAD_LEFT, "horn": JOY_BUTTON_DPAD_RIGHT,
 	"recover": JOY_BUTTON_BACK,
@@ -71,7 +73,8 @@ func glyph(action: String) -> String:
 			"jump": return "A"
 			"crouch": return "B"
 			"flashlight": return "Y"
-			"map": return "RB"
+			"map": return "D-Down"
+			"throw": return "RB"
 			"sprint": return "L3"
 			"swap_seat": return "LB"
 			"ignition": return "D-Up"
@@ -91,6 +94,7 @@ func glyph(action: String) -> String:
 		"headlights": return "L"
 		"handbrake": return "Space"
 		"recover": return "R"
+		"throw": return "LMB"
 		_: return "?"
 
 
@@ -118,6 +122,11 @@ func feed_event(e: InputEvent) -> void:
 		var k := (e as InputEventKey).keycode
 		for a in KEYS.keys():
 			if KEYS[a] == k:
+				_latched[a] = true
+	elif kind == Kind.KBM and e is InputEventMouseButton:
+		var mb := (e as InputEventMouseButton).button_index
+		for a in MOUSE.keys():
+			if MOUSE[a] == mb:
 				_latched[a] = true
 	elif kind == Kind.PAD and e is InputEventJoypadButton and e.device == pad:
 		var b := (e as InputEventJoypadButton).button_index
@@ -215,6 +224,8 @@ func _raw_held(action: String) -> bool:
 		if not BUTTONS.has(action):
 			return false
 		return Input.is_joy_button_pressed(pad, BUTTONS[action])
+	if MOUSE.has(action) and Input.is_mouse_button_pressed(MOUSE[action]):
+		return true
 	if not KEYS.has(action):
 		return false
 	return Input.is_key_pressed(KEYS[action])

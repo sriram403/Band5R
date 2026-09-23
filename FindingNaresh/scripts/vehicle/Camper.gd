@@ -24,6 +24,8 @@ const HOLD_SPEED := 1.0            ## m/s below which the hold engages
 const FUEL_CAPACITY := 70.0
 const FUEL_PER_KM := 4.0           ## game-readable, not realistic: ~17 km on a tank
 const FUEL_IDLE_PER_S := 0.004
+const POUR_RATE := 5.0             ## litres per second from a can into the tank
+const CARGO_FUEL_KG := 300.0       ## each 300 kg of cargo adds 100% fuel burn
 const TEMP_AMBIENT := 62.0
 const TEMP_MAX := 122.0
 const TEMP_NORMAL := 88.0          ## where the needle sits in ordinary driving
@@ -46,7 +48,9 @@ const BODY_Y := -(WHEEL_RADIUS + WHEEL_REST) - 0.11
 # --- state ---------------------------------------------------------------------
 var engine_on := false
 var headlights_on := false
-var fuel := 52.0
+## Starts low on purpose: the lamp comes on around Last Fuel, where the pumps
+## are dead but cans are lying about - the first refuel teaches the cans.
+var fuel := 26.0
 var temp := TEMP_AMBIENT
 var battery := 1.0
 var odometer := 0.0
@@ -68,6 +72,7 @@ var _audio: EngineAudio
 var debug_throttle := 0.0          ## used by the dev capture mode only
 var debug_steer := 0.0
 var _nav_timer := 0.0
+var storage_slots: Array[Node3D] = []   ## rear rack positions; a stowed Carryable is the slot's child
 var _parked_t := 0.0
 
 
@@ -88,6 +93,7 @@ func _ready() -> void:
 	_build_body()
 	_build_interior()
 	_build_seats()
+	_build_service()
 	_audio = EngineAudio.new()
 	add_child(_audio)
 
@@ -368,6 +374,96 @@ func _build_seats() -> void:
 		_body_root.add_child(area)
 
 
+## Fuel filler on the driver's side and a storage rack across the back.
+func _build_service() -> void:
+	var dark := ToonMat.make(Color(0.20, 0.20, 0.22), 0.01)
+	var steel := ToonMat.make(Color(0.55, 0.58, 0.60), 0.01)
+
+	# fuel filler: cap on the left flank, behind the cab
+	_body_root.add_child(Build.box(Vector3(0.05, 0.26, 0.26), dark, Vector3(-1.19, 1.40, 1.9), Vector3.ZERO, "FillerFlap"))
+	_body_root.add_child(Build.cyl(0.07, 0.06, ToonMat.make(Color(0.85, 0.70, 0.20), 0.008), Vector3(-1.22, 1.40, 1.9), Vector3(0, 0, 90), 10, "FillerCap"))
+	var inlet := Build.interact_area(Vector3(0.7, 0.8, 0.9), Vector3(-1.45, 1.40, 1.9), "", func(_p): pass, "FuelInlet")
+	inlet.remove_meta("prompt")
+	inlet.set_meta("prompt", "Fuel filler")
+	inlet.set_meta("prompt_fn", func(_p) -> String: return "")
+	inlet.set_meta("blocked_fn", func() -> String:
+		return "Fuel filler  -  %d of %d L. Bring a fuel can." % [int(fuel), int(FUEL_CAPACITY)])
+	inlet.set_meta("held_prompt_fn", func(_p, item) -> String:
+		if item.kind != "fuel_can":
+			return ""
+		if item.litres <= 0.05:
+			return "This can is empty"
+		if fuel >= FUEL_CAPACITY - 0.1:
+			return "Tank is full"
+		return "Hold to pour fuel  -  tank %d / %d L, can %d L" % [int(fuel), int(FUEL_CAPACITY), int(round(item.litres))])
+	inlet.set_meta("held_action", func(_p, item, dt: float, _first: bool):
+		if item.kind != "fuel_can":
+			return
+		var room := FUEL_CAPACITY - fuel
+		fuel += item.pour(minf(POUR_RATE * dt, room)))
+	_body_root.add_child(inlet)
+
+	# rear rack on the back bumper: two can slots and one for anything else
+	var rack := Node3D.new()
+	rack.name = "RearRack"
+	rack.position = Vector3(0, 0.62, 3.26)
+	_body_root.add_child(rack)
+	rack.add_child(Build.box(Vector3(2.0, 0.06, 0.46), steel, Vector3(0, 0, 0), Vector3.ZERO, "Shelf"))
+	rack.add_child(Build.box(Vector3(2.0, 0.05, 0.05), steel, Vector3(0, 0.45, 0.2), Vector3.ZERO, "Bar"))
+	for bx in [-1.0, 1.0]:
+		rack.add_child(Build.box(Vector3(0.05, 0.5, 0.05), steel, Vector3(bx, 0.22, 0.2), Vector3.ZERO, "Upright"))
+	var labels := ["can", "can", "any"]
+	for k in 3:
+		var slot := Node3D.new()
+		slot.name = "Slot%d" % k
+		slot.position = Vector3(-0.62 + k * 0.62, 0.04, 0.0)
+		slot.set_meta("accepts", labels[k])
+		rack.add_child(slot)
+		storage_slots.append(slot)
+		var area := Build.interact_area(Vector3(0.55, 0.7, 0.8), rack.position + slot.position + Vector3(0, 0.3, 0.25), "", func(p): _take_from(p, slot), "RackSlot%d" % k)
+		area.set_meta("prompt_fn", func(_p) -> String:
+			var it := stowed_item(slot)
+			return "Take " + it.label() if it != null else "")
+		area.set_meta("blocked_fn", func() -> String:
+			return "" if stowed_item(slot) != null else "Rack slot (%s)" % ("fuel cans" if labels[k] == "can" else "any item"))
+		area.set_meta("held_prompt_fn", func(_p, item) -> String:
+			if stowed_item(slot) != null:
+				return ""
+			if labels[k] == "can" and item.kind != "fuel_can":
+				return "This slot holds fuel cans"
+			return "Stow " + item.label() + " on the rack")
+		area.set_meta("held_action", func(_p, item, _dt: float, first: bool):
+			if not first or stowed_item(slot) != null:
+				return
+			if labels[k] == "can" and item.kind != "fuel_can":
+				return
+			item.stow(slot))
+		_body_root.add_child(area)
+
+
+func stowed_item(slot: Node3D) -> Carryable:
+	for c in slot.get_children():
+		if c is Carryable:
+			return c
+	return null
+
+
+func _take_from(p, slot: Node3D) -> void:
+	var it := stowed_item(slot)
+	if it != null:
+		p.pick_up(it)
+
+
+## Everything stowed on the rack, in kg: heavier cargo burns more fuel.
+func cargo_mass() -> float:
+	var m := 0.0
+	for s in storage_slots:
+		var it := stowed_item(s)
+		if it != null:
+			m += it.mass
+	return m
+
+
 func _glass() -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.albedo_color = Color(0.62, 0.80, 0.86, 0.16)
@@ -521,7 +617,8 @@ func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 	if engine_on:
 		var load: float = throttle_in * (1.0 + clampf(_grade() * 4.0, 0.0, 1.6))
 		var km := speed * delta / 1000.0
-		fuel = maxf(0.0, fuel - km * FUEL_PER_KM * (0.6 + load) - FUEL_IDLE_PER_S * delta)
+		var cargo := 1.0 + cargo_mass() / CARGO_FUEL_KG
+		fuel = maxf(0.0, fuel - km * FUEL_PER_KM * (0.6 + load) * cargo - FUEL_IDLE_PER_S * delta)
 		# Equilibrium model: heat target rises with load, falls with airflow.
 		# Ordinary driving settles near TEMP_NORMAL; only load beyond flat full
 		# throttle (climbing, towing) pushes it toward the warning lamp.

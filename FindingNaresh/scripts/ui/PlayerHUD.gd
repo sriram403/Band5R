@@ -171,12 +171,12 @@ func _update_hint(delta: float, seated: bool) -> void:
 	if _hint_age[ctx] < HINT_SECONDS and d != null:
 		if d.kind == InputDevice.Kind.PAD:
 			match ctx:
-				"foot": text = "Stick move · Right stick look · L3 sprint · A jump · Y flashlight · X use"
+				"foot": text = "Stick move · Right stick look · L3 sprint · A jump · Y flashlight · X use · RB throw"
 				"driver": text = "RT go · LT brake/reverse · Stick steer · B handbrake · D-Up engine · D-Left lights"
 				_: text = "Right stick look around · D-Left lights · LB swap seats when stopped"
 		else:
 			match ctx:
-				"foot": text = "WASD move · Mouse look · Shift sprint · Space jump · F flashlight · E use"
+				"foot": text = "WASD move · Mouse look · Shift sprint · Space jump · F flashlight · E use · LMB throw"
 				"driver": text = "W go · S brake/reverse · A/D steer · Space handbrake · X engine · L lights"
 				_: text = "Mouse look around · L lights · C swap seats when stopped"
 	_hint.text = text

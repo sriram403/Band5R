@@ -52,12 +52,14 @@ var _seat_yaw := 0.0
 
 var current_target: Node = null
 var prompt_text := ""
+var held: Carryable = null             ## item in this player's hands
+var _using: Node = null                ## thing being used with the held item while E is held
 var force_exit := false            ## request an exit from outside the physics step
 
 
 func _ready() -> void:
 	collision_layer = 2
-	collision_mask = 1 | 8            # world geometry + vehicle body
+	collision_mask = 1 | 8 | Carryable.LAYER   # world, vehicle body, loose items
 	floor_max_angle = deg_to_rad(52)
 	floor_snap_length = 0.5
 	_build()
@@ -107,7 +109,7 @@ func _build() -> void:
 	ray.target_position = Vector3(0, 0, -INTERACT_RANGE)
 	ray.collide_with_areas = true
 	ray.collide_with_bodies = true
-	ray.collision_mask = 1 | 4 | 8
+	ray.collision_mask = 1 | 4 | 8 | Carryable.LAYER
 	head.add_child(ray)
 
 	# A small visible avatar so the other player can see you in their view.
@@ -223,16 +225,27 @@ func _walk(delta: float) -> void:
 		dir = dir.normalized()
 
 	var speed := WALK
+	var heavy_load := held != null and held.heaviness() > 0.4
 	if crouching:
 		speed = CROUCH
-	elif dev.held("sprint") and mv.y > 0.1:
+	elif dev.held("sprint") and mv.y > 0.1 and not heavy_load:
 		speed = SPRINT
+	if held != null:
+		speed *= held.speed_factor()
 
 	var accel := ACCEL_GROUND if is_on_floor() else ACCEL_AIR
 	var target := dir * speed
 	velocity.x = move_toward(velocity.x, target.x, accel * delta * 6.0)
 	velocity.z = move_toward(velocity.z, target.z, accel * delta * 6.0)
 	move_and_slide()
+	# Walking into loose items nudges them along instead of stopping dead.
+	for i in get_slide_collision_count():
+		var hit := get_slide_collision(i)
+		var rb := hit.get_collider() as RigidBody3D
+		if rb != null and not rb.freeze and rb != held and not rb is VehicleBody3D:
+			var push := -hit.get_normal()
+			push.y = 0.0
+			rb.apply_central_impulse(push.normalized() * 55.0 * delta)
 
 	# head bob keyed to actual ground speed
 	var planar := Vector2(velocity.x, velocity.z).length()
@@ -265,6 +278,9 @@ func toggle_flashlight() -> void:
 # --- interaction ---------------------------------------------------------------
 
 func _scan() -> void:
+	if held != null:
+		_scan_holding()
+		return
 	var target: Node = null
 	var text := ""
 	if ray.is_colliding():
@@ -277,8 +293,10 @@ func _scan() -> void:
 			if blocked != "":
 				text = blocked
 			else:
-				target = node
-				text = "[%s]  %s" % [dev.glyph("interact"), node.get_meta("prompt", "Use")]
+				var label: String = (node.get_meta("prompt_fn") as Callable).call(self) if node.has_meta("prompt_fn") else node.get_meta("prompt", "Use")
+				if label != "":
+					target = node
+					text = "[%s]  %s" % [dev.glyph("interact"), label]
 	if text == "" and _near_upset_van() != null:
 		text = "[%s]  Right the van" % dev.glyph("recover")
 	if seat != null and text == "":
@@ -301,6 +319,91 @@ func _scan() -> void:
 				cb.call(self)
 		elif seat != null and _can_exit():
 			exit_vehicle()
+
+
+## While carrying: E uses the item on what you are looking at (pour, stow...),
+## or drops it if there is nothing to use it on; throw flings it.
+func _scan_holding() -> void:
+	var ctx: Node = null
+	var ctx_text := ""
+	if ray.is_colliding():
+		var n := ray.get_collider() as Node
+		while n != null and not n.has_meta("held_prompt_fn"):
+			n = n.get_parent()
+		if n != null:
+			ctx_text = (n.get_meta("held_prompt_fn") as Callable).call(self, held)
+			if ctx_text != "":
+				ctx = n
+	var text := ""
+	if ctx != null:
+		text = "[%s]  %s" % [dev.glyph("interact"), ctx_text]
+	else:
+		text = "%s     [%s]  Drop     [%s]  Throw" % [held.label().capitalize(), dev.glyph("interact"), dev.glyph("throw")]
+	if text != prompt_text:
+		prompt_text = text
+		prompt_changed.emit(text)
+	current_target = ctx
+
+	if dev.just_pressed("throw"):
+		throw_held()
+		return
+	if dev.just_pressed("interact"):
+		if ctx != null:
+			_using = ctx
+			(ctx.get_meta("held_action") as Callable).call(self, held, get_physics_process_delta_time(), true)
+		else:
+			drop_held()
+		return
+	if _using != null:
+		if dev.held("interact") and _using == ctx and held != null:
+			(ctx.get_meta("held_action") as Callable).call(self, held, get_physics_process_delta_time(), false)
+		else:
+			_using = null
+
+
+# --- carrying ------------------------------------------------------------------
+
+## Where a held item is steered to: low and to the right of the view, so it
+## never covers the crosshair or what you are about to use it on. Heavier
+## things hang lower; two-handed things are carried out in front.
+func hold_point(item: Carryable) -> Vector3:
+	var xf := head.global_transform
+	var fwd := -xf.basis.z
+	var right := xf.basis.x
+	if item.two_handed:
+		return xf.origin + fwd * 1.6 + Vector3.DOWN * 0.7
+	var sag := lerpf(0.42, 0.72, item.heaviness())
+	return xf.origin + fwd * 1.0 + right * 0.42 + Vector3.DOWN * sag
+
+
+func pick_up(item: Carryable) -> void:
+	if held != null or seat != null:
+		return
+	if not item.holders.is_empty() and not item.two_handed:
+		return
+	held = item
+	item.grab(self)
+	ray.add_exception(item)
+
+
+func drop_held() -> void:
+	if held == null:
+		return
+	var it := held
+	held = null
+	_using = null
+	ray.remove_exception(it)
+	it.release(self)
+
+
+func throw_held() -> void:
+	if held == null:
+		return
+	var it := held
+	held = null
+	_using = null
+	ray.remove_exception(it)
+	it.throw_from(self, -head.global_transform.basis.z)
 
 
 ## The camper, if it is tipped over and this player is in it or close by.
@@ -349,6 +452,7 @@ func _find_interactable(col: Object) -> Node:
 func enter_seat(v, seat_node: Node3D, role: String) -> void:
 	if seat != null:
 		return
+	drop_held()
 	vehicle = v
 	seat = seat_node
 	seat_role = role
