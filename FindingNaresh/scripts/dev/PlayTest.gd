@@ -156,7 +156,7 @@ func _run() -> void:
 		str(Input.get_connected_joypads())])
 	log_line("route length %.0f m, %d samples" % [boot.builder.route.total_length, boot.builder.route.point_count()])
 
-	var all := ["overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf"]
+	var all := ["map", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf"]
 	for s in all:
 		if only != "" and only != s:
 			continue
@@ -763,6 +763,95 @@ func t_carry() -> void:
 	await tap(KEY_E)
 	await wait(0.5)
 	await shot("carry_done")
+
+
+## The paper map: starts nearly blank, fills in by travel and by reading
+## boards, takes shared stamps, and folds away when the van drives off.
+func t_map() -> void:
+	var b: LevelBuilder = boot.builder
+	var ms: MapState = boot.map_state
+	var p := p1()
+	if p.seat != null:
+		p.force_exit = true
+		await physics_frames(3)
+	await place_player(p, b.player_spawns[0].origin, 0.0)
+	await tap(KEY_M)
+	await wait(0.3)
+	check(p.map_open and p.paper_map.visible, "M raises the paper map")
+	check(ms.is_revealed("homestead") and ms.is_revealed("windmill"), "home and the windmill junction are on the map from the start")
+	check(not ms.is_revealed("facility") and not ms.is_revealed("gas_station"), "far places start off the map")
+	log_line("map known at start: %.0f%% of roads" % (ms.revealed_fraction() * 100.0))
+	await shot("map_start")
+	await tap(KEY_M)
+	check(not p.map_open, "M puts it away again")
+
+	# travel reveals: stand near the water works
+	var fac: Vector3 = b.poi["facility"]
+	await place_player(p, fac + Vector3(-40, 1, 0), 0.0)
+	await wait(1.0)
+	check(ms.is_revealed("facility"), "going near a landmark puts it on the map")
+
+	# reading the Last Fuel info board sketches in its area
+	var board: Vector3 = b.poi["info_pump_house_road12"]
+	await face_point(p, board + Vector3.UP * 2.2, 2.6, b.network.road("pump_house_road").right(12) * -1.0)
+	await wait(0.4)
+	log_line("at the board: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("Read the board"), "info boards can be read")
+	var gas_known_before := ms.is_revealed("gas_station")
+	await tap(KEY_E)
+	await wait(0.4)
+	check(ms.is_revealed("gas_station") and ms.is_revealed("bridge"), "reading a board sketches the area around it onto the map")
+	log_line("gas station known before reading: %s; map now %.0f%% of roads" % [gas_known_before, ms.revealed_fraction() * 100.0])
+	await shot("board_note")
+
+	# stamps: cycle to DANGER, place one, rub it out
+	await tap(KEY_M)
+	await wait(0.2)
+	var n0 := ms.stamps.size()
+	for _i in 10:
+		mouse(Vector2(12, 6))
+		await get_tree().process_frame
+	await tap(KEY_E)
+	check(p.paper_map.current_stamp() == "danger", "E cycles the stamp type while the map is up")
+	var e := InputEventMouseButton.new()
+	e.button_index = MOUSE_BUTTON_LEFT
+	e.pressed = true
+	Input.parse_input_event(e)
+	await wait(0.07)
+	e = e.duplicate()
+	e.pressed = false
+	Input.parse_input_event(e)
+	await wait(0.2)
+	check(ms.stamps.size() == n0 + 1 and ms.stamps[ms.stamps.size() - 1]["type"] == "danger", "left click places a stamp")
+	check(p2().paper_map.state == ms, "both players' maps show the same stamps")
+	await shot("map_stamped")
+	var r := InputEventMouseButton.new()
+	r.button_index = MOUSE_BUTTON_RIGHT
+	r.pressed = true
+	Input.parse_input_event(r)
+	await wait(0.07)
+	r = r.duplicate()
+	r.pressed = false
+	Input.parse_input_event(r)
+	await wait(0.2)
+	check(ms.stamps.size() == n0, "right click rubs the stamp out")
+	await tap(KEY_M)
+
+	# in the van: only while stopped
+	await reset_camper(6)
+	var c := camper()
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
+	await tap(KEY_M)
+	check(p.map_open, "the map can be read in a stopped van")
+	key(KEY_W, true)
+	await wait(2.0)
+	key(KEY_W, false)
+	check(not p.map_open, "the map folds away when the van moves off")
+	key(KEY_S, true)
+	await wait(2.0)
+	key(KEY_S, false)
 
 
 ## Walk from the foot of the lookout ramp up onto the deck.

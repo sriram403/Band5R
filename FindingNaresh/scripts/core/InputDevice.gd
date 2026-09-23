@@ -31,9 +31,11 @@ const KEYS := {
 	"interact": KEY_E, "flashlight": KEY_F, "map": KEY_M,
 	"handbrake": KEY_SPACE, "ignition": KEY_X, "headlights": KEY_L,
 	"horn": KEY_H, "swap_seat": KEY_C, "recover": KEY_R, "throw": KEY_G,
+	# paper map (only read while the map is up)
+	"map_next": KEY_E, "map_prev": KEY_Q,
 }
 ## Mouse buttons that also trigger an action (checked alongside KEYS).
-const MOUSE := {"throw": MOUSE_BUTTON_LEFT}
+const MOUSE := {"throw": MOUSE_BUTTON_LEFT, "map_place": MOUSE_BUTTON_LEFT, "map_remove": MOUSE_BUTTON_RIGHT}
 
 # --- Controller bindings (Xbox layout) -----------------------------------------
 const BUTTONS := {
@@ -43,7 +45,17 @@ const BUTTONS := {
 	"handbrake": JOY_BUTTON_B, "ignition": JOY_BUTTON_DPAD_UP,
 	"headlights": JOY_BUTTON_DPAD_LEFT, "horn": JOY_BUTTON_DPAD_RIGHT,
 	"recover": JOY_BUTTON_BACK,
+	"map_place": JOY_BUTTON_A, "map_remove": JOY_BUTTON_X,
+	"map_next": JOY_BUTTON_RIGHT_SHOULDER, "map_prev": JOY_BUTTON_LEFT_SHOULDER,
 }
+
+## Every action any binding table knows about.
+static func all_actions() -> Array:
+	var out := KEYS.keys()
+	for a in MOUSE.keys() + BUTTONS.keys():
+		if not a in out:
+			out.append(a)
+	return out
 
 
 static func keyboard() -> InputDevice:
@@ -109,7 +121,7 @@ func poll() -> void:
 		_mouse_delta = Vector2.ZERO
 		_latched.clear()
 		return
-	for a in KEYS.keys():
+	for a in all_actions():
 		_held[a] = _raw_held(a) or _latched.has(a)
 	_latched.clear()
 
@@ -165,6 +177,19 @@ func move() -> Vector2:
 		(1.0 if Input.is_key_pressed(KEYS["right"]) else 0.0) - (1.0 if Input.is_key_pressed(KEYS["left"]) else 0.0),
 		(1.0 if Input.is_key_pressed(KEYS["fwd"]) else 0.0) - (1.0 if Input.is_key_pressed(KEYS["back"]) else 0.0))
 	return v2.limit_length(1.0)
+
+
+## Pointer movement in screen pixels for this frame (paper-map pencil).
+## Consumes the mouse delta like look() does; the stick moves at a fixed rate.
+func cursor_delta(delta: float) -> Vector2:
+	if not active:
+		return Vector2.ZERO
+	if kind == Kind.PAD:
+		var v := _dead(Vector2(Input.get_joy_axis(pad, JOY_AXIS_RIGHT_X), Input.get_joy_axis(pad, JOY_AXIS_RIGHT_Y)))
+		return v * 520.0 * delta
+	var out := _mouse_delta * look_sensitivity
+	_mouse_delta = Vector2.ZERO
+	return out
 
 
 ## Look delta in radians for this frame. Mouse is frame-based, stick is time-based.

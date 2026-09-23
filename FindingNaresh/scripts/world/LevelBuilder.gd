@@ -1123,6 +1123,16 @@ func _info_board(road_name: String, i: int, offset: float, text: String) -> void
 	n.add_child(Build.cyl(0.11, 2.4, ToonMat.make(C_WOOD), Vector3(1.1, 1.2, 0), Vector3.ZERO, 8, "PostR"))
 	n.add_child(Build.box(Vector3(3.0, 1.9, 0.12), ToonMat.make(Color(0.90, 0.87, 0.78)), Vector3(0, 2.3, 0), Vector3(-14, 0, 0), "Board"))
 	n.add_child(Build.label3d(text, Vector3(0, 2.36, 0.08), Vector3(-14, 0, 0), 0.16, Color(0.22, 0.26, 0.32)))
+	# Reading a board sketches the surrounding area onto the shared paper map.
+	var board_xz := Vector2(pos.x, pos.z)
+	var area := Build.interact_area(Vector3(3.2, 2.4, 1.2), Vector3(0, 2.2, 0.3), "Read the board", func(p):
+		var ms := p.get_tree().get_first_node_in_group("map_state") as MapState
+		if ms != null:
+			ms.reveal_around(board_xz, MapState.BOARD_REVEAL_M)
+		var title := text.get_slice("\n", 0)
+		var body := text.substr(title.length() + 1).replace("\n", " ")
+		p.say(title + "\n" + body + "\n\n(The area around this board is now sketched on your map - M.)", 7.0), "ReadBoard")
+	n.add_child(area)
 	world.add_child(n)
 	poi["info_" + road_name + str(i)] = pos
 

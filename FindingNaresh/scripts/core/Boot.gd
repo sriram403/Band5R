@@ -38,6 +38,8 @@ var views: Array[SubViewportContainer] = []
 const SETTINGS_PATH := "user://settings.cfg"
 const SENS_STEPS := [0.4, 0.55, 0.7, 0.85, 1.0, 1.2, 1.45, 1.75, 2.1, 2.5]
 var mouse_sens := 1.0
+var map_state: MapState
+var _explore_t := 0.0
 
 # Dev capture mode: `--shot` runs a scripted sequence and writes PNGs next to
 # the project, so the look can be reviewed without playing.
@@ -54,6 +56,12 @@ func _ready() -> void:
 	# simulation itself must stay pausable or ESC would not actually stop it.
 	world.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(world)
+
+	map_state = MapState.new()
+	map_state.name = "MapState"
+	map_state.add_to_group("map_state")
+	add_child(map_state)
+	map_state.setup(builder)
 
 	_spawn_camper()
 	_load_settings()
@@ -267,8 +275,8 @@ func _refresh_overlay() -> void:
   Player 1 — %s
   Player 2 — %s%s
 
-[b]ON FOOT[/b]   (keyboard)  WASD move · Mouse look · Shift sprint · Ctrl crouch · Space jump · [color=#9fd8ff]E[/color] interact · F flashlight
-[b]ON FOOT[/b]   (pad)       Left stick move · Right stick look · L3 sprint · B crouch · A jump · [color=#9fd8ff]X[/color] interact · Y flashlight
+[b]ON FOOT[/b]   (keyboard)  WASD move · Mouse look · Shift sprint · Ctrl crouch · Space jump · [color=#9fd8ff]E[/color] interact · F flashlight · LMB throw · M map
+[b]ON FOOT[/b]   (pad)       Left stick move · Right stick look · L3 sprint · B crouch · A jump · [color=#9fd8ff]X[/color] interact · Y flashlight · RB throw · D-Down map
 
 [b]DRIVING[/b]   (keyboard)  W throttle · S brake / reverse · A/D steer · Space handbrake · [color=#9fd8ff]X[/color] ignition · L headlights · C swap seats · E get out
 [b]DRIVING[/b]   (pad)       RT throttle · LT brake / reverse · Left stick steer · B handbrake · D-Up ignition · D-Left headlights · LB swap seats · X get out
@@ -289,6 +297,14 @@ func _physics_process(_delta: float) -> void:
 	# vehicle reads input in the same physics tick.
 	for d in devices:
 		d.poll()
+	# fill the paper map in as the players travel
+	_explore_t -= _delta
+	if _explore_t <= 0.0 and started and map_state != null:
+		_explore_t = 0.4
+		var where := []
+		for p in players:
+			where.append(p.global_position)
+		map_state.explore(where)
 
 
 func _process(_delta: float) -> void:

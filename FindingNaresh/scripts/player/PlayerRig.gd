@@ -8,6 +8,7 @@ extends CharacterBody3D
 ## drives its transform every frame from the head marker.
 
 signal prompt_changed(text: String)
+signal message(text: String, seconds: float)   ## a note, board or story line to read
 
 const WALK := 4.3
 const SPRINT := 7.6
@@ -53,6 +54,8 @@ var _seat_yaw := 0.0
 var current_target: Node = null
 var prompt_text := ""
 var held: Carryable = null             ## item in this player's hands
+var paper_map: PaperMap = null         ## injected by this player's HUD
+var map_open := false
 var _using: Node = null                ## thing being used with the held item while E is held
 var force_exit := false            ## request an exit from outside the physics step
 
@@ -166,11 +169,15 @@ func _physics_process(delta: float) -> void:
 	# only copies the result onto the body, the head and the interaction ray.
 	rotation.y = yaw
 	head.rotation = Vector3(pitch, _seat_yaw if seat != null else 0.0, 0)
+	_update_map()
 	if seat != null:
 		_seated(delta)
 	else:
 		_walk(delta)
-	_scan()
+	if map_open:
+		_map_controls()
+	else:
+		_scan()
 
 
 ## Look and camera run every rendered frame, not every physics tick, so the
@@ -178,7 +185,10 @@ func _physics_process(delta: float) -> void:
 ## interpolated transforms, so movement and driving are smooth too.
 func _process(delta: float) -> void:
 	if dev != null and not get_tree().paused:
-		_look(delta)
+		if map_open and paper_map != null:
+			paper_map.move_cursor(dev.cursor_delta(delta))
+		else:
+			_look(delta)
 	if cam == null:
 		return
 	var xf: Transform3D
@@ -215,10 +225,12 @@ func _walk(delta: float) -> void:
 
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
-	elif dev.just_pressed("jump"):
+	elif dev.just_pressed("jump") and not map_open:
 		velocity.y = JUMP_VELOCITY
 
 	var mv := dev.move()
+	if map_open:
+		mv *= 0.4        # shuffle along while reading
 	var dir := (transform.basis.x * mv.x + -transform.basis.z * mv.y)
 	dir.y = 0.0
 	if dir.length() > 1.0:
@@ -319,6 +331,49 @@ func _scan() -> void:
 				cb.call(self)
 		elif seat != null and _can_exit():
 			exit_vehicle()
+
+
+# --- paper map -----------------------------------------------------------------
+
+## The map can be read on foot, or in the van while it is stopped.
+func can_read_map() -> bool:
+	if seat == null:
+		return true
+	return vehicle != null and vehicle.linear_velocity.length() < 1.0
+
+
+func _update_map() -> void:
+	if paper_map == null:
+		return
+	if dev.just_pressed("map"):
+		set_map_open(not map_open and can_read_map())
+	elif map_open and not can_read_map():
+		set_map_open(false)      # the van pulled away: fold it up
+
+
+func set_map_open(open: bool) -> void:
+	map_open = open
+	if paper_map != null:
+		paper_map.visible = open
+		paper_map.queue_redraw()
+	if open and prompt_text != "":
+		prompt_text = ""
+		prompt_changed.emit("")
+
+
+func _map_controls() -> void:
+	if dev.just_pressed("map_place"):
+		paper_map.place_stamp()
+	elif dev.just_pressed("map_remove"):
+		paper_map.remove_stamp()
+	if dev.just_pressed("map_next"):
+		paper_map.cycle_stamp(1)
+	elif dev.just_pressed("map_prev"):
+		paper_map.cycle_stamp(-1)
+
+
+func say(text: String, seconds := 6.0) -> void:
+	message.emit(text, seconds)
 
 
 ## While carrying: E uses the item on what you are looking at (pour, stow...),

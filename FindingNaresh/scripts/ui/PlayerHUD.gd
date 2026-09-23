@@ -18,6 +18,10 @@ var _temp: Label
 var _bars: Dictionary = {}
 var _hint: Label
 var _warn: Label
+var _note: PanelContainer
+var _note_text: Label
+var _note_time := 0.0
+var map_view: PaperMap
 ## Seconds spent in each context; control hints fade once you have had time
 ## to learn them, and come back if you have been away for a while.
 var _hint_age := {"foot": 0.0, "driver": 0.0, "passenger": 0.0}
@@ -96,7 +100,38 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_warn)
 
+	# notes: boards, letters, story lines
+	_note = PanelContainer.new()
+	_note.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_note.offset_left = -330
+	_note.offset_right = 330
+	_note.offset_top = 130
+	_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.94, 0.89, 0.76, 0.96)
+	sb.border_color = Color(0.55, 0.45, 0.32)
+	sb.set_border_width_all(2)
+	sb.set_content_margin_all(16)
+	_note.add_theme_stylebox_override("panel", sb)
+	_note_text = Label.new()
+	_note_text.add_theme_font_size_override("font_size", 17)
+	_note_text.add_theme_color_override("font_color", Color(0.22, 0.18, 0.14))
+	_note_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_note_text.custom_minimum_size = Vector2(620, 0)
+	_note.add_child(_note_text)
+	_note.visible = false
+	add_child(_note)
+
+	# the paper map, raised with M
+	map_view = PaperMap.new()
+	var ms := get_tree().get_first_node_in_group("map_state") as MapState
+	if ms != null:
+		map_view.bind(ms)
+	add_child(map_view)
+	p.paper_map = map_view
+
 	p.prompt_changed.connect(_on_prompt)
+	p.message.connect(show_note)
 
 
 func _bar(tag: String, col: Color) -> Control:
@@ -134,9 +169,19 @@ func _on_prompt(text: String) -> void:
 	_prompt.text = text
 
 
+func show_note(text: String, seconds: float) -> void:
+	_note_text.text = text
+	_note.visible = true
+	_note_time = seconds
+
+
 func _process(delta: float) -> void:
 	if player == null:
 		return
+	if _note_time > 0.0:
+		_note_time -= delta
+		if _note_time <= 0.0:
+			_note.visible = false
 	var seated := player.seat != null
 	_update_hint(delta, seated)
 	_gauges.visible = seated
@@ -171,12 +216,12 @@ func _update_hint(delta: float, seated: bool) -> void:
 	if _hint_age[ctx] < HINT_SECONDS and d != null:
 		if d.kind == InputDevice.Kind.PAD:
 			match ctx:
-				"foot": text = "Stick move · Right stick look · L3 sprint · A jump · Y flashlight · X use · RB throw"
+				"foot": text = "Stick move · Right stick look · L3 sprint · A jump · Y flashlight · X use · RB throw · D-Down map"
 				"driver": text = "RT go · LT brake/reverse · Stick steer · B handbrake · D-Up engine · D-Left lights"
 				_: text = "Right stick look around · D-Left lights · LB swap seats when stopped"
 		else:
 			match ctx:
-				"foot": text = "WASD move · Mouse look · Shift sprint · Space jump · F flashlight · E use · LMB throw"
+				"foot": text = "WASD move · Mouse look · Shift sprint · Space jump · F flashlight · E use · LMB throw · M map"
 				"driver": text = "W go · S brake/reverse · A/D steer · Space handbrake · X engine · L lights"
 				_: text = "Mouse look around · L lights · C swap seats when stopped"
 	_hint.text = text
