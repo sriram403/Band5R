@@ -30,7 +30,7 @@ const KEYS := {
 	"sprint": KEY_SHIFT, "crouch": KEY_CTRL, "jump": KEY_SPACE,
 	"interact": KEY_E, "flashlight": KEY_F, "map": KEY_M,
 	"handbrake": KEY_SPACE, "ignition": KEY_X, "headlights": KEY_L,
-	"horn": KEY_H, "swap_seat": KEY_C, "recover": KEY_R, "throw": KEY_G,
+	"hint": KEY_H, "swap_seat": KEY_C, "recover": KEY_R, "throw": KEY_G,
 	# paper map (only read while the map is up)
 	"map_next": KEY_E, "map_prev": KEY_Q,
 }
@@ -43,7 +43,7 @@ const BUTTONS := {
 	"flashlight": JOY_BUTTON_Y, "sprint": JOY_BUTTON_LEFT_STICK,
 	"map": JOY_BUTTON_DPAD_DOWN, "throw": JOY_BUTTON_RIGHT_SHOULDER, "swap_seat": JOY_BUTTON_LEFT_SHOULDER,
 	"handbrake": JOY_BUTTON_B, "ignition": JOY_BUTTON_DPAD_UP,
-	"headlights": JOY_BUTTON_DPAD_LEFT, "horn": JOY_BUTTON_DPAD_RIGHT,
+	"headlights": JOY_BUTTON_DPAD_LEFT, "hint": JOY_BUTTON_RIGHT_STICK,
 	"recover": JOY_BUTTON_BACK,
 	"map_place": JOY_BUTTON_A, "map_remove": JOY_BUTTON_X,
 	"map_next": JOY_BUTTON_RIGHT_SHOULDER, "map_prev": JOY_BUTTON_LEFT_SHOULDER,
@@ -93,6 +93,7 @@ func glyph(action: String) -> String:
 			"headlights": return "D-Left"
 			"handbrake": return "B"
 			"recover": return "View"
+			"hint": return "R3"
 			_: return "?"
 	match action:
 		"interact": return "E"
@@ -106,6 +107,7 @@ func glyph(action: String) -> String:
 		"headlights": return "L"
 		"handbrake": return "Space"
 		"recover": return "R"
+		"hint": return "H"
 		"throw": return "LMB"
 		_: return "?"
 

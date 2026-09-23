@@ -156,7 +156,7 @@ func _run() -> void:
 		str(Input.get_connected_joypads())])
 	log_line("route length %.0f m, %d samples" % [boot.builder.route.total_length, boot.builder.route.point_count()])
 
-	var all := ["map", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf"]
+	var all := ["map", "story", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf"]
 	for s in all:
 		if only != "" and only != s:
 			continue
@@ -852,6 +852,89 @@ func t_map() -> void:
 	key(KEY_S, true)
 	await wait(2.0)
 	key(KEY_S, false)
+
+
+## Put the van on a road near a point of interest, facing along the road.
+func van_to(poi_pos: Vector3) -> void:
+	var c := camper()
+	var near: Dictionary = boot.builder.network.nearest(poi_pos.x, poi_pos.z)
+	var r: Route = near["road"]
+	var i: int = near["index"]
+	var p := r.point(i)
+	var f := r.forward(i)
+	c.freeze = false
+	c.linear_velocity = Vector3.ZERO
+	c.angular_velocity = Vector3.ZERO
+	c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP), p + Vector3.UP * 0.9)
+	c.reset_physics_interpolation()
+	await physics_frames(20)
+
+
+## The opening, in order: letter, spare can, windmill, the road choice,
+## refuelling at Last Fuel, and the road north.
+func t_story() -> void:
+	var b: LevelBuilder = boot.builder
+	var st: Story = boot.story
+	var p := p1()
+	if p.seat != null:
+		p.force_exit = true
+		await physics_frames(3)
+	await wait(0.5)
+	log_line("objective at start: '%s'" % st.objective_text())
+	check(st.current()["id"] == "read_letter", "the first objective is to read the letter")
+	await face_point(p, b.poi["letter"], 1.6, Vector3(0, 0, 1))
+	await wait(0.3)
+	log_line("at the crate: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("Read the letter"), "the letter can be read")
+	await tap(KEY_E)
+	await wait(0.6)
+	check(boot.huds[0]._note.visible and boot.huds[0]._note_text.text.contains("friend"), "the letter appears and mentions the friend")
+	await shot("story_letter")
+	check(st.current()["id"] == "spare_can", "then: take the spare can")
+
+	# hold H for the hint
+	key(KEY_H, true)
+	await wait(0.3)
+	log_line("hint: '%s'" % boot.huds[0]._objective_hint.text)
+	check(boot.huds[0]._objective_hint.text.contains("garage"), "holding H shows the hint")
+	key(KEY_H, false)
+
+	# stow the home can on the rack
+	var can := find_can("home_can")
+	await face_point(p, can.global_position + Vector3.UP * 0.25, 1.8)
+	await tap(KEY_E)
+	await physics_frames(10)
+	var c := camper()
+	var slot: Node3D = c.storage_slots[0]
+	await face_point(p, slot.global_position + Vector3.UP * 0.3, 1.9, c.global_transform.basis.z)
+	await wait(0.3)
+	await tap(KEY_E)
+	await wait(0.6)
+	check(st.current()["id"] == "to_windmill", "stowing the can moves on to: drive to the windmill")
+
+	# arrive at the windmill: the first old text from Naresh
+	await seat_p1_driver()
+	await van_to(b.poi["j1"])
+	await wait(0.8)
+	log_line("objective at the windmill: '%s'" % st.objective_text())
+	check(st.current()["id"] == "choose_road", "at the windmill: choose a road")
+	check(st.flags.has("text_j1") and boot.huds[0]._note_text.text.contains("I mean I am"), "an old text from Naresh arrives at the windmill")
+	await shot("story_text_j1")
+
+	# Last Fuel, low on fuel
+	c.fuel = 18.0
+	await van_to(b.poi["j2"])
+	await wait(0.8)
+	check(st.current()["id"] == "refuel", "at Last Fuel: refuel")
+	c.fuel = 44.0
+	await wait(0.6)
+	check(st.current()["id"] == "pump_road", "a full tank moves on to: Pump House Road")
+	await van_to(b.poi["facility"])
+	await wait(0.6)
+	log_line("objective at the water works: '%s'" % st.objective_text())
+	check(st.current()["id"] == "end_a", "reaching the water works ends this part of the story")
+	p.force_exit = true
+	await physics_frames(3)
 
 
 ## Walk from the foot of the lookout ramp up onto the deck.

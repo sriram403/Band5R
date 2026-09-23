@@ -22,6 +22,8 @@ var _note: PanelContainer
 var _note_text: Label
 var _note_time := 0.0
 var map_view: PaperMap
+var _objective: Label
+var _objective_hint: Label
 ## Seconds spent in each context; control hints fade once you have had time
 ## to learn them, and come back if you have been away for a while.
 var _hint_age := {"foot": 0.0, "driver": 0.0, "passenger": 0.0}
@@ -99,6 +101,16 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	_warn.offset_bottom = 126
 	_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_warn)
+
+	# current objective, shared by both players; hold the hint key for more
+	_objective = _label(16, Color(1.0, 0.93, 0.70))
+	_objective.position = Vector2(18, 58)
+	add_child(_objective)
+	_objective_hint = _label(14, Color(1, 1, 1, 0.85))
+	_objective_hint.position = Vector2(18, 80)
+	_objective_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_objective_hint.custom_minimum_size = Vector2(420, 0)
+	add_child(_objective_hint)
 
 	# notes: boards, letters, story lines
 	_note = PanelContainer.new()
@@ -182,6 +194,14 @@ func _process(delta: float) -> void:
 		_note_time -= delta
 		if _note_time <= 0.0:
 			_note.visible = false
+	var st := get_tree().get_first_node_in_group("story") as Story
+	if st != null:
+		var d := player.dev
+		_objective.text = "> " + st.objective_text()
+		if d != null and d.held("hint"):
+			_objective_hint.text = st.hint_text()
+		else:
+			_objective_hint.text = "(hold %s for a hint)" % (d.glyph("hint") if d else "H")
 	var seated := player.seat != null
 	_update_hint(delta, seated)
 	_gauges.visible = seated

@@ -586,6 +586,17 @@ func _homestead() -> void:
 		root.add_child(Build.box(Vector3(0.9, 0.9, 0.03), ToonMat.make(cloth[ci], 0.008), Vector3(7.8 + ci * 1.6, 1.6, -2.0), Vector3.ZERO, "Laundry"))
 	root.add_child(Build.box(Vector3(5.0, 0.18, 3.0), ToonMat.make(Color(0.40, 0.30, 0.22)), Vector3(9.0, 0.09, 4.0), Vector3.ZERO, "VegPatch"))
 
+	# the parents' letter, weighed down on a crate by the porch steps
+	var crate_pos := Vector3(1.6, 0, 6.8)
+	root.add_child(Build.solid_box(Vector3(0.7, 0.6, 0.6), ToonMat.make(C_WOOD), crate_pos + Vector3(0, 0.3, 0), Vector3.ZERO, "LetterCrate"))
+	root.add_child(Build.box(Vector3(0.30, 0.01, 0.40), ToonMat.make(Color(0.97, 0.96, 0.90), 0.004), crate_pos + Vector3(0, 0.61, 0), Vector3(0, 12, 0), "Letter"))
+	root.add_child(Build.box(Vector3(0.10, 0.08, 0.10), ToonMat.make(C_STONE), crate_pos + Vector3(0.08, 0.66, 0.1), Vector3.ZERO, "Paperweight"))
+	var letter_area := Build.interact_area(Vector3(1.0, 1.0, 1.0), crate_pos + Vector3(0, 0.7, 0), "Read the letter", func(p):
+		var st := p.get_tree().get_first_node_in_group("story") as Story
+		if st != null:
+			st.read_letter(p), "LetterArea")
+	root.add_child(letter_area)
+
 	var mb := Node3D.new()
 	mb.name = "Mailbox"
 	mb.position = Vector3(1.0, 0, 14.0)
@@ -594,6 +605,7 @@ func _homestead() -> void:
 	root.add_child(mb)
 	world.add_child(root)
 	poi["homestead"] = origin
+	poi["letter"] = root.transform * (crate_pos + Vector3(0, 0.62, 0))
 
 
 ## Tall farm windmill at the route choice: the junction you describe to each

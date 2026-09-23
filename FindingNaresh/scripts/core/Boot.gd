@@ -39,6 +39,7 @@ const SETTINGS_PATH := "user://settings.cfg"
 const SENS_STEPS := [0.4, 0.55, 0.7, 0.85, 1.0, 1.2, 1.45, 1.75, 2.1, 2.5]
 var mouse_sens := 1.0
 var map_state: MapState
+var story: Story
 var _explore_t := 0.0
 
 # Dev capture mode: `--shot` runs a scripted sequence and writes PNGs next to
@@ -68,6 +69,11 @@ func _ready() -> void:
 	_assign_devices()
 	_build_ui()
 	_spawn_players()
+	story = Story.new()
+	story.name = "Story"
+	story.add_to_group("story")
+	add_child(story)
+	story.setup(self)
 	_set_layout(Layout.SOLO if devices[1].kind == InputDevice.Kind.KBM else Layout.SIDE_BY_SIDE)
 
 	Input.joy_connection_changed.connect(_on_joy_changed)
