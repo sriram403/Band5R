@@ -14,7 +14,9 @@ const WALK := 4.3
 const SPRINT := 7.6
 const CROUCH := 2.1
 const ACCEL_GROUND := 12.0
-const ACCEL_AIR := 2.5
+## Enough air control that a standing jump carries you onto a crate you are
+## pressed against; with 2.5 you had to back off and take a run-up every time.
+const ACCEL_AIR := 7.0
 const JUMP_VELOCITY := 4.7
 const GRAVITY := 22.0
 const STAND_HEIGHT := 1.72
@@ -56,11 +58,17 @@ var prompt_text := ""
 var held: Carryable = null             ## item in this player's hands
 var paper_map: PaperMap = null         ## injected by this player's HUD
 var map_open := false
+var _plan_vel := Vector2.ZERO          ## intended horizontal velocity (see _walk)
+var journal_open := false              ## reading the van's travel journal
+var journal_sel := 0
+var journal_confirm := false
+var journal_note := ""
 var _using: Node = null                ## thing being used with the held item while E is held
 var force_exit := false            ## request an exit from outside the physics step
 
 
 func _ready() -> void:
+	add_to_group("player")
 	collision_layer = 2
 	collision_mask = 1 | 8 | Carryable.LAYER   # world, vehicle body, loose items
 	floor_max_angle = deg_to_rad(52)
@@ -169,6 +177,11 @@ func _physics_process(delta: float) -> void:
 	# only copies the result onto the body, the head and the interaction ray.
 	rotation.y = yaw
 	head.rotation = Vector3(pitch, _seat_yaw if seat != null else 0.0, 0)
+	if journal_open:
+		_journal_controls()
+		if seat != null:
+			_seated(delta)
+		return
 	_update_map()
 	if seat != null:
 		_seated(delta)
@@ -178,6 +191,8 @@ func _physics_process(delta: float) -> void:
 		_map_controls()
 	else:
 		_scan()
+	if seat != null and dev.just_pressed("journal") and _van_parked():
+		_open_journal()
 
 
 ## Look and camera run every rendered frame, not every physics tick, so the
@@ -247,8 +262,12 @@ func _walk(delta: float) -> void:
 
 	var accel := ACCEL_GROUND if is_on_floor() else ACCEL_AIR
 	var target := dir * speed
-	velocity.x = move_toward(velocity.x, target.x, accel * delta * 6.0)
-	velocity.z = move_toward(velocity.z, target.z, accel * delta * 6.0)
+	# Accelerate the *intended* horizontal velocity, not what is left after the
+	# last collision: pressing into a crate side zeroed velocity every tick, so
+	# a jump from against it never had the momentum to carry you on top.
+	_plan_vel = _plan_vel.move_toward(Vector2(target.x, target.z), accel * delta * 6.0)
+	velocity.x = _plan_vel.x
+	velocity.z = _plan_vel.y
 	move_and_slide()
 	# Walking into loose items nudges them along instead of stopping dead.
 	for i in get_slide_collision_count():
@@ -301,7 +320,11 @@ func _scan() -> void:
 		if node != null:
 			# An optional "blocked_fn" explains why something cannot be used
 			# right now, instead of offering a button that does nothing.
-			var blocked: String = (node.get_meta("blocked_fn") as Callable).call() if node.has_meta("blocked_fn") else ""
+			var blocked := ""
+			if node.has_meta("blocked_fn"):
+				var bf: Callable = node.get_meta("blocked_fn")
+				# blocked_fn may take the player (for reach checks) or nothing
+				blocked = bf.call(self) if bf.get_argument_count() > 0 else bf.call()
 			if blocked != "":
 				text = blocked
 			else:
@@ -331,6 +354,9 @@ func _scan() -> void:
 				cb.call(self)
 		elif seat != null and _can_exit():
 			exit_vehicle()
+	# things you hold E on (pump handles, cranks) get called every tick
+	if target != null and target.has_meta("hold_fn") and dev.held("interact"):
+		(target.get_meta("hold_fn") as Callable).call(self, get_physics_process_delta_time())
 
 
 # --- paper map -----------------------------------------------------------------
@@ -410,8 +436,11 @@ func _scan_holding() -> void:
 			drop_held()
 		return
 	if _using != null:
-		if dev.held("interact") and _using == ctx and held != null:
-			(ctx.get_meta("held_action") as Callable).call(self, held, get_physics_process_delta_time(), false)
+		# Keep pouring while E is held and you are still right there, even if
+		# the aim wobbles off the (small) target for a moment.
+		var still_there := _using == ctx or (is_instance_valid(_using) and (_using as Node3D).global_position.distance_to(head.global_position) < 3.0)
+		if dev.held("interact") and still_there and held != null:
+			(_using.get_meta("held_action") as Callable).call(self, held, get_physics_process_delta_time(), false)
 		else:
 			_using = null
 
@@ -473,6 +502,57 @@ func _near_upset_van():
 	return null
 
 
+# --- travel journal ---------------------------------------------------------------
+
+func _van_parked() -> bool:
+	return vehicle != null and vehicle.linear_velocity.length() < 0.3
+
+
+func _open_journal() -> void:
+	set_map_open(false)
+	journal_open = true
+	journal_confirm = false
+	journal_note = ""
+	if prompt_text != "":
+		prompt_text = ""
+		prompt_changed.emit("")
+
+
+func _journal_controls() -> void:
+	if not _van_parked() or seat == null:
+		journal_open = false
+		return
+	var up := dev.just_pressed("menu_up") or (dev.kind == InputDevice.Kind.KBM and dev.just_pressed("fwd"))
+	var down := dev.just_pressed("menu_down") or (dev.kind == InputDevice.Kind.KBM and dev.just_pressed("back"))
+	if up or down:
+		journal_sel = wrapi(journal_sel + (1 if down else -1), 0, SaveGame.SLOTS)
+		journal_confirm = false
+		journal_note = ""
+	if dev.just_pressed("journal") or dev.just_pressed("menu_back"):
+		journal_open = false
+		return
+	if dev.just_pressed("menu_ok") or dev.just_pressed("interact"):
+		var st := get_tree().get_first_node_in_group("story") as Story
+		if st == null or st.roses() < 1:
+			journal_note = "You have no Memory Rose to spend."
+			return
+		if not journal_confirm:
+			journal_confirm = true
+			return
+		st.roses_spent += 1
+		var boot := get_tree().current_scene
+		if SaveGame.write(boot, journal_sel):
+			if boot.has_method("mark_saved"):
+				boot.mark_saved()
+			journal_open = false
+			for pl in get_tree().get_nodes_in_group("player"):
+				pl.say("You write the day into the travel journal. The Memory Rose crumbles to petals between the pages.\n(Saved to slot %d.)" % (journal_sel + 1), 5.0)
+		else:
+			st.roses_spent -= 1
+			journal_note = "The journal would not take the ink. (Could not write the save file.)"
+		journal_confirm = false
+
+
 func _can_exit() -> bool:
 	return vehicle == null or vehicle.linear_velocity.length() < EXIT_MAX_SPEED
 
@@ -486,6 +566,8 @@ func _seated_prompt() -> String:
 	if _can_exit():
 		parts.append("[%s]  Get out" % dev.glyph("interact"))
 		parts.append("[%s]  Swap seats" % dev.glyph("swap_seat"))
+	if _van_parked():
+		parts.append("[%s]  Journal" % dev.glyph("journal"))
 	return "     ".join(parts)
 
 
@@ -542,6 +624,7 @@ func exit_vehicle() -> void:
 	# Inherit the camper's motion so stepping out of a rolling van does not
 	# resolve as a violent interpenetration on the next physics tick.
 	velocity = v.linear_velocity
+	_plan_vel = Vector2.ZERO
 	(get_node("Collider") as CollisionShape3D).disabled = false
 	if v.has_method("on_seat_exited"):
 		v.on_seat_exited(self, seat_role)

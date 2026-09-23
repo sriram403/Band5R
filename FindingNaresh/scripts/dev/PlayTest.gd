@@ -114,6 +114,7 @@ func place_player(p: PlayerRig, pos: Vector3, yaw: float) -> void:
 	p.rotation = Vector3(0, yaw, 0)
 	p.pitch = 0.0
 	p.velocity = Vector3.ZERO
+	p._plan_vel = Vector2.ZERO
 	if p.has_method("reset_physics_interpolation"):
 		p.reset_physics_interpolation()
 	# a teleport must bring whatever is in your hands along
@@ -156,15 +157,29 @@ func _run() -> void:
 		str(Input.get_connected_joypads())])
 	log_line("route length %.0f m, %d samples" % [boot.builder.route.total_length, boot.builder.route.point_count()])
 
-	var all := ["map", "story", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf"]
+	# After a load test reloaded the scene, only finish that check.
+	if PlayTest.resume != "":
+		var r := PlayTest.resume
+		PlayTest.resume = ""
+		_failures = PlayTest.carried_failures.duplicate()
+		log_line("---- %s (after scene reload) ----" % r)
+		await call("t_" + r)
+		_finish()
+		return
+	var all := ["map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	for s in all:
-		if only != "" and only != s:
+		if only != "" and not s in only.split(","):
 			continue
 		log_line("---- %s ----" % s)
 		release_all()
 		await call("t_" + s)
 		release_all()
+		if PlayTest.resume != "":
+			return      # the scene is reloading; the new test node finishes up
+	_finish()
 
+
+func _finish() -> void:
 	log_line("==== %d failure(s) ====" % _failures.size())
 	for f in _failures:
 		log_line("  - " + f)
@@ -400,14 +415,30 @@ func t_crash() -> void:
 
 ## Screens and places that only need looking at.
 func t_look() -> void:
+	boot.menu = "title"
+	boot.menu_sel = 0
 	boot._refresh_overlay()
 	boot.overlay.visible = true
 	await wait(0.3)
+	check(boot._menu_items() == ["New game", "Load game", "Quit"], "the title menu offers New game / Load game / Quit")
 	await shot("title")
+	boot.menu = ""
 	boot.overlay.visible = false
 	await tap(KEY_ESCAPE)
 	await wait(0.3)
 	check(get_tree().paused, "ESC pauses")
+	check(boot.menu == "pause" and boot._menu_items()[1] == "Load game", "the pause menu offers Resume / Load / Quit")
+	boot.menu_sel = 1
+	boot._menu_accept()
+	check(boot.menu == "load" and boot._menu_items().size() == SaveGame.SLOTS + 1, "Load game lists the three journal slots")
+	await tap(KEY_ESCAPE)
+	check(boot.menu == "pause", "ESC goes back from the load list")
+	boot.story.flags["test_progress"] = true
+	boot.menu_sel = 2
+	boot._menu_accept()
+	check(boot.menu == "quit_confirm", "quitting with unsaved progress asks first")
+	await tap(KEY_ESCAPE)
+	boot.story.flags.erase("test_progress")
 	var s0: float = boot.mouse_sens
 	await tap(KEY_BRACKETRIGHT)
 	check(boot.mouse_sens > s0 and absf(p1().dev.look_sensitivity - boot.mouse_sens) < 0.001, "] raises mouse sensitivity")
@@ -637,8 +668,26 @@ func face_point(p: PlayerRig, target: Vector3, dist: float, side := Vector3.ZERO
 	await physics_frames(3)
 
 
+## Put a can back where the level placed it, full or as given, off any rack.
+func reset_can(tag: String, litres: float) -> FuelCan:
+	var can := find_can(tag)
+	if can.stowed_in != null:
+		can.unstow()
+	for h in can.holders.duplicate():
+		h.drop_held()
+	can.litres = litres
+	can._update_mass()
+	can._refresh_prompt()
+	can.global_position = boot.builder.poi[tag]
+	can.linear_velocity = Vector3.ZERO
+	can.reset_physics_interpolation()
+	await physics_frames(20)
+	return can
+
+
 func find_can(tag: String) -> FuelCan:
-	return boot.world.get_node("FuelCan_" + tag) as FuelCan
+	# it may have been stowed on the van's rack by an earlier scenario
+	return boot.world.find_child("FuelCan_" + tag, true, false) as FuelCan
 
 
 ## Pick up, carry, drop, throw, pour into the van, stow on the rack, drive off
@@ -648,7 +697,9 @@ func t_carry() -> void:
 	if p.seat != null:
 		p.force_exit = true
 		await physics_frames(3)
-	var can := find_can("home_can")
+	var can := await reset_can("home_can", FuelCan.CAPACITY)
+	await reset_can("station_can_a", FuelCan.CAPACITY)
+	await reset_can("station_can_empty", 0.0)
 	await face_point(p, can.global_position + Vector3.UP * 0.25, 2.0)
 	log_line("looking at the home can: '%s'" % p.prompt_text)
 	check(p.prompt_text.contains("Pick up fuel can (full)"), "a fuel can offers 'Pick up fuel can (full)'")
@@ -932,9 +983,314 @@ func t_story() -> void:
 	await van_to(b.poi["facility"])
 	await wait(0.6)
 	log_line("objective at the water works: '%s'" % st.objective_text())
-	check(st.current()["id"] == "end_a", "reaching the water works ends this part of the story")
+	check(st.current()["id"] == "coolant" and camper().coolant_leak, "near the water works the hose splits: get coolant")
 	p.force_exit = true
 	await physics_frames(3)
+
+
+func station() -> CoolingStation:
+	return get_tree().get_first_node_in_group("cooling_station") as CoolingStation
+
+
+## Beat 3 end to end: the hose splits on the way in, the engine boils and
+## cuts out, the valves and pump fill the blue tank, the coolant fixes the
+## van, fragments and clues are found.
+func t_waterworks() -> void:
+	var b: LevelBuilder = boot.builder
+	var st: Story = boot.story
+	var c := camper()
+	var p := p1()
+	var fac: Node3D = boot.world.get_node("WaterFacility")
+	var yard_side := fac.global_transform.basis * Vector3(0, 0, -1)
+	# on Pump House Road, heading for the water works, story at "pump_road"
+	var road := b.network.road("pump_house_road")
+	var start_i: int = int(road.nearest(b.poi["facility"].x, b.poi["facility"].z)["index"]) - 110
+	await van_to(road.point(start_i))
+	st.index = 5
+	c.coolant_leak = false
+	c.heat_lockout = false
+	c.temp = Camper.TEMP_NORMAL
+	st.flags.erase("leak_started")
+	st.flags.erase("leak_fixed")
+	c.fuel = 50.0
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
+	var path := road
+	var ad := AutoDriver.new(self, path, c)
+	var t := 0.0
+	while t < 60.0 and not c.coolant_leak:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		ad.step(35.0)
+	check(c.coolant_leak and st.flags.has("leak_started"), "the coolant hose splits on the approach to the water works")
+	log_line("hose split %.0f m from the water works" % Vector2(c.global_position.x - b.poi["facility"].x, c.global_position.z - b.poi["facility"].z).length())
+	await wait(0.5)
+	await shot("ww_steam")
+	check(c._steam.emitting, "steam pours from the grille")
+	# keep the engine running hard until it boils over
+	var t0 := c.temp
+	var cut := false
+	t = 0.0
+	while t < 90.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		ad.step(12.0)
+		if not c.engine_on:
+			cut = true
+			break
+	ad.release()
+	log_line("temperature %.0f -> %.0f C in %.0f s; engine cut out: %s; power at cut-out %.0f%%" % [t0, c.temp, t, cut, c.heat_power() * 100.0])
+	check(cut and c.heat_lockout, "left running, the boiling engine cuts out")
+	await tap(KEY_X)
+	await physics_frames(3)
+	log_line("restart attempt: '%s'" % c.start_fail)
+	check(not c.engine_on and c.start_fail.contains("Too hot"), "it will not restart while boiling, and says why")
+
+	# into the yard: the objective asks for coolant
+	await wait(0.5)
+	check(st.current()["id"] == "coolant", "the objective becomes: get coolant from the water works")
+	p.force_exit = true
+	await physics_frames(3)
+	var sta := station()
+	# wrong route first (as built: valve A sends everything to the grey tank)
+	await face_point(p, b.poi["pump_handle"], 1.5, yard_side)
+	await wait(0.3)
+	log_line("at the pump: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("pump"), "the pump handle can be worked")
+	key(KEY_E, true)
+	await wait(5.0)
+	key(KEY_E, false)
+	log_line("held the pump 5 s on the wrong route: pops %d, grey tank %.0f%%, blue tank %.0f%%" % [sta.pops, sta.fill["waste"] * 100.0, sta.fill["coolant"] * 100.0])
+	check(sta.pops >= 1, "over-pumping pops the relief valve")
+	check(sta.fill["coolant"] == 0.0 and sta.fill["waste"] > 0.0, "the wrong route fills the grey tank, not the blue one")
+	await shot("ww_pump")
+	# set the valves by walking to them (the valve player's job)
+	for v in [["valve_a", "a"], ["valve_b", "b"]]:
+		await face_point(p, b.poi[v[0]], 1.6, yard_side)
+		await wait(0.3)
+		log_line("at %s: '%s'" % [v[0], p.prompt_text])
+		await tap(KEY_E)
+	log_line("valves now: A -> %s, B -> %s, route %s" % [sta.valve_a, sta.valve_b, sta.route()])
+	check(sta.route() == "coolant", "turning both valves routes the line to the blue tank")
+	await shot("ww_valves")
+	# pump in bursts, keeping the needle in the green
+	await face_point(p, b.poi["pump_handle"], 1.5, yard_side)
+	await wait(3.5)
+	t = 0.0
+	var pops0 := sta.pops
+	while t < 60.0 and not sta.solved:
+		var want := sta.pressure < 0.74
+		key(KEY_E, want)
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+	key(KEY_E, false)
+	log_line("blue tank filled in %.0f s of careful pumping (%d extra pops)" % [t, sta.pops - pops0])
+	check(sta.solved, "careful pumping fills the blue tank")
+	await wait(0.5)
+	await shot("ww_solved")
+
+	# the jug: carry it to the van and pour
+	var jug := boot.world.get_node_or_null("CoolantJug") as CoolantJug
+	check(jug != null, "the tap gives a coolant jug")
+	if jug == null:
+		return
+	await face_point(p, jug.global_position + Vector3.UP * 0.2, 1.5, yard_side)
+	await wait(0.3)
+	log_line("at the jug: '%s' (jug at %.2f m above ground)" % [p.prompt_text, jug.global_position.y - Landscape.ground(jug.global_position.x, jug.global_position.z)])
+	await tap(KEY_E)
+	await physics_frames(10)
+	check(p.held == jug, "the jug can be carried")
+	var grille := c.global_transform * (Vector3(0, 1.45, -3.9) + Vector3(0, Camper.BODY_Y, 0))
+	var van_before := c.global_position
+	await face_point(p, grille, 1.8, -c.global_transform.basis.z)
+	log_line("  van moved %.2f m while the player walked up" % van_before.distance_to(c.global_position))
+	check(van_before.distance_to(c.global_position) < 0.1, "an empty van stays put (handbrake on)")
+	await wait(0.3)
+	log_line("at the grille holding the jug: '%s'" % p.prompt_text)
+	await shot("ww_grille")
+	key(KEY_E, true)
+	for _k in 5:
+		await wait(0.5)
+		log_line("  pouring: added %.2f L, jug %.2f L, leak %s, using %s, held %s, prompt '%s'" % [c.coolant_added, jug.litres, c.coolant_leak, p._using, p.held, p.prompt_text])
+	key(KEY_E, false)
+	await wait(0.6)
+	check(not c.coolant_leak and st.flags.has("leak_fixed"), "pouring the coolant fixes the leak")
+	log_line("objective after the fix: '%s'" % st.objective_text())
+	check(st.current()["id"] == "to_bridge", "then: carry on to the bridge")
+	await tap(KEY_G)   # toss the jug aside (E here would just pour again)
+
+	# fragments: the station's, then the shed roof by stacking crates
+	var f0 := st.fragments
+	var frag := boot.world.get_node_or_null("Fragment_water_works") as Node3D
+	if frag:
+		await face_point(p, frag.global_position + Vector3.UP * 0.15, 1.4, yard_side)
+		await wait(0.3)
+		log_line("at the station fragment: '%s'" % p.prompt_text)
+		await tap(KEY_E)
+		await wait(0.3)
+	check(st.fragments == f0 + 1, "the station's Memory Fragment can be picked up")
+	# stack two crates against the shed (as players would carry them over)
+	var roof: Vector3 = b.poi["shed_roof"]
+	var out := fac.global_transform.basis * Vector3(0, 0, -1)     # the shed's yard-side face
+	var base := roof + out * 1.6
+	base.y = Landscape.ground(base.x, base.z)
+	# stand well clear before the crates are put down
+	await place_player(p, roof + out * 6.0 + Vector3.UP * 0.3, 0.0)
+	var cr0: Crate = boot.world.get_node("Crate0")
+	var cr1: Crate = boot.world.get_node("Crate1")
+	cr0.global_transform = Transform3D(fac.global_transform.basis, base + Vector3.UP * 0.02)
+	cr1.global_transform = Transform3D(fac.global_transform.basis, base + Vector3.UP * 0.48)
+	cr0.linear_velocity = Vector3.ZERO
+	cr1.linear_velocity = Vector3.ZERO
+	# a third crate on the ground in front makes the first step of a staircase
+	var cr2: Crate = boot.world.get_node("Crate2")
+	cr2.global_transform = Transform3D(fac.global_transform.basis, base + out * 0.66 + Vector3.UP * 0.02)
+	cr2.linear_velocity = Vector3.ZERO
+	await wait(1.0)
+	log_line("crate stack settled: bottom %.2f m, top %.2f m above ground" % [cr0.global_position.y - base.y, cr1.global_position.y - base.y])
+	# from the ground it is visible but out of reach
+	var sfr := boot.world.get_node_or_null("Fragment_shed") as Node3D
+	if sfr:
+		await face_point(p, sfr.global_position + Vector3.UP * 0.15, 2.0, out)
+		await wait(0.3)
+		log_line("roof fragment from the ground: '%s'" % p.prompt_text)
+		check(p.prompt_text.contains("out of reach"), "the roof fragment cannot be plucked from the ground")
+	# climb: from the ground, step up the stack toward the roof
+	var stand := base + out * 2.4
+	stand.y = Landscape.ground(stand.x, stand.z) + 0.1
+	await place_player(p, stand, atan2(out.x, out.z))
+	var top_y := -9.0
+	key(KEY_W, true)
+
+	for k in 12:
+		await tap(KEY_SPACE, 0.12)
+		await wait(0.35)
+		top_y = maxf(top_y, p.global_position.y - base.y)
+		if p.global_position.y - base.y > 1.2:
+			key(KEY_W, false)
+			break
+		log_line("  hop %d: feet %.2f, dist to base %.2f, crates d/y: %.2f/%.2f %.2f/%.2f %.2f/%.2f" % [k, p.global_position.y - base.y, Vector2(p.global_position.x - base.x, p.global_position.z - base.z).length(), Vector2(cr0.global_position.x - base.x, cr0.global_position.z - base.z).length(), cr0.global_position.y - base.y, Vector2(cr1.global_position.x - base.x, cr1.global_position.z - base.z).length(), cr1.global_position.y - base.y, Vector2(cr2.global_position.x - base.x, cr2.global_position.z - base.z).length(), cr2.global_position.y - base.y])
+	await shot("ww_climb")
+	key(KEY_W, false)
+	await wait(0.4)
+	log_line("climb: highest feet %.2f m; on the roof: %s" % [top_y, p.global_position.y - base.y > 1.2])
+	check(p.global_position.y - base.y > 1.2, "a crate staircase (one, then two stacked) gets you onto the shed roof")
+	var sf := boot.world.get_node_or_null("Fragment_shed") as Node3D
+	if sf:
+		# look at it from where we are (up on the stack or roof)
+		var eye := p.global_position + Vector3.UP * (PlayerRig.STAND_HEIGHT - 0.16)
+		var dd := sf.global_position + Vector3.UP * 0.15 - eye
+		p.yaw = atan2(-dd.x, -dd.z)
+		p.pitch = atan2(dd.y, Vector2(dd.x, dd.z).length())
+		await wait(0.3)
+		log_line("at the roof fragment: '%s'" % p.prompt_text)
+		await tap(KEY_E)
+		await wait(0.3)
+	check(boot.world.get_node_or_null("Fragment_shed") == null, "the shed roof fragment can be collected")
+	await shot("ww_roof")
+
+	# the clues
+	var camp: Node3D = fac.get_node("Campsite")
+	await face_point(p, camp.global_position + Vector3(0.8, 0.6, 0.3), 2.2, yard_side)
+	await wait(0.3)
+	log_line("at the campsite: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await wait(0.4)
+	check(boot.huds[0]._note_text.text.contains("One sleeping bag"), "the campsite shows one sleeping bag and two mugs")
+	await shot("ww_camp")
+
+
+## Journal save, then a real load (scene reload) that must restore it all.
+## Runs last: the reload replaces this test node, so the check continues in
+## t_save_verify via the static `resume`.
+func t_save() -> void:
+	var b: LevelBuilder = boot.builder
+	var st: Story = boot.story
+	var c := camper()
+	var ms: MapState = boot.map_state
+	for i in SaveGame.SLOTS:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveGame.path(i)))
+	# a known state worth saving
+	await van_to(b.poi["j2"])
+	c.fuel = 33.3
+	c.temp = 91.0
+	c.coolant_leak = false
+	var can := await reset_can("station_can_b", 12.0)
+	can.stow(c.storage_slots[1])
+	ms.add_stamp("puzzle", Vector2(100, -50))
+	st.index = 6
+	st.fragments = 3
+	st.roses_spent = 0
+	st.collected = ["dock", "lookout", "shed"]
+	station().valve_a = "b"
+	station().valve_b = "coolant"
+	station()._update_pointers()
+	await place_player(p2(), b.poi["j2"] + Vector3(6, 1, 6), 1.0)
+	await seat_p1_driver()
+	await wait(1.5)
+	check(st.roses() == 1, "three fragments make one Memory Rose")
+	var p := p1()
+	await tap(KEY_J)
+	await physics_frames(3)
+	check(p.journal_open, "J opens the travel journal in the parked van")
+	await wait(0.3)
+	await shot("journal_open")
+	await tap(KEY_ENTER)
+	await physics_frames(3)
+	check(p.journal_confirm and boot.huds[0].get_children().filter(func(n): return n is JournalPanel)[0]._text.text.contains("uses 1 of your 1"), "the journal asks before spending the rose, and says the cost")
+	await tap(KEY_ENTER)
+	await physics_frames(5)
+	check(SaveGame.exists(0) and st.roses() == 0 and not p.journal_open, "confirming writes slot 1 and spends the rose")
+	await tap(KEY_J)
+	await physics_frames(3)
+	await tap(KEY_ENTER)
+	await physics_frames(3)
+	check(not p.journal_confirm and boot.huds[0].get_children().filter(func(n): return n is JournalPanel)[0]._text.text.contains("no Memory Rose"), "with no rose left the journal refuses")
+	await tap(KEY_J)
+	var expect := {
+		"van": c.global_position, "fuel": c.fuel, "stowed": String(can.name), "stamps": ms.stamps.size(),
+		"index": st.index, "fragments": st.fragments, "spent": st.roses_spent, "p2": p2().global_position,
+		"valve_a": station().valve_a,
+	}
+	# now wreck the state, then load
+	p.force_exit = true
+	await physics_frames(3)
+	await van_to(b.poi["facility"])
+	c.fuel = 2.0
+	ms.stamps.clear()
+	st.index = 1
+	await place_player(p2(), b.poi["homestead"] + Vector3(0, 2, 12), 0.0)
+	PlayTest.expect = expect
+	PlayTest.carried_failures = _failures.duplicate()
+	PlayTest.resume = "save_verify"
+	boot.load_slot(0)
+
+
+static var resume := ""
+static var carried_failures: Array[String] = []
+static var expect := {}
+
+
+func t_save_verify() -> void:
+	await wait(1.5)
+	var c := camper()
+	var st: Story = boot.story
+	var e := PlayTest.expect
+	log_line("after load: van %.2f m from saved spot, fuel %.1f, story step %d, fragments %d (spent %d), stamps %d" % [
+		c.global_position.distance_to(e["van"]), c.fuel, st.index, st.fragments, st.roses_spent, boot.map_state.stamps.size()])
+	check(c.global_position.distance_to(e["van"]) < 0.5, "loading puts the van back where it was")
+	check(absf(c.fuel - float(e["fuel"])) < 0.2, "loading restores the fuel")
+	var slot_item: Carryable = c.stowed_item(c.storage_slots[1])
+	check(slot_item != null and String(slot_item.name) == e["stowed"] and absf(slot_item.litres - 12.0) < 0.1, "loading restores the can on the rack, with its fuel")
+	check(boot.map_state.stamps.size() == e["stamps"], "loading restores the map stamps")
+	check(st.index == e["index"] and st.fragments == e["fragments"] and st.roses_spent == e["spent"], "loading restores story, fragments and spent roses")
+	check(p1().seat_role == "driver", "the driver is back in the driver's seat")
+	check(p2().global_position.distance_to(e["p2"]) < 0.8, "the other player is back where they stood")
+	check(station().valve_a == e["valve_a"], "loading restores the water works valves")
+	for id in ["dock", "lookout", "shed"]:
+		check(boot.world.find_child("Fragment_" + id, true, false) == null, "collected fragment '%s' stays collected" % id)
+	await shot("after_load")
 
 
 ## Walk from the foot of the lookout ramp up onto the deck.

@@ -142,6 +142,10 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	add_child(map_view)
 	p.paper_map = map_view
 
+	var journal := JournalPanel.new()
+	journal.player = p
+	add_child(journal)
+
 	p.prompt_changed.connect(_on_prompt)
 	p.message.connect(show_note)
 
@@ -194,6 +198,8 @@ func _process(delta: float) -> void:
 		_note_time -= delta
 		if _note_time <= 0.0:
 			_note.visible = false
+	if player.journal_open:
+		_note.visible = false      # the journal has the reader's attention
 	var st := get_tree().get_first_node_in_group("story") as Story
 	if st != null:
 		var d := player.dev
@@ -216,7 +222,11 @@ func _process(delta: float) -> void:
 		_set_bar("TEMP", (camper.temp - Camper.TEMP_AMBIENT) / (Camper.TEMP_MAX - Camper.TEMP_AMBIENT))
 		(_bars["TEMP"] as ColorRect).color = TEMP_HOT if camper.temp > Camper.TEMP_WARN else TEMP_OK
 		var w := ""
-		if camper.temp > Camper.TEMP_WARN:
+		if camper.start_fail_t > 0.0:
+			w = camper.start_fail
+		elif camper.coolant_leak:
+			w = "STEAM! The coolant hose has split - %d C" % int(camper.temp)
+		elif camper.temp > Camper.TEMP_WARN:
 			w = "ENGINE HOT - ease off or stop"
 		elif camper.fuel / Camper.FUEL_CAPACITY < 0.18:
 			w = "FUEL LOW"

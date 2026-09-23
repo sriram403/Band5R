@@ -18,6 +18,10 @@ const SNAG_DISTANCE := 2.4       ## m; further than this from the hold point and
 
 var holders: Array = []          ## PlayerRig list
 var stowed_in: Node3D = null     ## storage slot while stowed
+var _last_safe := Transform3D()  ## last place it was seen resting, for the safety net
+var _safe_t := 0.0
+
+const MAX_SPEED := 30.0          ## m/s; nothing a player does should go faster
 
 
 func _ready() -> void:
@@ -96,7 +100,10 @@ func throw_from(p, dir: Vector3) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if holders.is_empty() or stowed_in != null:
+	if stowed_in != null:
+		return
+	_safety_net(delta)
+	if holders.is_empty():
 		return
 	var target := Vector3.ZERO
 	var yaw := 0.0
@@ -131,6 +138,29 @@ func _physics_process(delta: float) -> void:
 		ang -= TAU
 	if absf(ang) > 0.001:
 		angular_velocity = angular_velocity.lerp(err.get_axis() * ang * lerpf(10.0, 4.0, h), clampf(10.0 * delta, 0.0, 1.0))
+
+
+## Physics must never lose an item for good. Remember where it last sat still;
+## if it ever ends up under the ground (squeezed out of an overlap, tunnelled
+## at speed) put it back there. Speeds are capped so it rarely comes to that.
+func _safety_net(delta: float) -> void:
+	if linear_velocity.length() > MAX_SPEED:
+		linear_velocity = linear_velocity.normalized() * MAX_SPEED
+	_safe_t -= delta
+	if _safe_t <= 0.0:
+		_safe_t = 0.5
+		if linear_velocity.length() < 0.5 and holders.is_empty():
+			var g := Landscape.ground(global_position.x, global_position.z)
+			if global_position.y > g - 0.5:
+				_last_safe = global_transform
+	var ground := Landscape.ground(global_position.x, global_position.z)
+	if global_position.y < ground - 3.0 and _last_safe != Transform3D():
+		for p in holders.duplicate():
+			p.drop_held()
+		global_transform = _last_safe.translated(Vector3.UP * 0.4)
+		linear_velocity = Vector3.ZERO
+		angular_velocity = Vector3.ZERO
+		reset_physics_interpolation()
 
 
 # --- storage -------------------------------------------------------------------

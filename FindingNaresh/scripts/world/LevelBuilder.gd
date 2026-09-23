@@ -70,6 +70,14 @@ const LOOKOUT := Vector3(-200, 0, 140)
 const RADIO_MAST := Vector3(-460, 0, -330)
 const BARN := Vector3(118, 0, 488)
 
+## Flat pads under buildings (centre, flat radius, blend distance).
+const PADS := [
+	{"pos": FACILITY, "radius": 22.0, "blend": 14.0},
+	{"pos": GAS_STATION, "radius": 14.0, "blend": 10.0},
+	{"pos": HOMESTEAD, "radius": 20.0, "blend": 12.0},
+	{"pos": BARN, "radius": 14.0, "blend": 10.0},
+]
+
 const SCATTER_SEED := 20260810
 
 # Colours -----------------------------------------------------------------------
@@ -164,6 +172,7 @@ func _build_roads() -> void:
 	rv.make_monotonic_descending()
 	river = rv
 	Landscape.setup(network, river, PONDS, MOUNDS)
+	Landscape.set_pads(PADS)
 
 	poi["j1"] = Vector3(J1.x, j1h, J1.y)
 	poi["j2"] = Vector3(J2.x, j2h, J2.y)
@@ -938,6 +947,39 @@ func _water_facility(at: Vector3) -> void:
 		tower.add_child(Build.label3d("BESSI WATER CO.", Vector3(0, 17.8, 4.75 * side), Vector3(0, 0 if side > 0 else 180, 0), 0.9, Color(0.25, 0.30, 0.38)))
 	body.add_child(_cyl_shape(Vector3(-12.0, 7.0, -6.0), 3.6, 14.0))
 	root.add_child(tower)
+	# the cooling-station puzzle lives in this yard
+	var station := CoolingStation.new()
+	station.name = "CoolingStation"
+	root.add_child(station)
+
+	# a low tool shed, clear of the intake pipes; something glints on its
+	# roof (optional: stack crates)
+	# roof top at 1.31 m: one crate (0.45) is not enough to jump up, two stacked (0.9) are
+	root.add_child(Build.solid_box(Vector3(3.0, 1.25, 2.4), ToonMat.make(Color(0.52, 0.46, 0.38)), Vector3(-1.8, 0.625, -7.5), Vector3.ZERO, "ToolShed"))
+	root.add_child(Build.box(Vector3(3.3, 0.12, 2.7), ToonMat.make(Color(0.36, 0.38, 0.42)), Vector3(-1.8, 1.25, -7.5), Vector3.ZERO, "ShedRoof"))
+
+	# visitor log by the pump house door
+	root.add_child(Build.box(Vector3(0.45, 0.6, 0.12), ToonMat.make(Color(0.40, 0.30, 0.20)), Vector3(-7.8, 1.4, 0.4), Vector3.ZERO, "LogBox"))
+	var log_area := Build.interact_area(Vector3(0.9, 1.0, 0.9), Vector3(-7.8, 1.4, 0.0), "Read the visitor log", func(p):
+		p.say("VISITOR LOG - Bessi Water Co.\n\nThe last entry, nine days ago, in Naresh's handwriting:\n\"Naresh K.  -  passing through to Bessi  -  party of 2\"\n\nThe \"2\" has been scratched out and written over as a \"1\". Then scratched out again, and a \"2\" pressed so hard the pen went through the page.", 12.0), "LogArea")
+	root.add_child(log_area)
+
+	# a campsite down toward the river: one sleeping bag, two mugs
+	var camp := Node3D.new()
+	camp.name = "Campsite"
+	camp.position = Vector3(3.0, 0, -18.0)
+	root.add_child(camp)
+	camp.add_child(Build.box(Vector3(0.8, 0.18, 2.0), ToonMat.make(Color(0.25, 0.45, 0.30)), Vector3(0, 0.09, 0), Vector3.ZERO, "SleepingBag"))
+	for k in 5:
+		var a := TAU * k / 5.0
+		camp.add_child(Build.sphere(0.18, ToonMat.make(C_ROCK), Vector3(1.6 + cos(a) * 0.45, 0.08, sin(a) * 0.45), Vector3(1, 0.6, 1), "FireStone"))
+	camp.add_child(Build.box(Vector3(0.5, 0.06, 0.5), ToonMat.make(Color(0.15, 0.13, 0.12)), Vector3(1.6, 0.03, 0), Vector3.ZERO, "Ashes"))
+	for mx in [0.9, 1.1]:
+		camp.add_child(Build.cyl(0.05, 0.1, ToonMat.make(Color(0.85, 0.3, 0.3) if mx < 1.0 else Color(0.3, 0.5, 0.85)), Vector3(mx, 0.05, 0.9), Vector3.ZERO, 8, "Mug"))
+	var camp_area := Build.interact_area(Vector3(3.5, 1.2, 3.0), Vector3(0.8, 0.6, 0.3), "Look around the campsite", func(p):
+		p.say("A cold fire ring. One sleeping bag, rolled out neatly - only one.\nTwo mugs, both used, set side by side as if for a conversation.\nScratched into a stone: N + ", 10.0), "CampArea")
+	camp.add_child(camp_area)
+
 	# chain-link fence on the road side, with a gate gap
 	for fx in range(-11, 12, 2):
 		if absf(fx) < 3:
@@ -945,6 +987,11 @@ func _water_facility(at: Vector3) -> void:
 		root.add_child(Build.cyl(0.05, 2.0, ToonMat.make(C_STEEL), Vector3(fx, 1.0, 10.0), Vector3.ZERO, 5, "FencePost"))
 	world.add_child(root)
 	poi["facility"] = pos
+	poi["pump_handle"] = root.transform * (CoolingStation.PUMP_POS + Vector3(0, 0.9, 0))
+	poi["valve_a"] = root.transform * (CoolingStation.A_POS + Vector3(0, 1.0, 0))
+	poi["valve_b"] = root.transform * (CoolingStation.B_POS + Vector3(0, 1.0, 0))
+	poi["shed_roof"] = root.transform * Vector3(-1.8, 1.31, -7.5)
+	poi["radiator_yard"] = root.transform * Vector3(0, 0, -6.0)
 
 
 func _radio_mast(at: Vector3) -> void:
@@ -1183,12 +1230,36 @@ func _signage() -> void:
 ## tutorial, and a stash behind the Last Fuel kiosk (the pumps are dead) -
 ## including one empty can, so players learn to check before lugging.
 func _items() -> void:
+	# Memory Fragments: one on each route (dock on the valley road, lookout
+	# deck on the ridge) plus the shed roof at the water works - with the one
+	# the cooling station gives, careful players reach a first Memory Rose.
+	_place_fragment("dock", poi["dock"] + Vector3(0, 0.3, 0) + Basis.looking_at(-Vector3(0.35, 0, -1).normalized(), Vector3.UP) * Vector3(0, 0, -14.0))
+	_place_fragment("lookout", poi["lookout_deck"] + Vector3(0, 0.25, 0))
+	_place_fragment("shed", poi["shed_roof"] + Vector3(0, 0.25, 0), poi["shed_roof"].y - 0.5)
+	# crates to stack for the shed roof
+	var fac: Node3D = world.get_node("WaterFacility")
+	for k in 4:
+		var crate := Crate.new()
+		crate.name = "Crate%d" % k
+		world.add_child(crate)
+		var at := fac.transform * Vector3(-1.0 + k * 1.3, 0, -1.9)
+		crate.position = Vector3(at.x, _h(at.x, at.z) + 0.3, at.z)
+		poi["crate%d" % k] = crate.position
+
 	var home: Node3D = world.get_node("Homestead")
 	_place_can(home.transform * Vector3(-6.2, 0, 4.6), FuelCan.CAPACITY, "home_can")
 	var station: Node3D = world.get_node("LastFuel")
 	_place_can(station.transform * Vector3(2.2, 0, -10.8), FuelCan.CAPACITY, "station_can_a")
 	_place_can(station.transform * Vector3(2.8, 0, -10.6), FuelCan.CAPACITY, "station_can_b")
 	_place_can(station.transform * Vector3(-3.4, 0, -10.9), 0.0, "station_can_empty")
+
+
+func _place_fragment(id: String, at: Vector3, min_feet_y := -INF) -> void:
+	var f := MemoryFragment.create(id)
+	f.min_feet_y = min_feet_y
+	world.add_child(f)
+	f.position = at
+	poi["fragment_" + id] = at
 
 
 func _place_can(at: Vector3, fill: float, tag: String) -> void:

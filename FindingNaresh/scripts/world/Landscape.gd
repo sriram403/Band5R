@@ -35,6 +35,9 @@ static var network: RoadNetwork
 static var river: Route
 static var ponds: Array = []
 static var mounds: Array = []
+## Level building pads: {pos: Vector3, radius, blend}. Buildings sit on them
+## so yards are flat and props neither float nor sink.
+static var pads: Array = []
 
 
 static func setup(net: RoadNetwork, river_route: Route, pond_list: Array, mound_list: Array) -> void:
@@ -195,6 +198,16 @@ static func _grid_origin() -> float:
 	return -EXTENT * 0.5
 
 
+## Give each pad its level: the natural ground at its centre (before roads).
+static func set_pads(list: Array) -> void:
+	pads = []
+	for p in list:
+		var c: Vector3 = p["pos"]
+		var d := (p as Dictionary).duplicate()
+		d["height"] = natural_height(c.x, c.z)
+		pads.append(d)
+
+
 static func _solve_grid() -> void:
 	var n := int(EXTENT / STEP) + 1
 	grid_n = n
@@ -228,6 +241,12 @@ static func _solve_grid() -> void:
 			if d < BLEND_RADIUS:
 				var g := lerpf(grid_road_h[k], h, smoothstep(FLAT_RADIUS, BLEND_RADIUS, d))
 				h = lerpf(g, h, 1.0 - smoothstep(RIVER_HALF, RIVER_HALF + 6.0, rd))
+			for pad in pads:
+				var pc: Vector3 = pad["pos"]
+				var pd := Vector2(x - pc.x, z - pc.z).length()
+				var pr: float = pad["radius"]
+				if pd < pr + float(pad["blend"]):
+					h = lerpf(float(pad["height"]), h, smoothstep(pr, pr + float(pad["blend"]), pd))
 			grid_h[k] = h
 
 

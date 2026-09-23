@@ -39,6 +39,11 @@ const SETTINGS_PATH := "user://settings.cfg"
 const SENS_STEPS := [0.4, 0.55, 0.7, 0.85, 1.0, 1.2, 1.45, 1.75, 2.1, 2.5]
 var mouse_sens := 1.0
 var map_state: MapState
+## Menu shown on the overlay: "title", "load", "pause", "quit_confirm" or "".
+var menu := "title"
+var menu_sel := 0
+var menu_from := "title"          ## where "Back" in the load list returns to
+var _saved_sig := ""              ## story signature at the last save/load/new game
 var story: Story
 var _explore_t := 0.0
 
@@ -82,13 +87,19 @@ func _ready() -> void:
 	if OS.get_user_data_dir().to_upper().begins_with("C:"):
 		push_warning("User data is on C:. Launch with Play.bat so it stays in MPG/appdata.")
 	_refresh_overlay()
+	if SaveGame.pending_load >= 0:
+		var slot := SaveGame.pending_load
+		SaveGame.pending_load = -1
+		_apply_load.call_deferred(SaveGame.read(slot))
 	shot_mode = OS.get_cmdline_args().has("--shot") or OS.get_cmdline_user_args().has("--shot")
 	if shot_mode:
 		started = true
+		menu = ""
 		overlay.visible = false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--playtest"):
 			started = true
+			menu = ""
 			overlay.visible = false
 			var pt := PlayTest.new()
 			pt.boot = self
@@ -271,26 +282,44 @@ func _build_ui() -> void:
 func _refresh_overlay() -> void:
 	if overlay_text == null:
 		return
+	var items := _menu_items()
+	var menu_txt := ""
+	for i in items.size():
+		var sel := i == menu_sel
+		var label: String = items[i]
+		if menu == "load" and i < SaveGame.SLOTS and not SaveGame.exists(i):
+			label = "[color=#777777]%s[/color]" % label
+		menu_txt += ("[color=#ffcf6b]>  %s  <[/color]" if sel else "%s") % label + "\n"
+	var nav := "[color=#9fd8ff]W/S or Up/Down[/color] choose  ·  [color=#9fd8ff]Enter[/color] select  ·  pad: D-pad + A"
+	match menu:
+		"pause":
+			overlay_text.text = "[center][font_size=30]PAUSED[/font_size]\n\n%s\n%s\n\nMouse sensitivity  [color=#ffcf6b]%.2f[/color]   ([color=#9fd8ff][lb][/color] lower  ·  [color=#9fd8ff][rb][/color] higher)\n[color=#9fd8ff]TAB[/color] switch player  ·  [color=#9fd8ff]F2[/color] layout  ·  [color=#9fd8ff]F11[/color] fullscreen  ·  [color=#9fd8ff]ESC[/color] resume[/center]" % [menu_txt, nav, mouse_sens]
+			return
+		"load":
+			overlay_text.text = "[center][font_size=30]LOAD A JOURNAL ENTRY[/font_size]\n\n%s\n%s  ·  ESC back[/center]" % [menu_txt, nav]
+			return
+		"quit_confirm":
+			overlay_text.text = "[center][font_size=26]Quit without saving?[/font_size]\n\nEverything since your last journal entry will be lost.\n\n%s\n%s[/center]" % [menu_txt, nav]
+			return
 	var pad_note := ""
 	if devices.size() > 1 and devices[1].kind != InputDevice.Kind.PAD:
 		pad_note = "\n[color=#ffcf6b]No controller detected.[/color] Solo view: you play one player full screen. Press [b]TAB[/b] to jump to the other player, [b]F2[/b] for split-screen. Plug a controller in at any time and it becomes Player 2 with split-screen automatically."
 	overlay_text.text = """[center][font_size=34][color=#ff6b7d]FINDING NARESH[/color] — Bessi and the 5 Roses[/font_size]
-[font_size=18][color=#9fd8ff]PROTOTYPE  ·  look & feel pass[/color][/font_size][/center]
+[font_size=18][color=#9fd8ff]DEMO BUILD  ·  milestone A[/color][/font_size]
 
+[font_size=22]%s[/font_size]%s[/center]
 [b]INPUT ASSIGNMENT[/b]
   Player 1 — %s
   Player 2 — %s%s
 
-[b]ON FOOT[/b]   (keyboard)  WASD move · Mouse look · Shift sprint · Ctrl crouch · Space jump · [color=#9fd8ff]E[/color] interact · F flashlight · LMB throw · M map
-[b]ON FOOT[/b]   (pad)       Left stick move · Right stick look · L3 sprint · B crouch · A jump · [color=#9fd8ff]X[/color] interact · Y flashlight · RB throw · D-Down map
+[b]ON FOOT[/b]   (keyboard)  WASD move · Mouse look · Shift sprint · Ctrl crouch · Space jump · [color=#9fd8ff]E[/color] interact · F flashlight · LMB throw · M map · H hint
+[b]ON FOOT[/b]   (pad)       Left stick move · Right stick look · L3 sprint · B crouch · A jump · [color=#9fd8ff]X[/color] interact · Y flashlight · RB throw · D-Down map · R3 hint
 
-[b]DRIVING[/b]   (keyboard)  W throttle · S brake / reverse · A/D steer · Space handbrake · [color=#9fd8ff]X[/color] ignition · L headlights · C swap seats · E get out
-[b]DRIVING[/b]   (pad)       RT throttle · LT brake / reverse · Left stick steer · B handbrake · D-Up ignition · D-Left headlights · LB swap seats · X get out
+[b]DRIVING[/b]   (keyboard)  W throttle · S brake / reverse · A/D steer · Space handbrake · [color=#9fd8ff]X[/color] ignition · L headlights · C swap seats · E get out · J journal
+[b]DRIVING[/b]   (pad)       RT throttle · LT brake / reverse · Left stick steer · B handbrake · D-Up ignition · D-Left headlights · LB swap seats · X get out · D-Right journal
 
-[b]OTHER[/b]  [lb] / [rb] mouse sensitivity · TAB switch player (solo) · F2 layout: side-by-side / stacked / solo · F11 fullscreen · F3 teleport to camper · ESC pause
-
-[center][color=#8ee6a0]Walk to the camper, press E at a door, press X to start the engine, and drive the loop.[/color]
-[color=#ffffff]Press ENTER or gamepad START to begin[/color][/center]""" % [
+[b]OTHER[/b]  [lb] / [rb] mouse sensitivity · TAB switch player (solo) · F2 layout · F11 fullscreen · R right a tipped van · ESC pause""" % [
+		menu_txt, nav,
 		devices[0].label() if devices.size() > 0 else "-",
 		devices[1].label() if devices.size() > 1 else "-",
 		pad_note]
@@ -319,8 +348,6 @@ func _process(_delta: float) -> void:
 		return
 
 	if not started:
-		if Input.is_key_pressed(KEY_ENTER) or Input.is_key_pressed(KEY_KP_ENTER) or _any_pad_start():
-			_begin()
 		return
 
 	if not paused and Input.is_key_pressed(KEY_F3):
@@ -329,8 +356,103 @@ func _process(_delta: float) -> void:
 
 func _begin() -> void:
 	started = true
+	menu = ""
 	overlay.visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	mark_saved()
+
+
+# --- menus -----------------------------------------------------------------------
+
+func _menu_items() -> Array:
+	match menu:
+		"title":
+			return ["New game", "Load game", "Quit"]
+		"pause":
+			return ["Resume", "Load game", "Quit"]
+		"load":
+			var out := []
+			for i in SaveGame.SLOTS:
+				out.append(SaveGame.summary(i))
+			out.append("Back")
+			return out
+		"quit_confirm":
+			return ["Keep playing", "Quit without saving"]
+	return []
+
+
+func _menu_move(dir: int) -> void:
+	var n := _menu_items().size()
+	if n > 0:
+		menu_sel = wrapi(menu_sel + dir, 0, n)
+		_refresh_overlay()
+
+
+func _menu_accept() -> void:
+	var item_i := menu_sel
+	match menu:
+		"title":
+			match item_i:
+				0: _begin()
+				1: _open_menu("load", "title")
+				2: get_tree().quit()
+		"pause":
+			match item_i:
+				0: _toggle_pause()
+				1: _open_menu("load", "pause")
+				2:
+					if is_dirty():
+						_open_menu("quit_confirm", "pause")
+					else:
+						get_tree().quit()
+		"load":
+			if item_i >= SaveGame.SLOTS:
+				_menu_back()
+			elif SaveGame.exists(item_i):
+				load_slot(item_i)
+		"quit_confirm":
+			if item_i == 0:
+				_menu_back()
+			else:
+				get_tree().quit()
+
+
+func _menu_back() -> void:
+	match menu:
+		"load", "quit_confirm":
+			_open_menu(menu_from, "title")
+		"pause":
+			_toggle_pause()
+
+
+func _open_menu(m: String, from: String) -> void:
+	menu = m
+	menu_from = from
+	menu_sel = 0
+	_refresh_overlay()
+
+
+func load_slot(slot: int) -> void:
+	SaveGame.pending_load = slot
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+
+func _apply_load(d: Dictionary) -> void:
+	if d.is_empty():
+		return
+	SaveGame.apply(self, d)
+	_begin()
+	for p in players:
+		p.say("You open the travel journal and read back the day. (Loaded: %s)" % d.get("meta", {}).get("place", "?"), 5.0)
+
+
+func mark_saved() -> void:
+	_saved_sig = story.progress_signature() if story else ""
+
+
+func is_dirty() -> bool:
+	return story != null and story.progress_signature() != _saved_sig
 
 
 func _any_pad_start() -> bool:
@@ -349,6 +471,37 @@ func _input(event: InputEvent) -> void:
 		for d in devices:
 			d.feed_event(event)
 
+	# menus (title, pause, load) with keyboard or any controller
+	if menu != "" and event.is_pressed() and not event.is_echo():
+		if event is InputEventKey:
+			match (event as InputEventKey).keycode:
+				KEY_UP, KEY_W:
+					_menu_move(-1)
+					return
+				KEY_DOWN, KEY_S:
+					_menu_move(1)
+					return
+				KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_E:
+					_menu_accept()
+					return
+		elif event is InputEventJoypadButton:
+			match (event as InputEventJoypadButton).button_index:
+				JOY_BUTTON_DPAD_UP:
+					_menu_move(-1)
+				JOY_BUTTON_DPAD_DOWN:
+					_menu_move(1)
+				JOY_BUTTON_A, JOY_BUTTON_START:
+					if menu == "pause" and (event as InputEventJoypadButton).button_index == JOY_BUTTON_START:
+						_toggle_pause()
+					else:
+						_menu_accept()
+				JOY_BUTTON_B:
+					_menu_back()
+			return
+	elif started and event is InputEventJoypadButton and event.is_pressed() and (event as InputEventJoypadButton).button_index == JOY_BUTTON_START:
+		_toggle_pause()
+		return
+
 	if event is InputEventKey and event.pressed and not event.echo:
 		match (event as InputEventKey).keycode:
 			KEY_TAB:
@@ -362,10 +515,10 @@ func _input(event: InputEvent) -> void:
 				var fs := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 				DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fs else DisplayServer.WINDOW_MODE_FULLSCREEN)
 			KEY_ESCAPE:
-				_toggle_pause()
-			KEY_Q:
-				if paused:
-					get_tree().quit()
+				if menu in ["load", "quit_confirm"]:
+					_menu_back()
+				elif started:
+					_toggle_pause()
 			KEY_BRACKETLEFT:
 				_step_sensitivity(-1)
 			KEY_BRACKETRIGHT:
@@ -379,14 +532,13 @@ func _toggle_pause() -> void:
 	overlay.visible = paused
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED
 	get_tree().paused = paused
-	if paused:
-		_show_pause()
-	else:
-		_refresh_overlay()
+	menu = "pause" if paused else ""
+	menu_sel = 0
+	_refresh_overlay()
 
 
 func _show_pause() -> void:
-	overlay_text.text = "[center][font_size=30]PAUSED[/font_size]\n\nESC — resume\nQ — quit\n\nMouse sensitivity  [color=#ffcf6b]%.2f[/color]   ([color=#9fd8ff][lb][/color] lower  ·  [color=#9fd8ff][rb][/color] higher)\n\n[color=#9fd8ff]TAB[/color] switch player   ·   [color=#9fd8ff]F2[/color] layout   ·   [color=#9fd8ff]F11[/color] fullscreen[/center]" % mouse_sens
+	_refresh_overlay()
 
 
 func _set_layout(l: int) -> void:

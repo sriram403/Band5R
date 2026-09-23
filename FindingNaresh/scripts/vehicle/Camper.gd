@@ -33,6 +33,11 @@ const TEMP_WARN := 104.0           ## warning lamp
 const TEMP_CLIMB_GAIN := 30.0      ## extra degrees per unit of load above flat full throttle
 const TEMP_RISE_RATE := 1.2        ## deg/s toward the target
 const TEMP_FALL_RATE := 0.8
+const LEAK_HEAT := 48.0            ## a split coolant hose: extra target heat with the engine running
+const LEAK_RISE_RATE := 2.4
+const LEAK_COOL_RATE := 0.35       ## engine off with the leak: cools, but slowly (fix it, don't wait)
+const HOT_DERATE := 112.0          ## above this the engine loses power
+const RESTART_BELOW := 100.0       ## after a heat cut-out it will not restart until this cool
 
 const WHEEL_RADIUS := 0.44
 const WHEEL_REST := 0.30
@@ -72,7 +77,13 @@ var _audio: EngineAudio
 var debug_throttle := 0.0          ## used by the dev capture mode only
 var debug_steer := 0.0
 var _nav_timer := 0.0
-var storage_slots: Array[Node3D] = []   ## rear rack positions; a stowed Carryable is the slot's child
+var storage_slots: Array[Node3D] = []
+var coolant_leak := false
+var heat_lockout := false          ## cut out from overheating; no restart until cool
+var start_fail := ""               ## why the last start attempt failed, for the HUD
+var start_fail_t := 0.0
+var _steam: CPUParticles3D
+var coolant_added := 0.0   ## rear rack positions; a stowed Carryable is the slot's child
 var _parked_t := 0.0
 
 
@@ -403,6 +414,53 @@ func _build_service() -> void:
 		fuel += item.pour(minf(POUR_RATE * dt, room)))
 	_body_root.add_child(inlet)
 
+	# radiator filler under the bonnet, reached from the front of the van
+	var rad := Build.interact_area(Vector3(1.4, 0.8, 0.8), Vector3(0, 1.45, -4.0), "", func(_p): pass, "RadiatorCap")
+	rad.set_meta("prompt_fn", func(_p) -> String: return "")
+	rad.set_meta("blocked_fn", func() -> String:
+		if coolant_leak:
+			return "Radiator: the top hose has split and it's boiling dry. It needs coolant."
+		return "Radiator - %d C" % int(temp))
+	rad.set_meta("held_prompt_fn", func(_p, item) -> String:
+		if item.kind != "coolant":
+			return ""
+		if item.litres <= 0.05:
+			return "The jug is empty"
+		return "Hold to pour coolant into the radiator")
+	rad.set_meta("held_action", func(_p, item, dt: float, _first: bool):
+		if item.kind != "coolant":
+			return
+		coolant_added += item.pour(1.6 * dt)
+		if coolant_leak and coolant_added >= 3.0:
+			fix_leak()
+			for pl in get_tree().get_nodes_in_group("player"):
+				pl.say("The coolant gurgles in and the sealant in the mix grabs the split. The hissing stops.", 5.0))
+	_body_root.add_child(rad)
+
+	# steam from the grille when it's boiling
+	_steam = CPUParticles3D.new()
+	_steam.position = Vector3(0, 1.8, -3.6)
+	_steam.emitting = false
+	_steam.amount = 40
+	_steam.lifetime = 1.6
+	_steam.direction = Vector3(0, 1, -0.3)
+	_steam.spread = 25.0
+	_steam.initial_velocity_min = 1.0
+	_steam.initial_velocity_max = 2.5
+	_steam.gravity = Vector3(0, 1.0, 0)
+	_steam.scale_amount_min = 0.4
+	_steam.scale_amount_max = 1.0
+	var sm := SphereMesh.new()
+	sm.radius = 0.25
+	sm.height = 0.5
+	var steam_mat := StandardMaterial3D.new()
+	steam_mat.albedo_color = Color(1, 1, 1, 0.45)
+	steam_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	steam_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	sm.material = steam_mat
+	_steam.mesh = sm
+	_body_root.add_child(_steam)
+
 	# rear rack on the back bumper: two can slots and one for anything else
 	var rack := Node3D.new()
 	rack.name = "RearRack"
@@ -553,7 +611,7 @@ func _physics_process(delta: float) -> void:
 	var steer_in := debug_steer
 	var handbrake := false
 
-	if driver != null and driver.dev != null:
+	if driver != null and driver.dev != null and not driver.journal_open:
 		var dev := driver.dev
 		throttle_in = maxf(debug_throttle, dev.throttle())
 		brake_in = dev.brake()
@@ -587,7 +645,7 @@ func _physics_process(delta: float) -> void:
 	if engine_on and fuel > 0.0:
 		if throttle_in > 0.01:
 			var fade: float = clampf(1.0 - maxf(fwd_speed, 0.0) / ENGINE_FADE, 0.04, 1.0)
-			out = ENGINE_PEAK * throttle_in * fade
+			out = ENGINE_PEAK * throttle_in * fade * heat_power()
 		elif brake_in > 0.01 and fwd_speed < 0.6:
 			out = -REVERSE_FORCE * brake_in
 	# Measured: positive engine_force pushes this rig toward +Z, but the van's
@@ -605,6 +663,10 @@ func _physics_process(delta: float) -> void:
 	# this the van crept downhill on its own after every stop.
 	if speed < HOLD_SPEED and throttle_in < 0.01 and brake_in < 0.01:
 		b = maxf(b, HANDBRAKE_FORCE if not engine_on else HOLD_BRAKE)
+	# Nobody at the wheel: the handbrake is on. Otherwise a van left rolling
+	# (stepping out on a slope, an engine cut-out) crept off downhill forever.
+	if driver == null and debug_throttle <= 0.0:
+		b = HANDBRAKE_FORCE
 	_update_parked(delta, speed, throttle_in, brake_in)
 	brake = b
 
@@ -623,14 +685,24 @@ func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 		# Ordinary driving settles near TEMP_NORMAL; only load beyond flat full
 		# throttle (climbing, towing) pushes it toward the warning lamp.
 		var target_temp: float = TEMP_NORMAL + maxf(0.0, load - 0.9) * TEMP_CLIMB_GAIN - clampf(speed, 0.0, 25.0) * 0.25
-		target_temp = clampf(target_temp, TEMP_AMBIENT, TEMP_MAX)
-		temp = move_toward(temp, target_temp, (TEMP_RISE_RATE if target_temp > temp else TEMP_FALL_RATE) * delta)
+		if coolant_leak:
+			target_temp += LEAK_HEAT
+		target_temp = clampf(target_temp, TEMP_AMBIENT, TEMP_MAX + 4.0)
+		var rise := LEAK_RISE_RATE if coolant_leak else TEMP_RISE_RATE
+		temp = move_toward(temp, target_temp, (rise if target_temp > temp else TEMP_FALL_RATE) * delta)
+		if temp >= TEMP_MAX:
+			# boiled: the engine cuts out and will not restart until it cools
+			engine_on = false
+			heat_lockout = true
+			_fail_start("The engine cut out - it's boiling. It won't restart until it cools.")
 		battery = minf(1.0, battery + 0.02 * delta)
 		rpm_norm = clampf(0.16 + throttle_in * 0.55 + clampf(speed / 26.0, 0.0, 1.0) * 0.42, 0.0, 1.0)
 		if fuel <= 0.0:
 			toggle_engine()
 	else:
-		temp = maxf(TEMP_AMBIENT, temp - 1.6 * delta)
+		temp = maxf(TEMP_AMBIENT, temp - (LEAK_COOL_RATE if coolant_leak else 1.6) * delta)
+		if heat_lockout and temp < RESTART_BELOW:
+			heat_lockout = false
 		rpm_norm = maxf(0.0, rpm_norm - 1.8 * delta)
 		if headlights_on:
 			battery = maxf(0.0, battery - 0.004 * delta)
@@ -658,6 +730,11 @@ func _update_visuals(delta: float, speed: float) -> void:
 
 	_set_lamp("lamp_fuel", fuel / FUEL_CAPACITY < 0.18)
 	_set_lamp("lamp_temp", temp > TEMP_WARN)
+	if start_fail_t > 0.0:
+		start_fail_t -= delta
+	if _steam:
+		_steam.emitting = coolant_leak or temp > TEMP_WARN
+		_steam.amount = 60 if coolant_leak else 24
 	_set_lamp("lamp_batt", not engine_on and battery > 0.02)
 
 	_nav_timer -= delta
@@ -744,10 +821,37 @@ func toggle_engine() -> void:
 	if engine_on:
 		engine_on = false
 		return
-	if battery < 0.05 or fuel <= 0.0:
+	if battery < 0.05:
+		_fail_start("Click... click. The battery is flat.")
+		return
+	if fuel <= 0.0:
+		_fail_start("The engine turns over but won't catch - no fuel.")
+		return
+	if heat_lockout:
+		_fail_start("Too hot to start - %d C. Needs to cool below %d." % [int(temp), int(RESTART_BELOW)])
 		return
 	engine_on = true
 	temp = maxf(temp, TEMP_AMBIENT + 1.0)
+
+
+func _fail_start(why: String) -> void:
+	start_fail = why
+	start_fail_t = 4.0
+
+
+## 1.0 normally; fades toward 0.4 as the engine runs past HOT_DERATE.
+func heat_power() -> float:
+	return lerpf(1.0, 0.4, clampf((temp - HOT_DERATE) / (TEMP_MAX - HOT_DERATE), 0.0, 1.0))
+
+
+## The top hose splits: steam, and the temperature starts climbing hard.
+func spring_leak() -> void:
+	coolant_leak = true
+
+
+func fix_leak() -> void:
+	coolant_leak = false
+	heat_lockout = heat_lockout and temp >= RESTART_BELOW
 
 
 func set_headlights(on: bool) -> void:

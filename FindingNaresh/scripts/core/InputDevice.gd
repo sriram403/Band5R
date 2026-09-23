@@ -33,6 +33,8 @@ const KEYS := {
 	"hint": KEY_H, "swap_seat": KEY_C, "recover": KEY_R, "throw": KEY_G,
 	# paper map (only read while the map is up)
 	"map_next": KEY_E, "map_prev": KEY_Q,
+	# travel journal
+	"journal": KEY_J, "menu_up": KEY_UP, "menu_down": KEY_DOWN, "menu_ok": KEY_ENTER,
 }
 ## Mouse buttons that also trigger an action (checked alongside KEYS).
 const MOUSE := {"throw": MOUSE_BUTTON_LEFT, "map_place": MOUSE_BUTTON_LEFT, "map_remove": MOUSE_BUTTON_RIGHT}
@@ -47,6 +49,8 @@ const BUTTONS := {
 	"recover": JOY_BUTTON_BACK,
 	"map_place": JOY_BUTTON_A, "map_remove": JOY_BUTTON_X,
 	"map_next": JOY_BUTTON_RIGHT_SHOULDER, "map_prev": JOY_BUTTON_LEFT_SHOULDER,
+	"journal": JOY_BUTTON_DPAD_RIGHT, "menu_up": JOY_BUTTON_DPAD_UP, "menu_down": JOY_BUTTON_DPAD_DOWN,
+	"menu_ok": JOY_BUTTON_A, "menu_back": JOY_BUTTON_B,
 }
 
 ## Every action any binding table knows about.
@@ -94,6 +98,9 @@ func glyph(action: String) -> String:
 			"handbrake": return "B"
 			"recover": return "View"
 			"hint": return "R3"
+			"journal": return "D-Right"
+			"menu_ok": return "A"
+			"menu_back": return "B"
 			_: return "?"
 	match action:
 		"interact": return "E"
@@ -108,6 +115,9 @@ func glyph(action: String) -> String:
 		"handbrake": return "Space"
 		"recover": return "R"
 		"hint": return "H"
+		"journal": return "J"
+		"menu_ok": return "Enter"
+		"menu_back": return "J"
 		"throw": return "LMB"
 		_: return "?"
 
