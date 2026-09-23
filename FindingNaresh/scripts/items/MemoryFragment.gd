@@ -53,4 +53,5 @@ func _collect(p) -> void:
 	var st := get_tree().get_first_node_in_group("story") as Story
 	if st != null:
 		st.add_fragment(fragment_id, p)
+	Sfx.play3d("glass", global_position, -2.0, 0.02)
 	queue_free()

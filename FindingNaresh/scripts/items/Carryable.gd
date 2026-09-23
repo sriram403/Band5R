@@ -32,6 +32,9 @@ func _ready() -> void:
 	can_sleep = true
 	linear_damp = 0.1
 	angular_damp = 0.8
+	contact_monitor = true
+	max_contacts_reported = 2
+	body_entered.connect(_on_hit)
 	_refresh_prompt()
 
 
@@ -138,6 +141,23 @@ func _physics_process(delta: float) -> void:
 		ang -= TAU
 	if absf(ang) > 0.001:
 		angular_velocity = angular_velocity.lerp(err.get_axis() * ang * lerpf(10.0, 4.0, h), clampf(10.0 * delta, 0.0, 1.0))
+
+
+## Knocks and thuds: louder the harder it lands, metal for cans, wood for crates.
+var _last_hit_t := 0
+
+
+func _on_hit(_body: Node) -> void:
+	var v := linear_velocity.length()
+	var now := Time.get_ticks_msec()
+	if v < 1.5 or now - _last_hit_t < 150 or stowed_in != null:
+		return
+	_last_hit_t = now
+	var key := "hit_soft"
+	match kind:
+		"fuel_can": key = "hit_metal_heavy" if mass > 10.0 else "hit_metal"
+		"crate": key = "hit_wood"
+	Sfx.play3d(key, global_position, clampf(-18.0 + v * 3.0, -18.0, 0.0))
 
 
 ## Physics must never lose an item for good. Remember where it last sat still;

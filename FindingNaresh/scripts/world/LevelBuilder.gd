@@ -130,6 +130,13 @@ func build() -> Node3D:
 	_signage()
 	_items()
 	_spawns()
+	var wind := NoiseLoop.new()
+	wind.name = "Wind"
+	wind.kind = NoiseLoop.Kind.WIND
+	wind.positional = false
+	wind.volume_db = -20.0
+	wind.target = 1.0
+	world.add_child(wind)
 	_lap("landmarks", t)
 	return world
 

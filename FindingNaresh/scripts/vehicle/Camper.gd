@@ -83,6 +83,9 @@ var heat_lockout := false          ## cut out from overheating; no restart until
 var start_fail := ""               ## why the last start attempt failed, for the HUD
 var start_fail_t := 0.0
 var _steam: CPUParticles3D
+var _hiss: NoiseLoop
+var _gurgle: NoiseLoop
+var _pour_t := 0.0
 var coolant_added := 0.0   ## rear rack positions; a stowed Carryable is the slot's child
 var _parked_t := 0.0
 
@@ -411,7 +414,8 @@ func _build_service() -> void:
 		if item.kind != "fuel_can":
 			return
 		var room := FUEL_CAPACITY - fuel
-		fuel += item.pour(minf(POUR_RATE * dt, room)))
+		fuel += item.pour(minf(POUR_RATE * dt, room))
+		_pour_t = 0.2)
 	_body_root.add_child(inlet)
 
 	# radiator filler under the bonnet, reached from the front of the van
@@ -431,6 +435,7 @@ func _build_service() -> void:
 		if item.kind != "coolant":
 			return
 		coolant_added += item.pour(1.6 * dt)
+		_pour_t = 0.2
 		if coolant_leak and coolant_added >= 3.0:
 			fix_leak()
 			for pl in get_tree().get_nodes_in_group("player"):
@@ -460,6 +465,16 @@ func _build_service() -> void:
 	sm.material = steam_mat
 	_steam.mesh = sm
 	_body_root.add_child(_steam)
+	_hiss = NoiseLoop.new()
+	_hiss.kind = NoiseLoop.Kind.STEAM
+	_hiss.volume_db = -10.0
+	_hiss.position = Vector3(0, 1.6, -3.6)
+	_body_root.add_child(_hiss)
+	_gurgle = NoiseLoop.new()
+	_gurgle.kind = NoiseLoop.Kind.POUR
+	_gurgle.volume_db = -6.0
+	_gurgle.position = Vector3(-1.2, 1.4, 1.9)
+	_body_root.add_child(_gurgle)
 
 	# rear rack on the back bumper: two can slots and one for anything else
 	var rack := Node3D.new()
@@ -735,6 +750,11 @@ func _update_visuals(delta: float, speed: float) -> void:
 	if _steam:
 		_steam.emitting = coolant_leak or temp > TEMP_WARN
 		_steam.amount = 60 if coolant_leak else 24
+	if _hiss:
+		_hiss.target = (0.9 if engine_on else 0.4) if coolant_leak else (0.3 if temp > TEMP_WARN else 0.0)
+	if _gurgle:
+		_pour_t -= delta
+		_gurgle.target = 0.8 if _pour_t > 0.0 else 0.0
 	_set_lamp("lamp_batt", not engine_on and battery > 0.02)
 
 	_nav_timer -= delta
@@ -818,6 +838,7 @@ func recover() -> void:
 # --- systems -------------------------------------------------------------------
 
 func toggle_engine() -> void:
+	Sfx.play3d("click", global_position, -6.0)
 	if engine_on:
 		engine_on = false
 		return
@@ -835,6 +856,7 @@ func toggle_engine() -> void:
 
 
 func _fail_start(why: String) -> void:
+	Sfx.play3d("latch", global_position, -4.0)
 	start_fail = why
 	start_fail_t = 4.0
 
@@ -847,6 +869,7 @@ func heat_power() -> float:
 ## The top hose splits: steam, and the temperature starts climbing hard.
 func spring_leak() -> void:
 	coolant_leak = true
+	Sfx.play3d("hit_metal_heavy", global_transform * Vector3(0, 0.6, -3.5), 2.0)
 
 
 func fix_leak() -> void:

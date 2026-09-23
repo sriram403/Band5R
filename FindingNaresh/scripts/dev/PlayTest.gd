@@ -166,7 +166,7 @@ func _run() -> void:
 		await call("t_" + r)
 		_finish()
 		return
-	var all := ["map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	for s in all:
 		if only != "" and not s in only.split(","):
 			continue
@@ -1291,6 +1291,33 @@ func t_save_verify() -> void:
 	for id in ["dock", "lookout", "shed"]:
 		check(boot.world.find_child("Fragment_" + id, true, false) == null, "collected fragment '%s' stays collected" % id)
 	await shot("after_load")
+
+
+## Every sound family resolves to real samples, and the world actually makes
+## noise: footsteps while walking, the wind bed, the steam hiss.
+func t_audio() -> void:
+	var missing := []
+	for k in Sfx.FAMILIES.keys():
+		if Sfx.streams(k).is_empty():
+			missing.append(k)
+	log_line("sound families: %d, missing: %s" % [Sfx.FAMILIES.size(), missing])
+	check(missing.is_empty(), "every sound effect name has CC0 samples behind it")
+	var p := p1()
+	if p.seat != null:
+		p.force_exit = true
+		await physics_frames(3)
+	await place_player(p, boot.builder.player_spawns[0].origin, 0.0)
+	var before: int = boot.world.find_children("*", "AudioStreamPlayer3D", true, false).size()
+	var heard := 0
+	key(KEY_W, true)
+	for _i in 30:
+		await wait(0.05)
+		heard = maxi(heard, boot.world.find_children("*", "AudioStreamPlayer3D", true, false).size() - before)
+	key(KEY_W, false)
+	log_line("one-shot sounds playing while walking: up to %d" % heard)
+	check(heard > 0, "walking makes footstep sounds")
+	var wind: NoiseLoop = boot.world.get_node("Wind")
+	check(wind != null and wind._gain > 0.5, "the wind bed is playing")
 
 
 ## Walk from the foot of the lookout ramp up onto the deck.

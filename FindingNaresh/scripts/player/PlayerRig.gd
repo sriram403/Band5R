@@ -63,6 +63,8 @@ var journal_open := false              ## reading the van's travel journal
 var journal_sel := 0
 var journal_confirm := false
 var journal_note := ""
+var _step_phase := 0.0
+var _was_on_floor := true
 var _using: Node = null                ## thing being used with the held item while E is held
 var force_exit := false            ## request an exit from outside the physics step
 
@@ -278,8 +280,19 @@ func _walk(delta: float) -> void:
 			push.y = 0.0
 			rb.apply_central_impulse(push.normalized() * 55.0 * delta)
 
-	# head bob keyed to actual ground speed
+	# footsteps and landings, by surface
 	var planar := Vector2(velocity.x, velocity.z).length()
+	if is_on_floor():
+		if not _was_on_floor:
+			Sfx.play3d(_surface_step(), global_position, -2.0)
+		elif planar > 0.8:
+			_step_phase += delta * planar * 0.55
+			if _step_phase >= 1.0:
+				_step_phase -= 1.0
+				Sfx.play3d(_surface_step(), global_position, -10.0 + minf(planar, 7.0))
+	_was_on_floor = is_on_floor()
+
+	# head bob keyed to actual ground speed
 	if is_on_floor() and planar > 0.4:
 		bob_t += delta * planar * 1.55
 		var amp: float = 0.032 * clampf(planar / SPRINT, 0.3, 1.0)
@@ -378,6 +391,8 @@ func _update_map() -> void:
 
 
 func set_map_open(open: bool) -> void:
+	if open != map_open:
+		Sfx.play3d("paper_open" if open else "paper_close", head.global_position, -4.0)
 	map_open = open
 	if paper_map != null:
 		paper_map.visible = open
@@ -390,16 +405,21 @@ func set_map_open(open: bool) -> void:
 func _map_controls() -> void:
 	if dev.just_pressed("map_place"):
 		paper_map.place_stamp()
+		Sfx.play3d("stamp", head.global_position, -2.0)
 	elif dev.just_pressed("map_remove"):
-		paper_map.remove_stamp()
+		if paper_map.remove_stamp():
+			Sfx.play3d("page", head.global_position, -6.0)
 	if dev.just_pressed("map_next"):
 		paper_map.cycle_stamp(1)
+		Sfx.play3d("tick", head.global_position, -8.0)
 	elif dev.just_pressed("map_prev"):
 		paper_map.cycle_stamp(-1)
+		Sfx.play3d("tick", head.global_position, -8.0)
 
 
 func say(text: String, seconds := 6.0) -> void:
 	message.emit(text, seconds)
+	Sfx.play3d("page", head.global_position, -10.0)
 
 
 ## While carrying: E uses the item on what you are looking at (pour, stow...),
@@ -460,6 +480,22 @@ func hold_point(item: Carryable) -> Vector3:
 	return xf.origin + fwd * 1.0 + right * 0.42 + Vector3.DOWN * sag
 
 
+## What the feet are on: road, gravel track, wood (decks, crates, boards) or grass.
+func _surface_step() -> String:
+	var floor_body: Object = null
+	for i in get_slide_collision_count():
+		var c := get_slide_collision(i)
+		if c.get_normal().y > 0.6:
+			floor_body = c.get_collider()
+	if floor_body != null and (floor_body as Node).name != "Terrain":
+		return "step_wood"
+	var d := Landscape.road_distance(global_position.x, global_position.z)
+	if d < Landscape.ROAD_HALF + 0.5:
+		var r = Landscape.network.nearest(global_position.x, global_position.z)["road"] if Landscape.network else null
+		return "step_gravel" if r != null and r.surface == "gravel" else "step_road"
+	return "step_grass"
+
+
 func pick_up(item: Carryable) -> void:
 	if held != null or seat != null:
 		return
@@ -468,6 +504,7 @@ func pick_up(item: Carryable) -> void:
 	held = item
 	item.grab(self)
 	ray.add_exception(item)
+	Sfx.play3d("pickup", item.global_position, -4.0)
 
 
 func drop_held() -> void:
@@ -478,6 +515,7 @@ func drop_held() -> void:
 	_using = null
 	ray.remove_exception(it)
 	it.release(self)
+	Sfx.play3d("drop", it.global_position, -8.0)
 
 
 func throw_held() -> void:
@@ -488,6 +526,7 @@ func throw_held() -> void:
 	_using = null
 	ray.remove_exception(it)
 	it.throw_from(self, -head.global_transform.basis.z)
+	Sfx.play3d("pluck", it.global_position, -6.0)
 
 
 ## The camper, if it is tipped over and this player is in it or close by.
@@ -511,6 +550,7 @@ func _van_parked() -> bool:
 func _open_journal() -> void:
 	set_map_open(false)
 	journal_open = true
+	Sfx.play3d("paper_open", head.global_position, -4.0)
 	journal_confirm = false
 	journal_note = ""
 	if prompt_text != "":
@@ -540,6 +580,7 @@ func _journal_controls() -> void:
 			journal_confirm = true
 			return
 		st.roses_spent += 1
+		Sfx.play3d("bong", head.global_position, -6.0)
 		var boot := get_tree().current_scene
 		if SaveGame.write(boot, journal_sel):
 			if boot.has_method("mark_saved"):
@@ -590,6 +631,7 @@ func enter_seat(v, seat_node: Node3D, role: String) -> void:
 	if seat != null:
 		return
 	drop_held()
+	Sfx.play3d("door_close", global_position, -4.0)
 	vehicle = v
 	seat = seat_node
 	seat_role = role
@@ -613,6 +655,7 @@ func exit_vehicle() -> void:
 	if seat == null:
 		return
 	var v = vehicle
+	Sfx.play3d("door_open", global_position, -4.0)
 	var exit_xf: Transform3D = v.exit_transform_for(seat_role)
 	yaw = exit_xf.basis.get_euler().y
 	pitch = 0.0

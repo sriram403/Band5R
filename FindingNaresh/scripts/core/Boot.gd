@@ -385,11 +385,13 @@ func _menu_move(dir: int) -> void:
 	var n := _menu_items().size()
 	if n > 0:
 		menu_sel = wrapi(menu_sel + dir, 0, n)
+		Sfx.play_ui("ui_move")
 		_refresh_overlay()
 
 
 func _menu_accept() -> void:
 	var item_i := menu_sel
+	Sfx.play_ui("ui_ok")
 	match menu:
 		"title":
 			match item_i:
@@ -418,6 +420,7 @@ func _menu_accept() -> void:
 
 
 func _menu_back() -> void:
+	Sfx.play_ui("ui_back")
 	match menu:
 		"load", "quit_confirm":
 			_open_menu(menu_from, "title")

@@ -46,6 +46,8 @@ var _handle: Node3D
 var _puff: CPUParticles3D
 var _mat_on: StandardMaterial3D
 var _mat_off: StandardMaterial3D
+var _stroke_t := 0.0
+var _hiss: NoiseLoop
 
 const PUMP_POS := Vector3(-2.0, 0, -0.6)
 const GAUGE_POS := Vector3(-2.0, 0, -0.2)   ## right above the pump: watch it while you pump
@@ -80,6 +82,13 @@ func route() -> String:
 func _physics_process(delta: float) -> void:
 	var pumping := _pump_hold > 0.0 and stalled <= 0.0
 	_pump_hold = maxf(0.0, _pump_hold - delta)
+	if pumping:
+		_stroke_t -= delta
+		if _stroke_t <= 0.0:
+			_stroke_t = 0.55
+			Sfx.play3d("creak", global_transform * PUMP_POS, -4.0, 0.15)
+	if _hiss:
+		_hiss.target = maxf(0.0, _hiss.target - delta * 0.5)
 	if stalled > 0.0:
 		stalled -= delta
 	var r := route()
@@ -110,12 +119,18 @@ func _turn(which: String, _p) -> void:
 	else:
 		valve_b = "overflow" if valve_b == "coolant" else "coolant"
 	_update_pointers()
+	var at := A_POS if which == "a" else B_POS
+	Sfx.play3d("latch", global_transform * at, -2.0)
+	Sfx.play3d("creak", global_transform * at, -8.0, 0.2)
 
 
 func _pop() -> void:
 	pressure = 0.3
 	stalled = STALL_TIME
 	pops += 1
+	Sfx.play3d("bang", global_transform * PUMP_POS, 0.0)
+	if _hiss:
+		_hiss.target = 1.0
 	if _puff:
 		_puff.restart()
 		_puff.emitting = true
@@ -127,6 +142,7 @@ func _pop() -> void:
 func _solve() -> void:
 	solved = true
 	solved_changed.emit()
+	Sfx.play3d("bong", global_transform * COOLANT_TANK, 0.0, 0.0)
 	var tap_local := COOLANT_TANK + Vector3(0, 0.1, -2.9)
 	var jug := CoolantJug.new()
 	jug.name = "CoolantJug"
@@ -242,6 +258,11 @@ func _build_pump() -> void:
 	pm.radius = 0.3
 	pm.height = 0.6
 	_puff.mesh = pm
+	_hiss = NoiseLoop.new()
+	_hiss.kind = NoiseLoop.Kind.STEAM
+	_hiss.volume_db = -4.0
+	_hiss.position = PUMP_POS + Vector3(0.3, 1.2, 0)
+	add_child(_hiss)
 	var steam := StandardMaterial3D.new()
 	steam.albedo_color = Color(1, 1, 1, 0.5)
 	steam.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
