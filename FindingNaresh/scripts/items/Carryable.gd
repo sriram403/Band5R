@@ -18,6 +18,7 @@ const SNAG_DISTANCE := 2.4       ## m; further than this from the hold point and
 
 var holders: Array = []          ## PlayerRig list
 var stowed_in: Node3D = null     ## storage slot while stowed
+var pouring := false             ## tipped spout-down at a filler (set by the holder)
 var _last_safe := Transform3D()  ## last place it was seen resting, for the safety net
 var _safe_t := 0.0
 
@@ -133,8 +134,10 @@ func _physics_process(delta: float) -> void:
 		desired = desired.normalized() * max_v
 	linear_velocity = linear_velocity.lerp(desired, clampf(response * delta, 0.0, 1.0))
 
-	# turn to face the same way as the holder, upright
+	# turn to face the same way as the holder, upright - or tipped over to pour
 	var want := Basis(Vector3.UP, yaw)
+	if pouring:
+		want = want * Basis(Vector3.FORWARD, deg_to_rad(-110.0))
 	var err := (want * global_transform.basis.orthonormalized().inverse()).get_rotation_quaternion()
 	var ang := err.get_angle()
 	if ang > PI:

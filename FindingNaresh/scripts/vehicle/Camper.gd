@@ -23,7 +23,8 @@ const HOLD_SPEED := 1.0            ## m/s below which the hold engages
 
 const FUEL_CAPACITY := 70.0
 const FUEL_PER_KM := 4.0           ## game-readable, not realistic: ~17 km on a tank
-const FUEL_IDLE_PER_S := 0.004
+const FUEL_IDLE_PER_S := 0.015       ## ~0.9 L a minute ticking over: switch off when you stop
+const IDLE_HEAT := 7.0                ## no airflow when standing: idling runs hotter than cruising
 const POUR_RATE := 5.0             ## litres per second from a can into the tank
 const CARGO_FUEL_KG := 300.0       ## each 300 kg of cargo adds 100% fuel burn
 const TEMP_AMBIENT := 62.0
@@ -86,7 +87,10 @@ var _steam: CPUParticles3D
 var _hiss: NoiseLoop
 var _gurgle: NoiseLoop
 var _pour_t := 0.0
-var coolant_added := 0.0   ## rear rack positions; a stowed Carryable is the slot's child
+var coolant_added := 0.0
+var coolant := 1.0                 ## 0..1 of the cooling system's fill; the split hose drains it
+const COOLANT_DRAIN := 0.03        ## per second through the split hose (engine running)
+const COOLANT_L := 4.0             ## litres to go from empty to full   ## rear rack positions; a stowed Carryable is the slot's child
 var _parked_t := 0.0
 
 
@@ -410,6 +414,7 @@ func _build_service() -> void:
 		if fuel >= FUEL_CAPACITY - 0.1:
 			return "Tank is full"
 		return "Hold to pour fuel  -  tank %d / %d L, can %d L" % [int(fuel), int(FUEL_CAPACITY), int(round(item.litres))])
+	inlet.set_meta("pour", true)
 	inlet.set_meta("held_action", func(_p, item, dt: float, _first: bool):
 		if item.kind != "fuel_can":
 			return
@@ -424,17 +429,20 @@ func _build_service() -> void:
 	rad.set_meta("blocked_fn", func() -> String:
 		if coolant_leak:
 			return "Radiator: the top hose has split and it's boiling dry. It needs coolant."
-		return "Radiator - %d C" % int(temp))
+		return "Radiator - %d C, coolant %d%%" % [int(temp), int(coolant * 100.0)])
 	rad.set_meta("held_prompt_fn", func(_p, item) -> String:
 		if item.kind != "coolant":
 			return ""
 		if item.litres <= 0.05:
 			return "The jug is empty"
-		return "Hold to pour coolant into the radiator")
+		return "Hold to pour coolant into the radiator  -  coolant %d%%" % int(coolant * 100.0))
+	rad.set_meta("pour", true)
 	rad.set_meta("held_action", func(_p, item, dt: float, _first: bool):
 		if item.kind != "coolant":
 			return
-		coolant_added += item.pour(1.6 * dt)
+		var got: float = item.pour(1.6 * dt)
+		coolant_added += got
+		coolant = minf(1.0, coolant + got / COOLANT_L)
 		_pour_t = 0.2
 		if coolant_leak and coolant_added >= 3.0:
 			fix_leak()
@@ -678,6 +686,10 @@ func _physics_process(delta: float) -> void:
 	# this the van crept downhill on its own after every stop.
 	if speed < HOLD_SPEED and throttle_in < 0.01 and brake_in < 0.01:
 		b = maxf(b, HANDBRAKE_FORCE if not engine_on else HOLD_BRAKE)
+	# Engine off: the parking brake holds it. Pressing W used to release the
+	# auto-hold and the van rolled backwards down any slope.
+	if not engine_on and throttle_in > 0.0:
+		b = HANDBRAKE_FORCE
 	# Nobody at the wheel: the handbrake is on. Otherwise a van left rolling
 	# (stepping out on a slope, an engine cut-out) crept off downhill forever.
 	if driver == null and debug_throttle <= 0.0:
@@ -691,6 +703,8 @@ func _physics_process(delta: float) -> void:
 
 func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 	odometer += speed * delta
+	if coolant_leak:
+		coolant = maxf(0.08, coolant - COOLANT_DRAIN * delta * (1.0 if engine_on else 0.25))
 	if engine_on:
 		var load: float = throttle_in * (1.0 + clampf(_grade() * 4.0, 0.0, 1.6))
 		var km := speed * delta / 1000.0
@@ -700,10 +714,12 @@ func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 		# Ordinary driving settles near TEMP_NORMAL; only load beyond flat full
 		# throttle (climbing, towing) pushes it toward the warning lamp.
 		var target_temp: float = TEMP_NORMAL + maxf(0.0, load - 0.9) * TEMP_CLIMB_GAIN - clampf(speed, 0.0, 25.0) * 0.25
-		if coolant_leak:
-			target_temp += LEAK_HEAT
+		if speed < 2.0:
+			target_temp += IDLE_HEAT
+		# the less coolant, the hotter it runs
+		target_temp += (1.0 - coolant) * LEAK_HEAT
 		target_temp = clampf(target_temp, TEMP_AMBIENT, TEMP_MAX + 4.0)
-		var rise := LEAK_RISE_RATE if coolant_leak else TEMP_RISE_RATE
+		var rise := LEAK_RISE_RATE if coolant < 0.6 else TEMP_RISE_RATE
 		temp = move_toward(temp, target_temp, (rise if target_temp > temp else TEMP_FALL_RATE) * delta)
 		if temp >= TEMP_MAX:
 			# boiled: the engine cuts out and will not restart until it cools
@@ -715,7 +731,7 @@ func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 		if fuel <= 0.0:
 			toggle_engine()
 	else:
-		temp = maxf(TEMP_AMBIENT, temp - (LEAK_COOL_RATE if coolant_leak else 1.6) * delta)
+		temp = maxf(TEMP_AMBIENT, temp - (LEAK_COOL_RATE if coolant < 0.6 else 1.6) * delta)
 		if heat_lockout and temp < RESTART_BELOW:
 			heat_lockout = false
 		rpm_norm = maxf(0.0, rpm_norm - 1.8 * delta)
@@ -765,10 +781,17 @@ func _update_visuals(delta: float, speed: float) -> void:
 
 
 ## Broad direction only, per the design: no map, no route, just where Bessi is.
+## Points at the most recent stamp on the paper map - wherever you decided to
+## go - not at Bessi. Finding the way is the players' job.
 func _nav_text() -> String:
 	if battery <= 0.02:
 		return ""
-	var to := LevelBuilder.ROSE_CENTRE - global_position
+	var ms := get_tree().get_first_node_in_group("map_state") as MapState
+	if ms == null or ms.stamps.is_empty():
+		return "NAV\nno marks\nstamp the map (M)"
+	var st: Dictionary = ms.stamps[ms.stamps.size() - 1]
+	var goal: Vector2 = st["pos"]
+	var to := Vector3(goal.x, 0, goal.y) - global_position
 	to.y = 0.0
 	var local := global_transform.basis.inverse() * to
 	var ang := rad_to_deg(atan2(local.x, -local.z))
@@ -779,7 +802,7 @@ func _nav_text() -> String:
 		dir = "RIGHT >"
 	elif ang < -30.0:
 		dir = "< LEFT"
-	return "BESSI  %.2f km\n%s\nODO %.1f km" % [to.length() * 0.001, dir, odometer * 0.001]
+	return "%s  %.2f km\n%s\nODO %.1f km" % [String(st["type"]).to_upper(), to.length() * 0.001, dir, odometer * 0.001]
 
 
 func _set_needle(key: String, deg: float) -> void:
@@ -806,7 +829,7 @@ func _update_parked(delta: float, speed: float, throttle_in: float, brake_in: fl
 	for w in _wheels:
 		if not w.is_in_contact():
 			grounded = false
-	var settle := speed < 0.25 and throttle_in < 0.01 and brake_in < 0.01 and grounded
+	var settle := speed < 0.25 and (throttle_in < 0.01 or not engine_on) and brake_in < 0.01 and grounded
 	_parked_t = _parked_t + delta if settle else 0.0
 	var want := _parked_t > 0.6
 	if want != freeze:

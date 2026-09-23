@@ -166,12 +166,13 @@ func _run() -> void:
 		await call("t_" + r)
 		_finish()
 		return
-	var all := ["audio", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	for s in all:
 		if only != "" and not s in only.split(","):
 			continue
 		log_line("---- %s ----" % s)
 		release_all()
+		await fresh_hands()
 		await call("t_" + s)
 		release_all()
 		if PlayTest.resume != "":
@@ -678,11 +679,23 @@ func reset_can(tag: String, litres: float) -> FuelCan:
 	can.litres = litres
 	can._update_mass()
 	can._refresh_prompt()
-	can.global_position = boot.builder.poi[tag]
+	can.pouring = false
+	can.global_transform = Transform3D(Basis(), boot.builder.poi[tag])
 	can.linear_velocity = Vector3.ZERO
+	can.angular_velocity = Vector3.ZERO
 	can.reset_physics_interpolation()
 	await physics_frames(20)
 	return can
+
+
+## Every scenario starts with empty hands and nothing open, whatever the last
+## one left behind.
+func fresh_hands() -> void:
+	for pl in boot.players:
+		pl.drop_held()
+		pl.set_map_open(false)
+		pl.journal_open = false
+	await physics_frames(2)
 
 
 func find_can(tag: String) -> FuelCan:
@@ -1318,6 +1331,108 @@ func t_audio() -> void:
 	check(heard > 0, "walking makes footstep sounds")
 	var wind: NoiseLoop = boot.world.get_node("Wind")
 	check(wind != null and wind._gain > 0.5, "the wind bed is playing")
+
+
+## Fixes from the user's play-through notes (FUTURE.md items 10, 11, 14, 15, 16, 25).
+func t_feedback() -> void:
+	var b: LevelBuilder = boot.builder
+	var c := camper()
+	var p := p1()
+	# 14: engine off, W held on the steepest slope: the van must not roll
+	var r: Route = b.route
+	var steep := 0
+	var best := 0.0
+	for i in r.point_count():
+		if absf(r.forward(i).y) > best:
+			best = absf(r.forward(i).y)
+			steep = i
+	await reset_camper(steep)
+	await seat_p1_driver()
+	if c.engine_on:
+		c.toggle_engine()
+	await wait(1.0)
+	var p0 := c.global_position
+	key(KEY_W, true)
+	await wait(3.0)
+	key(KEY_W, false)
+	log_line("engine off, W held 3 s on a %.0f%% slope: moved %.2f m" % [best * 100.0, p0.distance_to(c.global_position)])
+	check(p0.distance_to(c.global_position) < 0.1, "with the engine off the van stays put (no rolling back)")
+	# 11: idling costs fuel and heat
+	c.toggle_engine()
+	c.temp = Camper.TEMP_NORMAL
+	var f0 := c.fuel
+	await wait(10.0)
+	log_line("idling 10 s: %.2f L used, temp %.0f -> %.0f C" % [f0 - c.fuel, Camper.TEMP_NORMAL, c.temp])
+	check(f0 - c.fuel > 0.12 and c.temp > Camper.TEMP_NORMAL + 4.0, "idling burns fuel and runs hotter than driving")
+	# 16: the split hose drains a coolant gauge
+	c.coolant = 1.0
+	c.spring_leak()
+	await wait(5.0)
+	log_line("coolant after 5 s with a split hose: %.0f%%" % (c.coolant * 100.0))
+	check(c.coolant < 0.9 and boot.huds[0]._bars.has("COOL"), "a coolant gauge drains through the split hose")
+	c.coolant_leak = false
+	c.coolant = 1.0
+	c.temp = Camper.TEMP_NORMAL
+	c.toggle_engine()
+	# 10: the nav points at your stamp, never at Bessi
+	boot.map_state.stamps.clear()
+	await wait(0.4)
+	var nav: Label3D = c._needles["nav_label"]
+	log_line("nav with no stamps: '%s'" % nav.text.replace("\n", " / "))
+	check(not nav.text.contains("BESSI") and nav.text.contains("stamp"), "without stamps the nav gives nothing away")
+	boot.map_state.add_stamp("fuel", Vector2(b.poi["gas_station"].x, b.poi["gas_station"].z))
+	await wait(0.4)
+	log_line("nav with a fuel stamp: '%s'" % nav.text.replace("\n", " / "))
+	check(nav.text.begins_with("FUEL"), "the nav points at the latest map stamp")
+	# 10: map zoom
+	p.force_exit = true
+	await physics_frames(3)
+	await tap(KEY_M)
+	await tap(KEY_EQUAL)
+	await tap(KEY_EQUAL)
+	log_line("map zoom after two presses: %.2fx" % p.paper_map.zoom)
+	check(p.paper_map.zoom > 2.0, "+ zooms the paper map in")
+	await shot("map_zoomed")
+	await tap(KEY_MINUS)
+	await tap(KEY_M)
+	# 15: pouring tips the can spout-down at the filler
+	var can := await reset_can("station_can_a", FuelCan.CAPACITY)
+	can.global_position = c.global_transform * Vector3(-2.4, 0.2, 1.0)
+	can.reset_physics_interpolation()
+	await physics_frames(20)
+	await face_point(p, can.global_position + Vector3.UP * 0.25, 1.8, -c.global_transform.basis.x)
+	await tap(KEY_E)
+	await physics_frames(10)
+	var inlet := c.global_transform * (Vector3(-1.2, 1.40, 1.9) + Vector3(0, Camper.BODY_Y, 0))
+	await face_point(p, inlet, 1.9, -c.global_transform.basis.x)
+	key(KEY_E, true)
+	await wait(1.2)
+	var tilt := rad_to_deg(acos(clampf(can.global_transform.basis.y.y, -1, 1)))
+	var near_filler := can.global_position.distance_to(inlet)
+	await shot("pouring")
+	key(KEY_E, false)
+	log_line("while pouring: can tipped %.0f deg, %.2f m from the filler" % [tilt, near_filler])
+	check(tilt > 60.0 and near_filler < 0.9, "pouring tips the can over the filler")
+	await tap(KEY_G)   # toss it: E at the filler would just pour again
+	# 25: no mountain intrudes on the map, and the world has an edge
+	var worst := 1e9
+	for m in boot.world.get_node("Backdrop").get_children():
+		var mi := m as MeshInstance3D
+		var rad := (mi.get_aabb().size.x * mi.scale.x) * 0.5
+		worst = minf(worst, Vector2(mi.position.x, mi.position.z).length() - rad)
+	log_line("closest backdrop mountain edge: %.0f m from the centre (map corner %.0f m)" % [worst, Landscape.EXTENT * 0.5 * sqrt(2.0)])
+	check(worst > Landscape.EXTENT * 0.5, "no backdrop mountain reaches into the playable map")
+	var edge_x := Landscape.EXTENT * 0.5 - 30.0
+	var at := Vector3(edge_x, 0, 0)
+	at.y = Landscape.ground(at.x, at.z) + 0.3
+	await place_player(p, at, -PI * 0.5)   # facing +X, off the edge
+	key(KEY_W, true)
+	key(KEY_SHIFT, true)
+	await wait(6.0)
+	key(KEY_W, false)
+	key(KEY_SHIFT, false)
+	log_line("walked at the world edge: stopped at x %.0f (edge %.0f)" % [p.global_position.x, Landscape.EXTENT * 0.5])
+	check(p.global_position.x < Landscape.EXTENT * 0.5 - 4.0, "the world edge stops you walking off the map")
 
 
 ## Walk from the foot of the lookout ramp up onto the deck.

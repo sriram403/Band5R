@@ -525,21 +525,48 @@ func _backdrop() -> void:
 	var far := ToonMat.make(Color(0.46, 0.55, 0.60), 0.0, 1.0)
 	var far2 := ToonMat.make(Color(0.55, 0.63, 0.68), 0.0, 1.0)
 	var snow := ToonMat.make(Color(0.90, 0.92, 0.95), 0.0, 1.0)
+	var green := ToonMat.make(Color(0.36, 0.50, 0.40), 0.0, 1.0)
 	for i in 64:
 		var a := TAU * float(i) / 64.0 + rng.randf_range(-0.04, 0.04)
-		var dist := rng.randf_range(980.0, 1350.0)
 		var hgt := rng.randf_range(140.0, 330.0)
 		var rad := hgt * rng.randf_range(0.7, 1.1)
+		# Every mountain stands wholly outside the playable map (its base
+		# starts beyond the terrain's corner), so none can sit on a road.
+		var dist := Landscape.EXTENT * 0.72 + rad + rng.randf_range(20.0, 260.0)
 		var pos := Vector3(cos(a) * dist, hgt * 0.35 - 30.0, sin(a) * dist)
-		var mi := Build.cone(rad, hgt, far2 if i % 3 == 0 else far, pos, Vector3.ZERO, 9, "Peak%d" % i)
+		var style := i % 4
+		var mi: MeshInstance3D
+		if style == 3:
+			# rounded, forested hill instead of a peak
+			mi = Build.dome(rad, green, Vector3(pos.x, -30.0, pos.z), Vector3(1.0, hgt / rad * 0.7, 1.0), "Hill%d" % i)
+		else:
+			mi = Build.cone(rad, hgt, far2 if style == 0 else far, pos, Vector3(0, rng.randf_range(0, 360), 0), 6 + style * 2, "Peak%d" % i)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		root.add_child(mi)
-		if hgt > 250.0:
+		if style == 1 and hgt > 200.0:
+			# a twin summit: a smaller cone leaning off the shoulder
+			var twin := Build.cone(rad * 0.6, hgt * 0.7, far, pos + Vector3(rad * 0.45, -hgt * 0.1, rad * 0.2), Vector3.ZERO, 7, "Twin%d" % i)
+			twin.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			root.add_child(twin)
+		if hgt > 250.0 and style != 3:
 			# snow cap: the top quarter of the same cone
 			var cap := Build.cone(rad * 0.25, hgt * 0.25, snow, pos + Vector3(0, hgt * 0.375 + 0.5, 0), Vector3.ZERO, 9, "Snow%d" % i)
 			cap.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			root.add_child(cap)
 	world.add_child(root)
+	_world_edge()
+
+
+## Invisible walls just inside the terrain's edge: the valley ends, you cannot
+## walk or drive off the world into the backdrop.
+func _world_edge() -> void:
+	var body := StaticBody3D.new()
+	body.name = "WorldEdge"
+	var e := Landscape.EXTENT * 0.5 - 6.0
+	for side in [[Vector3(e, 0, 0), Vector3(2, 400, e * 2)], [Vector3(-e, 0, 0), Vector3(2, 400, e * 2)],
+			[Vector3(0, 0, e), Vector3(e * 2, 400, 2)], [Vector3(0, 0, -e), Vector3(e * 2, 400, 2)]]:
+		body.add_child(_box_shape(side[1], Transform3D(Basis(), side[0])))
+	world.add_child(body)
 
 
 # --- landmarks -----------------------------------------------------------------

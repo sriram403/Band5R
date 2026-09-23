@@ -1,9 +1,9 @@
 # Finding Naresh: Bessi and the 5 Roses
 
-Godot 4.7 project. **Stage 1 of 2: look-and-feel prototype.** This build exists so you
-can decide whether the controls, the driving and the art direction feel right before
-the full 30-minute demo from `Finding_Naresh_Game_Demo_Build_Prompt.md` gets built on
-top of it.
+Godot 4.7 project: a two-player co-op road-trip demo, built from
+`Finding_Naresh_Game_Demo_Build_Prompt.md`. **Current build: milestone A** - story beats
+1-3, from the homestead through the road trip to the water works and the broken bridge
+(about 10-15 minutes). Later milestones add the crossing, Bessi, Naresh and the ending.
 
 Everything lives inside this folder. Nothing is installed to `C:`.
 
@@ -42,8 +42,8 @@ See `FUTURE.md` for ideas planned after the demo.
 
 ## Running it
 
-Double-click **`Play.bat`**. First launch takes about a second while the world is
-generated. Press **Enter** (or **Start** on a controller) at the title card.
+Double-click **`Play.bat`**. The world takes about a second to generate. The title menu
+offers **New game / Load game / Quit** (W/S or arrows + Enter; D-pad + A on a pad).
 
 There is no export/`.exe` build yet; that comes with the finished demo.
 
@@ -65,7 +65,19 @@ Player 2 and the game switches to split-screen on its own.
 | Jump | Space | A |
 | Interact / get out | **E** | **X** |
 | Flashlight | F | Y |
+| Throw what you carry | Left mouse (or G) | RB |
+| Paper map | M | D-pad Down |
+| Hint for the objective (hold) | H | R3 |
 | Right a tipped-over van | R | View |
+
+Carrying: **E** picks up a loose item (fuel cans, crates, the coolant jug) and **E** drops
+it. Looking at something that takes it (the van's fuel filler, the rear rack, the
+radiator) turns **E** into that action - hold it to pour.
+
+Paper map (while it is up): mouse / right stick moves the pencil, **Q / E** (LB / RB)
+choose a stamp, **left click** (A) places it, **right click** (X) rubs it out, **mouse
+wheel or + / -** (Y / B) zooms. The van's dashboard nav points at your most recent
+stamp - it never points at Bessi for you.
 
 Driving (once you are in the driver's seat):
 
@@ -79,6 +91,12 @@ Driving (once you are in the driver's seat):
 | Headlights | L | D-pad Left |
 | Swap seats (stopped) | C | LB |
 | Get out (stopped) | E | X |
+| Travel journal (parked) | J | D-pad Right |
+
+**Saving:** there are no automatic saves. Memory Fragments (glowing pink petals) combine
+three at a time into a Memory Rose. In the parked van, open the travel journal and
+write to one of three slots - it tells you the cost first and uses one rose. Load from
+the title or pause menu. Saves live in `MPG/appdata/FindingNaresh/saves/`.
 
 You can only get out, or swap seats, once the van has (nearly) stopped. The prompt
 under the crosshair always shows what you can do right now; while driving it stays
@@ -86,24 +104,41 @@ empty so the road is clear. The control reminder at the top fades after ~14 s.
 
 Other keys: **[ / ]** mouse sensitivity (saved) · **TAB** switch player (solo) ·
 **F2** layout · **F11** fullscreen · **F3** teleport both players to the camper ·
-**ESC** pause (**Q** quits from pause).
+**ESC** pause (resume / load / quit; quitting warns about unsaved progress).
 
-## What to try
+## Milestone A walkthrough
 
-1. Walk around. Check mouse sensitivity, walk/sprint speed, head bob, jump weight.
-2. Walk to a camper door and press **E** — the prompt appears when you look at a door.
-3. Press **X** to start the engine, then drive. The loop road is about 900 m; there
-   are crests, dips and long bends, so you can judge steering weight, body roll,
-   braking and how the van handles a downhill corner.
-4. Look at the dashboard: physical speed, fuel and temperature dials with needles,
-   three warning lamps, and a nav screen angled toward the passenger.
-5. Put the second player in the passenger seat and look around independently — the
-   two views are fully separate.
-6. Find the five giant rose monuments on the hill in the middle of the loop. They are
-   deliberately visible over the treeline from most of the road: that is the
-   navigation-by-landmark mechanic the full demo depends on.
-7. Other landmarks to orient by: the homestead and garage at the start, the water
-   tower, the red barn and silo, two ponds, road signs and an information board.
+1. **Homestead.** Read the letter on the crate by the porch. Take the red fuel can by
+   the garage and stow it on the van's rear rack (the van starts low on fuel).
+2. **The lane** runs up to the windmill. At the **windmill junction** choose: the
+   scenic **Valley Road** (Mirror Lake with a dock, a faded billboard, a red barn) or
+   the steep gravel **Ridge Track** (shorter, runs the engine hotter; a lookout tower
+   you can climb, a wreck). Both reach **Last Fuel**.
+3. **Last Fuel.** The pumps are dead; cans are stashed behind the kiosk - one is empty
+   (it is light; the prompt says so). Refuel at the filler on the van's left side.
+   Read the info board: it sketches the area onto your paper map.
+4. **Pump House Road.** The coolant hose splits on the way: steam, climbing
+   temperature, lost power. Push it too far and the engine cuts out until it cools.
+5. **The water works** (co-op puzzle). One player works the red hand pump and keeps
+   the pressure needle in the green; the other sets valves A and B in the yard so the
+   line feeds the **blue** tank - follow the pipes to see which way each valve sends
+   the water. Over-pumping pops the relief valve (just a short stall). The blue tank
+   gives a coolant jug and a Memory Fragment; pour the jug into the radiator at the
+   front of the van.
+6. **Optional:** a fragment glints on the tool shed roof - build a crate staircase (one
+   crate, then two stacked) to reach it. There are fragments on each route too (the
+   dock end, the lookout deck), so a first Memory Rose is within reach.
+7. **Clues:** the visitor log by the pump house door and the campsite toward the river.
+8. **The old bridge** is out. That is the end of milestone A.
+
+## Van condition
+
+- **Fuel** gauge + HUD bar. Idling burns fuel too (~0.9 L a minute) - switch off when
+  you stop. Cargo on the rack raises consumption.
+- **Temperature** rises on long climbs and while idling (no airflow).
+- **Coolant** (HUD bar): a split hose drains it and the engine heats faster the lower
+  it gets; past 122 C the engine cuts out and will not restart until it cools.
+- With the engine off, or nobody at the wheel, the parking brake holds the van.
 
 ## Feel pass (2026-09-23)
 
@@ -141,37 +176,34 @@ drive, brake, lap, exit, swap, perf. It prints `PASS`/`FAIL` lines and writes
 `_shots/test_*.png`. Last run: 52 checks, 0 failures. Don't move the mouse over the
 window while it runs; real mouse input is mixed in with the simulated input.
 
-## What is in this prototype
+## What is in this build
 
-- True local split-screen: two independent `SubViewport`s and cameras sharing one
-  world, with per-player HUDs. Each player's own body is masked out of their own
-  camera, so you see your partner but not the inside of your own head.
-- Per-player input isolation. Devices are read from the hardware directly rather than
-  through a shared `InputMap`, so one player's mouse can never move the other.
-- First-person controller: walk, sprint, crouch, jump, look, flashlight with a visible
-  beam, raycast interaction with contextual prompts that use the right glyph for each
-  player's device.
-- Drivable camper: `VehicleBody3D` with four raycast wheels, speed-sensitive steering
-  lock, self-centring, reverse, handbrake, and a load-dependent engine curve.
-- Vehicle condition: fuel burn scaled by distance, load and gradient; an equilibrium
-  engine-temperature model; battery drain with the engine off. All shown on physical
-  dials plus a minimal HUD.
-- Seats and enter/exit, with independent look for driver and passenger and a seat swap.
-- Procedural engine and tyre audio, so there are no third-party sound files to license.
-- Handcrafted 800 x 800 m world: a closed loop road generated from hand-authored
-  control points, terrain that flattens into a clean driving corridor and rolls
-  everywhere else, a vertex-coloured toon terrain, ponds, ~2500 scattered trees, rocks
-  and bushes on a fixed seed, distant mountains, and the landmark set above.
-- Cartoon art direction: banded toon shading with inverted-hull outlines, a saturated
-  colour grade, soft shadows and light depth fog.
+- **Split-screen co-op**: two independent views and HUDs, per-player input isolation
+  (keyboard + mouse and a controller never cross over), solo view with TAB for testing.
+- **First person**: walk, sprint, crouch, jump, flashlight, contextual prompts with the
+  right glyph per device, surface-aware footsteps.
+- **Carrying**: physical items with weight (cans, crates, jugs), drop, throw, nudge;
+  use-with (pour, stow) and a safety net so physics can never lose an item.
+- **The camper**: raycast-wheel driving, seats, dashboard dials and lamps, fuel,
+  temperature, coolant, battery, parking brake, rear storage rack, fuel filler,
+  radiator, a nav screen that follows your map stamps, right-it-up recovery.
+- **The journey map**: 1.6 x 1.6 km valley with a road network (lane, route choice,
+  valley road, gravel ridge track, pump house road, Bessi loop), river, lakes, bridge,
+  meadows and woods, and the landmark set in the walkthrough. Built in about 1 s.
+- **Paper map**: discovery by travel and info boards, shared stamps, zoom, no
+  position marker.
+- **Story**: parents' letter, objective line with hints, old texts from Naresh, clues.
+- **Water works**: the hose breakdown and the cooling-station co-op puzzle.
+- **Memory Fragments, Memory Roses and the travel journal** (three manual save slots),
+  title and pause menus, unsaved-progress warning.
+- **Sound**: CC0 effects plus procedural engine, pour, steam and wind.
 
-## Not in this prototype yet
+## Not in this build yet
 
-Everything else from the build prompt: the three co-op puzzles, carryable physics
-objects, the paper map and map stamps, Memory Fragments and the manual-save system,
-health/downed/revive, the threat and hide sequence, Naresh and his fuel mistake, the
-story text and the imaginary-friend clues, weather, the settings menu, and the sampled
-audio set. The architecture is laid out so those slot in rather than requiring rework.
+Milestones B-E: rain and wet traction, the tyre-pressure problem, the broken-crossing
+puzzle and winch, health / downed / revive, the presence and hiding, the Five Roses
+puzzle, Naresh and his fuel mistake, the ending, settings menu, a Windows `.exe`. Ideas
+agreed for after the demo are in `FUTURE.md`.
 
 ## Architecture notes
 
@@ -181,17 +213,23 @@ into scene files later without changing the systems.
 
 | File | Role |
 |---|---|
-| `scripts/core/Boot.gd` | Session root: builds the world, players and split-screen shell; owns device assignment, pause and the dev capture mode. |
-| `scripts/core/InputDevice.gd` | One per player. Reads keyboard/mouse or a specific joypad, exposes `move/look/held/just_pressed/throttle/brake/steer` and prompt glyphs. |
+| `scripts/core/Boot.gd` | Session root: builds the world, players and split-screen shell; device assignment, menus (title / pause / load), explore ticks for the map. |
+| `scripts/core/InputDevice.gd` | One per player. Reads keyboard/mouse or a specific joypad; actions, latching of quick taps, prompt glyphs. |
+| `scripts/core/SaveGame.gd` | Journal save slots: collect / apply the whole world state (JSON in `user://saves`). |
 | `scripts/core/ToonMat.gd` | Every material in the game. Change the art direction here. |
-| `scripts/core/Build.gd` | Primitive-mesh helpers used to assemble props. |
-| `scripts/player/PlayerRig.gd` | First-person `CharacterBody3D`: movement, look, flashlight, interaction ray, seating. |
-| `scripts/vehicle/Camper.gd` | Chassis, driving model, condition systems, dashboard, seats. All tuning constants at the top. |
-| `scripts/vehicle/EngineAudio.gd` | Procedural engine/road noise. Swap for sampled loops later; keep `set_state()`. |
-| `scripts/world/Route.gd` | The road centreline: Catmull-Rom sampling, smoothed elevation, nearest-point queries. |
-| `scripts/world/Landscape.gd` | Terrain mesh + collision, road ribbon, pond and mound height fields. |
-| `scripts/world/LevelBuilder.gd` | World layout data (route points, ponds, mounds, landmarks, signage) and assembly. |
-| `scripts/ui/PlayerHUD.gd` | Per-player HUD inside each viewport. |
+| `scripts/core/Build.gd` | Primitive-mesh helpers and `interact_area()`. |
+| `scripts/player/PlayerRig.gd` | First-person `CharacterBody3D`: movement, look, interaction, carrying, map, journal, seating. |
+| `scripts/items/Carryable.gd` (+ `FuelCan`, `CoolantJug`, `Crate`, `MemoryFragment`) | Physical items and pickups. |
+| `scripts/vehicle/Camper.gd` | Chassis, driving model, condition systems, dashboard, seats, filler, radiator, rack. Tuning constants at the top. |
+| `scripts/vehicle/EngineAudio.gd` | Procedural engine / road noise. |
+| `scripts/world/Route.gd`, `RoadNetwork.gd` | Road and river centrelines: splines, pinned junction heights, nearest queries, chaining. |
+| `scripts/world/Landscape.gd` | Height layers, the grid-stamped terrain (mesh + height-map collision), roads, river, pads. |
+| `scripts/world/LevelBuilder.gd` | The world's layout data and assembly: roads, water, scatter, landmarks, items. |
+| `scripts/map/MapState.gd`, `PaperMap.gd` | Shared discovery + stamps; the drawn paper map. |
+| `scripts/story/Story.gd` | Objectives, hints, story beats, fragments and roses. |
+| `scripts/puzzles/CoolingStation.gd` | The water works co-op puzzle. |
+| `scripts/audio/Sfx.gd`, `NoiseLoop.gd` | Sample one-shots by name; procedural pour / steam / wind. |
+| `scripts/ui/PlayerHUD.gd`, `JournalPanel.gd` | Per-player HUD, notes, objective line; the travel journal. |
 | `scripts/dev/PlayTest.gd` | Automated play-test: injects keys, mouse and a virtual gamepad, measures, screenshots. |
 
 Extension points for the next stage: `Build.interact_area()` already gives any object a
@@ -224,9 +262,8 @@ prompt and a callback, so carryables, puzzle levers and the journal hook straigh
 
 ## Assets and licences
 
-All art, geometry and audio in this build is generated at runtime from Godot
-primitives and code. No third-party assets are used, so there is nothing to credit yet.
-A `CREDITS.md` will be added if that changes.
+All art and geometry is generated at runtime from Godot primitives and code. Sound
+effects are CC0 samples from Kenney; see `CREDITS.md` for every third-party asset.
 
 ## Dev capture mode
 

@@ -32,12 +32,13 @@ const KEYS := {
 	"handbrake": KEY_SPACE, "ignition": KEY_X, "headlights": KEY_L,
 	"hint": KEY_H, "swap_seat": KEY_C, "recover": KEY_R, "throw": KEY_G,
 	# paper map (only read while the map is up)
-	"map_next": KEY_E, "map_prev": KEY_Q,
+	"map_next": KEY_E, "map_prev": KEY_Q, "map_zoom_in": KEY_EQUAL, "map_zoom_out": KEY_MINUS,
 	# travel journal
 	"journal": KEY_J, "menu_up": KEY_UP, "menu_down": KEY_DOWN, "menu_ok": KEY_ENTER,
 }
 ## Mouse buttons that also trigger an action (checked alongside KEYS).
-const MOUSE := {"throw": MOUSE_BUTTON_LEFT, "map_place": MOUSE_BUTTON_LEFT, "map_remove": MOUSE_BUTTON_RIGHT}
+const MOUSE := {"throw": MOUSE_BUTTON_LEFT, "map_place": MOUSE_BUTTON_LEFT, "map_remove": MOUSE_BUTTON_RIGHT,
+	"map_zoom_in": MOUSE_BUTTON_WHEEL_UP, "map_zoom_out": MOUSE_BUTTON_WHEEL_DOWN}
 
 # --- Controller bindings (Xbox layout) -----------------------------------------
 const BUTTONS := {
@@ -49,6 +50,7 @@ const BUTTONS := {
 	"recover": JOY_BUTTON_BACK,
 	"map_place": JOY_BUTTON_A, "map_remove": JOY_BUTTON_X,
 	"map_next": JOY_BUTTON_RIGHT_SHOULDER, "map_prev": JOY_BUTTON_LEFT_SHOULDER,
+	"map_zoom_in": JOY_BUTTON_Y, "map_zoom_out": JOY_BUTTON_B,
 	"journal": JOY_BUTTON_DPAD_RIGHT, "menu_up": JOY_BUTTON_DPAD_UP, "menu_down": JOY_BUTTON_DPAD_DOWN,
 	"menu_ok": JOY_BUTTON_A, "menu_back": JOY_BUTTON_B,
 }

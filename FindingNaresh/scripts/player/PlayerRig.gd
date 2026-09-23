@@ -409,6 +409,10 @@ func _map_controls() -> void:
 	elif dev.just_pressed("map_remove"):
 		if paper_map.remove_stamp():
 			Sfx.play3d("page", head.global_position, -6.0)
+	if dev.just_pressed("map_zoom_in"):
+		paper_map.zoom_by(1.5)
+	elif dev.just_pressed("map_zoom_out"):
+		paper_map.zoom_by(1.0 / 1.5)
 	if dev.just_pressed("map_next"):
 		paper_map.cycle_stamp(1)
 		Sfx.play3d("tick", head.global_position, -8.0)
@@ -461,8 +465,11 @@ func _scan_holding() -> void:
 		var still_there := _using == ctx or (is_instance_valid(_using) and (_using as Node3D).global_position.distance_to(head.global_position) < 3.0)
 		if dev.held("interact") and still_there and held != null:
 			(_using.get_meta("held_action") as Callable).call(self, held, get_physics_process_delta_time(), false)
+			held.pouring = _using.has_meta("pour")
 		else:
 			_using = null
+			if held != null:
+				held.pouring = false
 
 
 # --- carrying ------------------------------------------------------------------
@@ -476,6 +483,9 @@ func hold_point(item: Carryable) -> Vector3:
 	var right := xf.basis.x
 	if item.two_handed:
 		return xf.origin + fwd * 1.6 + Vector3.DOWN * 0.7
+	# pouring: bring it down to just above the filler you are using
+	if item.pouring and is_instance_valid(_using):
+		return (_using as Node3D).global_position + Vector3.UP * 0.25 + right * 0.1
 	var sag := lerpf(0.42, 0.72, item.heaviness())
 	return xf.origin + fwd * 1.0 + right * 0.42 + Vector3.DOWN * sag
 
@@ -513,6 +523,7 @@ func drop_held() -> void:
 	var it := held
 	held = null
 	_using = null
+	it.pouring = false
 	ray.remove_exception(it)
 	it.release(self)
 	Sfx.play3d("drop", it.global_position, -8.0)
@@ -524,6 +535,7 @@ func throw_held() -> void:
 	var it := held
 	held = null
 	_using = null
+	it.pouring = false
 	ray.remove_exception(it)
 	it.throw_from(self, -head.global_transform.basis.z)
 	Sfx.play3d("pluck", it.global_position, -6.0)

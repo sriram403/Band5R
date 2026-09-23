@@ -29,6 +29,8 @@ static var _relief: ImageTexture = null
 var state: MapState
 var cursor := Vector2(0.5, 0.5)       ## in map units, 0..1 across the paper
 var stamp_index := 0
+var zoom := 1.0                       ## 1 = whole valley on the sheet, up to 4x
+var view_center := Vector2(0.5, 0.5)  ## paper point shown in the middle when zoomed
 var _font: Font
 
 
@@ -59,10 +61,24 @@ func paper_rect() -> Rect2:
 	return Rect2((size.x - w) * 0.5, (size.y - s) * 0.5, w, s)
 
 
-func world_to_map(p: Vector2) -> Vector2:
+## Paper point (0..1) to screen, through the current zoom.
+func paper_to_screen(u: Vector2) -> Vector2:
 	var r := paper_rect()
+	return r.position + ((u - view_center) * zoom + Vector2(0.5, 0.5)) * r.size
+
+
+func world_to_map(p: Vector2) -> Vector2:
 	var b := MapState.BOUNDS
-	return r.position + Vector2((p.x - b.position.x) / b.size.x * r.size.x, (p.y - b.position.y) / b.size.y * r.size.y)
+	return paper_to_screen(Vector2((p.x - b.position.x) / b.size.x, (p.y - b.position.y) / b.size.y))
+
+
+## Zoom about the pencil, keeping the view on the sheet.
+func zoom_by(f: float) -> void:
+	zoom = clampf(zoom * f, 1.0, 4.0)
+	view_center = cursor
+	var half := 0.5 / zoom
+	view_center = view_center.clamp(Vector2(half, half), Vector2(1.0 - half, 1.0 - half))
+	queue_redraw()
 
 
 func map_to_world(u: Vector2) -> Vector2:
@@ -81,7 +97,7 @@ func current_stamp() -> String:
 ## Move the pencil by a pixel delta (mouse) or a scaled stick delta.
 func move_cursor(px: Vector2) -> void:
 	var r := paper_rect()
-	cursor += Vector2(px.x / r.size.x, px.y / r.size.y)
+	cursor += Vector2(px.x / r.size.x, px.y / r.size.y) / zoom
 	cursor = cursor.clamp(Vector2(0.01, 0.01), Vector2(0.99, 0.99))
 	queue_redraw()
 
@@ -111,10 +127,13 @@ func _draw() -> void:
 	draw_rect(r.grow(8), PAPER_EDGE)
 	draw_rect(r, PAPER)
 	if _relief:
-		draw_texture_rect(_relief, r, false, Color(1, 1, 1, 0.9))
+		# only the visible part of the printed relief, stretched over the sheet
+		var half := 0.5 / zoom
+		var src := Rect2((view_center - Vector2(half, half)) * _relief.get_size(), _relief.get_size() / zoom)
+		draw_texture_rect_region(_relief, r, src, Color(1, 1, 1, 0.9))
 	draw_rect(r, INK_SOFT, false, 2.0)
 
-	var scale := r.size.x / MapState.BOUNDS.size.x
+	var scale := r.size.x / MapState.BOUNDS.size.x * zoom
 	for l in state.lakes:
 		if l["revealed"]:
 			var c := world_to_map(l["pos"])
@@ -135,6 +154,11 @@ func _draw() -> void:
 	for s in state.stamps:
 		_draw_stamp(world_to_map(s["pos"]), s["type"], 1.0)
 
+	# zoomed ink runs past the sheet: cover everything outside it again
+	var edge := PAPER_EDGE
+	if zoom > 1.01:
+		_mask_outside(r, edge)
+
 	# compass, title and scale bar
 	var n := r.position + Vector2(r.size.x - 36, 44)
 	draw_line(n + Vector2(0, 20), n + Vector2(0, -20), INK, 2.0)
@@ -147,15 +171,24 @@ func _draw() -> void:
 	draw_string(_font, b0 + Vector2(0, -6), "200 m", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, INK)
 
 	# pencil cursor and the stamp it will place
-	var cp := r.position + Vector2(cursor.x * r.size.x, cursor.y * r.size.y)
+	var cp := paper_to_screen(cursor)
 	_draw_stamp(cp + Vector2(22, -22), current_stamp(), 0.8)
 	draw_line(cp + Vector2(-10, 0), cp + Vector2(10, 0), INK, 1.5)
 	draw_line(cp + Vector2(0, -10), cp + Vector2(0, 10), INK, 1.5)
-	var help := "Stamp: %s   [Q/E] change   [LMB] place   [RMB] rub out   [M] put away" % STAMP_STYLE[current_stamp()]["name"]
+	var help := "Stamp: %s   [Q/E] change   [LMB] place   [RMB] rub out   [wheel / + -] zoom %.1fx   [M] put away" % [STAMP_STYLE[current_stamp()]["name"], zoom]
 	draw_string(_font, Vector2(r.position.x, r.end.y + 26), help, HORIZONTAL_ALIGNMENT_LEFT, r.size.x, 15, Color(1, 1, 1, 0.95))
 
 
 ## Draw the revealed pieces of a chunked polyline.
+func _mask_outside(r: Rect2, edge: Color) -> void:
+	var dark := Color(0.12, 0.1, 0.08)
+	draw_rect(Rect2(Vector2.ZERO, Vector2(size.x, r.position.y - 8)), dark)
+	draw_rect(Rect2(Vector2(0, r.end.y + 8), Vector2(size.x, size.y - r.end.y - 8)), dark)
+	draw_rect(Rect2(Vector2(0, r.position.y - 8), Vector2(r.position.x - 8, r.size.y + 16)), dark)
+	draw_rect(Rect2(Vector2(r.end.x + 8, r.position.y - 8), Vector2(size.x - r.end.x - 8, r.size.y + 16)), dark)
+	draw_rect(r.grow(8), edge, false, 8.0)
+
+
 func _draw_chunks(pts: PackedVector2Array, chunks: Array, col: Color, width: float, dashed: bool) -> void:
 	var step := MapState.ROAD_CHUNK
 	for c in chunks.size():

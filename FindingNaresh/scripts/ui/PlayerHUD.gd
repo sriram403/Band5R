@@ -71,7 +71,7 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	_gauges = VBoxContainer.new()
 	_gauges.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_gauges.offset_left = 18
-	_gauges.offset_top = -104
+	_gauges.offset_top = -126
 	_gauges.offset_bottom = -18
 	_gauges.add_theme_constant_override("separation", 3)
 	_gauges.visible = false
@@ -81,6 +81,7 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	_gauges.add_child(_speed)
 	_gauges.add_child(_bar("FUEL", Color(0.95, 0.78, 0.30)))
 	_gauges.add_child(_bar("TEMP", TEMP_OK))
+	_gauges.add_child(_bar("COOL", Color(0.35, 0.75, 0.90)))
 
 	_hint = _label(15, Color(1, 1, 1, 0.80))
 	# Top centre: the bottom corners belong to the gauges, and in a split
@@ -220,6 +221,7 @@ func _process(delta: float) -> void:
 		_speed.text = "%3.0f km/h" % (kmh if kmh >= 1.5 else 0.0)
 		_set_bar("FUEL", camper.fuel / Camper.FUEL_CAPACITY)
 		_set_bar("TEMP", (camper.temp - Camper.TEMP_AMBIENT) / (Camper.TEMP_MAX - Camper.TEMP_AMBIENT))
+		_set_bar("COOL", camper.coolant)
 		(_bars["TEMP"] as ColorRect).color = TEMP_HOT if camper.temp > Camper.TEMP_WARN else TEMP_OK
 		var w := ""
 		if camper.start_fail_t > 0.0:
