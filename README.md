@@ -164,17 +164,18 @@ every fix. What it found and what changed:
 | Engine audio could run dry on a frame hitch | Larger audio buffer; 0 underruns in 12 s of driving |
 | `user://` data (13 MB) was being written to C: despite the project setting | See the folder notes above |
 
-Run the play-test yourself (a window opens; takes about 5 minutes):
+Run the play-test yourself (takes 15-20 minutes for everything):
 
 ```
-tools/run_game.sh --resolution 1600x900 -- --playtest          (everything)
-tools/run_game.sh --resolution 1600x900 -- --playtest=drive    (one scenario)
+tools/run_test.sh                  (everything)
+tools/run_test.sh drive,map        (some scenarios)
+SHOW=1 tools/run_test.sh drive     (on screen, with sound, to watch it)
 ```
 
-Scenarios: mouse, foot, taps, enter, cockpit, layout, park, solid, crash, look, pad,
-drive, brake, lap, exit, swap, perf. It prints `PASS`/`FAIL` lines and writes
-`_shots/test_*.png`. Last run: 52 checks, 0 failures. Don't move the mouse over the
-window while it runs; real mouse input is mixed in with the simulated input.
+By default the window opens off screen, muted, and never takes the keyboard or
+mouse, so you can keep using the computer while it runs. It prints `PASS`/`FAIL`
+lines and writes `_shots/test_*.png`; the scenario list is `all` in
+`scripts/dev/PlayTest.gd`.
 
 ## What is in this build
 

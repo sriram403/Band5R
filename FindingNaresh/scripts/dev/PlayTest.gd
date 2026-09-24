@@ -19,6 +19,12 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--playtest="):
 			only = a.get_slice("=", 1)
+	# Stay out of the way of whatever the user is doing: never take keyboard focus,
+	# stay muted. tools/run_test.sh also opens the window off screen. Pass --show
+	# (after the --) to watch and hear a run instead.
+	if not OS.get_cmdline_user_args().has("--show"):
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
+		AudioServer.set_bus_mute(0, true)
 	_run.call_deferred()
 
 

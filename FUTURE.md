@@ -89,3 +89,12 @@ The demo builds a small version of this. The full version:
 - **Bessi beach** (inspired by Besant Nagar / Elliot's Beach, Chennai; empty at dusk)
   with the Five Roses appearing out of supernatural smoke; Naresh is inside one of
   the five rose structures.
+
+## Polish stage: the look of the game (agreed 2026-09-24)
+
+Until the whole demo is built and tested, everything stays simple block-out shapes
+(like now). Good-looking assets (FUTURE #19: van, trees, grass, flowers, clouds,
+landmarks, the beach, the Five Roses, props) come in a polish stage at the end. It
+starts with a discussion of the art direction (realistic "RDR2-like" or stylised),
+then each asset is shown for approval before it goes into the world. Blender only
+after agreeing on it.

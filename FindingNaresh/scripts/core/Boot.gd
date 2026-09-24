@@ -50,6 +50,8 @@ var _explore_t := 0.0
 # Dev capture mode: `--shot` runs a scripted sequence and writes PNGs next to
 # the project, so the look can be reviewed without playing.
 var shot_mode := false
+## Automated play-test running: never grab the mouse (the window sits off screen).
+var testing := false
 var _frame := 0
 var _shot_n := 0
 
@@ -98,6 +100,7 @@ func _ready() -> void:
 		overlay.visible = false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--playtest"):
+			testing = true
 			started = true
 			menu = ""
 			overlay.visible = false
@@ -358,7 +361,8 @@ func _begin() -> void:
 	started = true
 	menu = ""
 	overlay.visible = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if not testing:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	mark_saved()
 
 
@@ -533,7 +537,8 @@ func _toggle_pause() -> void:
 		return
 	paused = not paused
 	overlay.visible = paused
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED
+	if not testing:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED
 	get_tree().paused = paused
 	menu = "pause" if paused else ""
 	menu_sel = 0
