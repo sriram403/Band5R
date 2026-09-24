@@ -1,7 +1,9 @@
 # Future additions
 
-Ideas agreed for later. Nothing here is in the current plan; these start **after**
-milestones A–E of the 30-minute demo are finished.
+This file preserves the user's longer-term ideas and discussion requests. Some
+small fixes and the mirrors are already in the current build; `notes/TODO.md` is
+the live status. The larger additions below are for discussion after the planned
+demo milestones, not instructions to build them now.
 
 ## Professional-grade open world (after all milestones)
 

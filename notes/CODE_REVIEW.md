@@ -4,10 +4,10 @@ A full read of every gameplay script (Boot, InputDevice, SaveGame, PlayerRig,
 Camper, the items, Story, MapState, PaperMap, the HUD and journal, the audio,
 Route, RoadNetwork, Landscape, DevMenu, GymBuilder). Each fixed bug was first
 reproduced with a play-test check (red), then fixed (green), unless the check
-needs a GPU, as noted. The headless suite passes: 185 checks, 0 failures; base
-gym 10/10.
+needs a GPU, as noted. At the time of this review, the headless suite passed:
+185 checks, 0 failures; base gym 10/10. These fixes were merged in PR #4.
 
-## Fixed in this branch
+## Fixed in PR #4 (merged)
 
 | # | Where | The bug | How it showed | Test |
 |---|---|---|---|---|

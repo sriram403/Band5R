@@ -1,9 +1,12 @@
 # Finding Naresh: Bessi and the 5 Roses
 
 Godot 4.7 project: a two-player co-op road-trip demo, built from
-`Finding_Naresh_Game_Demo_Build_Prompt.md`. **Current build: milestone A** - story beats
-1-3, from the homestead through the road trip to the water works and the broken bridge
-(about 10-15 minutes). Later milestones add the crossing, Bessi, Naresh and the ending.
+`Finding_Naresh_Game_Demo_Build_Prompt.md`. **Current build: Milestone B foundations
+and greybox, with Milestone A's playable story** from the homestead through the water
+works to the broken bridge. The 4 x 4 km map also contains block-out locations for
+the later journey; their story and mechanics are not yet built. All six cloud PRs
+are merged. The next work is the three test levels, then Milestone C's opening.
+For the live handoff, read `notes/MASTER_PROMPT.md` and `notes/TODO.md`.
 
 Everything lives inside this folder. Nothing is installed to `C:`.
 
@@ -42,7 +45,7 @@ See `FUTURE.md` for ideas planned after the demo.
 
 ## Running it
 
-Double-click **`Play.bat`**. The world takes about a second to generate. The title menu
+Double-click **`Play.bat`**. The world takes several seconds to generate. The title menu
 offers **New game / Load game / Quit** (W/S or arrows + Enter; D-pad + A on a pad).
 
 There is no export/`.exe` build yet; that comes with the finished demo.
@@ -132,7 +135,8 @@ Other keys: **[ / ]** mouse sensitivity (saved) · **TAB** switch player (solo) 
 5. **The water works** (co-op puzzle). One player works the red hand pump and keeps
    the pressure needle in the green; the other sets valves A and B in the yard so the
    line feeds the **blue** tank - follow the pipes to see which way each valve sends
-   the water. Over-pumping pops the relief valve (just a short stall). The blue tank
+   the water. Valve B kicks back twice during a two-player fill, briefly stopping
+   progress until it is reset. Over-pumping pops the relief valve (a short stall). The blue tank
    gives a coolant jug and a Memory Fragment; pour the jug into the radiator at the
    front of the van.
 6. **Optional:** a fragment glints on the tool shed roof - build a crate staircase (one
@@ -148,7 +152,8 @@ Other keys: **[ / ]** mouse sensitivity (saved) · **TAB** switch player (solo) 
 - **Temperature** rises on long climbs and while idling (no airflow).
 - **Coolant** (HUD bar): a split hose drains it and the engine heats faster the lower
   it gets; past 122 C the engine cuts out and will not restart until it cools.
-- With the engine off, or nobody at the wheel, the parking brake holds the van.
+- The parking brake holds the van when engaged. With it off, the van can roll on a
+  slope even with the engine off or nobody at the wheel.
 
 ## Feel pass (2026-09-23)
 
@@ -165,7 +170,7 @@ every fix. What it found and what changed:
 | Nav screen text was buried inside its own box | Centre-console screen facing the passenger, readable, shows distance and direction to Bessi |
 | E threw you out of a van doing 45 km/h | Doors only open below ~9 km/h |
 | Engine hit 114 °C on one normal lap (warning at 104) | Temperature model retuned: ~88 °C cruising, only long climbs overheat; uphill/downhill were also swapped |
-| Parked van crept downhill | Parking brake with engine off, auto-hold when idling, locked in place once stopped |
+| Parked van crept downhill | This early auto-hold was replaced by a manual parking brake: engage it to hold, release it to let the van roll |
 | Walked through rocks, far trees and the rose monuments; walking into the Five Roses plaza put you inside it | Colliders on all of those; the plaza now sits flush on a flat plateau |
 | A flipped van could never be recovered | R / View rights it |
 | "Sit in the driver's seat" shown for a taken seat, button did nothing | Says who is in it instead |
@@ -174,7 +179,7 @@ every fix. What it found and what changed:
 | Engine audio could run dry on a frame hitch | Larger audio buffer; 0 underruns in 12 s of driving |
 | `user://` data (13 MB) was being written to C: despite the project setting | See the folder notes above |
 
-Run the play-test yourself (takes 15-20 minutes for everything):
+Run the default windowed play-test yourself (roughly 10-20 minutes):
 
 ```
 tools/run_test.sh                  (everything)
@@ -207,7 +212,8 @@ lines and writes `_shots/test_*.png`; the scenario list is `all` in
   Bessi beach and the Five Roses), the way back along the coast (fishing village, salt
   pans, estuary bridge, the old rail tunnel, radio mast, Naresh's home) and the drive
   home past the ending watchtower. 17.5 km of road, about 16 minutes to drive all of
-  it. Layout checked by `tools/gen/layout_check.py`; built in about 7 s. Places past
+  it. Layout checked by `tools/gen/layout_check.py`; built in about 4.7 s in the
+  headless build measurement after the world-generation optimization. Places past
   the bridge are simple blocks for now.
 - **Paper map**: discovery by travel and info boards, shared stamps, zoom, no
   position marker.
@@ -219,10 +225,13 @@ lines and writes `_shots/test_*.png`; the scenario list is `all` in
 
 ## Not in this build yet
 
-Milestones B-E: rain and wet traction, the tyre-pressure problem, the broken-crossing
-puzzle and winch, health / downed / revive, the presence and hiding, the Five Roses
-puzzle, Naresh and his fuel mistake, the ending, settings menu, a Windows `.exe`. Ideas
-agreed for after the demo are in `FUTURE.md`.
+Milestones C-G: the split opening and tyre puncture, traffic, the crossing puzzle,
+creature encounters and hiding, the Five Roses puzzle, Naresh, the return and ending,
+settings menu, and a Windows `.exe`. There is no planned health / downed / revive
+system: being caught separates the players. Later ideas are in `FUTURE.md`.
+`design/PUZZLES.md`, `design/WAY_OUT.md`, `design/CREATURES.md`, `design/NARESH.md`,
+`design/BESSI.md` and `design/RETURN.md` are proposals for discussion, not approved
+build instructions.
 
 ## Architecture notes
 
@@ -240,7 +249,7 @@ into scene files later without changing the systems.
 | `scripts/player/PlayerRig.gd` | First-person `CharacterBody3D`: movement, look, interaction, carrying, map, journal, seating. |
 | `scripts/items/Carryable.gd` (+ `FuelCan`, `CoolantJug`, `Crate`, `MemoryFragment`) | Physical items and pickups. |
 | `scripts/vehicle/Camper.gd` | Chassis, driving model, condition systems, dashboard, seats, filler, radiator, rack. Tuning constants at the top. |
-| `scripts/vehicle/EngineAudio.gd` | Procedural engine / road noise. |
+| `scripts/vehicle/EngineAudio.gd` | Recorded engine loop with a virtual gearbox, starter sound and procedural road noise. |
 | `scripts/world/Route.gd`, `RoadNetwork.gd` | Road and river centrelines: splines, pinned junction heights, nearest queries, chaining. |
 | `scripts/world/Landscape.gd` | Height layers, the grid-stamped terrain (mesh + height-map collision), roads, river, pads. |
 | `scripts/world/LevelBuilder.gd` (+ `LevelLayout`, `LevelScatter`, `LevelPlaces`, `LevelLandmarks`) | The world's assembly, split by job, each file extending the one before: the layout data and helpers, the trees and rocks, the greybox places, the Milestone A landmarks, then the build order, roads, spawns and items. |
@@ -254,7 +263,7 @@ into scene files later without changing the systems.
 Extension points for the next stage: `Build.interact_area()` already gives any object a
 prompt and a callback, so carryables, puzzle levers and the journal hook straight in;
 `Camper`'s condition fields are plain state ready to be serialised by the save system;
-`LevelBuilder`'s const tables are where new landmarks and puzzle sites go.
+`LevelLayout` holds route and place data; `LevelBuilder` assembles the world.
 
 ### Notable technical decisions
 
@@ -312,3 +321,5 @@ GitHub runs it on every push and pull request (`.github/workflows/playtest.yml`)
 after the road check (`tools/gen/layout_check.py`). The result shows as a green
 tick or a red cross next to each commit; the log is attached to the run.
 Looks, sound and smoothness still need a run on the PC (`tools/run_test.sh`).
+The headless shell script requires the Linux Godot build; the Windows PC uses
+`tools/run_test.sh` for local windowed testing.

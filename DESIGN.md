@@ -33,7 +33,7 @@ minutes (up to ~3 hours is fine); pacing and fun matter, not length.
 
 ## 3. World
 
-- **Bigger map**: about 4 x 4 km (the demo world today is 1.6 x 1.6 km).
+- **Bigger map**: the 4 x 4 km greybox is built; later areas remain block-outs.
 - Homes: P1's home, P2's home, Naresh's home (mother and sister), all on the map.
 - Roads look and behave like real roads, but navigating them is itself a puzzle:
   splits where one branch is a long loop back to the same road (with story beats or

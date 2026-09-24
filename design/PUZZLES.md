@@ -1,8 +1,10 @@
 # Puzzles: review, research and a catalogue to choose from (proposal)
 
-For your approval, like `OPENING.md`. Three parts:
+Merged in PR #2 for future reference. The valve B kick-back is implemented;
+the catalogue below is still a proposal for discussion, unlike the approved
+opening design. Three parts:
 
-1. **The water works review**: what works, what didn't, and what this branch changes.
+1. **The water works review**: what works, what didn't, and what PR #2 changed.
 2. **Research**: what co-op puzzle games do, boiled down to rules for this game.
 3. **A catalogue** of puzzle ideas, each placed at a landmark in `BEAT_CHART.md`, for
    you to pick from. Nothing in part 3 is built; each chosen puzzle still gets its own
@@ -47,7 +49,7 @@ fills the tank; it gives a coolant jug and a Memory Fragment.
 4. The flow lamp lights on the wrong (grey tank) route too. That's deliberate (the
    pumper can't tell which tank is filling, so the two have to talk), and it's kept.
 
-**What this branch changes (built and tested)**
+**What PR #2 changed (built and tested)**
 
 - **Valve B has a worn seat and kicks back.** With two players, the line pressure
   knocks valve B back to the overflow twice while the blue tank fills (at a third

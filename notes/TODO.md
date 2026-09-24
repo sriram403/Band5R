@@ -6,11 +6,22 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Paused (2026-09-24, credits running low). Opening design approved. When work
-  resumes: build the three test levels first, then Milestone C from
-  `design/OPENING.md`, gyms first. Nothing is half-built.
+- Handoff ready (2026-09-24). Milestone B and all six cloud PRs (#1-#6) are
+  merged into `main`; the working tree was clean after the final pull. The next
+  thread starts with the three test levels, then Milestone C from
+  `design/OPENING.md`, gyms first. No test-level or Milestone C work has begun.
+- `design/PUZZLES.md` and the D/E/F, creature and Naresh pages are proposals
+  kept for future discussion. Their merge did not approve their puzzle choices.
 
 ## Tooling
+- [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
+      #5 world build speed, #6 LevelBuilder split, #2 water works valve B,
+      #3 design proposals; merged and pulled in dependency order
+  - [x] Last complete windowed run on the #2 preview with a controller connected:
+        191 passes, 0 failures; two valve B kick-backs. The automated test cannot
+        judge whether they feel fun to a human player.
+  - [x] #3 adds only five Markdown pages; its merge was checked. A redundant
+        windowed run was stopped after 161 passes, 0 failures.
 - [ ] Three test levels (agreed 2026-09-24): Quick (~3-4 min, mechanics in gyms +
       a teleport check of the real map) after every change; Road check (layout
       script, seconds); Full (~35 min, long drives) only when roads change and
@@ -161,7 +172,7 @@ New play-test scenario `fixes` checks all of these.
 - [x] Beat chart for each route (something interesting every 2-3 min)
   - [x] Draft v1: `design/BEAT_CHART.md` (~60 min first play)
   - [x] Approved by you ("happy", 2026-09-24)
-- [~] Greybox the new map (roads with real-road splits and long loops, the existing
+- [x] Greybox the new map (roads with real-road splits and long loops, the existing
       Milestone A landmarks moved into it)
   - [x] Layout as data: roads, hills, lakes, river, coast (checked by
         `tools/gen/layout_check.py`: grades <= 10 % (gravel 15 %), cuts and fills
@@ -193,6 +204,11 @@ New play-test scenario `fixes` checks all of these.
       2.1, coast road 5.1, west road 2.2, tower road 1.3 min. At players' ~45
       km/h this is close to the beat chart's driving times)
 - [x] Your test and approval ("tested all good", 2026-09-24); pushed
+
+Cloud follow-ups after Milestone B: world build improved from about 7.0 s to
+4.7 s headless with identical generated world data; LevelBuilder was split into
+five scripts without intended gameplay changes. The controller-aware layout
+test was fixed and now restores its starting layout before the pad test.
 
 ## Milestone C: The opening (split tutorial, 5-10 min)
 - [x] Decisions agreed (2026-09-24, `DESIGN.md` section 8): read-only phone;

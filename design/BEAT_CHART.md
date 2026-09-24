@@ -1,4 +1,4 @@
-# Beat chart v1 (proposal)
+# Beat chart v1 (approved 2026-09-24)
 
 What happens where, and roughly when, along the routes of `map_plan_v1.png`. The rule:
 **something interesting every 2-3 minutes** (a place, a landmark, a puzzle, wildlife,

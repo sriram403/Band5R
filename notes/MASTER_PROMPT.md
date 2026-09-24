@@ -11,9 +11,10 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-24, end of the second thread: Milestone B approved and
-pushed; opening design approved; nothing half-built. The user may start a NEW
-THREAD from this file: start at section 6 "Next".
+Last updated: 2026-09-24, after reviewing and merging all six cloud PRs.
+Milestone B and the opening design are approved. The six PRs are merged and
+`main` has been pulled. The three test levels and Milestone C have not started.
+The user intends to start a NEW THREAD from this file: start at section 6.
 
 ---
 
@@ -70,8 +71,7 @@ they/them.
     driving). `Camper.swing_nav()` / `nav_aside` (N key, pad A, either seat): the nav
     label moves to the driver's private visual layer so only the passenger's camera
     draws it. Scenario `t_mirrors`;
-  - full play-test after mirrors: 180 checks, 0 failures, ~130 fps (all committed,
-    head is the mirrors commit; nothing of B pushed yet);
+  - full play-test after mirrors: 180 checks, 0 failures, ~130 fps;
   - **4 x 4 km greybox done** (second thread): layout data in `LevelLayout.gd`
     consts (was `LevelBuilder.gd`), mirrored in `tools/gen/layout_check.py` (checks grades/cuts/gaps,
     `--draw` makes `design/greybox_layout.png`). Roads: home_lane (homestead ->
@@ -88,6 +88,21 @@ they/them.
     list; 16 min of driving at ~60 km/h). Fuel use lowered (FUEL_PER_KM 2.5).
   - **Milestone B approved by the user ("tested all good") and pushed.**
 - The plan for B-G, with sub-steps, is in `notes/TODO.md`.
+- **Cloud PRs #1–#6 reviewed and merged into `main` (2026-09-24):** #1 added
+  Linux headless tests and GitHub CI; #4 fixed nine bugs (including the steam
+  cloud and controller disconnect) and added `notes/CODE_REVIEW.md`; #5 made
+  world building about 1.5 times faster with identical generated world data;
+  #6 split LevelBuilder into five files without intended behavior changes;
+  #2 added valve B's two kick-backs and `design/PUZZLES.md`; #3 added five
+  design proposal pages for D/E/F, creatures and Naresh. A follow-up to #6
+  fixed the layout test for a connected P2 pad and restored its starting layout.
+  All six GitHub PRs are closed as merged. Local `main` was pulled after #3.
+  The last complete windowed run, on the #2 preview with the pad connected,
+  recorded **191 passes, 0 failures**. The #3 docs-only preview was stopped
+  after 161 passes, 0 failures because a full gameplay run was unnecessary.
+  The valve B feel remains a human judgment; the user chose the automated
+  result only for this review. Treat the new design pages as proposals, not
+  approved implementation decisions.
 
 ---
 
@@ -124,9 +139,8 @@ they/them.
    `assets_src/`, which is gitignored; copy only used files into `FindingNaresh/`). The
    user wants to **agree on the look of every new asset before it is populated** into
    the world (FUTURE item 19) — show them first. Blender use must be discussed first.
-9. **Commit attribution:** end commit messages with
-   `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`
-   (or whatever attribution line your environment's instructions specify).
+9. **Commit attribution:** use only attribution that truthfully reflects the
+   contributor and follows your environment's instructions.
 10. Don't spawn sub-agents unless the user asks.
 11. **Keep the notes current at every step, not only at part ends** (user, 2026-09-24:
     a thread can stop at any moment and the next one must carry on seamlessly).
@@ -154,11 +168,12 @@ MPG/
   tools/run_game.sh             shell launcher with the same redirect (use this)
   tools/godot/                  portable Godot 4.7.1 (+ ._sc_ marker); exes NOT in git
   appdata/                      user:// data (settings, logs, saves) - gitignored
-  design/                       plans shown to the user (map_plan_v1.png)
+  design/                       map, beat chart, approved opening; D/E/F and
+                                puzzle/creature/Naresh proposals
   tools/run_test.sh             the play-test launcher (behind other windows)
   tools/gen/                    generators: glug.py (pour sound), map_plan.py (plan image)
   DESIGN.md                     the agreed design (pushed)
-  notes/                        MASTER_PROMPT.md (this file) + TODO.md, both pushed
+  notes/                        MASTER_PROMPT.md, TODO.md, CODE_REVIEW.md
   assets_src/                   downloaded CC0 packs - gitignored
   FindingNaresh/                the Godot project
     scenes/Main.tscn            one node running Boot.gd
@@ -229,7 +244,8 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   they can click the window to watch. `SHOW=1` shows it on screen. Output lines start with `[test]` (`PASS`/`FAIL`, logs,
   `shot test_x.png`). Screenshots land in `FindingNaresh/_shots/test_*.png`; view them.
 - It drives the REAL input path (`Input.parse_input_event`): keys, mouse, a simulated
-  gamepad on device 0. Add a scenario as `func t_<name>()` in `PlayTest.gd` and add the
+  gamepad on device 0; a physical P2 pad can also be connected. Add a scenario
+  as `func t_<name>()` in `PlayTest.gd` and add the
   name to the `all` list in `_run()`. Helpers: `tap(KEY_X)`, `key(k, down)`, `mouse()`,
   `pad_axis()`, `pad_button()`, `wait()`, `physics_frames()`, `place_player()`,
   `face_point(p, target, dist, side)`, `van_to(poi)`, `reset_camper(i)`,
@@ -245,10 +261,12 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   (`python tools/gen/layout_check.py`, seconds) when roads/hills change; Full
   (quick + `journey` + `routes`, ~35 min) only when roads change and before a
   milestone hand-over. Today `journey` drives ~8 km (~8 of ~18 min), `routes` 16 min.
-- **The full suite takes 15–20 minutes** — longer than the 10-minute tool timeout. Run
-  it with `run_in_background: true`, redirect `[test]` lines to
-  `tools/_last_playtest.log`, and wait with a Monitor/`until grep -q` loop. Only one
-  game instance at a time.
+- **The current default windowed suite takes roughly 10–20 minutes** because
+  `journey` drives in real time. On this Windows PC, invoke
+  `tools/run_test.sh` through Git Bash, capture the output to a log, and keep
+  only one game instance running. Read the `[test]` PASS/FAIL lines and the
+  final failure count; Godot warnings on stderr can make a PowerShell pipeline
+  report exit code 1 even when the suite passes.
 - **Real input leaks in** only with `SHOW=1` (quiet runs never get focus); if a check
   fails spuriously, re-run that scenario. Re-run single scenarios to
   confirm before chasing a failure. Tell the user when long runs are going.
@@ -260,15 +278,22 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   ~1.5 min. Screenshots are skipped and frame-rate / audio checks only logged
   (`PlayTest.headless`). GitHub runs it plus the road check on every push
   (`.github/workflows/playtest.yml`). Use it for logic; keep `tools/run_test.sh`
-  for looks, sound and fps.
+  for looks, sound and fps. The headless script requires a Linux Godot binary;
+  this Windows PC uses the windowed script locally and GitHub runs the Linux job.
 - Also available: `-- --shot` (old capture mode); `t_overview` (top-down orthographic
   map shots) and `t_tour` (landmark screenshots) are great for checking world changes.
+- **Connected-pad windowed runs:** the `layout` test now handles P2's physical
+  controller and restores the initial view layout before `pad`. If the Godot
+  window is minimized, physics stops and the suite can appear to hang; restore
+  it behind other windows before diagnosing a test timeout. Automated pad events
+  verify actions but cannot establish whether a mechanic feels fun.
 
 ---
 
 ## 6. What to do next
 
-**Milestone B is done, approved and pushed. Next, in this order:**
+**Milestone B and all six cloud PRs are done and merged. The user is opening a
+new thread to continue. Next, in this order:**
 
 1. **Build the three test levels** (agreed; `DESIGN.md` section 6.4, section 5 here).
    First add a per-scenario elapsed time to the play-test log and run once to see
@@ -285,7 +310,10 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
    is the work plan; add it to `notes/TODO.md` with sub-steps before starting.
 3. Then hand over C (rule 2). Milestones D-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
-   gym first.
+   gym first. The merged `design/PUZZLES.md`, `design/WAY_OUT.md`,
+   `design/CREATURES.md`, `design/NARESH.md`, `design/BESSI.md` and
+   `design/RETURN.md` are proposals; discuss their open questions before building
+   their suggested choices.
 
 ## 7. Hard-won technical lessons (don't relearn these)
 
@@ -345,8 +373,10 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 - **Players knocked by the van**: `PlayerRig.knock(impulse, van)` (collision exception
   until clear); `Camper._check_pedestrians` detects just ahead of the hull, because a
   kinematic player would stop the van dead.
-- **Split-screen shots**: `shot()` captures the window; with one keyboard only the
-  keyboard owner's view shows. `tap(KEY_TAB)` switches whose view is shown.
+- **Split-screen shots**: `shot()` captures the window. With no connected pad,
+  solo view shows the keyboard owner's view and TAB swaps the keyboard/view.
+  With P2 on a pad, TAB leaves the keyboard with P1; use a split layout to
+  inspect both views.
 - **Gyms**: GymBuilder must provide what other systems read from a builder: `network`,
   `route` (AutoDriver, reset_camper), `river` (MapState), `poi` ("homestead",
   "camper_spawn"), `camper_spawn`, `player_spawns`. Story and MapState skip their
