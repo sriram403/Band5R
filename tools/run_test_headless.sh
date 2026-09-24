@@ -31,8 +31,15 @@ LOG="${LOG:-$MPG/tools/_last_playtest.log}"
 # --fixed-fps 60: every frame is exactly one 1/60 s physics step, however slow
 # the machine. Without it a slow CPU runs physics behind the real-time waits
 # (a 5 s "hold the pump" became ~2 s of pumping) and checks fail at random.
-"$GODOT" --headless --fixed-fps 60 --path "$MPG/FindingNaresh" -- "$ARG" $EXTRA $ARGS 2>&1 \
+# timeout: a script that fails to parse leaves the game idling forever.
+timeout "${TIMEOUT:-1200}" "$GODOT" --headless --fixed-fps 60 --path "$MPG/FindingNaresh" -- "$ARG" $EXTRA $ARGS 2>&1 \
 	| grep --line-buffered -v -e "Interpolated Camera3D triggered from outside" -e "at: _notification (scene/3d/camera_3d.cpp" \
 	| tee "$LOG"
-# Pass only if the run reached the summary line and it reports 0 failures.
+# Pass only if the run reached the summary line, it reports 0 failures, and no
+# script error happened on the way (one aborts the rest of its scenario
+# without a FAIL line, so it would otherwise go unnoticed).
+if grep -q "SCRIPT ERROR" "$LOG"; then
+	echo "Script errors during the run (see above): failing." >&2
+	exit 1
+fi
 grep -q "==== 0 failure(s) ====" "$LOG"
