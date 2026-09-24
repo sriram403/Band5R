@@ -87,7 +87,14 @@ minutes (up to ~3 hours is fine); pacing and fun matter, not length.
 3. **Greybox in the world.** Only then is the mechanic placed in the real map, in
    simple block-out shapes, and the route is timed against the beat chart.
 4. **Automated play-test** for every feature (runs behind your windows), then my own
-   play-through, then the milestone gate: your test and approval, then push.
+   play-through, then the milestone gate: your test and approval, then push. Three
+   levels (agreed 2026-09-24), so a fix costs minutes, not a long drive:
+   - **Quick** (default, after every change, ~3-4 min): every mechanic tested in
+     its gym, plus a short smoke check of the real map using teleports.
+   - **Road check** (seconds, no game window): `tools/gen/layout_check.py` measures
+     grades, cuts and gaps whenever roads or hills change.
+   - **Full** (~35 min): the quick run plus the long drives (the journey, every
+     road timed), only when roads change and before each milestone hand-over.
 5. **Debug tools.** A developer menu (teleport to any place, set weather and time of
    day, spawn items / creatures / Naresh, skip beats) so any moment can be tested in
    seconds.
