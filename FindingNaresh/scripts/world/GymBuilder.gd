@@ -38,6 +38,7 @@ static func slope_height(x: float, z: float) -> float:
 
 func build() -> Node3D:
 	Landscape.height_fn = GymBuilder.slope_height
+	Landscape.EXTENT = 1200.0
 	network = RoadNetwork.new()
 	Landscape.setup(null, null, [], [])
 	var base := Landscape.base_height

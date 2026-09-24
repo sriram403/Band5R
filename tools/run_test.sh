@@ -7,11 +7,13 @@
 #   tools/run_test.sh map,drive        some scenarios
 #   SHOW=1 tools/run_test.sh drive     on screen, with sound, to watch it
 #   GYM=base tools/run_test.sh         in a gym (test map) instead of the world
+#   ARGS="--extent=4000" tools/run_test.sh perf   extra game arguments
 DIR="$(dirname "$0")"
 ARG="--playtest"
 [ -n "$1" ] && ARG="--playtest=$1"
 EXTRA=""
 [ -n "$GYM" ] && EXTRA="--gym=$GYM"
+EXTRA="$EXTRA $ARGS"
 if [ -n "$SHOW" ]; then
 	exec "$DIR/run_game.sh" --resolution 1600x900 -- "$ARG" $EXTRA --show
 fi

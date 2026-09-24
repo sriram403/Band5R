@@ -10,7 +10,7 @@ extends RefCounted
 ## Roads and the river follow base_height, so they never chase their own cuts.
 ## Call setup() once before any height query.
 
-const EXTENT := 1600.0       ## terrain is EXTENT x EXTENT metres, centred on origin
+static var EXTENT := 1600.0  ## terrain is EXTENT x EXTENT metres, centred on origin (set by the builder)
 const STEP := 5.0            ## grid resolution
 const ROAD_HALF := 4.0       ## asphalt half-width
 const GRAVEL_HALF := 3.0     ## gravel track half-width
@@ -308,18 +308,27 @@ static func _grid_sample(layer: PackedFloat32Array, x: float, z: float, fallback
 	return lerpf(a, b, tz)
 
 
+## Terrain tiles: CHUNK cells (CHUNK * STEP metres) a side. Each tile has a full
+## detail mesh for near views and a coarse one (every COARSE-th vertex, with
+## skirts down its edges so no gaps show against a finer neighbour) beyond
+## FAR_LOD metres. Tiles are culled on their own, so a 4 km world only draws
+## what is in view.
+const CHUNK := 50
+const COARSE := 4
+const FAR_LOD := 800.0
+const SKIRT := 6.0
+
+static var _normals := PackedVector3Array()
+static var _colors := PackedColorArray()
+
+
 static func build_terrain() -> StaticBody3D:
 	_solve_grid()
 	var n := grid_n
 	var origin := _grid_origin()
 	var count := n * n
-
-	var verts := PackedVector3Array()
-	var normals := PackedVector3Array()
-	var colors := PackedColorArray()
-	verts.resize(count)
-	normals.resize(count)
-	colors.resize(count)
+	_normals.resize(count)
+	_colors.resize(count)
 	for iz in n:
 		var z := origin + iz * STEP
 		for ix in n:
@@ -329,31 +338,10 @@ static func build_terrain() -> StaticBody3D:
 			var hx := grid_h[iz * n + mini(ix + 1, n - 1)] - grid_h[iz * n + maxi(ix - 1, 0)]
 			var hz := grid_h[mini(iz + 1, n - 1) * n + ix] - grid_h[maxi(iz - 1, 0) * n + ix]
 			var slope := Vector2(hx, hz).length() / (2.0 * STEP)
-			verts[k] = Vector3(x, y, z)
 			# Analytic normal from the height field. Deriving it from triangle
 			# winding gave a flat, unlit terrain, and this is exact anyway.
-			normals[k] = Vector3(-hx, 2.0 * STEP, -hz).normalized()
-			colors[k] = _ground_color(x, z, y, slope, grid_road_d[k], grid_river_d[k], grid_gravel[k] == 1)
-
-	var indices := PackedInt32Array()
-	indices.resize((n - 1) * (n - 1) * 6)
-	var w := 0
-	for iz in n - 1:
-		for ix in n - 1:
-			var a := iz * n + ix
-			var c := a + n
-			indices[w] = a; indices[w + 1] = c; indices[w + 2] = a + 1
-			indices[w + 3] = a + 1; indices[w + 4] = c; indices[w + 5] = c + 1
-			w += 6
-
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = verts
-	arrays[Mesh.ARRAY_NORMAL] = normals
-	arrays[Mesh.ARRAY_COLOR] = colors
-	arrays[Mesh.ARRAY_INDEX] = indices
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			_normals[k] = Vector3(-hx, 2.0 * STEP, -hz).normalized()
+			_colors[k] = _ground_color(x, z, y, slope, grid_road_d[k], grid_river_d[k], grid_gravel[k] == 1)
 
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
@@ -366,16 +354,34 @@ static func build_terrain() -> StaticBody3D:
 
 	var body := StaticBody3D.new()
 	body.name = "Terrain"
-	var mi := MeshInstance3D.new()
-	mi.name = "TerrainMesh"
-	mi.mesh = mesh
-	mi.material_override = mat
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	body.add_child(mi)
+	var tiles := Node3D.new()
+	tiles.name = "TerrainMesh"
+	body.add_child(tiles)
+	var cells := n - 1
+	for cz in range(0, cells, CHUNK):
+		for cx in range(0, cells, CHUNK):
+			var w := mini(CHUNK, cells - cx)
+			var d := mini(CHUNK, cells - cz)
+			var near := MeshInstance3D.new()
+			near.name = "Tile_%d_%d" % [cx / CHUNK, cz / CHUNK]
+			near.mesh = _tile_mesh(cx, cz, w, d, 1, 0.0)
+			near.material_override = mat
+			near.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+			near.visibility_range_end = FAR_LOD
+			tiles.add_child(near)
+			var far := MeshInstance3D.new()
+			far.name = near.name + "_far"
+			far.mesh = _tile_mesh(cx, cz, w, d, COARSE, SKIRT)
+			far.material_override = mat
+			far.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			far.visibility_range_begin = FAR_LOD
+			tiles.add_child(far)
+	_normals = PackedVector3Array()
+	_colors = PackedColorArray()
 
 	# Height-map collision: one cell per grid square, far cheaper to build and
-	# query than a 200k-triangle trimesh. Its cells are 1 unit apart and centred
-	# on the origin, so heights are stored /STEP and the shape scaled by STEP.
+	# query than a trimesh. Its cells are 1 unit apart and centred on the
+	# origin, so heights are stored /STEP and the shape scaled by STEP.
 	var hm := HeightMapShape3D.new()
 	hm.map_width = n
 	hm.map_depth = n
@@ -390,6 +396,71 @@ static func build_terrain() -> StaticBody3D:
 	cs.scale = Vector3.ONE * STEP
 	body.add_child(cs)
 	return body
+
+
+## One tile's mesh: cells [cx, cx+w) x [cz, cz+d) of the grid, every `stride`-th
+## vertex, plus a skirt hanging `skirt` metres below its edges if non-zero.
+static func _tile_mesh(cx: int, cz: int, w: int, d: int, stride: int, skirt: float) -> ArrayMesh:
+	var n := grid_n
+	var origin := _grid_origin()
+	var xs: Array[int] = []
+	var zs: Array[int] = []
+	for i in range(0, w + 1, stride):
+		xs.append(cx + i)
+	if xs[xs.size() - 1] != cx + w:
+		xs.append(cx + w)
+	for i in range(0, d + 1, stride):
+		zs.append(cz + i)
+	if zs[zs.size() - 1] != cz + d:
+		zs.append(cz + d)
+	var nx := xs.size()
+	var nz := zs.size()
+	var verts := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var colors := PackedColorArray()
+	var indices := PackedInt32Array()
+	for jz in nz:
+		for jx in nx:
+			var k := zs[jz] * n + xs[jx]
+			verts.append(Vector3(origin + xs[jx] * STEP, grid_h[k], origin + zs[jz] * STEP))
+			normals.append(_normals[k])
+			colors.append(_colors[k])
+	for jz in nz - 1:
+		for jx in nx - 1:
+			var a := jz * nx + jx
+			var c := a + nx
+			indices.append_array(PackedInt32Array([a, c, a + 1, a + 1, c, c + 1]))
+	if skirt > 0.0:
+		# walk the rim and hang a strip below each edge
+		var rim: Array[int] = []
+		for jx in nx:
+			rim.append(jx)
+		for jz in range(1, nz):
+			rim.append(jz * nx + nx - 1)
+		for jx in range(nx - 2, -1, -1):
+			rim.append((nz - 1) * nx + jx)
+		for jz in range(nz - 2, -1, -1):
+			rim.append(jz * nx)
+		var base := verts.size()
+		for r in rim:
+			verts.append(verts[r] - Vector3(0, skirt, 0))
+			normals.append(normals[r])
+			colors.append(colors[r])
+		for i in rim.size() - 1:
+			var t0 := rim[i]
+			var t1 := rim[i + 1]
+			var b0 := base + i
+			var b1 := base + i + 1
+			indices.append_array(PackedInt32Array([t0, b0, t1, t1, b0, b1]))
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
 
 
 # --- roads and water -------------------------------------------------------------

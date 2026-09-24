@@ -47,8 +47,8 @@ func add_water(at: Vector3, parent: Node) -> void:
 	w.name = "Water%d" % _water.size()
 	w.kind = NoiseLoop.Kind.WATER
 	w.volume_db = -4.0
+	w.position = at            # the world root sits at the origin (and is not in the tree yet)
 	parent.add_child(w)
-	w.global_position = at
 	_water.append(w)
 
 

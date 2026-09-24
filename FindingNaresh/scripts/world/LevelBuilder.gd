@@ -79,6 +79,8 @@ const PADS := [
 ]
 
 const SCATTER_SEED := 20260810
+## World size in metres (square). `-- --extent=<m>` overrides it for load tests.
+const WORLD_EXTENT := 1600.0
 
 # Colours -----------------------------------------------------------------------
 const C_TRUNK := Color(0.38, 0.26, 0.18)
@@ -161,6 +163,10 @@ func _lap(what: String, since: int) -> int:
 func _build_roads() -> void:
 	network = RoadNetwork.new()
 	Landscape.height_fn = Callable()     # a gym may have set its own ground
+	Landscape.EXTENT = WORLD_EXTENT
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--extent="):
+			Landscape.EXTENT = a.get_slice("=", 1).to_float()
 	# Landscape needs ponds and mounds before any road can sample the ground.
 	Landscape.setup(null, null, PONDS, MOUNDS)
 	var base := Landscape.base_height
