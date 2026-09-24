@@ -310,6 +310,7 @@ func t_layout() -> void:
 	if p2().seat == null:
 		p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
 	await wait(0.4)
+	var starting_layout: int = boot.layout
 	var solo_default: bool = boot.layout == 2
 	check(solo_default == (Input.get_connected_joypads().size() == 0), "solo view is the default only when no controller is connected")
 	var pad_for_p2: bool = boot.devices[1].kind == InputDevice.Kind.PAD
@@ -346,6 +347,7 @@ func t_layout() -> void:
 	await wait(0.2)
 	p2().force_exit = true
 	await physics_frames(3)
+	boot._set_layout(starting_layout)
 
 
 ## A parked van must stay put on the steepest bit of road, engine off or idling.
