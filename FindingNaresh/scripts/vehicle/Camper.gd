@@ -806,7 +806,11 @@ func _update_visuals(delta: float, speed: float, fwd_speed: float) -> void:
 		start_fail_t -= delta
 	if _steam:
 		_steam.emitting = coolant_leak or temp > TEMP_WARN
-		_steam.amount = 60 if coolant_leak else 24
+		# only on a change: setting `amount` resets every particle (even to the
+		# same value), which every tick meant the steam never got to rise
+		var puffs := 60 if coolant_leak else 24
+		if _steam.amount != puffs:
+			_steam.amount = puffs
 	if _hiss:
 		_hiss.target = (0.9 if engine_on else 0.4) if coolant_leak else (0.3 if temp > TEMP_WARN else 0.0)
 	if _glug:
@@ -817,6 +821,12 @@ func _update_visuals(delta: float, speed: float, fwd_speed: float) -> void:
 		elif not flowing and _glug.playing:
 			_glug.stop()
 	_set_lamp("lamp_batt", not engine_on and battery > 0.02)
+	# the bulbs follow the battery: left on, they die with it (and come back
+	# once the engine has put some charge in)
+	var lit := headlights_on and battery > 0.02
+	if not _headlight_nodes.is_empty() and _headlight_nodes[0].visible != lit:
+		for l in _headlight_nodes:
+			l.visible = lit
 	_set_lamp("lamp_park", parking_brake and battery > 0.02)
 
 	_update_nav_screen(delta)

@@ -197,11 +197,15 @@ func to_dict() -> Dictionary:
 
 
 func from_dict(d: Dictionary) -> void:
+	# A save from before a road was re-laid has a different number of pieces
+	# for it; that road then starts undiscovered rather than half-drawn wrong.
 	for r in roads:
-		if d.get("roads", {}).has(r["name"]):
-			r["chunks"] = (d["roads"][r["name"]] as Array).duplicate()
-	if d.has("river"):
-		river_chunks = (d["river"] as Array).duplicate()
+		var saved: Array = d.get("roads", {}).get(r["name"], [])
+		if saved.size() == (r["chunks"] as Array).size():
+			r["chunks"] = saved.duplicate()
+	var river: Array = d.get("river", [])
+	if river.size() == river_chunks.size():
+		river_chunks = river.duplicate()
 	var lk: Array = d.get("lakes", [])
 	for i in mini(lk.size(), lakes.size()):
 		lakes[i]["revealed"] = lk[i]

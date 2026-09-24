@@ -25,6 +25,9 @@ const STAMP_STYLE := {
 }
 
 static var _relief: ImageTexture = null
+## Which ground the relief was printed from: it survives scene reloads, so a
+## switch between a gym and the world must print it again.
+static var _relief_key := ""
 
 var state: MapState
 var cursor := Vector2(0.5, 0.5)       ## in map units, 0..1 across the paper
@@ -41,8 +44,10 @@ func _ready() -> void:
 	_font = ThemeDB.fallback_font
 	if state:
 		state.changed.connect(queue_redraw)
-	if _relief == null:
+	var key := "%s|%.0f" % [Landscape.height_fn.is_valid(), Landscape.EXTENT]
+	if _relief == null or _relief_key != key:
 		_relief = _make_relief()
+		_relief_key = key
 
 
 func bind(s: MapState) -> void:
@@ -113,7 +118,8 @@ func place_stamp() -> void:
 
 func remove_stamp() -> bool:
 	# "near" in world metres, scaled so it feels the same size on the paper
-	return state.remove_stamp_near(cursor_world(), MapState.BOUNDS.size.x * 0.03)
+	# at any zoom (zoomed in, 120 m would reach stamps well away from the pencil)
+	return state.remove_stamp_near(cursor_world(), MapState.BOUNDS.size.x * 0.03 / zoom)
 
 
 # --- drawing -------------------------------------------------------------------
