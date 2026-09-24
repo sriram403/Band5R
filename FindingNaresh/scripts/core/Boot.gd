@@ -135,7 +135,7 @@ func _spawn_players() -> void:
 		cam.name = "Cam%d" % (i + 1)
 		cam.fov = FOV_SIDE_BY_SIDE
 		cam.near = 0.06
-		cam.far = 1800.0
+		cam.far = 2600.0      # the backdrop ridges and their tree tops stand out to ~2.3 km
 		cam.cull_mask = PlayerRig.cull_mask_for(i)
 		# The rig places this camera itself every rendered frame from
 		# interpolated transforms; engine interpolation on top would add lag.
@@ -524,12 +524,29 @@ func _input(event: InputEvent) -> void:
 			KEY_ESCAPE:
 				if menu in ["load", "quit_confirm"]:
 					_menu_back()
+				elif started and not paused and _esc_dismiss():
+					pass
 				elif started:
 					_toggle_pause()
 			KEY_BRACKETLEFT:
 				_step_sensitivity(-1)
 			KEY_BRACKETRIGHT:
 				_step_sensitivity(1)
+
+
+## ESC first puts away whatever the keyboard player has open (journal, paper
+## map, then a note on screen); only with nothing open does it pause.
+func _esc_dismiss() -> bool:
+	if kbm_owner >= players.size():
+		return false
+	var p: PlayerRig = players[kbm_owner]
+	if p.journal_open:
+		p.journal_open = false
+		return true
+	if p.map_open:
+		p.set_map_open(false)
+		return true
+	return kbm_owner < huds.size() and huds[kbm_owner].dismiss_note()
 
 
 func _toggle_pause() -> void:

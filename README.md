@@ -86,12 +86,17 @@ Driving (once you are in the driver's seat):
 | Throttle | W | RT |
 | Brake / reverse | S | LT |
 | Steer | A / D | Left stick |
-| Handbrake | Space | B |
+| Handbrake on / off (driver or passenger) | Space | B |
 | Ignition | **X** | D-pad Up |
 | Headlights | L | D-pad Left |
 | Swap seats (stopped) | C | LB |
 | Get out (stopped) | E | X |
 | Travel journal (parked) | J | D-pad Right |
+
+The handbrake is the only thing that holds the van: the red **P** lamp on the dash shows
+it is on. Leave it off and the van rolls on any slope, with or without anyone in it.
+Pulling away with the engine running lets it off. With the engine off, S is the brake
+pedal (it stops a van rolling back after a stall).
 
 **Saving:** there are no automatic saves. Memory Fragments (glowing pink petals) combine
 three at a time into a Memory Rose. In the parked van, open the travel journal and

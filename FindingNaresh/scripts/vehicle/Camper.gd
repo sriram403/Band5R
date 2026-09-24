@@ -11,15 +11,15 @@ const MASS := 2150.0
 const ENGINE_PEAK := 7000.0        ## N at low speed
 const ENGINE_FADE := 30.0          ## m/s at which the engine runs out of pull
 const REVERSE_FORCE := 2100.0
-const BRAKE_FORCE := 42.0
+const BRAKE_FORCE := 70.0         ## full pedal: ~60 km/h to a stop in about 25 m
 const HANDBRAKE_FORCE := 90.0
 const STEER_MAX := 0.55            ## rad at standstill
 const STEER_MIN := 0.15            ## rad at high speed
 const STEER_SPEED := 3.4           ## how fast the wheels reach the target angle
 const STEER_RETURN := 5.2
 const IDLE_DRAG := 0.35
-const HOLD_BRAKE := 14.0           ## auto-hold at a standstill so a parked van does not creep
-const HOLD_SPEED := 1.0            ## m/s below which the hold engages
+## Hitting someone on foot faster than this (m/s, towards them) knocks them flying.
+const KNOCK_SPEED := 2.5
 
 const FUEL_CAPACITY := 70.0
 const FUEL_PER_KM := 4.0           ## game-readable, not realistic: ~17 km on a tank
@@ -54,6 +54,10 @@ const BODY_Y := -(WHEEL_RADIUS + WHEEL_REST) - 0.11
 # --- state ---------------------------------------------------------------------
 var engine_on := false
 var headlights_on := false
+## The handbrake (Space / pad B, driver or passenger). On, the van is held; off,
+## it rolls on any slope, engine running or not, driver or no driver. Throttle
+## (or reverse) with the engine running lets it off, like a drive-away assist.
+var parking_brake := true
 ## Starts low on purpose: the lamp comes on around Last Fuel, where the pumps
 ## are dead but cans are lying about - the first refuel teaches the cans.
 var fuel := 26.0
@@ -85,7 +89,7 @@ var start_fail := ""               ## why the last start attempt failed, for the
 var start_fail_t := 0.0
 var _steam: CPUParticles3D
 var _hiss: NoiseLoop
-var _gurgle: NoiseLoop
+var _glug: AudioStreamPlayer3D
 var _pour_t := 0.0
 var coolant_added := 0.0
 var coolant := 1.0                 ## 0..1 of the cooling system's fill; the split hose drains it
@@ -287,6 +291,8 @@ func _build_interior() -> void:
 	_needles["lamp_fuel"] = _lamp(cluster, Vector3(-0.155, 0.045, 0.012), Color(0.95, 0.65, 0.15))
 	_needles["lamp_temp"] = _lamp(cluster, Vector3(-0.155, 0.0, 0.012), Color(0.90, 0.20, 0.18))
 	_needles["lamp_batt"] = _lamp(cluster, Vector3(-0.155, -0.045, 0.012), Color(0.30, 0.85, 0.55))
+	_needles["lamp_park"] = _lamp(cluster, Vector3(0.132, 0.058, 0.012), Color(0.95, 0.18, 0.16))
+	cluster.add_child(Build.label3d("P", Vector3(0.132, 0.058, 0.02), Vector3.ZERO, 0.014, Color(1, 1, 1)))
 
 	# steering wheel
 	_steering_wheel = Node3D.new()
@@ -419,8 +425,10 @@ func _build_service() -> void:
 		if item.kind != "fuel_can":
 			return
 		var room := FUEL_CAPACITY - fuel
-		fuel += item.pour(minf(POUR_RATE * dt, room))
-		_pour_t = 0.2)
+		var got: float = item.pour(minf(POUR_RATE * dt, room))
+		fuel += got
+		if got > 0.0005:           # an empty can (or a full tank) makes no pouring sound
+			_glug_at(Vector3(-1.2, 1.4, 1.9)))
 	_body_root.add_child(inlet)
 
 	# radiator filler under the bonnet, reached from the front of the van
@@ -443,7 +451,8 @@ func _build_service() -> void:
 		var got: float = item.pour(1.6 * dt)
 		coolant_added += got
 		coolant = minf(1.0, coolant + got / COOLANT_L)
-		_pour_t = 0.2
+		if got > 0.0005:
+			_glug_at(Vector3(0, 1.45, -3.6))
 		if coolant_leak and coolant_added >= 3.0:
 			fix_leak()
 			for pl in get_tree().get_nodes_in_group("player"):
@@ -478,11 +487,20 @@ func _build_service() -> void:
 	_hiss.volume_db = -10.0
 	_hiss.position = Vector3(0, 1.6, -3.6)
 	_body_root.add_child(_hiss)
-	_gurgle = NoiseLoop.new()
-	_gurgle.kind = NoiseLoop.Kind.POUR
-	_gurgle.volume_db = -6.0
-	_gurgle.position = Vector3(-1.2, 1.4, 1.9)
-	_body_root.add_child(_gurgle)
+	# glugging while liquid actually flows from a can or jug (audio/pour_glug.wav)
+	_glug = AudioStreamPlayer3D.new()
+	_glug.name = "Glug"
+	var gs := load("res://audio/pour_glug.wav") as AudioStreamWAV
+	if gs != null:
+		gs = gs.duplicate() as AudioStreamWAV
+		gs.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		gs.loop_begin = 0
+		gs.loop_end = int(gs.get_length() * gs.mix_rate)
+		_glug.stream = gs
+	_glug.volume_db = -3.0
+	_glug.unit_size = 4.0
+	_glug.max_distance = 40.0
+	_body_root.add_child(_glug)
 
 	# rear rack on the back bumper: two can slots and one for anything else
 	var rack := Node3D.new()
@@ -632,14 +650,14 @@ func _physics_process(delta: float) -> void:
 	var throttle_in := debug_throttle
 	var brake_in := 0.0
 	var steer_in := debug_steer
-	var handbrake := false
 
 	if driver != null and driver.dev != null and not driver.journal_open:
 		var dev := driver.dev
 		throttle_in = maxf(debug_throttle, dev.throttle())
 		brake_in = dev.brake()
 		steer_in = dev.steer() if absf(dev.steer()) > 0.001 else debug_steer
-		handbrake = dev.held("handbrake")
+		if dev.just_pressed("handbrake"):
+			set_parking_brake(not parking_brake)
 		if dev.just_pressed("ignition"):
 			toggle_engine()
 		if dev.just_pressed("headlights"):
@@ -649,6 +667,9 @@ func _physics_process(delta: float) -> void:
 			return
 	if passenger != null and passenger.dev != null:
 		var pdev := passenger.dev
+		# the lever sits between the seats: the passenger can pull it too
+		if pdev.just_pressed("handbrake"):
+			set_parking_brake(not parking_brake)
 		if pdev.just_pressed("headlights"):
 			set_headlights(not headlights_on)
 		if pdev.just_pressed("swap_seat"):
@@ -676,29 +697,26 @@ func _physics_process(delta: float) -> void:
 	engine_force = -out
 
 	var b := 0.0
-	if brake_in > 0.01 and fwd_speed > 0.6:
+	# S brakes while moving forward; stopped (or rolling back) with the engine
+	# running it is reverse. With the engine off it is always the brake pedal,
+	# which is what stops a van rolling back after a stall on a hill.
+	if brake_in > 0.01 and (fwd_speed > 0.6 or not engine_on):
 		b = BRAKE_FORCE * brake_in
-	if handbrake:
-		b = HANDBRAKE_FORCE
 	if not engine_on or throttle_in < 0.01:
 		b += IDLE_DRAG
-	# Parking brake with the engine off, auto-hold with it idling: without
-	# this the van crept downhill on its own after every stop.
-	if speed < HOLD_SPEED and throttle_in < 0.01 and brake_in < 0.01:
-		b = maxf(b, HANDBRAKE_FORCE if not engine_on else HOLD_BRAKE)
-	# Engine off: the parking brake holds it. Pressing W used to release the
-	# auto-hold and the van rolled backwards down any slope.
-	if not engine_on and throttle_in > 0.0:
-		b = HANDBRAKE_FORCE
-	# Nobody at the wheel: the handbrake is on. Otherwise a van left rolling
-	# (stepping out on a slope, an engine cut-out) crept off downhill forever.
-	if driver == null and debug_throttle <= 0.0:
-		b = HANDBRAKE_FORCE
-	_update_parked(delta, speed, throttle_in, brake_in)
+	# Drive-away: pulling off (or reversing) with the engine running lets the
+	# handbrake off. Otherwise it holds, and nothing else does: no hidden
+	# auto-hold, so a van left with it off rolls down any slope.
+	if parking_brake and engine_on and fuel > 0.0 and (throttle_in > 0.01 or (brake_in > 0.01 and fwd_speed < 0.6)):
+		set_parking_brake(false)
+	if parking_brake:
+		b = maxf(b, HANDBRAKE_FORCE)
+	_update_parked(delta, speed)
 	brake = b
 
 	_update_condition(delta, speed, throttle_in)
-	_update_visuals(delta, speed)
+	_update_visuals(delta, speed, fwd_speed)
+	_check_pedestrians(speed)
 
 
 func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
@@ -738,7 +756,10 @@ func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 		if headlights_on:
 			battery = maxf(0.0, battery - 0.004 * delta)
 	if _audio:
-		_audio.set_state(engine_on, rpm_norm, speed)
+		var thr := 0.0
+		if driver != null and driver.dev != null and engine_on:
+			thr = driver.dev.throttle()
+		_audio.set_state(engine_on, rpm_norm, speed, maxf(thr, debug_throttle))
 
 
 ## Uphill grade, 0 on the flat or downhill. The nose is -Z, so a raised nose
@@ -747,8 +768,11 @@ func _grade() -> float:
 	return maxf(0.0, -global_transform.basis.z.y)
 
 
-func _update_visuals(delta: float, speed: float) -> void:
-	_wheel_spin += speed * delta / WHEEL_RADIUS
+func _update_visuals(delta: float, speed: float, fwd_speed: float) -> void:
+	# Signed, with a dead zone: a parked van's physics jitter used to keep the
+	# wheels turning slowly forever. Locked by the handbrake, they don't turn.
+	var roll := fwd_speed if absf(fwd_speed) > 0.2 and not freeze and not parking_brake else 0.0
+	_wheel_spin = wrapf(_wheel_spin + roll * delta / WHEEL_RADIUS, 0.0, TAU)
 	for i in _wheel_meshes.size():
 		_wheel_meshes[i].rotation.x = -_wheel_spin
 	if _steering_wheel:
@@ -768,10 +792,15 @@ func _update_visuals(delta: float, speed: float) -> void:
 		_steam.amount = 60 if coolant_leak else 24
 	if _hiss:
 		_hiss.target = (0.9 if engine_on else 0.4) if coolant_leak else (0.3 if temp > TEMP_WARN else 0.0)
-	if _gurgle:
+	if _glug:
 		_pour_t -= delta
-		_gurgle.target = 0.8 if _pour_t > 0.0 else 0.0
+		var flowing := _pour_t > 0.0 and not Sfx.muted
+		if flowing and not _glug.playing:
+			_glug.play()
+		elif not flowing and _glug.playing:
+			_glug.stop()
 	_set_lamp("lamp_batt", not engine_on and battery > 0.02)
+	_set_lamp("lamp_park", parking_brake and battery > 0.02)
 
 	_nav_timer -= delta
 	var nav: Label3D = _needles.get("nav_label")
@@ -822,14 +851,14 @@ func _set_lamp(key: String, on: bool) -> void:
 
 
 ## Raycast-wheel brakes still let a van creep a few cm/s on a steep grade. Once
-## it has properly stopped with its wheels down, freeze it in place; any
-## throttle or brake input releases it on the same tick.
-func _update_parked(delta: float, speed: float, throttle_in: float, brake_in: float) -> void:
+## it has stopped on the handbrake with its wheels down, freeze it in place;
+## letting the handbrake off releases it on the same tick.
+func _update_parked(delta: float, speed: float) -> void:
 	var grounded := true
 	for w in _wheels:
 		if not w.is_in_contact():
 			grounded = false
-	var settle := speed < 0.25 and (throttle_in < 0.01 or not engine_on) and brake_in < 0.01 and grounded
+	var settle := parking_brake and speed < 0.25 and grounded
 	_parked_t = _parked_t + delta if settle else 0.0
 	var want := _parked_t > 0.6
 	if want != freeze:
@@ -859,6 +888,46 @@ func recover() -> void:
 
 
 # --- systems -------------------------------------------------------------------
+
+func set_parking_brake(on: bool) -> void:
+	if on == parking_brake:
+		return
+	parking_brake = on
+	Sfx.play3d("creak" if on else "latch", global_transform * Vector3(0, 1.0, -1.6), -8.0)
+
+
+## Where the glug plays from (the fuel filler or the radiator), for 0.2 s more.
+func _glug_at(local: Vector3) -> void:
+	_pour_t = 0.2
+	if _glug:
+		_glug.position = local
+
+
+## Someone on foot in the van's path gets knocked flying, harder the faster
+## the van is going. Checked a little ahead of the hull: a player is a
+## kinematic body, so if the van actually touched them it would stop dead.
+func _check_pedestrians(speed: float) -> void:
+	if speed < KNOCK_SPEED:
+		return
+	var inv := global_transform.affine_inverse()
+	var reach := 0.45 + speed * get_physics_process_delta_time() * 2.0
+	for node in get_tree().get_nodes_in_group("player"):
+		var p := node as PlayerRig
+		if p == null or p.seat != null or p.knocked_t > 0.0:
+			continue
+		var local := inv * (p.global_position + Vector3.UP * 0.9)
+		local.y -= BODY_Y + 1.70
+		if absf(local.x) > 1.12 + 0.34 + reach or absf(local.z) > 2.9 + 0.34 + reach or absf(local.y) > 1.9:
+			continue
+		var rel := linear_velocity - p.velocity
+		var away := p.global_position - global_position
+		away.y = 0.0
+		if rel.dot(away.normalized()) < KNOCK_SPEED:
+			continue
+		var push := rel * 1.15
+		push.y = 0.0
+		push += Vector3.UP * (2.5 + rel.length() * 0.35)
+		p.knock(push, self)
 
 func toggle_engine() -> void:
 	Sfx.play3d("click", global_position, -6.0)

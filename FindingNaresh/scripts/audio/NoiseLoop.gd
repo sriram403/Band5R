@@ -2,10 +2,11 @@ class_name NoiseLoop
 extends Node3D
 
 ## A shaped-noise sound made on the fly, for things there is no sample of:
-## pouring (a low gurgle), steam (a bright hiss) and wind (a slow, soft rush).
+## pouring (a low gurgle), steam (a bright hiss), wind (a slow, soft rush) and
+## water (a babbling river or lapping lake shore).
 ## Set `target` 0..1 to fade it in and out; nothing is played while silent.
 
-enum Kind { POUR, STEAM, WIND }
+enum Kind { POUR, STEAM, WIND, WATER }
 
 const MIX_RATE := 22050.0
 
@@ -75,5 +76,14 @@ func _process(delta: float) -> void:
 				_lp2 = lerpf(_lp2, _lp, 0.05)
 				_phase += 1.0 / MIX_RATE
 				v = _lp2 * 3.0 * (0.6 + 0.4 * sin(_phase * 0.7) * sin(_phase * 0.23))
+			Kind.WATER:
+				# babbling: mid-band noise with a quick, wandering flutter
+				_lp = lerpf(_lp, n, 0.35)
+				_lp2 = lerpf(_lp2, _lp, 0.06)
+				_phase += 1.0 / MIX_RATE
+				_gurgle = maxf(0.0, _gurgle - 0.0004)
+				if _rng.randf() < 0.0012:
+					_gurgle = _rng.randf_range(0.3, 0.9)
+				v = (_lp - _lp2) * (0.7 + 0.3 * sin(_phase * 5.3) * sin(_phase * 1.7) + _gurgle) * 1.4
 		var s := clampf(v * _gain, -1.0, 1.0)
 		_playback.push_frame(Vector2(s, s))

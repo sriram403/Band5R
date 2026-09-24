@@ -192,6 +192,15 @@ func show_note(text: String, seconds: float) -> void:
 	_note_time = seconds
 
 
+## Hides the note if one is showing; true if it did.
+func dismiss_note() -> bool:
+	if not _note.visible:
+		return false
+	_note.visible = false
+	_note_time = 0.0
+	return true
+
+
 func _process(delta: float) -> void:
 	if player == null:
 		return

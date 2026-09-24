@@ -90,6 +90,7 @@ static func collect(boot: Node) -> Dictionary:
 			"xf": _xf(c.global_transform), "fuel": c.fuel, "temp": c.temp, "battery": c.battery,
 			"odometer": c.odometer, "leak": c.coolant_leak, "lockout": c.heat_lockout,
 			"headlights": c.headlights_on, "coolant_added": c.coolant_added, "coolant": c.coolant,
+			"park_brake": c.parking_brake,
 		},
 		"items": items,
 		"map": boot.map_state.to_dict(),
@@ -133,6 +134,7 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	c.coolant_added = float(cd.get("coolant_added", 0.0))
 	c.coolant = float(cd.get("coolant", 1.0))
 	c.engine_on = false
+	c.parking_brake = bool(cd.get("park_brake", true))
 	c.set_headlights(bool(cd.get("headlights", false)))
 	c.reset_physics_interpolation()
 

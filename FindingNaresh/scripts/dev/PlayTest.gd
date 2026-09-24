@@ -173,6 +173,7 @@ func reset_camper(route_index: int) -> void:
 	var c := camper()
 	c.linear_velocity = Vector3.ZERO
 	c.angular_velocity = Vector3.ZERO
+	c.parking_brake = true      # a parked van
 	c.global_transform = Transform3D(basis, p + Vector3.UP * 0.9)
 	if c.has_method("reset_physics_interpolation"):
 		c.reset_physics_interpolation()
@@ -206,7 +207,7 @@ func _run() -> void:
 		await call("t_" + r)
 		_finish()
 		return
-	var all := ["audio", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "fixes", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	for s in all:
 		if only != "" and not s in only.split(","):
 			continue
@@ -341,6 +342,8 @@ func t_park() -> void:
 	var c := camper()
 	if c.engine_on:
 		c.toggle_engine()
+	if not c.parking_brake:
+		await tap(KEY_SPACE)
 	await wait(1.0)
 	var p0 := c.global_position
 	await wait(5.0)
@@ -350,15 +353,15 @@ func t_park() -> void:
 	p0 = c.global_position
 	await wait(5.0)
 	var idle_drift := p0.distance_to(c.global_position)
-	log_line("parked 5 s: engine off drift %.2f m, idling drift %.2f m" % [off_drift, idle_drift])
-	check(off_drift < 0.1, "parked van with engine off stays put on a slope")
-	check(idle_drift < 0.1, "idling van without throttle stays put on a slope")
-	# and it can still pull away uphill from the hold
+	log_line("parked on the handbrake 5 s: engine off drift %.2f m, idling drift %.2f m" % [off_drift, idle_drift])
+	check(off_drift < 0.1, "on the handbrake, a van with the engine off stays put on a slope")
+	check(idle_drift < 0.1, "on the handbrake, an idling van stays put on a slope")
+	# and it can still pull away uphill from the handbrake
 	key(KEY_W, true)
 	await wait(2.0)
 	key(KEY_W, false)
-	log_line("pull away from hold: %.0f km/h after 2 s" % kmh())
-	check(kmh() > 10.0, "van pulls away normally from the auto-hold")
+	log_line("pull away from the handbrake: %.0f km/h after 2 s" % kmh())
+	check(kmh() > 10.0, "van pulls away normally from the handbrake")
 	key(KEY_S, true)
 	await wait(3.0)
 	key(KEY_S, false)
@@ -853,6 +856,7 @@ func t_carry() -> void:
 	key(KEY_S, true)
 	await wait(3.0)
 	key(KEY_S, false)
+	await tap(KEY_SPACE)        # handbrake on before getting out
 	var rel1 := c.global_transform.affine_inverse() * full.global_position
 	log_line("stowed can moved %.3f m relative to the van while driving" % rel0.distance_to(rel1))
 	check(rel0.distance_to(rel1) < 0.05, "a stowed can rides along with the van")
@@ -972,6 +976,7 @@ func van_to(poi_pos: Vector3) -> void:
 	c.angular_velocity = Vector3.ZERO
 	c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP), p + Vector3.UP * 0.9)
 	c.reset_physics_interpolation()
+	c.parking_brake = true      # a parked van
 	await physics_frames(20)
 
 
@@ -1104,6 +1109,7 @@ func t_waterworks() -> void:
 	# into the yard: the objective asks for coolant
 	await wait(0.5)
 	check(st.current()["id"] == "coolant", "the objective becomes: get coolant from the water works")
+	await tap(KEY_SPACE)        # stalled on the climb: handbrake on before getting out
 	p.force_exit = true
 	await physics_frames(3)
 	var sta := station()
@@ -1372,6 +1378,18 @@ func t_audio() -> void:
 	check(heard > 0, "walking makes footstep sounds")
 	var wind: NoiseLoop = boot.world.get_node("Wind")
 	check(wind != null and wind._gain > 0.5, "the wind bed is playing")
+	var amb: Ambience = boot.world.get_node("Ambience")
+	check(amb != null and amb._bed.playing and amb._birds.playing and amb._bed.stream != null and amb._birds.stream != null, "the forest bed and birdsong are playing")
+	var dock: Vector3 = boot.builder.poi["dock"]
+	await place_player(p, Vector3(dock.x, Landscape.ground(dock.x, dock.z) + 0.3, dock.z), 0.0)
+	await wait(1.0)
+	var lapping := 0
+	for w in amb._water:
+		if w._gain > 0.3:
+			lapping += 1
+	log_line("water emitters: %d, audible at the dock: %d" % [amb._water.size(), lapping])
+	check(lapping > 0, "water can be heard at the lake")
+	await place_player(p, boot.builder.player_spawns[0].origin, 0.0)
 
 
 ## Fixes from the user's play-through notes (FUTURE.md items 10, 11, 14, 15, 16, 25).
@@ -1474,6 +1492,210 @@ func t_feedback() -> void:
 	key(KEY_SHIFT, false)
 	log_line("walked at the world edge: stopped at x %.0f (edge %.0f)" % [p.global_position.x, Landscape.EXTENT * 0.5])
 	check(p.global_position.x < Landscape.EXTENT * 0.5 - 4.0, "the world edge stops you walking off the map")
+
+
+## The small fixes from the user's second list (2026-09-24): ESC, wheels at
+## rest, the handbrake, brakes, pour sounds, seated avatars, van hits a player,
+## the engine's gears.
+func t_fixes() -> void:
+	var c := camper()
+	var p := p1()
+	var b: LevelBuilder = boot.builder
+	# --- ESC puts things away before it pauses
+	await place_player(p, b.player_spawns[0].origin, 0.0)
+	await tap(KEY_M)
+	await physics_frames(3)
+	await tap(KEY_ESCAPE)
+	await physics_frames(3)
+	check(not p.map_open and not boot.paused, "ESC closes the paper map without pausing")
+	p.say("A test note.", 30.0)
+	await physics_frames(3)
+	await tap(KEY_ESCAPE)
+	await physics_frames(3)
+	check(not boot.huds[0]._note.visible and not boot.paused, "ESC dismisses a note without pausing")
+	await tap(KEY_ESCAPE)
+	await physics_frames(3)
+	check(boot.paused, "ESC with nothing open pauses")
+	await tap(KEY_ESCAPE)
+	await physics_frames(3)
+	check(not boot.paused, "ESC again resumes")
+
+	# --- the handbrake, on the steepest part of the route
+	var r: Route = b.route
+	var steep := 0
+	var best := 0.0
+	for i in r.point_count():
+		if absf(r.forward(i).y) > best:
+			best = absf(r.forward(i).y)
+			steep = i
+	c.parking_brake = true
+	await reset_camper(steep)
+	await seat_p1_driver()
+	if c.engine_on:
+		c.toggle_engine()
+	await wait(1.5)
+	var p0 := c.global_position
+	var spin0 := c._wheel_spin
+	await wait(2.0)
+	log_line("handbrake on, %.0f%% slope, 2 s: moved %.2f m, wheels turned %.3f rad" % [best * 100.0, p0.distance_to(c.global_position), absf(c._wheel_spin - spin0)])
+	check(p0.distance_to(c.global_position) < 0.05, "with the handbrake on the van holds on the steepest slope")
+	check(absf(c._wheel_spin - spin0) < 0.001, "the wheels do not turn while the van stands still")
+	await wait(0.3)
+	log_line("seated prompt: '%s'" % p.prompt_text.replace("\n", " / "))
+	check(p.prompt_text.contains("Release handbrake"), "the seated prompt offers the handbrake")
+	await tap(KEY_SPACE)
+	await physics_frames(3)
+	check(not c.parking_brake, "Space lets the handbrake off")
+	await wait(3.0)
+	var rolled := p0.distance_to(c.global_position)
+	log_line("handbrake off, engine off, 3 s: rolled %.1f m" % rolled)
+	check(rolled > 1.0, "with the handbrake off the van rolls down the slope")
+	key(KEY_S, true)
+	await wait(2.0)
+	log_line("engine off, rolling back, S held 2 s: %.1f km/h" % kmh())
+	check(kmh() < 1.0, "with the engine off, S brakes a van rolling backwards")
+	key(KEY_S, false)
+	await wait(1.0)
+	await tap(KEY_SPACE)
+	await wait(3.0)
+	log_line("handbrake pulled while rolling: %.1f km/h after 3 s" % kmh())
+	check(c.parking_brake and kmh() < 1.0, "pulling the handbrake stops a rolling van")
+	c.toggle_engine()
+	key(KEY_W, true)
+	await wait(1.0)
+	key(KEY_W, false)
+	log_line("engine on, W with the handbrake on: brake %s, %.1f km/h" % ["on" if c.parking_brake else "off", kmh()])
+	check(not c.parking_brake and kmh() > 2.0, "pulling away with the engine running lets the handbrake off")
+
+	# --- brakes and the engine's gears, on the flat start of the route
+	await reset_camper(6)
+	var ad := AutoDriver.new(self, r, c)
+	var pitches: Array[float] = []
+	for _i in 60 * 25:
+		await get_tree().physics_frame
+		ad.step(999.0)
+		pitches.append(c._audio._engine.pitch_scale)
+		if kmh() >= 60.0:
+			break
+	ad.release()
+	var drops := 0
+	var peak := pitches[0]
+	for pv in pitches:
+		if pv < peak - 0.12:
+			drops += 1          # revs fell well below the last peak: a shift
+			peak = pv
+		peak = maxf(peak, pv)
+	log_line("engine pitch %.2f at the start, %.2f at %.0f km/h, %d gear-change drops" % [pitches[0], c._audio._engine.pitch_scale, kmh(), drops])
+	check(c._audio._engine.playing and drops >= 2, "the engine climbs through gears (revs drop at each shift)")
+	var v0 := kmh()
+	var bp := c.global_position
+	key(KEY_S, true)
+	var frames := 0
+	while kmh() > 1.0 and frames < 60 * 10:
+		await get_tree().physics_frame
+		ad.steer_only()
+		frames += 1
+	key(KEY_S, false)
+	ad.release()
+	var dist := bp.distance_to(c.global_position)
+	log_line("brake from %.0f km/h: %.1f m in %.1f s" % [v0, dist, frames / 60.0])
+	check(dist < 30.0, "S brakes hard: ~60 km/h to a stop within 30 m")
+	await tap(KEY_SPACE)       # handbrake on: this stretch slopes, and it would roll
+	await wait(1.0)
+	var spin1 := c._wheel_spin
+	await wait(1.5)
+	check(absf(c._wheel_spin - spin1) < 0.001, "the wheels stop turning once the van has stopped")
+
+	# --- the seated partner fits the cab
+	if c.engine_on:
+		c.toggle_engine()
+	var p2r := p2()
+	p2r.enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await physics_frames(3)
+	p2r._seat_yaw = 1.15
+	p2r.pitch = -0.05
+	await wait(0.5)
+	var head := p._mesh_root.get_node("Head") as Node3D
+	var roof := (c.global_transform * Vector3(0, Camper.BODY_Y + 2.56, 0)).y
+	var head_top := head.global_position.y + 0.2
+	log_line("seated driver's head top %.2f m, roof inside %.2f m" % [head_top, roof])
+	check(head_top < roof - 0.05, "a seated player's body fits under the cab roof")
+	await tap(KEY_TAB)          # show P2's view: the driver seen from the passenger seat
+	await wait(0.3)
+	await shot("seated_partner")
+	await tap(KEY_TAB)
+	p2r.exit_vehicle()
+
+	# --- pouring: no sound from an empty can, a glug from a full one
+	p.force_exit = true
+	await physics_frames(3)
+	for litres in [0.0, FuelCan.CAPACITY]:
+		c.fuel = 20.0
+		var can := await reset_can("station_can_a", litres)
+		can.global_position = c.global_transform * Vector3(-2.4, 0.2, 1.0)
+		can.reset_physics_interpolation()
+		await physics_frames(20)
+		await face_point(p, can.global_position + Vector3.UP * 0.25, 1.8, -c.global_transform.basis.x)
+		await tap(KEY_E)
+		await physics_frames(10)
+		var inlet := c.global_transform * (Vector3(-1.2, 1.40, 1.9) + Vector3(0, Camper.BODY_Y, 0))
+		await face_point(p, inlet, 1.9, -c.global_transform.basis.x)
+		key(KEY_E, true)
+		await wait(0.8)
+		var glugging: bool = c._glug.playing
+		key(KEY_E, false)
+		await wait(0.4)
+		log_line("pouring a can with %.0f L: glug %s, after letting go %s" % [litres, "playing" if glugging else "silent", "playing" if c._glug.playing else "silent"])
+		if litres <= 0.0:
+			check(not glugging, "an empty can makes no pouring sound")
+		else:
+			check(glugging and not c._glug.playing, "a full can glugs while pouring, and stops after")
+		await tap(KEY_G)
+		await wait(0.5)
+
+	# --- the van knocks a player flying, and they get back up
+	await reset_camper(6)
+	c.parking_brake = false
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
+	var ahead := 6
+	while ahead < r.point_count() - 1 and r.point(ahead).distance_to(r.point(6)) < 45.0:
+		ahead += 1
+	var victim := p2()
+	var spot := r.point(ahead)
+	spot.y = Landscape.ground(spot.x, spot.z) + 0.1
+	await place_player(victim, spot, 0.0)
+	var ad2 := AutoDriver.new(self, r, c)
+	var hit_kmh := 0.0
+	var flew := 0.0
+	var shot_taken := false
+	for _i in 60 * 12:
+		await get_tree().physics_frame
+		ad2.step(35.0)
+		if victim.knocked_t > 0.0 and hit_kmh == 0.0:
+			hit_kmh = kmh()
+		if hit_kmh > 0.0:
+			flew = maxf(flew, spot.distance_to(victim.global_position))
+			if flew > 3.0 and not shot_taken:
+				shot_taken = true
+				await tap(KEY_TAB, 0.02)   # watch the tumble through the victim's eyes
+				await wait(0.25)
+				await shot("knocked")
+				await tap(KEY_TAB, 0.02)
+		if hit_kmh > 0.0 and victim.knocked_t <= 0.0:
+			break
+	ad2.release()
+	key(KEY_S, true)
+	var after_hit := kmh()
+	log_line("van hit the player at %.0f km/h: thrown %.1f m, van still at %.0f km/h, back up: %s" % [hit_kmh, flew, after_hit, str(victim.knocked_t <= 0.0)])
+	check(hit_kmh > 15.0 and flew > 4.0, "the van knocks a player flying")
+	check(victim.knocked_t <= 0.0, "the knocked player gets back up")
+	await wait(2.0)
+	key(KEY_S, false)
+	await tap(KEY_SPACE)
+	await wait(1.5)
+	check(victim.eye_height > 1.3, "back on their feet, eyes at standing height")
 
 
 ## Walk from the foot of the lookout ramp up onto the deck.

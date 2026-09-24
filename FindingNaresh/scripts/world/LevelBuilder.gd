@@ -137,6 +137,15 @@ func build() -> Node3D:
 	wind.volume_db = -20.0
 	wind.target = 1.0
 	world.add_child(wind)
+	# forest bed, birds, and water you can hear from the bank
+	var amb := Ambience.new()
+	amb.name = "Ambience"
+	world.add_child(amb)
+	for k in range(0, RIVER.size(), 2):
+		var rp: Vector2 = RIVER[k]
+		amb.add_water(Vector3(rp.x, Landscape.ground(rp.x, rp.y) + 1.0, rp.y), world)
+	var lake: Vector3 = PONDS[0]["pos"]
+	amb.add_water(Vector3(lake.x, Landscape.ground(lake.x, lake.z) + 1.0, lake.z), world)
 	_lap("landmarks", t)
 	return world
 
@@ -525,20 +534,44 @@ func _backdrop() -> void:
 	var far := ToonMat.make(Color(0.46, 0.55, 0.60), 0.0, 1.0)
 	var far2 := ToonMat.make(Color(0.55, 0.63, 0.68), 0.0, 1.0)
 	var snow := ToonMat.make(Color(0.90, 0.92, 0.95), 0.0, 1.0)
-	var green := ToonMat.make(Color(0.36, 0.50, 0.40), 0.0, 1.0)
+	# Hazy blue-green, between the valley's greens and the far blue peaks: a
+	# saturated green read as odd blobs floating on the horizon.
+	var ridge_mat := ToonMat.make(Color(0.39, 0.50, 0.49), 0.0, 1.0)
+	var ridge_trees: Array[Transform3D] = []
 	for i in 64:
 		var a := TAU * float(i) / 64.0 + rng.randf_range(-0.04, 0.04)
 		var hgt := rng.randf_range(140.0, 330.0)
 		var rad := hgt * rng.randf_range(0.7, 1.1)
+		var style := i % 4
+		# forested ridges are long and low: stretched along the horizon
+		var stretch := 1.9 if style == 3 else 1.0
 		# Every mountain stands wholly outside the playable map (its base
 		# starts beyond the terrain's corner), so none can sit on a road.
-		var dist := Landscape.EXTENT * 0.72 + rad + rng.randf_range(20.0, 260.0)
+		var dist := Landscape.EXTENT * 0.72 + rad * stretch + rng.randf_range(20.0, 260.0)
 		var pos := Vector3(cos(a) * dist, hgt * 0.35 - 30.0, sin(a) * dist)
-		var style := i % 4
 		var mi: MeshInstance3D
 		if style == 3:
-			# rounded, forested hill instead of a peak
-			mi = Build.dome(rad, green, Vector3(pos.x, -30.0, pos.z), Vector3(1.0, hgt / rad * 0.7, 1.0), "Hill%d" % i)
+			# a long, low wooded ridge with a ragged line of tree tops, so it reads
+			# as distant forest rather than a smooth green blob
+			var dm := SphereMesh.new()
+			dm.radius = rad
+			dm.height = rad * 2.0
+			dm.is_hemisphere = true
+			dm.radial_segments = 24
+			dm.rings = 8
+			var ys := hgt * 0.42 / rad
+			var xf := Transform3D(Basis(Vector3.UP, -a - PI * 0.5) * Basis.from_scale(Vector3(stretch, ys, 1.0)), Vector3(pos.x, -30.0, pos.z))
+			mi = Build.node(dm, ridge_mat, xf, "Hill%d" % i)
+			for k in 34:
+				var u := rng.randf_range(-0.92, 0.92)
+				var v := rng.randf_range(-0.55, 0.55)
+				var top := sqrt(maxf(0.0, 1.0 - u * u - v * v))
+				if top < 0.15:
+					continue
+				var at := xf * Vector3(u * rad, top * rad, v * rad)
+				var th := rng.randf_range(55.0, 90.0)
+				var tr := th * rng.randf_range(0.24, 0.30)
+				ridge_trees.append(Transform3D(Basis.from_scale(Vector3(tr, th, tr)), at + Vector3.UP * (th * 0.38)))
 		else:
 			mi = Build.cone(rad, hgt, far2 if style == 0 else far, pos, Vector3(0, rng.randf_range(0, 360), 0), 6 + style * 2, "Peak%d" % i)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -554,6 +587,25 @@ func _backdrop() -> void:
 			cap.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			root.add_child(cap)
 	world.add_child(root)
+	# the ridge tree tops: one multimesh, a single draw call
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.0
+	cone.bottom_radius = 1.0
+	cone.height = 1.0
+	cone.radial_segments = 6
+	cone.rings = 1
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = cone
+	mm.instance_count = ridge_trees.size()
+	for k in ridge_trees.size():
+		mm.set_instance_transform(k, ridge_trees[k])
+	var mmi := MultiMeshInstance3D.new()
+	mmi.name = "BackdropTrees"
+	mmi.multimesh = mm
+	mmi.material_override = ToonMat.make(Color(0.31, 0.43, 0.42), 0.0, 1.0)
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	world.add_child(mmi)
 	_world_edge()
 
 

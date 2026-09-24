@@ -67,6 +67,10 @@ var _step_phase := 0.0
 var _was_on_floor := true
 var _using: Node = null                ## thing being used with the held item while E is held
 var force_exit := false            ## request an exit from outside the physics step
+var knocked_t := 0.0                   ## > 0 while tumbling after being hit by the van
+var _tumble_spin := 0.0
+var _knock_van: PhysicsBody3D = null   ## no collision with it until we are clear of it
+var _pose_stand := {}                  ## avatar part name -> standing transform
 
 
 func _ready() -> void:
@@ -137,6 +141,31 @@ func _build() -> void:
 	_mesh_root.add_child(Build.box(Vector3(0.16, 0.7, 0.16), suit, Vector3(0.34, 0.75, 0), Vector3.ZERO, "ArmR"))
 	_mesh_root.add_child(Build.box(Vector3(0.18, 0.62, 0.18), ToonMat.make(Color(0.24, 0.28, 0.36), 0.018), Vector3(-0.13, 0.16, 0), Vector3.ZERO, "LegL"))
 	_mesh_root.add_child(Build.box(Vector3(0.18, 0.62, 0.18), ToonMat.make(Color(0.24, 0.28, 0.36), 0.018), Vector3(0.13, 0.16, 0), Vector3.ZERO, "LegR"))
+	for m in _mesh_root.get_children():
+		_pose_stand[m.name] = (m as Node3D).transform
+
+
+## Seated, the standing avatar poked through the roof: fold it into the seat,
+## hips on the cushion (0.14 below the seat marker), head at the eye point.
+const SEATED_POSE := {
+	"Torso": [Vector3(0, 0.19, 0.02), Vector3(0, 0, 0), Vector3(0.80, 0.56, 0.80)],
+	"Head": [Vector3(0, 0.60, 0.02), Vector3(0, 0, 0), Vector3(0.72, 0.72, 0.72)],
+	"ArmL": [Vector3(-0.25, 0.28, -0.18), Vector3(-65, 0, 0), Vector3(0.8, 0.75, 0.8)],
+	"ArmR": [Vector3(0.25, 0.28, -0.18), Vector3(-65, 0, 0), Vector3(0.8, 0.75, 0.8)],
+	"LegL": [Vector3(-0.12, -0.10, -0.28), Vector3(90, 0, 0), Vector3(0.85, 0.85, 0.85)],
+	"LegR": [Vector3(0.12, -0.10, -0.28), Vector3(90, 0, 0), Vector3(0.85, 0.85, 0.85)],
+}
+
+
+func _set_seated_pose(on: bool) -> void:
+	for m in _mesh_root.get_children():
+		var n := m as Node3D
+		if on and SEATED_POSE.has(n.name):
+			var p: Array = SEATED_POSE[n.name]
+			var e: Vector3 = p[1]
+			n.transform = Transform3D(Basis.from_euler(e * (PI / 180.0)).scaled(p[2]), p[0])
+		elif _pose_stand.has(n.name):
+			n.transform = _pose_stand[n.name]
 
 
 func set_view_camera(c: Camera3D) -> void:
@@ -175,6 +204,12 @@ func _physics_process(delta: float) -> void:
 	if force_exit:
 		force_exit = false
 		exit_vehicle()
+	if knocked_t > 0.0:
+		_knocked(delta)
+		return
+	if _knock_van != null and is_instance_valid(_knock_van) and _knock_van.global_position.distance_to(global_position) > 5.0:
+		remove_collision_exception_with(_knock_van)
+		_knock_van = null
 	# Look itself is applied per rendered frame in _process; the physics step
 	# only copies the result onto the body, the head and the interaction ray.
 	rotation.y = yaw
@@ -312,6 +347,88 @@ func _seated(_delta: float) -> void:
 	bob_offset = bob_offset.lerp(Vector3.ZERO, 0.2)
 	if dev.just_pressed("flashlight"):
 		toggle_flashlight()
+
+
+## Hit by the van: thrown along `impulse`, tumbling, then back on your feet
+## after a moment that grows with the hit.
+func knock(impulse: Vector3, van: PhysicsBody3D = null) -> void:
+	if seat != null or knocked_t > 0.0:
+		return
+	drop_held()
+	set_map_open(false)
+	journal_open = false
+	if van != null:
+		_knock_van = van
+		add_collision_exception_with(van)
+	velocity = impulse
+	_plan_vel = Vector2.ZERO
+	var hit := impulse.length()
+	knocked_t = clampf(0.9 + hit * 0.12, 1.2, 4.0)
+	_tumble_spin = (1.0 if randf() < 0.5 else -1.0) * clampf(hit * 0.8, 3.0, 14.0)
+	Sfx.play3d("hit_soft", global_position + Vector3.UP, 4.0)
+	Sfx.play3d("hit_metal_heavy", global_position + Vector3.UP, -2.0)
+	_dust_puff(global_position + Vector3.UP * 0.6, hit)
+
+
+func _knocked(delta: float) -> void:
+	knocked_t -= delta
+	velocity.y -= GRAVITY * delta
+	if is_on_floor():
+		# sliding along the ground, the spin dies away
+		var h := Vector2(velocity.x, velocity.z).move_toward(Vector2.ZERO, 16.0 * delta)
+		velocity.x = h.x
+		velocity.z = h.y
+		_tumble_spin = move_toward(_tumble_spin, 0.0, 24.0 * delta)
+		eye_height = lerpf(eye_height, 0.35, 1.0 - pow(0.01, delta))
+	move_and_slide()
+	cam_roll += _tumble_spin * delta
+	_mesh_root.rotation = Vector3(-PI * 0.5, 0.0, cam_roll)
+	head.position.y = eye_height
+	if knocked_t <= 0.0:
+		if is_on_floor():
+			# get up: the roll unwinds to level in _walk
+			knocked_t = 0.0
+			cam_roll = wrapf(cam_roll, -PI, PI)
+			_mesh_root.rotation = Vector3.ZERO
+			velocity = Vector3.ZERO
+		else:
+			knocked_t = 0.05     # wait until we land
+
+
+static func _dust_puff(at: Vector3, strength: float) -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var root := tree.get_first_node_in_group("world_root") if tree else null
+	if root == null:
+		return
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.emitting = true
+	p.amount = int(clampf(10.0 + strength * 1.5, 12.0, 40.0))
+	p.lifetime = 1.1
+	p.explosiveness = 0.9
+	p.direction = Vector3.UP
+	p.spread = 70.0
+	p.initial_velocity_min = 1.0
+	p.initial_velocity_max = 2.0 + strength * 0.15
+	p.gravity = Vector3(0, -1.5, 0)
+	p.damping_min = 2.0
+	p.damping_max = 3.0
+	p.scale_amount_min = 0.5
+	p.scale_amount_max = 1.2
+	var sm := SphereMesh.new()
+	sm.radius = 0.18
+	sm.height = 0.36
+	sm.radial_segments = 8
+	sm.rings = 4
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.72, 0.64, 0.52, 0.55)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	sm.material = mat
+	p.mesh = sm
+	root.add_child(p)
+	p.global_position = at
+	p.finished.connect(p.queue_free)
 
 
 func toggle_flashlight() -> void:
@@ -616,6 +733,8 @@ func _seated_prompt() -> String:
 	var parts: Array[String] = []
 	if seat_role == "driver" and not vehicle.engine_on:
 		parts.append("[%s]  Start engine" % dev.glyph("ignition"))
+	if vehicle.linear_velocity.length() < 1.0:
+		parts.append("[%s]  %s" % [dev.glyph("handbrake"), "Release handbrake" if vehicle.parking_brake else "Pull handbrake"])
 	if _can_exit():
 		parts.append("[%s]  Get out" % dev.glyph("interact"))
 		parts.append("[%s]  Swap seats" % dev.glyph("swap_seat"))
@@ -657,6 +776,7 @@ func enter_seat(v, seat_node: Node3D, role: String) -> void:
 	pitch = SEATED_PITCH
 	bob_offset = Vector3.ZERO
 	cam_roll = 0.0
+	_set_seated_pose(true)
 	_follow_seat()
 	reset_physics_interpolation()
 	if v.has_method("on_seat_entered"):
@@ -681,6 +801,7 @@ func exit_vehicle() -> void:
 	velocity = v.linear_velocity
 	_plan_vel = Vector2.ZERO
 	(get_node("Collider") as CollisionShape3D).disabled = false
+	_set_seated_pose(false)
 	if v.has_method("on_seat_exited"):
 		v.on_seat_exited(self, seat_role)
 	seat = null
