@@ -11,3 +11,7 @@ FindingNaresh/_shots/
 # Downloaded asset packs (the used files are copied into FindingNaresh/)
 assets_src/
 tools/_last_playtest.log
+# Linux Godot for headless runs (tools/run_test_headless.sh) and its user:// data
+tools/godot/Godot_v*_linux.x86_64
+tools/_headless_data/
+tools/_gym_playtest.log

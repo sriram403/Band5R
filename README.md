@@ -292,3 +292,23 @@ screenshots to `FindingNaresh/_shots/`. Used to review the look without playing:
 ```
 tools\godot\Godot_v4.7.1-stable_win64_console.exe --path FindingNaresh --resolution 1600x900 -- --shot
 ```
+
+## Play-test without a screen (Linux, GitHub)
+
+`tools/run_test_headless.sh` runs the same automated play-test on Linux with no
+window and no graphics card: logic, physics, story and puzzles, but no screenshots,
+sound or frame rates. Simulated time is fixed at 60 fps (`--fixed-fps 60`), so a
+run gives the same result on any machine, and it is fast: the whole default suite
+takes about 1.5 minutes. It needs the Linux build of Godot 4.7.1
+(`tools/godot/Godot_v4.7.1-stable_linux.x86_64`, or set `GODOT=`):
+
+```
+tools/run_test_headless.sh                 all default scenarios
+tools/run_test_headless.sh waterworks      one scenario
+GYM=base tools/run_test_headless.sh        the base gym
+```
+
+GitHub runs it on every push and pull request (`.github/workflows/playtest.yml`),
+after the road check (`tools/gen/layout_check.py`). The result shows as a green
+tick or a red cross next to each commit; the log is attached to the run.
+Looks, sound and smoothness still need a run on the PC (`tools/run_test.sh`).

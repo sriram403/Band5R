@@ -1,0 +1,66 @@
+# Runs on GitHub's Linux machines at every push and pull request: the road
+# check, then the automated play-test with no window and no GPU (the same
+# scenarios as tools/run_test.sh, minus screenshots and frame rates). Looks,
+# sound and frame rate still need a real PC.
+name: Play-test (headless)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: playtest-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.7.1
+
+jobs:
+  playtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Road check (grades, cuts, gaps)
+        shell: bash
+        run: |
+          pip install --quiet pillow
+          python3 tools/gen/layout_check.py | tee layout_check.txt
+          grep -q "no problems" layout_check.txt
+
+      - name: Cache Godot
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Download Godot
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          curl -sSL -o ~/godot/g.zip "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q ~/godot/g.zip -d ~/godot
+          rm ~/godot/g.zip
+
+      - name: Import the project
+        run: |
+          ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 --headless --path FindingNaresh --import 2>&1 | tail -3
+
+      - name: Play-test, the world (all default scenarios)
+        run: GODOT=~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 tools/run_test_headless.sh
+
+      - name: Play-test, the base gym
+        if: always()
+        run: LOG=tools/_gym_playtest.log GYM=base GODOT=~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 tools/run_test_headless.sh
+
+      - name: Keep the log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playtest-logs
+          path: |
+            tools/_last_playtest.log
+            tools/_gym_playtest.log
