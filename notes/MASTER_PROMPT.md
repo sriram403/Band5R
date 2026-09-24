@@ -128,9 +128,17 @@ they/them.
    `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`
    (or whatever attribution line your environment's instructions specify).
 10. Don't spawn sub-agents unless the user asks.
-11. **Keep this file current.** Each time a part is finished and tested (not only at
-    milestone ends), update sections 2, 4, 6 and 7 here so another model can resume
-    from this file alone if the session runs out.
+11. **Keep the notes current at every step, not only at part ends** (user, 2026-09-24:
+    a thread can stop at any moment and the next one must carry on seamlessly).
+    - Before starting a task: write it in `notes/TODO.md` "Right now" and mark it `[~]`.
+    - After every finished sub-step or test run: tick it, add the result (pass/fail,
+      numbers, what was fixed) and what comes next.
+    - Every time a part is finished and tested: also update sections 2, 4, 6 and 7
+      here, and add any hard-won lesson to section 7.
+    - Commit locally often (small commits), so an unfinished change is always either
+      committed or visible in `git status` / `git diff` for the next thread.
+    - Pushing still follows rule 2 (only approved work), except when the user asks
+      to push the notes.
 12. **Test runs must not disturb the user** (they watch videos / work meanwhile): use
     `tools/run_test.sh` (window behind all others, focus handed back, muted).
 13. **Professional process** (`DESIGN.md` section 6): design first, a gym (test map)
@@ -363,6 +371,10 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 8. Resuming in a new thread
 
-Read the files listed at the top, check `git status` / `git log -3`, read `notes/TODO.md`'s
-"Right now", tell the user in two or three plain lines where things stand and what you
-will do next, then continue section 6. Do not redo finished items.
+Read the files listed at the top, check `git status` / `git log -3` (and `git diff` if
+anything is uncommitted: that is the last thread's unfinished work), read
+`notes/TODO.md`'s "Right now" and the `[~]` items, tell the user in two or three plain
+lines where things stand and what you will do next, then continue from exactly there
+(section 6 for the order). Do not redo finished items. From then on follow rule 11:
+keep `notes/TODO.md` and this file current after every step, so the thread after you
+can resume the same way.
