@@ -6,9 +6,9 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Building the three test levels. First: log elapsed time per scenario and run
-  the current suite to measure where it spends time. Then move mechanic checks
-  to the base gym, make Quick the default, and reserve long drives for Full.
+- Building the three test levels. Baseline timing is done (951 s of scenarios,
+  0 failures): `journey` 488 s, `waterworks` 91 s, `lap` 69 s. The gym Quick
+  pass completed with 0 failures; the combined default Quick run is underway.
   Milestone C follows from `design/OPENING.md`, gyms first.
 - `design/PUZZLES.md` and the D/E/F, creature and Naresh pages are proposals
   kept for future discussion. Their merge did not approve their puzzle choices.
@@ -26,9 +26,15 @@ being built and tested), so this always shows where the work is right now.
       a teleport check of the real map) after every change; Road check (layout
       script, seconds); Full (~35 min, long drives) only when roads change and
       before a hand-over. First step: time every scenario to see where it goes
-  - [~] Log elapsed time for each scenario and measure the existing suite
-  - [ ] Move mechanics into the base gym; keep real-map smoke checks
-  - [ ] `full` includes Quick, `journey`, and `routes`; road check stays the layout script
+  - [x] Log elapsed time for each scenario; baseline windowed suite: 951 s of
+        scenarios, 0 failures. `journey` 488 s; `waterworks` 91 s; `lap` 69 s.
+  - [~] Move mechanics into the base gym; keep real-map smoke checks. Quick
+        presets and sequential launch are coded. Gym Quick: 0 failures (77 s
+        of scenarios); combined default Quick is running.
+  - [~] `full` includes the gym pass, old world suite, `journey`, and `routes`;
+        road check stays the layout script. Preset coded, awaiting verification.
+  - [x] Road check: `python tools/gen/layout_check.py` completed in 2 s with
+        "no problems" (2026-09-24).
   - [ ] Verify Quick and Full, update launch instructions and handoff notes
 - [x] Play-test runs stay off your screen (2026-09-24)
   - [x] `tools/run_test.sh`: window opens off screen (x = 4000), 1600x900

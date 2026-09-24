@@ -179,11 +179,13 @@ every fix. What it found and what changed:
 | Engine audio could run dry on a frame hitch | Larger audio buffer; 0 underruns in 12 s of driving |
 | `user://` data (13 MB) was being written to C: despite the project setting | See the folder notes above |
 
-Run the default windowed play-test yourself (roughly 10-20 minutes):
+Run the windowed play-test behind your other windows:
 
 ```
-tools/run_test.sh                  (everything)
-tools/run_test.sh drive,map        (some scenarios)
+tools/run_test.sh                  (Quick: base gym + world checks, ~4-5 min)
+python tools/gen/layout_check.py  (Road check when roads or hills change, ~2 s)
+tools/run_test.sh full             (Full: all checks and long drives, ~35 min)
+tools/run_test.sh drive,map        (selected world scenarios)
 SHOW=1 tools/run_test.sh drive     (on screen, with sound, to watch it)
 ```
 
@@ -192,8 +194,10 @@ windows and hands focus back to whatever you were using (about 3 seconds). It is
 muted and never grabs the mouse. Click it or its taskbar button to watch (sound comes
 on while it has focus); click anything else and it goes back behind. Keys you press
 while it has focus reach the game and can fail a check; that scenario is just re-run. It prints `PASS`/`FAIL`
-lines and writes `_shots/test_*.png`; the scenario list is `all` in
-`scripts/dev/PlayTest.gd`.
+lines, per-scenario times, and `_shots/test_*.png`. Quick runs the existing
+mechanic checks on the base gym, then teleports around the real world to check
+its map, story, water works, visuals, controller and save/load. Full retains the
+older broad checks and drives every route.
 
 ## What is in this build
 
@@ -299,7 +303,7 @@ effects are CC0 samples from Kenney; see `CREDITS.md` for every third-party asse
 screenshots to `FindingNaresh/_shots/`. Used to review the look without playing:
 
 ```
-tools\godot\Godot_v4.7.1-stable_win64_console.exe --path FindingNaresh --resolution 1600x900 -- --shot
+tools/run_game.sh --resolution 1600x900 -- --shot
 ```
 
 ## Play-test without a screen (Linux, GitHub)
@@ -307,12 +311,12 @@ tools\godot\Godot_v4.7.1-stable_win64_console.exe --path FindingNaresh --resolut
 `tools/run_test_headless.sh` runs the same automated play-test on Linux with no
 window and no graphics card: logic, physics, story and puzzles, but no screenshots,
 sound or frame rates. Simulated time is fixed at 60 fps (`--fixed-fps 60`), so a
-run gives the same result on any machine, and it is fast: the whole default suite
-takes about 1.5 minutes. It needs the Linux build of Godot 4.7.1
+run gives the same result on any machine. It needs the Linux build of Godot 4.7.1
 (`tools/godot/Godot_v4.7.1-stable_linux.x86_64`, or set `GODOT=`):
 
 ```
-tools/run_test_headless.sh                 all default scenarios
+tools/run_test_headless.sh                 Quick gym + world checks
+tools/run_test_headless.sh full            Full suite
 tools/run_test_headless.sh waterworks      one scenario
 GYM=base tools/run_test_headless.sh        the base gym
 ```

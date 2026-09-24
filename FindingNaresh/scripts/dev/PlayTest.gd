@@ -16,6 +16,11 @@ var _failures: Array[String] = []
 ## screenshots are skipped and frame-rate checks are only logged.
 var headless := DisplayServer.get_name() == "headless"
 
+## Quick runs basic input/vehicle mechanics in the base gym, then checks the
+## story, map, puzzle, save/load and rendering in the real world by teleport.
+const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
+const QUICK_WORLD := ["audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -217,13 +222,23 @@ func _run() -> void:
 	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
 		all = ["gym"]          # gyms have their own scenarios
-	# scenarios left out of the default run (e.g. "routes") still run by name
-	if only != "":
-		for extra in only.split(","):
+	var selection := only
+	if selection == "quick" or selection == "gym_quick":
+		all = QUICK_GYM.duplicate() if boot.gym != "" else QUICK_WORLD.duplicate()
+		selection = ""
+	elif selection == "full":
+		if boot.gym != "":
+			all = QUICK_GYM.duplicate()
+		else:
+			all.insert(all.find("save"), "routes")
+		selection = ""
+	# Scenarios outside a preset can still run by name.
+	if selection != "":
+		for extra in selection.split(","):
 			if not extra in all and has_method("t_" + extra):
 				all.append(extra)
 	for s in all:
-		if only != "" and not s in only.split(","):
+		if selection != "" and not s in selection.split(","):
 			continue
 		log_line("---- %s ----" % s)
 		var started_at := Time.get_ticks_msec()
@@ -242,7 +257,7 @@ func _finish() -> void:
 	log_line("==== %d failure(s) ====" % _failures.size())
 	for f in _failures:
 		log_line("  - " + f)
-	get_tree().quit()
+	get_tree().quit(1 if not _failures.is_empty() else 0)
 
 
 # --- scenarios -----------------------------------------------------------------
