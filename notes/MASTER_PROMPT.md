@@ -371,6 +371,14 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 - **Build time traps:** adding thousands of shapes to one body then reparenting
   them is O(n²) (scatter took 94 s); create per-tile bodies up front. The terrain
   grid solve pre-filters hills/lakes/pads per row (`_base_fast`).
+- **World build speed (2026-09-24, cloud):** ~7.0 s -> ~4.7 s headless with the
+  world bit-for-bit the same (hashes of the height/road/river grids, normals,
+  colours, every tile mesh array and every scatter transform/colour/collider
+  compared before and after). Noise factors per row/column (64-bit, same
+  expression order), tile index lists shared, the scatter's grid lookups by
+  hand, scatter colliders as shape owners instead of 59 000 CollisionShape3D
+  nodes. Tried and dropped: filling MultiMeshes from one buffer (slower to
+  build in script than the per-instance calls, and not measurable headless).
 - **Headless runs:** `frame_post_draw` never fires (so `shot()` returns early),
   viewport textures are null, and MultiMesh instance transforms read back as
   zero (use `builder.scatter[...]`). Without `--fixed-fps` a slow CPU runs

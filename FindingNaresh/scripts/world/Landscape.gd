@@ -316,6 +316,34 @@ static func _solve_grid() -> void:
 		_stamp(river, grid_river_d, grid_river_h, -1)
 
 	var origin := _grid_origin()
+	var gym := height_fn.is_valid()
+	# The hill noise (Route.ground_noise) is mostly products of a sine in x and
+	# a cosine in z: each factor is worked out once per column or row instead of
+	# once per point. Same expressions in the same order (64-bit, like the
+	# script's floats), so the heights are exactly what _base_fast gives.
+	var s1 := PackedFloat64Array()
+	var s2 := PackedFloat64Array()
+	var s4 := PackedFloat64Array()
+	s1.resize(n)
+	s2.resize(n)
+	s4.resize(n)
+	for ix in n:
+		var x := origin + ix * STEP
+		s1[ix] = sin(x * 0.0125 + 1.7)
+		s2[ix] = sin(x * 0.0281 - 2.1)
+		s4[ix] = sin(x * 0.0605 + 0.3)
+	# the diagonal term depends on x + z only, which on the grid is the same
+	# exact number for every point with the same ix + iz
+	var sd := PackedFloat64Array()
+	sd.resize(2 * n - 1)
+	for d in 2 * n - 1:
+		var dix := mini(d, n - 1)
+		sd[d] = sin(((origin + dix * STEP) + (origin + (d - dix) * STEP)) * 0.0071 + 0.6)
+	# a plateau's level is the same for every point on it
+	var plateau_h := {}
+	for m in mounds:
+		if m.has("plateau"):
+			plateau_h[m] = plateau_height(m)
 	for iz in n:
 		var z := origin + iz * STEP
 		# Only the hills, lakes and pads that reach this row are tested for
@@ -324,6 +352,21 @@ static func _solve_grid() -> void:
 		for m in mounds:
 			if absf(z - (m["pos"] as Vector3).z) < float(m["radius"]) + PLATEAU_BLEND:
 				row_m.append(m)
+		# the row's hills as plain numbers: no dictionary lookups per point
+		var rm_x := PackedFloat64Array()
+		var rm_z := PackedFloat64Array()
+		var rm_r := PackedFloat64Array()
+		var rm_h := PackedFloat64Array()
+		var row_plateaus: Array = []
+		for m in row_m:
+			var mc: Vector3 = m["pos"]
+			rm_x.append(mc.x)
+			rm_z.append(mc.z)
+			rm_r.append(float(m["radius"]))
+			rm_h.append(float(m["height"]))
+			if m.has("plateau"):
+				row_plateaus.append(m)
+		var nm := rm_x.size()
 		var row_p: Array = []
 		for pd in ponds:
 			if absf(z - (pd["pos"] as Vector3).z) < float(pd["radius"]):
@@ -333,10 +376,46 @@ static func _solve_grid() -> void:
 			if absf(z - (pad["pos"] as Vector3).z) < float(pad["radius"]) + float(pad["blend"]):
 				row_pads.append(pad)
 		var cx := coast_inland(0.0, z)
+		var c1 := cos(z * 0.0104 - 0.4)
+		var c2 := cos(z * 0.0233 + 1.1)
+		var c4 := cos(z * 0.0518 - 1.9)
 		for ix in n:
 			var x := origin + ix * STEP
 			var k := iz * n + ix
-			var h := base_height(x, z) if height_fn.is_valid() else _base_fast(x, z, row_m, row_p, cx)
+			var h: float
+			if gym:
+				h = base_height(x, z)
+			else:
+				# _base_fast, inlined
+				h = s1[ix] * c1 * 9.0
+				h += s2[ix] * c2 * 3.4
+				h += sd[ix + iz] * 4.6
+				h += s4[ix] * c4 * 0.9
+				for j in nm:
+					var dx := x - rm_x[j]
+					var dz := z - rm_z[j]
+					var d2 := dx * dx + dz * dz
+					var r := rm_r[j]
+					if d2 < r * r:
+						h += rm_h[j] * (1.0 - smoothstep(0.0, r, sqrt(d2)))
+				for pd in row_p:
+					var c: Vector3 = pd["pos"]
+					var r: float = pd["radius"]
+					var d := Vector2(x - c.x, z - c.z).length()
+					if d < r:
+						h -= float(pd["depth"]) * smoothstep(r, r * 0.55, d)
+				if cx < 1e8:
+					var d := cx - x
+					if d < COAST_BLEND:
+						var prof := SEA_Y + 0.4 + d * 0.035 if d >= 0.0 else maxf(SEA_Y - 14.0, SEA_Y + 0.4 + d * 0.12)
+						var v := lerpf(prof, h, smoothstep(BEACH_W, COAST_BLEND, d))
+						h = lerpf(maxf(v, prof), v, smoothstep(200.0, COAST_BLEND, d))
+				for m in row_plateaus:
+					var c: Vector3 = m["pos"]
+					var pr: float = m["plateau"]
+					var d := Vector2(x - c.x, z - c.z).length()
+					if d < pr + PLATEAU_BLEND:
+						h = lerpf(plateau_h[m], h, smoothstep(pr, pr + PLATEAU_BLEND, d))
 			var rd := grid_river_d[k]
 			if rd < RIVER_HALF + RIVER_BANK:
 				var bed := grid_river_h[k] - RIVER_DEPTH
@@ -432,8 +511,15 @@ static func build_terrain() -> StaticBody3D:
 	var count := n * n
 	_normals.resize(count)
 	_colors.resize(count)
+	# the colour patches' sine (per column) and cosine (per row), worked out once
+	var px := PackedFloat64Array()
+	px.resize(n)
+	for ix in n:
+		px[ix] = sin((origin + ix * STEP) * 0.031 + 2.0)
 	for iz in n:
 		var z := origin + iz * STEP
+		var pz := cos(z * 0.027 - 1.0)
+		var coast_x := coast_inland(0.0, z)     # inland distance is coast_x - x along the row
 		for ix in n:
 			var x := origin + ix * STEP
 			var k := iz * n + ix
@@ -444,7 +530,8 @@ static func build_terrain() -> StaticBody3D:
 			# Analytic normal from the height field. Deriving it from triangle
 			# winding gave a flat, unlit terrain, and this is exact anyway.
 			_normals[k] = Vector3(-hx, 2.0 * STEP, -hz).normalized()
-			_colors[k] = _ground_color(x, z, y, slope, grid_road_d[k], grid_river_d[k], grid_gravel[k] == 1)
+			var inland := coast_x - x if coast.size() >= 2 else 1e9
+			_colors[k] = _ground_color(x, z, y, slope, grid_road_d[k], grid_river_d[k], grid_gravel[k] == 1, (px[ix] * pz + 1.0) * 0.5, inland)
 
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
@@ -484,6 +571,7 @@ static func build_terrain() -> StaticBody3D:
 			tiles.add_child(far)
 	_normals = PackedVector3Array()
 	_colors = PackedColorArray()
+	_index_cache.clear()
 
 	# Height-map collision: one cell per grid square, far cheaper to build and
 	# query than a trimesh. Its cells are 1 unit apart and centred on the
@@ -504,6 +592,63 @@ static func build_terrain() -> StaticBody3D:
 	return body
 
 
+## Triangle lists depend only on a tile's size (and skirt), so the tiles share
+## them: 256 full tiles at 4 km used to build the same list 512 times.
+static var _index_cache := {}
+
+
+static func _tile_indices(nx: int, nz: int, rim: PackedInt32Array) -> PackedInt32Array:
+	var key := Vector3i(nx, nz, rim.size())
+	if _index_cache.has(key):
+		return _index_cache[key]
+	var indices := PackedInt32Array()
+	indices.resize((nx - 1) * (nz - 1) * 6 + maxi(rim.size() - 1, 0) * 6)
+	var w := 0
+	for jz in nz - 1:
+		for jx in nx - 1:
+			var a := jz * nx + jx
+			var c := a + nx
+			# wound so the faces point up (Godot's front faces are clockwise seen
+			# from outside); the other way the double-sided material flipped the
+			# normals and lit the ground as if the sun were underneath it
+			indices[w] = a
+			indices[w + 1] = a + 1
+			indices[w + 2] = c
+			indices[w + 3] = a + 1
+			indices[w + 4] = c + 1
+			indices[w + 5] = c
+			w += 6
+	var base := nx * nz
+	for i in rim.size() - 1:
+		var t0 := rim[i]
+		var t1 := rim[i + 1]
+		var b0 := base + i
+		var b1 := base + i + 1
+		indices[w] = t0
+		indices[w + 1] = t1
+		indices[w + 2] = b0
+		indices[w + 3] = t1
+		indices[w + 4] = b1
+		indices[w + 5] = b0
+		w += 6
+	_index_cache[key] = indices
+	return indices
+
+
+## The tile's edge vertices in order round the rim (for the skirt).
+static func _tile_rim(nx: int, nz: int) -> PackedInt32Array:
+	var rim := PackedInt32Array()
+	for jx in nx:
+		rim.append(jx)
+	for jz in range(1, nz):
+		rim.append(jz * nx + nx - 1)
+	for jx in range(nx - 2, -1, -1):
+		rim.append((nz - 1) * nx + jx)
+	for jz in range(nz - 2, -1, -1):
+		rim.append(jz * nx)
+	return rim
+
+
 ## One tile's mesh: cells [cx, cx+w) x [cz, cz+d) of the grid, every `stride`-th
 ## vertex, plus a skirt hanging `skirt` metres below its edges if non-zero.
 static func _tile_mesh(cx: int, cz: int, w: int, d: int, stride: int, skirt: float) -> ArrayMesh:
@@ -521,46 +666,31 @@ static func _tile_mesh(cx: int, cz: int, w: int, d: int, stride: int, skirt: flo
 		zs.append(cz + d)
 	var nx := xs.size()
 	var nz := zs.size()
+	var rim := _tile_rim(nx, nz) if skirt > 0.0 else PackedInt32Array()
+	var count := nx * nz
 	var verts := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
-	var indices := PackedInt32Array()
+	verts.resize(count + rim.size())
+	normals.resize(count + rim.size())
+	colors.resize(count + rim.size())
+	var v := 0
 	for jz in nz:
+		var z := origin + zs[jz] * STEP
+		var row := zs[jz] * n
 		for jx in nx:
-			var k := zs[jz] * n + xs[jx]
-			verts.append(Vector3(origin + xs[jx] * STEP, grid_h[k], origin + zs[jz] * STEP))
-			normals.append(_normals[k])
-			colors.append(_colors[k])
-	for jz in nz - 1:
-		for jx in nx - 1:
-			var a := jz * nx + jx
-			var c := a + nx
-			# wound so the faces point up (Godot's front faces are clockwise seen
-			# from outside); the other way the double-sided material flipped the
-			# normals and lit the ground as if the sun were underneath it
-			indices.append_array(PackedInt32Array([a, a + 1, c, a + 1, c + 1, c]))
-	if skirt > 0.0:
-		# walk the rim and hang a strip below each edge
-		var rim: Array[int] = []
-		for jx in nx:
-			rim.append(jx)
-		for jz in range(1, nz):
-			rim.append(jz * nx + nx - 1)
-		for jx in range(nx - 2, -1, -1):
-			rim.append((nz - 1) * nx + jx)
-		for jz in range(nz - 2, -1, -1):
-			rim.append(jz * nx)
-		var base := verts.size()
-		for r in rim:
-			verts.append(verts[r] - Vector3(0, skirt, 0))
-			normals.append(normals[r])
-			colors.append(colors[r])
-		for i in rim.size() - 1:
-			var t0 := rim[i]
-			var t1 := rim[i + 1]
-			var b0 := base + i
-			var b1 := base + i + 1
-			indices.append_array(PackedInt32Array([t0, t1, b0, t1, b1, b0]))
+			var k := row + xs[jx]
+			verts[v] = Vector3(origin + xs[jx] * STEP, grid_h[k], z)
+			normals[v] = _normals[k]
+			colors[v] = _colors[k]
+			v += 1
+	# skirt: a copy of the rim hanging `skirt` metres lower
+	for r in rim:
+		verts[v] = verts[r] - Vector3(0, skirt, 0)
+		normals[v] = normals[r]
+		colors[v] = colors[r]
+		v += 1
+	var indices := _tile_indices(nx, nz, rim)
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts
@@ -639,16 +769,20 @@ static func build_river() -> MeshInstance3D:
 
 # --- internals -----------------------------------------------------------------
 
+## patch / inland: pass them in when already known (the terrain works them out
+## per row and column); NAN works them out here.
 static func _ground_color(x: float, z: float, y: float, slope: float, dist_to_road: float,
-		dist_to_river: float, gravel: bool) -> Color:
-	var patch := (sin(x * 0.031 + 2.0) * cos(z * 0.027 - 1.0) + 1.0) * 0.5
+		dist_to_river: float, gravel: bool, patch := NAN, inland := NAN) -> Color:
+	if is_nan(patch):
+		patch = (sin(x * 0.031 + 2.0) * cos(z * 0.027 - 1.0) + 1.0) * 0.5
 	var c := GRASS_DARK.lerp(GRASS, patch)
 	# higher ground dries out
 	c = c.lerp(DRY, clampf((y - 6.0) / 18.0, 0.0, 0.45))
 	# steep faces show rock
 	c = c.lerp(ROCK, clampf((slope - 0.55) / 0.5, 0.0, 0.85))
 	# the beach: sand from the waterline up, wet and darker at the water
-	var inland := coast_inland(x, z)
+	if is_nan(inland):
+		inland = coast_inland(x, z)
 	if inland < BEACH_W + 30.0:
 		c = c.lerp(SAND.lightened(0.12), 1.0 - smoothstep(BEACH_W - 10.0, BEACH_W + 30.0, inland))
 		c = c.lerp(SAND.darkened(0.18), 1.0 - smoothstep(-2.0, 6.0, inland))
