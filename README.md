@@ -172,8 +172,11 @@ tools/run_test.sh drive,map        (some scenarios)
 SHOW=1 tools/run_test.sh drive     (on screen, with sound, to watch it)
 ```
 
-By default the window opens off screen, muted, and never takes the keyboard or
-mouse, so you can keep using the computer while it runs. It prints `PASS`/`FAIL`
+By default the window starts at the screen edge, then goes **behind** your other
+windows and hands focus back to whatever you were using (about 3 seconds). It is
+muted and never grabs the mouse. Click it or its taskbar button to watch (sound comes
+on while it has focus); click anything else and it goes back behind. Keys you press
+while it has focus reach the game and can fail a check; that scenario is just re-run. It prints `PASS`/`FAIL`
 lines and writes `_shots/test_*.png`; the scenario list is `all` in
 `scripts/dev/PlayTest.gd`.
 

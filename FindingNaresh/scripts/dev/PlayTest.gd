@@ -19,13 +19,47 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--playtest="):
 			only = a.get_slice("=", 1)
-	# Stay out of the way of whatever the user is doing: never take keyboard focus,
-	# stay muted. tools/run_test.sh also opens the window off screen. Pass --show
-	# (after the --) to watch and hear a run instead.
+	# Stay out of the way of whatever the user is doing. tools/run_test.sh opens the
+	# window off screen; here it moves on screen but BEHIND every other window,
+	# without taking focus. The user can click it (or its taskbar button) to watch
+	# and hear it; clicking elsewhere sends it back. Muted unless it has focus.
+	# Pass --show (after the --) for a plain window in front.
 	if not OS.get_cmdline_user_args().has("--show"):
-		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 		AudioServer.set_bus_mute(0, true)
+		_send_window_behind()
 	_run.call_deferred()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		AudioServer.set_bus_mute(0, false)
+	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT and not OS.get_cmdline_user_args().has("--show"):
+		AudioServer.set_bus_mute(0, true)
+
+
+## Windows only, via a hidden PowerShell: give focus back to the window the user
+## had before the launch (tools/run_test.sh passes it as --refocus=<hwnd>), then
+## SetWindowPos(HWND_BOTTOM, NOACTIVATE), centred on the primary screen.
+func _send_window_behind() -> void:
+	if OS.get_name() != "Windows":
+		return
+	var hwnd := DisplayServer.window_get_native_handle(DisplayServer.WINDOW_HANDLE)
+	var screen := DisplayServer.screen_get_usable_rect(0)
+	var size := DisplayServer.window_get_size_with_decorations()
+	var pos := screen.position + (screen.size - size) / 2
+	var sig := "[DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);"
+	sig += " [DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr h);"
+	var prev := 0
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--refocus="):
+			prev = a.get_slice("=", 1).to_int()
+	var ps := "Add-Type -Name W -Namespace U -MemberDefinition '%s'; " % sig
+	if prev != 0:
+		ps += "[void][U.W]::SetForegroundWindow([IntPtr]%d); " % prev
+	ps += "[void][U.W]::SetWindowPos([IntPtr]%d, [IntPtr]1, %d, %d, 0, 0, 0x11)" % [hwnd, maxi(pos.x, 0), maxi(pos.y, 0)]
+	# -EncodedCommand (UTF-16LE base64) so the quotes survive the command line.
+	OS.create_process("powershell.exe", ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
+		"-EncodedCommand", Marshalls.raw_to_base64(ps.to_utf16_buffer())])
 
 
 func _process(delta: float) -> void:
@@ -159,7 +193,7 @@ func _run() -> void:
 	log_line("adapter=%s  refresh=%.0fHz  window=%s  pads=%s" % [
 		RenderingServer.get_video_adapter_name(),
 		DisplayServer.screen_get_refresh_rate(),
-		str(DisplayServer.window_get_size()),
+		"%s at %s" % [DisplayServer.window_get_size(), DisplayServer.window_get_position()],
 		str(Input.get_connected_joypads())])
 	log_line("route length %.0f m, %d samples" % [boot.builder.route.total_length, boot.builder.route.point_count()])
 
@@ -187,6 +221,7 @@ func _run() -> void:
 
 
 func _finish() -> void:
+	log_line("window ended at %s" % DisplayServer.window_get_position())
 	log_line("==== %d failure(s) ====" % _failures.size())
 	for f in _failures:
 		log_line("  - " + f)
