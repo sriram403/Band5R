@@ -2,7 +2,7 @@
 # between roads, river crossings and sea level, using the same height maths as
 # Landscape.gd / Route.gd. Draws design/greybox_layout.png (hill shade + roads).
 # Run: python tools/gen/layout_check.py
-# The layout data here must match LevelBuilder.gd (it is copied across by hand).
+# The layout data here must match LevelLayout.gd (it is copied across by hand).
 import math
 from PIL import Image, ImageDraw, ImageFont
 

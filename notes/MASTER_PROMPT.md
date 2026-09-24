@@ -72,8 +72,8 @@ they/them.
     draws it. Scenario `t_mirrors`;
   - full play-test after mirrors: 180 checks, 0 failures, ~130 fps (all committed,
     head is the mirrors commit; nothing of B pushed yet);
-  - **4 x 4 km greybox done** (second thread): layout data in `LevelBuilder.gd`
-    consts, mirrored in `tools/gen/layout_check.py` (checks grades/cuts/gaps,
+  - **4 x 4 km greybox done** (second thread): layout data in `LevelLayout.gd`
+    consts (was `LevelBuilder.gd`), mirrored in `tools/gen/layout_check.py` (checks grades/cuts/gaps,
     `--draw` makes `design/greybox_layout.png`). Roads: home_lane (homestead ->
     town -> P2 -> J1), valley_road, ridge_track, pump_house_road (J2 -> bridge ->
     J3), ghat_road (2 hairpins to the pass), beach_road (-> bessi_loop around the
@@ -182,7 +182,11 @@ MPG/
       world/RoadNetwork.gd      all roads, nearest queries, chain()
       world/Landscape.gd        height layers; grid-stamped terrain (ArrayMesh +
                                 HeightMapShape3D); roads, river, pads; static state
-      world/LevelBuilder.gd     the world's layout data + assembly, landmarks, items, poi{}
+      world/LevelBuilder.gd     the world's assembly (build order, roads, spawns, items);
+                                split by job, each file extending the one before:
+                                LevelLayout (layout data, poi{}, helpers) -> LevelScatter
+                                (trees, rocks, backdrop) -> LevelPlaces (greybox places)
+                                -> LevelLandmarks (Milestone A landmarks, signs) -> LevelBuilder
       world/Spinner.gd          windmill blades / blinking beacon
       map/MapState.gd, PaperMap.gd   shared discovery + stamps; drawn paper map (zoom)
       story/Story.gd            objectives, hints, beats, fragments/roses, flags
@@ -196,7 +200,7 @@ MPG/
       world/GymBuilder.gd       gyms: small flat test maps (extends LevelBuilder)
 ```
 
-World layout (see `LevelBuilder.gd` consts and its header comment): 4 × 4 km,
+World layout (see the consts in `LevelLayout.gd` and `LevelBuilder.gd`'s header comment): 4 × 4 km,
 sea on the east. Homestead (SW) → Homestead Lane east through the town (Town Fuel) →
 P2's home → north to Windmill Junction J1 → Valley Road (Mirror Lake + dock, billboard,
 barn) or Ridge Track (gravel, lookout, wreck) → J2 Last Fuel → Pump House Road → water
