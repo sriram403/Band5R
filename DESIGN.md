@@ -1,7 +1,6 @@
 # Finding Naresh: design document (demo)
 
-The single source of truth for what the demo is. Agreed with the user on 2026-09-24;
-open questions are marked **OPEN**. `TODO.md` (local) tracks the build, `FUTURE.md`
+The single source of truth for what the demo is. Agreed with the user on 2026-09-24. `TODO.md` (local) tracks the build, `FUTURE.md`
 holds everything after the demo.
 
 ## 1. Theme
@@ -34,7 +33,7 @@ minutes (up to ~3 hours is fine); pacing and fun matter, not length.
 
 ## 3. World
 
-- **Bigger map** than the current 1.6 x 1.6 km (**OPEN**: size, see section 7).
+- **Bigger map**: about 4 x 4 km (the demo world today is 1.6 x 1.6 km).
 - Homes: P1's home, P2's home, Naresh's home (mother and sister), all on the map.
 - Roads look and behave like real roads, but navigating them is itself a puzzle:
   splits where one branch is a long loop back to the same road (with story beats or
@@ -96,14 +95,17 @@ minutes (up to ~3 hours is fine); pacing and fun matter, not length.
 7. **Art at the end** (polish stage in `FUTURE.md`); layout, scale and sightlines are
    what must be right during greybox.
 
-## 7. Open questions
+## 7. Decisions (2026-09-24)
 
-- **OPEN** Map size (proposal in the chat: about 4 x 4 km with the terrain split into
-  chunks).
-- **OPEN** The "look back at every puzzle" watchtower: at the players' homes at the
-  very end, near the coast (beat 5), or both?
-- **OPEN** Who sends the first message, and does the current homestead become P1's
-  home?
-- **OPEN** Stealth details: visible sight cones or not, peeking controls, where the
-  cardboard box comes from.
-- **OPEN** What happens when Naresh is taken.
+- **Map:** about 4 x 4 km, terrain split into chunks.
+- **Watchtower** at the very end, near the players' homes: every puzzle site of the
+  journey is visible from its top.
+- **Opening:** Naresh's mother sends the message. The current homestead becomes P1's
+  home; P2's home and Naresh's home (mother and sister) are added.
+- **Naresh taken:** only when he is sent somewhere alone or wanders off by himself.
+  The creature leaves him somewhere nearby, within sight, but far enough that you need
+  the van or a long walk to reach him. The creatures follow him around, which is both
+  a clue and a puzzle tool.
+- **Hiding:** no visible sight cones (glowing eyes and a rising suspicion sound
+  instead); crouch, lean to peek; cardboard boxes lie around the world as carryable
+  items.
