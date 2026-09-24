@@ -209,7 +209,9 @@ func _run() -> void:
 		PlayTest.resume = ""
 		_failures = PlayTest.carried_failures.duplicate()
 		log_line("---- %s (after scene reload) ----" % r)
+		var resumed_at := Time.get_ticks_msec()
 		await call("t_" + r)
+		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
 		_finish()
 		return
 	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
@@ -224,10 +226,12 @@ func _run() -> void:
 		if only != "" and not s in only.split(","):
 			continue
 		log_line("---- %s ----" % s)
+		var started_at := Time.get_ticks_msec()
 		release_all()
 		await fresh_hands()
 		await call("t_" + s)
 		release_all()
+		log_line("time %s %.1f s" % [s, (Time.get_ticks_msec() - started_at) / 1000.0])
 		if PlayTest.resume != "":
 			return      # the scene is reloading; the new test node finishes up
 	_finish()
