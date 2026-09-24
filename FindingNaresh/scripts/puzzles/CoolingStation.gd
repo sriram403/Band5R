@@ -15,6 +15,14 @@ extends Node3D
 ## Nothing on the pump side says which way the valves should point, and the
 ## gauge cannot be seen from the valves - so the two have to talk.
 ##
+## Valve B has a worn seat (its plate says so). With two players, the line
+## pressure kicks it back to the overflow twice while the blue tank fills (at
+## a third and two thirds): the needle collapses on the pump side, the
+## pointer swings and clanks on the valve side, and the valve player has to
+## turn it back. So the valve player stays at their post and both keep
+## talking to the end. Alone on one keyboard (solo view) it holds, so one
+## person can still test the whole puzzle.
+##
 ## Filling the blue tank dispenses a coolant jug and a Memory Fragment.
 
 signal solved_changed
@@ -26,6 +34,8 @@ const LEAK_FALL := 0.18       ## pressure per second while not pumping
 const OVERFLOW_FALL := 0.30   ## the overflow route has a free outlet: pressure never builds
 const FILL_RATE := 0.075      ## tank fill per second of pumping in the green
 const STALL_TIME := 3.5
+## Blue-tank levels at which valve B kicks back to the overflow (two players only).
+const SLIP_AT: Array[float] = [0.34, 0.67]
 
 ## Which outlet each valve points at. Correct: A -> "b" (on to valve B), B -> "coolant".
 var valve_a := "waste"        ## "waste" | "b"
@@ -35,6 +45,10 @@ var fill := {"waste": 0.0, "coolant": 0.0}
 var stalled := 0.0
 var solved := false
 var pops := 0                 ## relief valve pops, for the play-test
+var slips := 0                ## times valve B has kicked back so far
+## -1: valve B slips only when two people play (a pad for P2); 0 / 1 force it
+## off / on (the play-test uses this).
+var co_op := -1
 
 var _pump_hold := 0.0         ## > 0 while someone is holding the pump handle
 var _needle: Node3D
@@ -102,6 +116,8 @@ func _physics_process(delta: float) -> void:
 		fill[r] = minf(1.0, fill[r] + FILL_RATE * delta)
 		if r == "coolant" and fill["coolant"] >= 1.0:
 			_solve()
+		elif r == "coolant" and slips < SLIP_AT.size() and fill["coolant"] >= SLIP_AT[slips] and _two_players():
+			_slip()
 	# the waste tank drains back down, so a wrong route is never permanent
 	if not pumping:
 		fill["waste"] = maxf(0.0, fill["waste"] - 0.03 * delta)
@@ -122,6 +138,36 @@ func _turn(which: String, _p) -> void:
 	var at := A_POS if which == "a" else B_POS
 	Sfx.play3d("latch", global_transform * at, -2.0)
 	Sfx.play3d("creak", global_transform * at, -8.0, 0.2)
+
+
+## Two people at the station: P2 has their own device (a pad). Solo testing on
+## one keyboard shares a single pair of hands, so B holds there.
+func _two_players() -> bool:
+	if co_op >= 0:
+		return co_op == 1
+	var kbm := 0
+	for p in get_tree().get_nodes_in_group("player"):
+		var d: InputDevice = p.dev
+		if d != null and d.kind == InputDevice.Kind.KBM:
+			kbm += 1
+	return kbm < 2
+
+
+## Valve B's worn seat gives way: it spins back to the overflow. The overflow
+## has a free outlet, so the pump side sees the needle fall and the flow lamp
+## go out; the valve side sees and hears the wheel kick.
+func _slip() -> void:
+	slips += 1
+	valve_b = "overflow"
+	_update_pointers()
+	var at := global_transform * (B_POS + Vector3(0, 1.0, 0))
+	Sfx.play3d("bang", at, -6.0, 0.1)
+	Sfx.play3d("latch", at, 0.0)
+	Sfx.play3d("creak", at, -2.0, 0.3)
+	var text := "CLANK! Valve B kicks back under the pressure and spins to the overflow. Turn it back - and stay by it." if slips == 1 else "CLANK! Valve B slips again. Turn it back!"
+	for p in get_tree().get_nodes_in_group("player"):
+		if (p as Node3D).global_position.distance_to(at) < 30.0:
+			p.say(text, 4.0)
 
 
 func _pop() -> void:
@@ -159,7 +205,7 @@ func _solve() -> void:
 
 func to_dict() -> Dictionary:
 	return {"valve_a": valve_a, "valve_b": valve_b, "fill_waste": fill["waste"],
-		"fill_coolant": fill["coolant"], "solved": solved}
+		"fill_coolant": fill["coolant"], "solved": solved, "slips": slips}
 
 
 ## Restore after a load. A solved station keeps its jug (restored as a normal
@@ -170,6 +216,7 @@ func from_dict(d: Dictionary, collected: Array) -> void:
 	fill["waste"] = float(d.get("fill_waste", 0.0))
 	fill["coolant"] = float(d.get("fill_coolant", 0.0))
 	solved = bool(d.get("solved", false))
+	slips = int(d.get("slips", 0))
 	pressure = 0.0
 	stalled = 0.0
 	_update_pointers()
@@ -323,6 +370,9 @@ func _build_valve(tag: String, at: Vector3, cb: Callable) -> Node3D:
 	pointer.add_child(Build.box(Vector3(0.07, 0.05, 0.55), ToonMat.make(Color(0.98, 0.80, 0.18), 0.008), Vector3(0, 0.05, -0.27), Vector3.ZERO, "Arrow"))
 	pointer.add_child(Build.cone(0.1, 0.18, ToonMat.make(Color(0.98, 0.80, 0.18), 0.008), Vector3(0, 0.05, -0.6), Vector3(-90, 0, 0), 8, "Tip"))
 	add_child(Build.label3d(tag, at + Vector3(0, 1.55, 0), Vector3(0, 180, 0), 0.4, Color(0.95, 0.95, 0.9)))
+	if tag == "B":
+		# a hand-written warning, so the kick-back is foreshadowed, not a trick
+		add_child(Build.label3d("WORN SEAT -\nwatch it under pressure", at + Vector3(0, 0.62, -0.14), Vector3(0, 180, 0), 0.06, Color(0.85, 0.25, 0.2)))
 	var area := Build.interact_area(Vector3(1.2, 1.2, 1.2), at + Vector3(0, 1.0, 0), "Turn valve " + tag, cb, "ValveArea" + tag)
 	add_child(area)
 	return wheel

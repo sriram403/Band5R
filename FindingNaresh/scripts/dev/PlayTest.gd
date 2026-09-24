@@ -1186,19 +1186,35 @@ func t_waterworks() -> void:
 	log_line("valves now: A -> %s, B -> %s, route %s" % [sta.valve_a, sta.valve_b, sta.route()])
 	check(sta.route() == "coolant", "turning both valves routes the line to the blue tank")
 	await shot("ww_valves")
-	# pump in bursts, keeping the needle in the green
+	# pump in bursts, keeping the needle in the green. Played as two people:
+	# valve B kicks back twice and the partner at the valves turns it back.
 	await face_point(p, b.poi["pump_handle"], 1.5, yard_side)
 	await wait(3.5)
+	sta.co_op = 1
 	t = 0.0
 	var pops0 := sta.pops
-	while t < 60.0 and not sta.solved:
+	var slipped_t := -1.0
+	var fill_at_slip := 0.0
+	var held_while_slipped := true
+	while t < 90.0 and not sta.solved:
 		var want := sta.pressure < 0.74
 		key(KEY_E, want)
 		await get_tree().physics_frame
 		t += 1.0 / 60.0
+		if sta.valve_b == "overflow":
+			if slipped_t < 0.0:
+				slipped_t = t
+				fill_at_slip = sta.fill["coolant"]
+			elif t - slipped_t > 1.5:
+				held_while_slipped = held_while_slipped and sta.fill["coolant"] == fill_at_slip
+				sta._turn("b", p2())     # the partner turns it back
+				slipped_t = -1.0
 	key(KEY_E, false)
-	log_line("blue tank filled in %.0f s of careful pumping (%d extra pops)" % [t, sta.pops - pops0])
+	sta.co_op = -1
+	log_line("blue tank filled in %.0f s of careful pumping (%d extra pops, valve B slipped %d times)" % [t, sta.pops - pops0, sta.slips])
 	check(sta.solved, "careful pumping fills the blue tank")
+	check(sta.slips == CoolingStation.SLIP_AT.size(), "with two players, valve B kicks back twice while the tank fills")
+	check(held_while_slipped, "while B is kicked back the blue tank stops filling")
 	await wait(0.5)
 	await shot("ww_solved")
 
