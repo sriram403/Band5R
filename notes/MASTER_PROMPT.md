@@ -31,7 +31,7 @@ Windows PC, keyboard + mouse for P1 and a controller for P2. The full story arc 
 in code (no hand-made scenes beyond `scenes/Main.tscn` running `Boot.gd`).
 
 GitHub: <https://github.com/sriram403/Band5R> (branch `main`). The user is
-**sriram** (sriramj098@gmail.com); refer to them as "the user"/"you", pronouns
+**sriram**; refer to them as "the user"/"you", pronouns
 they/them.
 
 ---
@@ -273,8 +273,8 @@ live and this file current:
    for the new extent. Show the user screenshots (`t_overview`, `t_tour`) at the end.
 Then hand over Milestone B (rule 2).
 **Next (agreed 2026-09-24, in this order):** (1) build the three test levels (section
-5); (2) write `design/OPENING.md`, the one-page Milestone C design, for the user's
-approval, using the opening decisions in `DESIGN.md` section 8 (read-only phone,
+5); (2) `design/OPENING.md` v1 is WRITTEN (2026-09-24): get the user's approval and
+answers to its three questions, using the opening decisions in `DESIGN.md` section 8 (read-only phone,
 fixed-spot puncture with its own gym, a few simple cars in town, enterable P2 house
 of two rooms + shed, mother's message starts the story and the letter stays as an
 extra, torch batteries from the opening); (3) gyms, then build C. Milestones C-G follow `notes/TODO.md` / `DESIGN.md`.
