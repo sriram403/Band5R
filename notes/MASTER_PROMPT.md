@@ -11,9 +11,9 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-24, second thread: Milestone B finished, tested and
-approved by the user, pushed. Next: discuss (no implementation yet), then build
-the three test levels, then Milestone C.
+Last updated: 2026-09-24, end of the second thread: Milestone B approved and
+pushed; opening design approved; nothing half-built. The user may start a NEW
+THREAD from this file: start at section 6 "Next".
 
 ---
 
@@ -249,39 +249,24 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 6. What to do next
 
-Continue Milestone B in `notes/TODO.md` ("Foundations"), in this order, keeping it
-live and this file current:
-1. (done) Gym system. 2. (done) Developer menu. 3. (done) Chunked terrain.
-   Still to do there: faster build, and tile the tree/prop scatter (today one
-   MultiMesh per type across the whole map: no culling).
-4. (done, see section 2) **Greybox the new map** from `design/map_plan_v1.png` (coordinates are in
-   `tools/gen/map_plan.py`): three homes, the way out through the Milestone A landmarks
-   (moved), the Ghat hairpin road and coast watchtower, the sea and beach, the return
-   road (fishing village, salt pans, estuary bridge, rail tunnel, radio mast, Naresh's
-   home), the drive home and the ending watchtower. Real-road feel; landmarks visible
-   from afar; the paper map must cover the new extent.
-5. The beat chart is approved (`design/BEAT_CHART.md`): place its landmarks and
-   stops; time each route with AutoDriver runs against it.
-6. Keep all existing play-test scenarios passing (update positions as the map moves).
-   Tests reach places through `builder.poi[...]`, road names (`network.road(...)`)
-   and `builder.route`; keep those names or update the tests with the move.
-   Suggested order: set `LevelBuilder.WORLD_EXTENT` to 4000, lay out the new road
-   network and landmark positions as data first (as today's consts), tile the
-   scatter, move the Milestone A landmarks, then add new places as simple blocks;
-   the story objectives for the new opening belong to Milestone C (keep today's
-   Milestone A chain working meanwhile). Update `MapState.BOUNDS` and the paper map
-   for the new extent. Show the user screenshots (`t_overview`, `t_tour`) at the end.
-Then hand over Milestone B (rule 2).
-**Next (agreed 2026-09-24, in this order):** (1) build the three test levels (section
-5); (2) `design/OPENING.md` v1 is WRITTEN (2026-09-24): get the user's approval and
-answers to its three questions, using the opening decisions in `DESIGN.md` section 8 (read-only phone,
-fixed-spot puncture with its own gym, a few simple cars in town, enterable P2 house
-of two rooms + shed, mother's message starts the story and the letter stays as an
-extra, torch batteries from the opening); (3) gyms, then build C. Milestones C-G follow `notes/TODO.md` / `DESIGN.md`.
-New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a gym
-first.
+**Milestone B is done, approved and pushed. Next, in this order:**
 
----
+1. **Build the three test levels** (agreed; `DESIGN.md` section 6.4, section 5 here).
+   First add a per-scenario elapsed time to the play-test log and run once to see
+   where the minutes go. Then: move mechanic scenarios into the base gym; replace
+   long drives on the real map with teleport checks (quick default ~3-4 min); keep
+   `journey` + `routes` for a "full" level (e.g. `tools/run_test.sh full`) used only
+   when roads change and before a milestone hand-over; road changes are checked with
+   `python tools/gen/layout_check.py` first. Update section 5 when done.
+2. **Milestone C, the opening**, from `design/OPENING.md` (approved 2026-09-24:
+   phone on P / D-pad right, read-only; split screen as now; town cars just bump;
+   puncture at a fixed spot; enterable P2 house of two rooms + shed; mother's text
+   starts the story, the parents' letter stays as an extra; torch batteries from
+   the opening). Gyms first: tyre, house, traffic. Its "What is new to build" list
+   is the work plan; add it to `notes/TODO.md` with sub-steps before starting.
+3. Then hand over C (rule 2). Milestones D-G follow `notes/TODO.md` / `DESIGN.md`.
+   New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
+   gym first.
 
 ## 7. Hard-won technical lessons (don't relearn these)
 

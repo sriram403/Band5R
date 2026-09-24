@@ -6,9 +6,9 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Milestone B approved and pushed. Opening decisions agreed and written down.
-  Opening design v1 written (`design/OPENING.md`), waiting for your review.
-  Next: the three test levels, then build the opening once approved.
+- Paused (2026-09-24, credits running low). Opening design approved. When work
+  resumes: build the three test levels first, then Milestone C from
+  `design/OPENING.md`, gyms first. Nothing is half-built.
 
 ## Tooling
 - [ ] Three test levels (agreed 2026-09-24): Quick (~3-4 min, mechanics in gyms +
@@ -199,8 +199,8 @@ New play-test scenario `fixes` checks all of these.
       puncture at a fixed spot (own gym); a few simple cars in town; enterable P2
       house (two rooms + shed); mother's message starts it, the letter stays as
       an extra; torch batteries from the opening
-- [~] One-page design `design/OPENING.md` v1 written (2026-09-24), waiting for
-      your approval and the three questions at its end
+- [x] One-page design `design/OPENING.md` v1, approved (2026-09-24): phone on P /
+      D-pad right, split screen as now, town cars just bump
 - [ ] Phone: texts between players, the message from Naresh's mother
 - [ ] P1's home (the current homestead); P2's home
 - [ ] P1 drives alone to P2's home and learns the van: driving, fuel, heat, coolant,

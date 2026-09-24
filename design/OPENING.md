@@ -1,4 +1,4 @@
-# The opening (Milestone C): design v1 (proposal)
+# The opening (Milestone C): design v1 (approved 2026-09-24)
 
 One page, for approval before anything is built. Follows the story arc (`DESIGN.md`
 section 2, beats 0-2), the beat chart (`design/BEAT_CHART.md`, 0:00-6:00) and the
@@ -79,11 +79,9 @@ are dead). The map stamp at the windmill sets up the route choice there.
 - **Full, at hand-over**: the whole opening played by the auto-driver and scripted
   P2 actions, timed against the 5-10 minute target.
 
-## Questions for you
+## Answers (2026-09-24)
 
-1. The phone key: **P** on the keyboard and **D-pad right** on the pad. OK?
-2. Does P1 get to see P2's view at all during the opening (split screen as now),
-   or should P1's half show only P1 until the pick-up? (Split screen as now is my
-   suggestion: you see each other's progress.)
-3. Town cars: can the van damage them or be damaged (FUTURE #2), or just bump for
-   now? (Just bump for now is my suggestion.)
+1. Phone key: **P** on the keyboard, **D-pad right** on the pad. Agreed.
+2. **Split screen as now** during the opening: each player sees their own half.
+3. Town cars **just bump** for now (no damage either way); damage comes later
+   (FUTURE #2).
