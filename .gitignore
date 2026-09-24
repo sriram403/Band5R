@@ -10,3 +10,5 @@ FindingNaresh/.godot/
 FindingNaresh/_shots/
 # Downloaded asset packs (the used files are copied into FindingNaresh/)
 assets_src/
+# Hand-over prompt for new sessions (local only)
+MASTER_PROMPT.md

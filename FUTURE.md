@@ -46,6 +46,7 @@ mysmall list as well after finishing the above parts, don't need to create all t
 18. if a can is empty, there should be no sound when filling the fuel
 19. the sound effect for fuel filling is also not good
 20. when stopped vechicle the tire still moving slowly, we should stop the animation when vechicle is not moving
+21. need to add natural sounds as well, wind, birds and so on.. everything that would make sense
 9. we should have simulation difficulty as well, which should have shifts system as well, like 1st gear second gear and so on.. it should make sense, like hwile climbing we should have 1 or 2 gear occording to the steep, like that it should play with the actual environment, if we are going in 6th gear and go over a bumb in the road it should throw the car and everyone should fly off as well, and all the cans we stored should also fly off, engine should be damamged, car temperature should be high, like it needs to have consequence, and more things let's discuss before we build this on what are the other things we can build for simulation dificullty option (mostly for players who acutally drove a car before in real life and they want the same experience but with more adveenture and fun), like while driving they should look for other cars infront, back and sides as well so they don't collide and damage the car, if we damage other npc car, they can come up and try to shoot us or something so we can be careful with consquence in place
 10. i should be able to zoom in and out of the map, and remove the turn by turn nav inside the car from the Bessi, only keep the location i tagged on the map on the dashboard, right now it's easily giving the answer
 11.  if we don't stop the engine, the fuel will drain faster, and temp would raise higher
@@ -61,3 +62,30 @@ mysmall list as well after finishing the above parts, don't need to create all t
 should not be forced like invisible wall, the bridge block is good eg, a brige is broken and opened, but it needs to be closed to cross over it to go to the next section of the map, in that case we need clog wheel or elecetricty to close it and pass through, for that current, we have to hunt the landmarks in the world, finsih the puzzle or tasks, have fun, get to the car and go to the next place like this finally we get to the bridge, one rule we can follow so player doesn't get irritated with all this puzzle is following this method, comes from family guy, rick and morty and most of all the movies and shows where each scene causes the next scene to happen not like this happened, this happened, this happened, it should be this happened, which caused then this to happen, but wait what about that thing which happened earilier let's go there and so on this formula, which again slowly hsould also reveal the story as we move forward. again let's discuss about this before implmenting
 24. we should have enimies as well while driving and while walking, it should mostly be we should avoide them until we get the weapon to kill them ( which is screte weapon, and we only get them if we find the hidden location on the map, again let's discuss about this). when driving let's say some kind of creature is lurking in the woods its going to see our van and once it's near, our van would get some kind of damange that's it's power like fuel would leak, engine would break down or burn until we move away from them, it would puncher our vechicle and so on.. to hide from it, literally we can camaflouge our vechicle and we should be able to peak and see whether it left us and we should uncamaflouge and drive away and so on.. and while walking same we should not get caught, if we do then it hsould seperate one player who caught from another one, and then they hsould spend some time to find each other, it's wasting the time bascially (it's similar to what naresh npc would do in small scale, because he is from the same line of entity took a human form, causing random things to happen either it's good or bad, sepeartion is good as well if we look at it in exploration pov but it's bad in a sense it's wasting the time where they could just be gone by the time they figured where each other located.) again it's jsut a rought idea, let's discuss about this as well
 25. some mountains are in the road, move that so it's always away from the road or they close to the road like how ooty and kodaikanal roads would be, not on the driving way, and mountina should not be climbable or enterable (need to add colision as well to them), need diff types of mountains as well
+
+## Full-size puzzle journey (after the demo; agreed 2026-09-24)
+
+The demo builds a small version of this. The full version:
+
+- **Puzzles at every landmark**, woven into an RDR2-style realistic, beautiful map.
+  Puzzles are part of the landmarks, never a checklist. No puzzle counter on screen;
+  the game only nudges "have you fully explored this area?", and exploring finds
+  landmarks that hold puzzles.
+- **Every puzzle is required to open the next area**, but gates are part of the
+  world (a bridge stuck open that needs a cog or power, and so on), never invisible
+  walls. A few easy puzzles are optional.
+- **Cause and effect.** Each puzzle causes the next ("this happened, which caused
+  that"), with callbacks to earlier places, slowly revealing the story.
+- **The way out** feels happy, interesting, clever and fun. **The way back** (with
+  Naresh as a third member the players direct) feels like fear, irritation and
+  confusion, with the pressure coming from the world (storm, dark, the presence,
+  enemies), still fun and clever. The return uses a different road; the old road is
+  blocked by violent weather that can throw the van, but careful players can still
+  get through.
+- **Three-person puzzles** on the way back that need Naresh's commands.
+- **A big final puzzle** that combines every mechanic learnt.
+- **Watchtower at home**: climb it at the end and see every puzzle site across the
+  map, a reminder of the whole journey.
+- **Bessi beach** (inspired by Besant Nagar / Elliot's Beach, Chennai; empty at dusk)
+  with the Five Roses appearing out of supernatural smoke; Naresh is inside one of
+  the five rose structures.
