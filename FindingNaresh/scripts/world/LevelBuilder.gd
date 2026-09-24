@@ -185,6 +185,9 @@ var world: Node3D
 var camper_spawn := Transform3D.IDENTITY
 var player_spawns: Array[Transform3D] = []
 var poi: Dictionary = {}         ## named points of interest, for tests and later systems
+## Scatter transforms by kind ("Rocks", "Trunks", ...), kept for tests and
+## later systems: a headless run cannot read them back from the MultiMeshes.
+var scatter: Dictionary = {}
 
 
 func build() -> Node3D:
@@ -663,6 +666,7 @@ func _tile(x: float, z: float) -> int:
 
 ## One MultiMesh per scatter tile under a group node, each culled by distance.
 func _tiled(nm: String, mesh: Mesh, mat: Material, xforms: Array, colors: Array, range_end: float, shadows := true) -> Node3D:
+	scatter[nm] = xforms
 	var group := Node3D.new()
 	group.name = nm
 	var by_tile := {}

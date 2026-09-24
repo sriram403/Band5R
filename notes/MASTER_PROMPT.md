@@ -250,6 +250,13 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   confirm before chasing a failure. Tell the user when long runs are going.
 - New `class_name` scripts need `tools/run_game.sh --headless --import` once before
   they can be referenced, otherwise "Identifier not declared".
+- **Headless (Linux / GitHub, since 2026-09-24):** `tools/run_test_headless.sh
+  [scenarios]` runs the same play-test with no window or GPU, `--fixed-fps 60`
+  (deterministic: every frame is one 1/60 s physics step), full default suite in
+  ~1.5 min. Screenshots are skipped and frame-rate / audio checks only logged
+  (`PlayTest.headless`). GitHub runs it plus the road check on every push
+  (`.github/workflows/playtest.yml`). Use it for logic; keep `tools/run_test.sh`
+  for looks, sound and fps.
 - Also available: `-- --shot` (old capture mode); `t_overview` (top-down orthographic
   map shots) and `t_tour` (landmark screenshots) are great for checking world changes.
 
@@ -364,6 +371,12 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 - **Build time traps:** adding thousands of shapes to one body then reparenting
   them is O(n²) (scatter took 94 s); create per-tile bodies up front. The terrain
   grid solve pre-filters hills/lakes/pads per row (`_base_fast`).
+- **Headless runs:** `frame_post_draw` never fires (so `shot()` returns early),
+  viewport textures are null, and MultiMesh instance transforms read back as
+  zero (use `builder.scatter[...]`). Without `--fixed-fps` a slow CPU runs
+  physics behind real-time waits and timing checks fail at random.
+- **Mouse look reads `screen_relative`**, not `relative`: `relative` is scaled by
+  the canvas_items stretch, so look speed changed with the window size.
 - The coast blend must not leave a step at its inland edge (a line of "white
   dashes" in overhead shots was exactly that).
 

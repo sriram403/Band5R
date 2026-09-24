@@ -496,7 +496,10 @@ func _any_pad_start() -> bool:
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and started and not paused:
 		for d in devices:
-			d.feed_mouse((event as InputEventMouseMotion).relative)
+			# screen_relative: real mouse pixels. `relative` is scaled by the
+			# window stretch, so look speed changed with the window size
+			# (full screen at 1080p turned ~17 % slower than the 1600x900 window).
+			d.feed_mouse((event as InputEventMouseMotion).screen_relative)
 		return
 	if started and not paused:
 		for d in devices:
