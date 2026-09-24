@@ -7,8 +7,9 @@ being built and tested), so this always shows where the work is right now.
 
 ## Right now
 - Building the three test levels. Baseline timing is done (951 s of scenarios,
-  0 failures): `journey` 488 s, `waterworks` 91 s, `lap` 69 s. The gym Quick
-  pass completed with 0 failures; the combined default Quick run is underway.
+  0 failures): `journey` 488 s, `waterworks` 91 s, `lap` 69 s. Quick passed
+  (265 s of scenarios, 0 failures, no script errors). Full is running now to
+  verify its long drives and test ordering.
   Milestone C follows from `design/OPENING.md`, gyms first.
 - `design/PUZZLES.md` and the D/E/F, creature and Naresh pages are proposals
   kept for future discussion. Their merge did not approve their puzzle choices.
@@ -28,11 +29,12 @@ being built and tested), so this always shows where the work is right now.
       before a hand-over. First step: time every scenario to see where it goes
   - [x] Log elapsed time for each scenario; baseline windowed suite: 951 s of
         scenarios, 0 failures. `journey` 488 s; `waterworks` 91 s; `lap` 69 s.
-  - [~] Move mechanics into the base gym; keep real-map smoke checks. Quick
-        presets and sequential launch are coded. Gym Quick: 0 failures (77 s
-        of scenarios); combined default Quick is running.
+  - [x] Mechanic checks in base gym and teleport checks in the world. Quick
+        passed: 265 s of scenarios (~4.5 min), 0 failures, no script errors;
+        gym segment was 77 s. The world segment includes map, story, water
+        works, carrying, controller, performance and save/load.
   - [~] `full` includes the gym pass, old world suite, `journey`, and `routes`;
-        road check stays the layout script. Preset coded, awaiting verification.
+        road check stays the layout script. Full windowed run is underway.
   - [x] Road check: `python tools/gen/layout_check.py` completed in 2 s with
         "no problems" (2026-09-24).
   - [ ] Verify Quick and Full, update launch instructions and handoff notes
@@ -227,6 +229,25 @@ test was fixed and now restores its starting layout before the pad test.
       an extra; torch batteries from the opening
 - [x] One-page design `design/OPENING.md` v1, approved (2026-09-24): phone on P /
       D-pad right, split screen as now, town cars just bump
+- [ ] Tyre gym: fixed puncture, pull and speed loss, spare-wheel swap, handbrake
+      on a 20% drive; automated input test and tuning
+- [ ] House gym: two rooms, upstairs window, stairs, drawers, shed, doors;
+      battery search and fuel-drum interaction tested on its own map
+- [ ] Traffic gym: town cars on a loop, keep left, slow or stop behind the van,
+      bump without damage; automated obstruction test
+- [ ] Phone and objectives: read-only texts (P / D-pad right), mother's message
+      starts the story, per-player opening objectives, shared line after pick-up
+- [ ] Split start: P1 at the homestead, P2 inside their house; preserve correct
+      positions and opening state through save/load
+- [ ] Torch batteries: dead initially for P2, drawer pickup, drain and dim
+      flicker, replacement, save/load; test in the house gym
+- [ ] Fuel drum and Town Fuel pump fill cans by holding E, with the can's
+      visible amount and weight changing; test in the house gym and world
+- [ ] Greybox placement: enterable P2 house + shed, upstairs view, 20% drive,
+      town cars, Town Fuel, warning sign and nails at fixed puncture spot
+- [ ] Opening play-test: timed P1 drive and P2 preparation, pick-up and rack
+      loading, objective merge; Quick teleport checks and Full route check
+- [ ] Milestone C hand-over after my play-test; push only after your approval
 - [ ] Phone: texts between players, the message from Naresh's mother
 - [ ] P1's home (the current homestead); P2's home
 - [ ] P1 drives alone to P2's home and learns the van: driving, fuel, heat, coolant,
