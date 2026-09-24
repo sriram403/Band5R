@@ -40,6 +40,12 @@ static var mounds: Array = []
 static var pads: Array = []
 ## Gyms replace the natural ground with their own shape (flat + test slopes).
 static var height_fn: Callable = Callable()
+## The coastline as (x, z) points, south-going; the sea lies east of it. Empty
+## means no sea (gyms).
+static var coast := PackedVector2Array()
+const SEA_Y := -2.0          ## sea surface
+const BEACH_W := 50.0        ## sand from the waterline inland
+const COAST_BLEND := 320.0   ## land eases down to the beach over this distance
 
 
 static func setup(net: RoadNetwork, river_route: Route, pond_list: Array, mound_list: Array) -> void:
@@ -135,6 +141,41 @@ static func sample_height(_route, x: float, z: float, _ponds = null, _mounds = n
 	return ground(x, z)
 
 
+## base_height for the grid solve, with the hill/lake lists already cut down to
+## those near this row and the coastline's x for this row (cx).
+static func _base_fast(x: float, z: float, row_m: Array, row_p: Array, cx: float) -> float:
+	var h := Route.ground_noise(x, z)
+	for m in row_m:
+		var c: Vector3 = m["pos"]
+		var r: float = m["radius"]
+		var dx := x - c.x
+		var dz := z - c.z
+		var d2 := dx * dx + dz * dz
+		if d2 < r * r:
+			h += float(m["height"]) * (1.0 - smoothstep(0.0, r, sqrt(d2)))
+	for pd in row_p:
+		var c: Vector3 = pd["pos"]
+		var r: float = pd["radius"]
+		var d := Vector2(x - c.x, z - c.z).length()
+		if d < r:
+			h -= float(pd["depth"]) * smoothstep(r, r * 0.55, d)
+	if cx < 1e8:
+		var d := cx - x
+		if d < COAST_BLEND:
+			var prof := SEA_Y + 0.4 + d * 0.035 if d >= 0.0 else maxf(SEA_Y - 14.0, SEA_Y + 0.4 + d * 0.12)
+			var v := lerpf(prof, h, smoothstep(BEACH_W, COAST_BLEND, d))
+			h = lerpf(maxf(v, prof), v, smoothstep(200.0, COAST_BLEND, d))
+	for m in row_m:
+		if not m.has("plateau"):
+			continue
+		var c: Vector3 = m["pos"]
+		var pr: float = m["plateau"]
+		var d := Vector2(x - c.x, z - c.z).length()
+		if d < pr + PLATEAU_BLEND:
+			h = lerpf(plateau_height(m), h, smoothstep(pr, pr + PLATEAU_BLEND, d))
+	return h
+
+
 ## Level of a mound's plateau: the natural ground at its centre.
 static func plateau_height(m: Dictionary, _ponds = null, _mounds = null) -> float:
 	var c: Vector3 = m["pos"]
@@ -142,7 +183,38 @@ static func plateau_height(m: Dictionary, _ponds = null, _mounds = null) -> floa
 
 
 static func _raw_height(x: float, z: float) -> float:
-	return Route.ground_noise(x, z) + mound_raise(x, z) - pond_carve(x, z)
+	return coast_shape(x, z, Route.ground_noise(x, z) + mound_raise(x, z) - pond_carve(x, z))
+
+
+## Metres inland of the waterline at this z (negative out at sea; 1e9 with no
+## coast).
+static func coast_inland(x: float, z: float) -> float:
+	if coast.size() < 2:
+		return 1e9
+	if z <= coast[0].y:
+		return coast[0].x - x
+	for i in coast.size() - 1:
+		var a := coast[i]
+		var b := coast[i + 1]
+		if z <= b.y:
+			return lerpf(a.x, b.x, (z - a.y) / (b.y - a.y)) - x
+	return coast[coast.size() - 1].x - x
+
+
+## Near the sea the land eases down to a sandy beach and a shelving seabed;
+## never below the beach line, so no dry hollows lie under sea level.
+static func coast_shape(x: float, z: float, h: float) -> float:
+	var d := coast_inland(x, z)
+	if d > COAST_BLEND:
+		return h
+	var prof: float
+	if d >= 0.0:
+		prof = SEA_Y + 0.4 + d * 0.035
+	else:
+		prof = maxf(SEA_Y - 14.0, SEA_Y + 0.4 + d * 0.12)
+	var v := lerpf(prof, h, smoothstep(BEACH_W, COAST_BLEND, d))
+	# the floor fades out again inland, so the edge of the blend has no step
+	return lerpf(maxf(v, prof), v, smoothstep(200.0, COAST_BLEND, d))
 
 
 ## Smooth dome, used to lift landmark hills above the treeline so they can be
@@ -193,6 +265,11 @@ static var grid_road_h := PackedFloat32Array()   ## that road's height
 static var grid_river_d := PackedFloat32Array()  ## distance to the river line
 static var grid_river_h := PackedFloat32Array()  ## the river line's height there
 static var grid_gravel := PackedByteArray()      ## 1 where the nearest road is gravel
+static var grid_tunnel := PackedByteArray()      ## 1 where the nearest road runs in a tunnel
+
+const TUNNEL_FLAT := 11.0    ## a tunnel's slot: flat this far from its centreline (a grid
+                             ## cell clear of its walls, so no slope pokes through them)
+const TUNNEL_BLEND := 16.0   ## ... and back to the hill by here (nearly sheer)
 
 const STAMP_RADIUS := 45.0   ## how far from a road/river the grid records distance
 const STAMP_STRIDE := 3      ## stamp every Nth centreline sample as a segment
@@ -203,12 +280,18 @@ static func _grid_origin() -> float:
 
 
 ## Give each pad its level: the natural ground at its centre (before roads).
+## A pad close to a road takes the road's level instead, so the yard meets the
+## road flush rather than fighting its cutting.
 static func set_pads(list: Array) -> void:
 	pads = []
 	for p in list:
 		var c: Vector3 = p["pos"]
 		var d := (p as Dictionary).duplicate()
 		d["height"] = natural_height(c.x, c.z)
+		if network != null:
+			var near := network.nearest(c.x, c.z)
+			if float(near["dist"]) < float(p["radius"]) + float(p["blend"]) + 8.0:
+				d["height"] = float(near["height"])
 		pads.append(d)
 
 
@@ -222,9 +305,11 @@ static func _solve_grid() -> void:
 	grid_river_d.resize(total)
 	grid_river_h.resize(total)
 	grid_gravel.resize(total)
+	grid_tunnel.resize(total)
 	grid_road_d.fill(1e9)
 	grid_river_d.fill(1e9)
 	grid_gravel.fill(0)
+	grid_tunnel.fill(0)
 	for r in network.roads:
 		_stamp(r, grid_road_d, grid_road_h, 1 if r.surface == "gravel" else 0)
 	if river != null:
@@ -233,19 +318,35 @@ static func _solve_grid() -> void:
 	var origin := _grid_origin()
 	for iz in n:
 		var z := origin + iz * STEP
+		# Only the hills, lakes and pads that reach this row are tested for
+		# each of its points (the grid is 800 x 800 at 4 km).
+		var row_m: Array = []
+		for m in mounds:
+			if absf(z - (m["pos"] as Vector3).z) < float(m["radius"]) + PLATEAU_BLEND:
+				row_m.append(m)
+		var row_p: Array = []
+		for pd in ponds:
+			if absf(z - (pd["pos"] as Vector3).z) < float(pd["radius"]):
+				row_p.append(pd)
+		var row_pads: Array = []
+		for pad in pads:
+			if absf(z - (pad["pos"] as Vector3).z) < float(pad["radius"]) + float(pad["blend"]):
+				row_pads.append(pad)
+		var cx := coast_inland(0.0, z)
 		for ix in n:
 			var x := origin + ix * STEP
 			var k := iz * n + ix
-			var h := base_height(x, z)
+			var h := base_height(x, z) if height_fn.is_valid() else _base_fast(x, z, row_m, row_p, cx)
 			var rd := grid_river_d[k]
 			if rd < RIVER_HALF + RIVER_BANK:
 				var bed := grid_river_h[k] - RIVER_DEPTH
 				h = minf(h, lerpf(bed, h, smoothstep(RIVER_HALF * 0.5, RIVER_HALF + RIVER_BANK, rd)))
 			var d := grid_road_d[k]
-			if d < BLEND_RADIUS:
-				var g := lerpf(grid_road_h[k], h, smoothstep(FLAT_RADIUS, BLEND_RADIUS, d))
+			var tun := grid_tunnel[k] == 1
+			if d < (TUNNEL_BLEND if tun else BLEND_RADIUS):
+				var g := lerpf(grid_road_h[k], h, smoothstep(TUNNEL_FLAT if tun else FLAT_RADIUS, TUNNEL_BLEND if tun else BLEND_RADIUS, d))
 				h = lerpf(g, h, 1.0 - smoothstep(RIVER_HALF, RIVER_HALF + 6.0, rd))
-			for pad in pads:
+			for pad in row_pads:
 				var pc: Vector3 = pad["pos"]
 				var pd := Vector2(x - pc.x, z - pc.z).length()
 				var pr: float = pad["radius"]
@@ -265,6 +366,7 @@ static func _stamp(route: Route, dist: PackedFloat32Array, hgt: PackedFloat32Arr
 	while i < last:
 		var a := route.point(i)
 		var b := route.point(mini(i + STAMP_STRIDE, cnt - 1) if not route.closed else i + STAMP_STRIDE)
+		var tun := 1 if route.in_tunnel(i) else 0
 		var abx := b.x - a.x
 		var abz := b.z - a.z
 		var len2 := maxf(abx * abx + abz * abz, 0.0001)
@@ -286,6 +388,7 @@ static func _stamp(route: Route, dist: PackedFloat32Array, hgt: PackedFloat32Arr
 					hgt[k] = lerpf(a.y, b.y, t)
 					if flag >= 0:
 						grid_gravel[k] = flag
+						grid_tunnel[k] = tun
 		i += STAMP_STRIDE
 
 
@@ -345,6 +448,9 @@ static func build_terrain() -> StaticBody3D:
 
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
+	# The ground colours were chosen when the terrain was (wrongly) lit from
+	# below; now it takes the full sun, this keeps it at the approved brightness.
+	mat.albedo_color = Color(0.6, 0.6, 0.6)
 	mat.roughness = 0.95
 	mat.metallic = 0.0
 	mat.metallic_specular = 0.06
@@ -429,7 +535,10 @@ static func _tile_mesh(cx: int, cz: int, w: int, d: int, stride: int, skirt: flo
 		for jx in nx - 1:
 			var a := jz * nx + jx
 			var c := a + nx
-			indices.append_array(PackedInt32Array([a, c, a + 1, a + 1, c, c + 1]))
+			# wound so the faces point up (Godot's front faces are clockwise seen
+			# from outside); the other way the double-sided material flipped the
+			# normals and lit the ground as if the sun were underneath it
+			indices.append_array(PackedInt32Array([a, a + 1, c, a + 1, c + 1, c]))
 	if skirt > 0.0:
 		# walk the rim and hang a strip below each edge
 		var rim: Array[int] = []
@@ -451,7 +560,7 @@ static func _tile_mesh(cx: int, cz: int, w: int, d: int, stride: int, skirt: flo
 			var t1 := rim[i + 1]
 			var b0 := base + i
 			var b1 := base + i + 1
-			indices.append_array(PackedInt32Array([t0, b0, t1, t1, b0, b1]))
+			indices.append_array(PackedInt32Array([t0, t1, b0, t1, b1, b0]))
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts
@@ -478,6 +587,30 @@ static func build_road(route: Route, lift := 0.0) -> Node3D:
 		root.add_child(_edge_lines(route, lift))
 		root.add_child(_centre_dashes(route, lift))
 	return root
+
+
+## The sea: one big water sheet from the coastline out past the horizon.
+static func build_sea() -> MeshInstance3D:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var far := 7000.0
+	var line := PackedVector2Array([Vector2(coast[0].x, -far)])
+	line.append_array(coast)
+	line.append(Vector2(coast[coast.size() - 1].x, far))
+	for p in line:
+		st.set_normal(Vector3.UP)
+		st.add_vertex(Vector3(p.x - 40.0, SEA_Y, p.y))
+		st.set_normal(Vector3.UP)
+		st.add_vertex(Vector3(far, SEA_Y, p.y))
+	_strip_indices(st, line.size(), false)
+	var mi := MeshInstance3D.new()
+	mi.name = "Sea"
+	mi.mesh = st.commit()
+	var m := ToonMat.water(Color(0.24, 0.50, 0.66, 0.9))
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mi.material_override = m
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
 
 
 static func build_river() -> MeshInstance3D:
@@ -514,6 +647,11 @@ static func _ground_color(x: float, z: float, y: float, slope: float, dist_to_ro
 	c = c.lerp(DRY, clampf((y - 6.0) / 18.0, 0.0, 0.45))
 	# steep faces show rock
 	c = c.lerp(ROCK, clampf((slope - 0.55) / 0.5, 0.0, 0.85))
+	# the beach: sand from the waterline up, wet and darker at the water
+	var inland := coast_inland(x, z)
+	if inland < BEACH_W + 30.0:
+		c = c.lerp(SAND.lightened(0.12), 1.0 - smoothstep(BEACH_W - 10.0, BEACH_W + 30.0, inland))
+		c = c.lerp(SAND.darkened(0.18), 1.0 - smoothstep(-2.0, 6.0, inland))
 	# river banks: mud down by the water, sand on the shelf above
 	if dist_to_river < RIVER_HALF + RIVER_BANK + 4.0:
 		c = c.lerp(SAND, 1.0 - smoothstep(RIVER_HALF, RIVER_HALF + RIVER_BANK + 4.0, dist_to_river))

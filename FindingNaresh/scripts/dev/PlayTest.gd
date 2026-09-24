@@ -210,6 +210,11 @@ func _run() -> void:
 	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
 		all = ["gym"]          # gyms have their own scenarios
+	# scenarios left out of the default run (e.g. "routes") still run by name
+	if only != "":
+		for extra in only.split(","):
+			if not extra in all and has_method("t_" + extra):
+				all.append(extra)
 	for s in all:
 		if only != "" and not s in only.split(","):
 			continue
@@ -374,22 +379,30 @@ func t_solid() -> void:
 	var p := p1()
 	var targets := []
 	# the nearest rock and a tree far from the road, found from the scatter
-	var rocks: MultiMeshInstance3D = boot.world.get_node("Rocks")
-	var trunks: MultiMeshInstance3D = boot.world.get_node("Trunks")
 	var r: Route = boot.builder.route
 	var best_rock := Vector3.ZERO
 	var best_rock_s := 0.0
-	for i in rocks.multimesh.instance_count:
-		var xf := rocks.multimesh.get_instance_transform(i)
-		var sc := xf.basis.get_scale().x
-		if sc > 1.6 and sc > best_rock_s and float(r.nearest(xf.origin.x, xf.origin.z)["dist"]) < 60.0:
-			best_rock_s = sc
-			best_rock = xf.origin
+	var home: Route = boot.builder.network.road("home_lane")
+	for tile in boot.world.get_node("Rocks").get_children():
+		var rocks := tile as MultiMeshInstance3D
+		for i in rocks.multimesh.instance_count:
+			var xf := rocks.multimesh.get_instance_transform(i)
+			var sc := xf.basis.get_scale().x
+			if sc > 1.6 and sc > best_rock_s and float(home.nearest(xf.origin.x, xf.origin.z)["dist"]) < 60.0:
+				best_rock_s = sc
+				best_rock = xf.origin
 	targets.append({"name": "big rock", "pos": best_rock})
-	for i in trunks.multimesh.instance_count:
-		var xf := trunks.multimesh.get_instance_transform(i)
-		if float(r.nearest(xf.origin.x, xf.origin.z)["dist"]) > 90.0:
-			targets.append({"name": "tree 90 m+ from road", "pos": xf.origin})
+	var found_tree := false
+	for tile in boot.world.get_node("Trunks").get_children():
+		var trunks := tile as MultiMeshInstance3D
+		for i in trunks.multimesh.instance_count:
+			var xf := trunks.multimesh.get_instance_transform(i)
+			var o := xf.origin
+			if Landscape.road_distance(o.x, o.z) > 90.0 and Vector2(o.x - r.point(0).x, o.z - r.point(0).z).length() < 900.0:
+				targets.append({"name": "tree 90 m+ from road", "pos": o})
+				found_tree = true
+				break
+		if found_tree:
 			break
 	var roses: Node = boot.world.get_node("FiveRoses")
 	for c in roses.get_children():
@@ -663,6 +676,17 @@ func t_tour() -> void:
 		["tour_11_broken_bridge", b.poi["bridge_barrier_near"], b.poi["bridge"]],
 		["tour_12_bessi", b.poi["bessi_join"], b.poi["roses"] + Vector3(0, 20, 0)],
 		["tour_13_radio_mast", b.poi["j2"], b.poi["radio_mast"] + Vector3(0, 30, 0)],
+		["tour_14_town", b.network.road("home_lane").point(200), b.poi["town_fuel"]],
+		["tour_15_p2_home", b.network.road("home_lane").point(480), b.poi["p2_home"]],
+		["tour_16_ghat_hairpins", b.network.road("ghat_road").point(40), b.poi["ghat_pass"] + Vector3(0, 20, 0)],
+		["tour_17_coast_tower_view", b.poi["coast_tower_deck"], b.poi["roses"] + Vector3(0, 10, 0)],
+		["tour_18_beach", b.poi["beach"] + Vector3(-20, 0, -60), b.poi["beach"] + Vector3(40, 0, 60)],
+		["tour_19_fishing_village", _road_before("coast_road", b.poi["fishing_village"], 50), b.poi["fishing_village"]],
+		["tour_20_salt_pans", _road_before("coast_road", b.poi["salt_pans"], 60), b.poi["salt_pans"]],
+		["tour_21_estuary_bridge", _road_before("coast_road", b.poi["estuary_bridge"], 45) + Vector3(0, 3, 0), b.poi["estuary_bridge"]],
+		["tour_22_tunnel_portal", b.poi["tunnel_portal"], b.poi["tunnel"] + Vector3(0, 5, 0)],
+		["tour_23_naresh_home", b.network.road("west_road").point(40), b.poi["naresh_home"]],
+		["tour_24_end_tower_view", b.poi["end_tower_deck"], b.poi["j1"] + Vector3(0, 0, 0)],
 	]
 	var p := p1()
 	for s in stops:
@@ -676,6 +700,19 @@ func t_tour() -> void:
 		await shot(s[0])
 
 
+## A point on a road `back` samples before its nearest point to `at`.
+func _road_before(road_name: String, at: Vector3, back: int) -> Vector3:
+	var r: Route = boot.builder.network.road(road_name)
+	var i := 0
+	var best := 1e9
+	for k in r.point_count():
+		var d := Vector2(r.point(k).x - at.x, r.point(k).z - at.z).length()
+		if d < best:
+			best = d
+			i = k
+	return r.point(maxi(0, i - back))
+
+
 ## Orthographic shots from straight above: whole map, then close-ups.
 func t_overview() -> void:
 	var b: LevelBuilder = boot.builder
@@ -685,11 +722,19 @@ func t_overview() -> void:
 	cam.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	boot.viewports[0].add_child(cam)
 	var views := [
-		["overview_map", Vector3(0, 0, 0), 1600.0],
+		["overview_map", Vector3(0, 0, 0), 4000.0],
 		["overview_j1", b.poi["j1"], 160.0],
 		["overview_billboard", b.poi["billboard"], 160.0],
 		["overview_bridge", b.poi["bridge"], 160.0],
+		["overview_home_town", Vector3(-1250, 0, 1520), 700.0],
+		["overview_ghat", Vector3(900, 0, -80), 700.0],
+		["overview_bessi", Vector3(1720, 0, 560), 600.0],
+		["overview_coast_north", Vector3(1650, 0, -1000), 900.0],
+		["overview_tunnel", b.poi.get("tunnel", Vector3.ZERO), 500.0],
+		["overview_naresh", Vector3(-1600, 0, -900), 400.0],
 	]
+	var env: Environment = (boot.world.get_node("Environment") as WorldEnvironment).environment
+	env.fog_enabled = false         # straight down from 600 m the haze hides the map
 	for v in views:
 		var c: Vector3 = v[1]
 		cam.size = v[2]
@@ -697,6 +742,7 @@ func t_overview() -> void:
 		cam.current = true
 		await wait(0.4)
 		await shot(v[0])
+	env.fog_enabled = true
 	cam.queue_free()
 	p1().cam.current = true
 
@@ -793,7 +839,9 @@ func t_carry() -> void:
 
 	# the empty can at the station: light, and throwable
 	var empty := find_can("station_can_empty")
-	await face_point(p, empty.global_position + Vector3.UP * 0.25, 2.0)
+	# the cans are stashed behind the kiosk: come at them from behind it
+	var behind: Vector3 = -(boot.world.get_node("LastFuel") as Node3D).global_transform.basis.z
+	await face_point(p, empty.global_position + Vector3.UP * 0.25, 2.0, behind)
 	log_line("looking at the empty can: '%s'" % p.prompt_text)
 	check(p.prompt_text.contains("(empty)"), "an empty can says it is empty before you lift it")
 	await tap(KEY_E)
@@ -812,10 +860,12 @@ func t_carry() -> void:
 	c.freeze = false
 	await reset_camper(6)
 	c.fuel = 20.0
-	var full := find_can("station_can_a")
+	var full := await reset_can("station_can_a", FuelCan.CAPACITY)
 	full.global_position = c.global_transform * Vector3(-2.4, 0.2, 1.0)
 	full.reset_physics_interpolation()
+	# let it settle (it can slide a little on a sloping verge) before aiming at it
 	await physics_frames(20)
+	await wait(1.2)
 	await face_point(p, full.global_position + Vector3.UP * 0.25, 1.8, -c.global_transform.basis.x)
 	await tap(KEY_E)
 	await physics_frames(10)
@@ -1368,15 +1418,20 @@ func t_audio() -> void:
 	if p.seat != null:
 		p.force_exit = true
 		await physics_frames(3)
-	await place_player(p, boot.builder.player_spawns[0].origin, 0.0)
+	# walk the way the spawn faces: open ground up the lane
+	var sp: Transform3D = boot.builder.player_spawns[0]
+	await place_player(p, sp.origin, sp.basis.get_euler().y)
 	var before: int = boot.world.find_children("*", "AudioStreamPlayer3D", true, false).size()
 	var heard := 0
 	key(KEY_W, true)
-	for _i in 30:
+	# up to 4 s: the first seconds after loading can crawl while shaders compile
+	for _i in 80:
 		await wait(0.05)
 		heard = maxi(heard, boot.world.find_children("*", "AudioStreamPlayer3D", true, false).size() - before)
+		if heard > 0:
+			break
 	key(KEY_W, false)
-	log_line("one-shot sounds playing while walking: up to %d" % heard)
+	log_line("one-shot sounds playing while walking: up to %d (moved %.1f m, on floor %s, at %s)" % [heard, p.global_position.distance_to(sp.origin), str(p.is_on_floor()), p.global_position])
 	check(heard > 0, "walking makes footstep sounds")
 	var wind: NoiseLoop = boot.world.get_node("Wind")
 	check(wind != null and wind._gain > 0.5, "the wind bed is playing")
@@ -1905,6 +1960,76 @@ func t_journey() -> void:
 		check(ad.max_off < 6.0, "stays on the road along the %s route" % way[1])
 
 
+## Drive every road of the 4 km map with the keyboard auto-driver and time
+## each leg against the beat chart (design/BEAT_CHART.md). Long (~20 min), so
+## it is not in the default list: `tools/run_test.sh routes`.
+func t_routes() -> void:
+	var b: LevelBuilder = boot.builder
+	var legs := [
+		["opening: homestead -> town -> P2 -> J1", [["home_lane"]], ""],
+		["valley road J1 -> J2", [["valley_road"]], ""],
+		["ridge track J1 -> J2", [["ridge_track"]], ""],
+		["pump house road J2 -> bridge", [["pump_house_road"]], "bridge_barrier_near"],
+		["ghat hairpins + beach road J3 -> Bessi", [["ghat_road"], ["beach_road"]], ""],
+		["coast road Bessi -> Naresh's home", [["coast_road"]], ""],
+		["west road Naresh's home -> homestead", [["west_road"]], ""],
+		["tower road -> P2's home", [["tower_road"]], ""],
+	]
+	var total := 0.0
+	for leg in legs:
+		var path := b.network.chain(leg[1])
+		var stop_at := path.point_count() - 12
+		if leg[2] != "":
+			var bp: Vector3 = b.poi[leg[2]]
+			stop_at = int(path.nearest(bp.x, bp.z)["index"]) - 10
+		var c := camper()
+		c.freeze = false
+		var p0 := path.point(4)
+		var f := path.forward(4)
+		c.linear_velocity = Vector3.ZERO
+		c.angular_velocity = Vector3.ZERO
+		c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP), p0 + Vector3.UP * 0.9)
+		c.reset_physics_interpolation()
+		c.fuel = Camper.FUEL_CAPACITY
+		c.temp = Camper.TEMP_NORMAL
+		c.coolant = 1.0
+		c.coolant_leak = false
+		c.parking_brake = false
+		await physics_frames(30)
+		await seat_p1_driver()
+		if not c.engine_on:
+			c.toggle_engine()
+		var ad := AutoDriver.new(self, path, c)
+		var t := 0.0
+		var stuck := 0.0
+		var temp_max := c.temp
+		var fuel0 := c.fuel
+		var flipped := false
+		while t < 900.0:
+			await get_tree().physics_frame
+			t += 1.0 / 60.0
+			ad.step(-1.0)
+			temp_max = maxf(temp_max, c.temp)
+			flipped = flipped or c.global_transform.basis.y.y < 0.4
+			stuck = stuck + 1.0 / 60.0 if kmh() < 2.0 else 0.0
+			if stuck > 8.0 or ad.idx >= stop_at:
+				break
+		ad.release()
+		key(KEY_S, true)
+		await wait(2.0)
+		key(KEY_S, false)
+		var arrived := ad.idx >= stop_at
+		var metres := ad.idx * Route.SAMPLE_SPACING
+		total += t
+		log_line("ROUTE %s: arrived=%s  %.0f m in %.0f s (%.1f min, avg %.0f km/h)  off-road max %.1f m  fuel %.1f L  temp max %.0f" % [
+			leg[0], arrived, metres, t, t / 60.0, metres / maxf(t, 1.0) * 3.6, ad.max_off, fuel0 - c.fuel, temp_max])
+		if not arrived:
+			await shot("routes_stuck_%d" % legs.find(leg))
+		check(arrived and not flipped, "the auto-driver gets through: " + leg[0])
+		check(ad.max_off < 6.0, "stays on the road: " + leg[0])
+	log_line("ROUTE all roads driven in %.1f min" % (total / 60.0))
+
+
 ## Mouse travel must map to the same turn however it is split across frames.
 func t_mouse() -> void:
 	var p := p1()
@@ -2273,9 +2398,12 @@ class AutoDriver:
 		if target < 0.0:
 			var f0 := route.forward(idx)
 			var bend := 0.0
-			for k in range(4, 30, 3):
+			for k in range(4, 45, 3):
 				bend = maxf(bend, acos(clampf(Vector2(f0.x, f0.z).normalized().dot(Vector2(route.forward(idx + k).x, route.forward(idx + k).z).normalized()), -1, 1)))
 			target = lerp(70.0, 35.0, clampf(bend / 0.9, 0.0, 1.0))
+			if bend > 1.3:
+				# a hairpin: crawl round it like a driver would
+				target = lerp(35.0, 18.0, clampf((bend - 1.3) / 1.2, 0.0, 1.0))
 		var v := van.linear_velocity.length() * 3.6
 		t.key(KEY_W, v < target)
 		t.key(KEY_S, v > target + 8.0)

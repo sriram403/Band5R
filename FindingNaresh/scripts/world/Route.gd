@@ -20,6 +20,9 @@ var closed := true
 var surface := "asphalt"        ## "asphalt" | "gravel" | "water"
 
 var points: PackedVector3Array = PackedVector3Array()   ## sampled centreline
+## 1 per sample that runs through a tunnel (empty: none). The terrain is only
+## cut as a narrow slot there, and the tunnel structure covers it.
+var tunnel := PackedByteArray()
 var forwards: PackedVector3Array = PackedVector3Array() ## unit tangent per sample
 var total_length := 0.0
 
@@ -28,13 +31,21 @@ var _hash: Dictionary = {}
 
 ## height_fn(x, z) -> float gives the ground to follow; defaults to ground_noise.
 ## pin_start / pin_end (open routes only): NAN leaves that end free.
+## smooth_m > 0 uses the long engineered profile instead of smooth_passes:
+## the ground blurred over about that many metres, then limited to max_grade
+## (cut and fill where the land is steeper). tools/gen/layout_check.py uses the
+## same maths to check a layout before it is built.
 func _init(control_points: PackedVector2Array, is_closed := true, height_fn: Callable = Callable(),
-		pin_start := NAN, pin_end := NAN, smooth_passes := SMOOTH_PASSES) -> void:
+		pin_start := NAN, pin_end := NAN, smooth_passes := SMOOTH_PASSES, smooth_m := 0.0, max_grade := 0.0) -> void:
 	control = control_points
 	closed = is_closed
 	if control.size() >= 2:
 		_sample()
-		_derive_elevation(height_fn if height_fn.is_valid() else Route.ground_noise, pin_start, pin_end, smooth_passes)
+		var hf := height_fn if height_fn.is_valid() else Route.ground_noise
+		if smooth_m > 0.0:
+			_engineer_elevation(hf, pin_start, pin_end, smooth_m, max_grade)
+		else:
+			_derive_elevation(hf, pin_start, pin_end, smooth_passes)
 		_build_hash()
 
 
@@ -58,6 +69,10 @@ static func ground_noise(x: float, z: float) -> float:
 	h += sin((x + z) * 0.0071 + 0.6) * 4.6
 	h += sin(x * 0.0605 + 0.3) * cos(z * 0.0518 - 1.9) * 0.9
 	return h
+
+
+func in_tunnel(i: int) -> bool:
+	return tunnel.size() > 0 and tunnel[_idx(i)] == 1
 
 
 func point_count() -> int:
@@ -188,6 +203,79 @@ func _derive_elevation(height_fn: Callable, pin_start: float, pin_end: float, pa
 	# recompute tangents with grade included
 	for i in n:
 		forwards[i] = _tangent(i)
+
+
+func _engineer_elevation(height_fn: Callable, pin_start: float, pin_end: float, smooth_m: float, max_grade: float) -> void:
+	var n := points.size()
+	var raw := PackedFloat32Array()
+	raw.resize(n)
+	for i in n:
+		raw[i] = height_fn.call(points[i].x, points[i].z)
+	var w := maxi(3, int(smooth_m / SAMPLE_SPACING) | 1)
+	var h := PackedFloat32Array()
+	if closed:
+		h = _box3(raw, w, true)
+	else:
+		var s0 := raw[0] if is_nan(pin_start) else pin_start
+		var s1 := raw[n - 1] if is_nan(pin_end) else pin_end
+		# Blur the difference from a straight ramp between the ends, so the
+		# pinned ends stay exactly where they are.
+		var ramp := PackedFloat32Array()
+		ramp.resize(n)
+		var e := PackedFloat32Array()
+		e.resize(n)
+		for i in n:
+			ramp[i] = lerpf(s0, s1, float(i) / float(n - 1))
+			e[i] = raw[i] - ramp[i]
+		e[0] = 0.0
+		e[n - 1] = 0.0
+		e = _box3(e, w, false)
+		h.resize(n)
+		for i in n:
+			h[i] = ramp[i] + e[i]
+		if max_grade > 0.0:
+			var step := max_grade * SAMPLE_SPACING
+			for i in range(1, n):
+				h[i] = clampf(h[i], h[i - 1] - step, h[i - 1] + step)
+			for i in range(n - 2, -1, -1):
+				h[i] = clampf(h[i], h[i + 1] - step, h[i + 1] + step)
+			# round off the kinks the limiter leaves (the grade stays within it)
+			for i in n:
+				e[i] = h[i] - ramp[i]
+			e = _box3(e, 15, false)
+			for i in n:
+				h[i] = ramp[i] + e[i]
+	for i in n:
+		points[i] = Vector3(points[i].x, h[i], points[i].z)
+	for i in n:
+		forwards[i] = _tangent(i)
+
+
+## Three box blurs of odd width w (close to a Gaussian, O(n) each). Open lines
+## are extended by odd reflection about their end samples.
+static func _box3(src: PackedFloat32Array, w: int, is_closed: bool) -> PackedFloat32Array:
+	var n := src.size()
+	var r := w / 2
+	var e := src.duplicate()
+	var acc := PackedFloat32Array()
+	acc.resize(n + 2 * r + 1)
+	for _pass in 3:
+		acc[0] = 0.0
+		for k in n + 2 * r:
+			var j := k - r
+			var v: float
+			if is_closed:
+				v = e[wrapi(j, 0, n)]
+			elif j < 0:
+				v = 2.0 * e[0] - e[mini(-j, n - 1)]
+			elif j >= n:
+				v = 2.0 * e[n - 1] - e[maxi(2 * (n - 1) - j, 0)]
+			else:
+				v = e[j]
+			acc[k + 1] = acc[k] + v
+		for i in n:
+			e[i] = (acc[i + w] - acc[i]) / float(w)
+	return e
 
 
 ## Force the height profile to only ever go down along the route (rivers).

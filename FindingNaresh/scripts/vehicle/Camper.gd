@@ -22,7 +22,7 @@ const IDLE_DRAG := 0.35
 const KNOCK_SPEED := 2.5
 
 const FUEL_CAPACITY := 70.0
-const FUEL_PER_KM := 4.0           ## game-readable, not realistic: ~17 km on a tank
+const FUEL_PER_KM := 2.5           ## game-readable, not realistic: ~17 km of driving on a tank (4 x 4 km map)
 const FUEL_IDLE_PER_S := 0.015       ## ~0.9 L a minute ticking over: switch off when you stop
 const IDLE_HEAT := 7.0                ## no airflow when standing: idling runs hotter than cruising
 const POUR_RATE := 5.0             ## litres per second from a can into the tank

@@ -159,7 +159,7 @@ func _spawn_players() -> void:
 		cam.name = "Cam%d" % (i + 1)
 		cam.fov = FOV_SIDE_BY_SIDE
 		cam.near = 0.06
-		cam.far = 2600.0      # the backdrop ridges and their tree tops stand out to ~2.3 km
+		cam.far = 5000.0      # across the 4 km map to the backdrop ridges and the sea horizon
 		cam.cull_mask = PlayerRig.cull_mask_for(i)
 		# The rig places this camera itself every rendered frame from
 		# interpolated transforms; engine interpolation on top would add lag.

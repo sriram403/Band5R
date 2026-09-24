@@ -14,11 +14,11 @@ signal changed
 const STAMP_TYPES := ["fuel", "danger", "puzzle", "shortcut", "unexplored"]
 const ROAD_CHUNK := 12            ## centreline samples per revealable road piece
 const ROAD_REVEAL_M := 55.0       ## reveal a road piece when a player is this close
-const LANDMARK_REVEAL_M := 130.0  ## landmarks are big; you notice them from further off
-const BOARD_REVEAL_M := 420.0     ## an info board sketches in everything this close to it
+const LANDMARK_REVEAL_M := 160.0  ## landmarks are big; you notice them from further off
+const BOARD_REVEAL_M := 600.0     ## an info board sketches in everything this close to it
 
 ## World rectangle the paper covers (x0, z0, x1, z1).
-const BOUNDS := Rect2(-680, -720, 1440, 1400)
+const BOUNDS := Rect2(-2000, -2000, 4000, 4000)
 
 var roads: Array = []        ## [{name, surface, pts: PackedVector2Array, chunks: Array[bool]}]
 var river_pts := PackedVector2Array()
@@ -53,6 +53,11 @@ func setup(b: LevelBuilder) -> void:
 		["billboard", "Billboard", "sign"], ["barn", "Red barn", "barn"], ["lookout", "Lookout", "tower"],
 		["wreck", "Wreck", "wreck"], ["gas_station", "Last Fuel", "fuel"], ["facility", "Water works", "tower"],
 		["radio_mast", "Radio mast", "mast"], ["bridge", "Old bridge", "bridge"], ["roses", "Bessi", "roses"],
+		["p2_home", "P2's home", "house"], ["town_fuel", "Town fuel", "fuel"], ["coast_tower", "Coast tower", "tower"],
+		["beach", "Bessi beach", "dock"], ["fishing_village", "Fishing village", "house"],
+		["salt_pans", "Salt pans", "sign"], ["estuary_bridge", "Estuary bridge", "span"],
+		["tunnel", "Rail tunnel", "sign"], ["naresh_home", "Naresh's home", "house"],
+		["end_tower", "Watchtower", "tower"],
 	]
 	for m in marks:
 		if b.poi.has(m[0]):

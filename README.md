@@ -119,7 +119,8 @@ Other keys: **[ / ]** mouse sensitivity (saved) · **TAB** switch player (solo) 
 
 1. **Homestead.** Read the letter on the crate by the porch. Take the red fuel can by
    the garage and stow it on the van's rear rack (the van starts low on fuel).
-2. **The lane** runs up to the windmill. At the **windmill junction** choose: the
+2. **The lane** runs east through the little town (Town Fuel) past P2's house, then
+   north to the windmill. At the **windmill junction** choose: the
    scenic **Valley Road** (Mirror Lake with a dock, a faded billboard, a red barn) or
    the steep gravel **Ridge Track** (shorter, runs the engine hotter; a lookout tower
    you can climb, a wreck). Both reach **Last Fuel**.
@@ -200,9 +201,14 @@ lines and writes `_shots/test_*.png`; the scenario list is `all` in
 - **The camper**: raycast-wheel driving, seats, dashboard dials and lamps, fuel,
   temperature, coolant, battery, parking brake, rear storage rack, fuel filler,
   radiator, a nav screen that follows your map stamps, right-it-up recovery.
-- **The journey map**: 1.6 x 1.6 km valley with a road network (lane, route choice,
-  valley road, gravel ridge track, pump house road, Bessi loop), river, lakes, bridge,
-  meadows and woods, and the landmark set in the walkthrough. Built in about 1 s.
+- **The journey map** (greybox, Milestone B): 4 x 4 km with the sea on the east. The
+  way out (homestead, town, P2's home, windmill junction, valley road or gravel ridge
+  track, Last Fuel, water works, the broken bridge, Ghat hairpins, coast watchtower,
+  Bessi beach and the Five Roses), the way back along the coast (fishing village, salt
+  pans, estuary bridge, the old rail tunnel, radio mast, Naresh's home) and the drive
+  home past the ending watchtower. 17.5 km of road, about 16 minutes to drive all of
+  it. Layout checked by `tools/gen/layout_check.py`; built in about 7 s. Places past
+  the bridge are simple blocks for now.
 - **Paper map**: discovery by travel and info boards, shared stamps, zoom, no
   position marker.
 - **Story**: parents' letter, objective line with hints, old texts from Naresh, clues.

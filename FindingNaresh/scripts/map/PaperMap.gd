@@ -74,7 +74,7 @@ func world_to_map(p: Vector2) -> Vector2:
 
 ## Zoom about the pencil, keeping the view on the sheet.
 func zoom_by(f: float) -> void:
-	zoom = clampf(zoom * f, 1.0, 4.0)
+	zoom = clampf(zoom * f, 1.0, 6.0)
 	view_center = cursor
 	var half := 0.5 / zoom
 	view_center = view_center.clamp(Vector2(half, half), Vector2(1.0 - half, 1.0 - half))
@@ -165,10 +165,11 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([n + Vector2(0, -24), n + Vector2(-7, -8), n + Vector2(7, -8)]), INK)
 	draw_string(_font, n + Vector2(-5, 38), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, INK)
 	draw_string(_font, r.position + Vector2(18, 30), "ROSE VALLEY  -  road map", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, INK)
-	var bar := 200.0 * scale
+	var bar_m := 500.0 if zoom < 2.5 else 200.0
+	var bar := bar_m * scale
 	var b0 := r.end + Vector2(-bar - 60, -22)
 	draw_line(b0, b0 + Vector2(bar, 0), INK, 3.0)
-	draw_string(_font, b0 + Vector2(0, -6), "200 m", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, INK)
+	draw_string(_font, b0 + Vector2(0, -6), "%d m" % int(bar_m), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, INK)
 
 	# pencil cursor and the stamp it will place
 	var cp := paper_to_screen(cursor)
@@ -251,7 +252,7 @@ func _draw_stamp(p: Vector2, type: String, alpha: float) -> void:
 ## contour line every 6 m. Built once from the terrain grid.
 static func _make_relief() -> ImageTexture:
 	var b := MapState.BOUNDS
-	var w := 360
+	var w := 520
 	var h := int(w * b.size.y / b.size.x)
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	var heights := PackedFloat32Array()
@@ -270,8 +271,16 @@ static func _make_relief() -> ImageTexture:
 			var shade := clampf(0.5 + (hh - hr) * 0.08 + (hh - hd) * 0.08, 0.0, 1.0)
 			var c := Color(0.94, 0.89, 0.76).darkened(0.18 * (1.0 - shade))
 			c = c.lerp(Color(0.80, 0.84, 0.66), clampf((hh - 10.0) / 40.0, 0.0, 0.35))
-			var band := floori(hh / 6.0)
-			if band != floori(hr / 6.0) or band != floori(hd / 6.0):
+			var band := floori(hh / 8.0)
+			if band != floori(hr / 8.0) or band != floori(hd / 8.0):
 				c = c.darkened(0.25)
+			# the sea is printed blue, the beach sandy
+			var wx := b.position.x + (x + 0.5) / w * b.size.x
+			var wz := b.position.y + (y + 0.5) / h * b.size.y
+			var inland := Landscape.coast_inland(wx, wz)
+			if inland < 0.0:
+				c = Color(0.62, 0.76, 0.84)
+			elif inland < Landscape.BEACH_W:
+				c = c.lerp(Color(0.93, 0.84, 0.62), 0.6)
 			img.set_pixel(x, y, c)
 	return ImageTexture.create_from_image(img)
