@@ -116,3 +116,19 @@ minutes (up to ~3 hours is fine); pacing and fun matter, not length.
 - **Hiding:** no visible sight cones (glowing eyes and a rising suspicion sound
   instead); crouch, lean to peek; cardboard boxes lie around the world as carryable
   items.
+
+## 8. Decisions for the opening, Milestone C (2026-09-24)
+
+- **Phone:** read-only. Raised with a key; shows the texts (Naresh's mother, the
+  two players' messages). No typing or reply choices.
+- **Puncture:** at a fixed spot on the lane, not random. Swapping the wheel is a
+  new mechanic and gets its own gym first.
+- **Traffic:** a few simple cars on the town road for now; the full traffic
+  system comes in Milestone D.
+- **P2's house:** a simple enterable house (two rooms) plus a shed: batteries in a
+  drawer, the fuel drum in the shed, an upstairs window to watch for the van. The
+  first enterable building (FUTURE #12).
+- **Story start:** the message from Naresh's mother starts the story. The parents'
+  letter at P1's home stays as a small optional extra.
+- **Torch batteries:** start in the opening (P2 finds batteries for the torch); the
+  torch runs down and needs them.
