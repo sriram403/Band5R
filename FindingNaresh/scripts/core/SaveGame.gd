@@ -99,20 +99,29 @@ static func collect(boot: Node) -> Dictionary:
 	}
 
 
+const PLACE_NAMES := {"homestead": "Homestead", "town_fuel": "Town", "p2_home": "P2's house",
+	"windmill": "Windmill junction", "dock": "Mirror Lake", "barn": "Red barn", "lookout": "Pine Ridge",
+	"wreck": "The wreck", "gas_station": "Last Fuel", "facility": "Water works", "bridge": "Old bridge",
+	"ghat_pass": "Ghat pass", "coast_tower": "Coast watchtower", "beach": "Bessi beach", "roses": "Bessi",
+	"fishing_village": "Fishing village", "salt_pans": "Salt pans", "estuary_bridge": "Estuary bridge",
+	"tunnel": "Rail tunnel", "radio_mast": "Radio Hill", "naresh_home": "Naresh's home",
+	"end_tower": "Old watchtower"}
+
+
+## "Mirror Lake", "near Last Fuel" or "on the road", for save slot labels.
 static func nearest_place(boot: Node, at: Vector3) -> String:
-	var names := {"homestead": "Homestead", "windmill": "Windmill junction", "dock": "Mirror Lake",
-		"barn": "Red barn", "lookout": "Pine Ridge", "gas_station": "Last Fuel",
-		"facility": "Water works", "bridge": "Old bridge", "roses": "Bessi", "radio_mast": "Radio Hill"}
-	var best := "the road"
+	var best := ""
 	var best_d := 1e9
-	for k in names.keys():
+	for k in PLACE_NAMES.keys():
 		if boot.builder.poi.has(k):
 			var p: Vector3 = boot.builder.poi[k]
 			var d := Vector2(p.x - at.x, p.z - at.z).length()
 			if d < best_d:
 				best_d = d
-				best = names[k]
-	return best if best_d < 250.0 else "near " + best
+				best = PLACE_NAMES[k]
+	if best_d < 250.0:
+		return best
+	return "near " + best if best_d < 700.0 else "on the road"
 
 
 # --- restore ---------------------------------------------------------------------

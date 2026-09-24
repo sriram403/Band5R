@@ -545,6 +545,18 @@ func t_look() -> void:
 	await wait(0.3)
 	await shot("flashlight_in_cab")
 	await tap(KEY_F)
+	# left on with the engine off, they run the battery flat - and go out
+	var c := camper()
+	if c.engine_on:
+		c.toggle_engine()
+	var batt := c.battery
+	c.battery = 0.03
+	await wait(4.0)
+	log_line("battery %.3f, headlights switched on %s, lit %s" % [c.battery, c.headlights_on, c._headlight_nodes[0].visible])
+	check(c.battery <= 0.02 and not c._headlight_nodes[0].visible, "headlights left on die when the battery goes flat")
+	c.battery = batt
+	await physics_frames(2)
+	check(c._headlight_nodes[0].visible, "and shine again once there is charge")
 	await tap(KEY_L)
 	sun.light_energy = sun_e
 	env.ambient_light_energy = amb
@@ -649,11 +661,15 @@ func t_pad() -> void:
 	await pad_tap(JOY_BUTTON_X)
 	await physics_frames(3)
 	check(p.seat == null, "X gets Player 2 out once stopped")
-	# leave the session as it was: keyboard for both, solo view
-	boot.devices[1] = InputDevice.keyboard()
-	p.dev = boot.devices[1]
-	boot._apply_kbm_owner()
-	boot._set_layout(2)
+	# the pad drops out (flat battery): the game pauses and P2 falls back to
+	# the keyboard in the solo view - which also leaves the session as it was
+	boot._on_joy_changed(0, false)
+	await physics_frames(2)
+	check(boot.devices[1].kind == InputDevice.Kind.KBM and p.dev == boot.devices[1], "a disconnected controller hands Player 2 back to the keyboard")
+	check(boot.paused and boot.layout == 2 and boot.pause_note != "", "and the game pauses and says why, in the solo view")
+	boot._toggle_pause()
+	await physics_frames(2)
+	check(not boot.paused and boot.pause_note == "", "resuming clears the note")
 
 
 ## Stand at each landmark and look at the next one: a picture of the journey.
@@ -993,6 +1009,14 @@ func t_map() -> void:
 	Input.parse_input_event(r)
 	await wait(0.2)
 	check(ms.stamps.size() == n0, "right click rubs the stamp out")
+	# zoomed in, the rubber only reaches what is near the pencil on the paper
+	var pm := p.paper_map
+	ms.add_stamp("fuel", pm.cursor_world() + Vector2(60, 0))
+	pm.zoom = 6.0
+	var rubbed_far := pm.remove_stamp()
+	pm.zoom = 1.0
+	var rubbed_near := pm.remove_stamp()
+	check(not rubbed_far and rubbed_near, "zoomed in, rubbing out only reaches stamps near the pencil")
 	await tap(KEY_M)
 
 	# in the van: only while stopped
@@ -1136,6 +1160,13 @@ func t_waterworks() -> void:
 	await wait(0.5)
 	await shot("ww_steam")
 	check(c._steam.emitting, "steam pours from the grille")
+	# the puffs must live out their lifetime and rise (resetting the particle
+	# count every tick used to kill them all at once, so none ever rose)
+	# (the cloud's size comes from the renderer, so only a windowed run can check it)
+	if not headless:
+		var steam_box := c._steam.capture_aabb()
+		log_line("steam cloud: %.2f m tall, %.2f m wide" % [steam_box.size.y, steam_box.size.x])
+		check(steam_box.size.y > 1.0, "the steam rises in a cloud above the grille")
 	# keep the engine running hard until it boils over
 	var t0 := c.temp
 	var cut := false
@@ -1767,6 +1798,12 @@ func t_dev() -> void:
 	var d := Vector2(p1().global_position.x - dock.x, p1().global_position.z - dock.z).length()
 	log_line("teleported to the dock: %.1f m away" % d)
 	check(d < 6.0, "the menu teleports both players to a named place")
+	# save slots are labelled by the nearest place, the new map's included
+	var here := SaveGame.nearest_place(boot, p1().global_position)
+	var p2h := SaveGame.nearest_place(boot, boot.builder.poi["p2_home"])
+	var nowhere := SaveGame.nearest_place(boot, Vector3(-1900, 0, -1900))
+	log_line("save labels: dock '%s', P2's home '%s', far corner '%s'" % [here, p2h, nowhere])
+	check(here == "Mirror Lake" and p2h == "P2's house" and nowhere == "on the road", "save slots name the place you saved at")
 	await tap(KEY_DOWN)
 	await tap(KEY_ENTER)
 	await physics_frames(10)

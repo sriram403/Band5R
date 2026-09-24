@@ -11,7 +11,7 @@ var litres := CAPACITY
 func _ready() -> void:
 	item_name = "coolant jug"
 	kind = "coolant"
-	mass = 1.0 + litres
+	_update_mass()
 	_build()
 	super._ready()
 
@@ -22,10 +22,15 @@ func label() -> String:
 	return "coolant jug (%d L)" % int(ceil(litres))
 
 
+## The jug weighs what is in it (SaveGame calls this after restoring litres).
+func _update_mass() -> void:
+	mass = 1.0 + litres
+
+
 func pour(amount: float) -> float:
 	var out := minf(amount, litres)
 	litres -= out
-	mass = 1.0 + litres
+	_update_mass()
 	_refresh_prompt()
 	return out
 

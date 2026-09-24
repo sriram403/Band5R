@@ -7,6 +7,9 @@ extends PanelContainer
 
 var player: PlayerRig
 var _text: RichTextLabel
+## Slot lines, read from disk when the journal opens (reading all three save
+## files every frame while it was open meant ~400 file reads a second).
+var _summaries: Array[String] = []
 
 
 func _ready() -> void:
@@ -37,9 +40,14 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if player == null:
 		return
+	var opening := player.journal_open and not visible
 	visible = player.journal_open
 	if not visible:
 		return
+	if opening or _summaries.size() != SaveGame.SLOTS:
+		_summaries.clear()
+		for i in SaveGame.SLOTS:
+			_summaries.append(SaveGame.summary(i))
 	var st := get_tree().get_first_node_in_group("story") as Story
 	var roses := st.roses() if st else 0
 	var petals := st.petals() if st else 0
@@ -49,7 +57,7 @@ func _process(_delta: float) -> void:
 	lines += "[i]Writing here saves the journey. Each entry uses one Memory Rose. Nothing is ever saved for you.[/i]\n\n"
 	for i in SaveGame.SLOTS:
 		var mark := "[color=#8a2a1a]>[/color] " if i == player.journal_sel else "   "
-		lines += mark + SaveGame.summary(i) + "\n"
+		lines += mark + _summaries[i] + "\n"
 	lines += "\n"
 	if player.journal_note != "":
 		lines += "[color=#8a2a1a]%s[/color]\n" % player.journal_note

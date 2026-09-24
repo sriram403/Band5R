@@ -47,6 +47,8 @@ var menu_from := "title"          ## where "Back" in the load list returns to
 var _saved_sig := ""              ## story signature at the last save/load/new game
 var story: Story
 var _explore_t := 0.0
+## A line shown on the pause screen until it is resumed (a controller dropped out).
+var pause_note := ""
 
 # Dev capture mode: `--shot` runs a scripted sequence and writes PNGs next to
 # the project, so the look can be reviewed without playing.
@@ -223,16 +225,32 @@ func _step_sensitivity(dir: int) -> void:
 
 func _on_joy_changed(device: int, connected: bool) -> void:
 	if connected and devices.size() == 2 and devices[1].kind == InputDevice.Kind.KBM:
-		devices[1] = InputDevice.gamepad(device)
-		if players.size() > 1:
-			players[1].dev = devices[1]
-		kbm_owner = 0
-		_apply_kbm_owner()
-		if huds.size() > 1:
-			huds[0]._who.text = _hud_title(0)
-			huds[1]._who.text = _hud_title(1)
+		_set_p2_device(InputDevice.gamepad(device))
 		_set_layout(Layout.SIDE_BY_SIDE)
+	elif not connected and devices.size() == 2 and devices[1].kind == InputDevice.Kind.PAD and devices[1].pad == device:
+		# P2's pad dropped out (flat battery, cable): pause, like a console
+		# does, and hand P2 to another pad if there is one, else the keyboard
+		# (solo view, TAB switches) until one is plugged in again.
+		var others := Input.get_connected_joypads()
+		others.erase(device)
+		_set_p2_device(InputDevice.gamepad(others[0]) if others.size() > 0 else InputDevice.keyboard())
+		if devices[1].kind == InputDevice.Kind.KBM:
+			_set_layout(Layout.SOLO)
+		if started and not paused:
+			_toggle_pause()
+		pause_note = "Player 2's controller disconnected. Reconnect it to carry on in split-screen, or play on alone (TAB switches player)."
 	_refresh_overlay()
+
+
+func _set_p2_device(d: InputDevice) -> void:
+	devices[1] = d
+	if players.size() > 1:
+		players[1].dev = d
+	kbm_owner = 0
+	_apply_kbm_owner()
+	if huds.size() > 1:
+		huds[0]._who.text = _hud_title(0)
+		huds[1]._who.text = _hud_title(1)
 
 
 # --- ui ------------------------------------------------------------------------
@@ -320,7 +338,8 @@ func _refresh_overlay() -> void:
 	var nav := "[color=#9fd8ff]W/S or Up/Down[/color] choose  ·  [color=#9fd8ff]Enter[/color] select  ·  pad: D-pad + A"
 	match menu:
 		"pause":
-			overlay_text.text = "[center][font_size=30]PAUSED[/font_size]\n\n%s\n%s\n\nMouse sensitivity  [color=#ffcf6b]%.2f[/color]   ([color=#9fd8ff][lb][/color] lower  ·  [color=#9fd8ff][rb][/color] higher)\n[color=#9fd8ff]TAB[/color] switch player  ·  [color=#9fd8ff]F2[/color] layout  ·  [color=#9fd8ff]F11[/color] fullscreen  ·  [color=#9fd8ff]ESC[/color] resume[/center]" % [menu_txt, nav, mouse_sens]
+			var note := "[color=#ffcf6b]%s[/color]\n\n" % pause_note if pause_note != "" else ""
+			overlay_text.text = "[center]" + note + "[font_size=30]PAUSED[/font_size]\n\n%s\n%s\n\nMouse sensitivity  [color=#ffcf6b]%.2f[/color]   ([color=#9fd8ff][lb][/color] lower  ·  [color=#9fd8ff][rb][/color] higher)\n[color=#9fd8ff]TAB[/color] switch player  ·  [color=#9fd8ff]F2[/color] layout  ·  [color=#9fd8ff]F11[/color] fullscreen  ·  [color=#9fd8ff]ESC[/color] resume[/center]" % [menu_txt, nav, mouse_sens]
 			return
 		"load":
 			overlay_text.text = "[center][font_size=30]LOAD A JOURNAL ENTRY[/font_size]\n\n%s\n%s  ·  ESC back[/center]" % [menu_txt, nav]
@@ -584,6 +603,8 @@ func _toggle_pause() -> void:
 	if not testing:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED
 	get_tree().paused = paused
+	if not paused:
+		pause_note = ""
 	menu = "pause" if paused else ""
 	menu_sel = 0
 	_refresh_overlay()
