@@ -84,14 +84,16 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	_gauges.add_child(_bar("COOL", Color(0.35, 0.75, 0.90)))
 
 	_hint = _label(15, Color(1, 1, 1, 0.80))
-	# Top centre: the bottom corners belong to the gauges, and in a split
-	# view there is no room for a full-width line down there.
-	_hint.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_hint.offset_left = -380
-	_hint.offset_right = 380
-	_hint.offset_top = 64
-	_hint.offset_bottom = 88
-	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Bottom right leaves the objective at top left and the gauges at bottom
+	# left readable in each 800 px split view.
+	_hint.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_hint.offset_left = -570
+	_hint.offset_right = -18
+	_hint.offset_top = -108
+	_hint.offset_bottom = -20
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_hint.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	add_child(_hint)
 
 	_warn = _label(20, Color(1.0, 0.45, 0.35))

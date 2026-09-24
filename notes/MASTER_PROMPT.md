@@ -11,10 +11,10 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-24, after reviewing and merging all six cloud PRs.
-Milestone B and the opening design are approved. The six PRs are merged and
-`main` has been pulled. The three test levels and Milestone C have not started.
-The user intends to start a NEW THREAD from this file: start at section 6.
+Last updated: 2026-09-25, after completing the three test levels. Milestone B
+and the opening design are approved; all six cloud PRs are merged. Quick,
+Road check and Full now work and have passed locally. Milestone C has begun
+with the tyre gym; no Milestone C mechanics are built yet. Start at section 6.
 
 ---
 
@@ -37,7 +37,7 @@ they/them.
 
 ---
 
-## 2. Status right now (2026-09-24)
+## 2. Status right now (2026-09-25)
 
 - **Stage 1** (prototype + feel pass) and **Milestone A** (homestead -> road trip ->
   water works -> broken bridge): done, approved, pushed.
@@ -103,6 +103,21 @@ they/them.
   The valve B feel remains a human judgment; the user chose the automated
   result only for this review. Treat the new design pages as proposals, not
   approved implementation decisions.
+- **Three test levels done locally (2026-09-25, not pushed):** scenario timing
+  added to `PlayTest.gd`. Baseline old suite: 951 seconds of scenarios, zero
+  failures (`journey` 488 s, `waterworks` 91 s, `lap` 69 s). Default
+  `tools/run_test.sh` now runs basic mechanic checks in the base gym, then
+  teleported world checks: Quick 265 s (~4.5 min), zero failures, no script
+  errors. `tools/run_test.sh full` runs the gym plus the old broad world suite
+  and all eight roads: 2010 s (~33.5 min), zero failures, no script errors.
+  `python tools/gen/layout_check.py` takes ~2 s, "no problems". A screenshot
+  review found the fading control reminder over the objective in split view;
+  it was moved to bottom right and checked on foot and in both seats (0
+  failures). Current local commits are beyond the merged cloud PRs; do not
+  push before the user's milestone approval.
+- **Milestone C started:** `notes/TODO.md` has the approved opening's detailed
+  checklist. The tyre gym is marked in progress; the actual mechanic is not
+  yet built.
 
 ---
 
@@ -211,6 +226,7 @@ MPG/
                                 `liveliness` dial for the mood curve
       ui/PlayerHUD.gd, JournalPanel.gd  per-player HUD, notes, objective, journal
       dev/PlayTest.gd           automated play-test (section 5)
+                               Quick/Full presets and per-scenario elapsed time
       dev/DevMenu.gd            F1 developer menu (teleport, van, spawn, skip, gyms)
       world/GymBuilder.gd       gyms: small flat test maps (extends LevelBuilder)
 ```
@@ -237,7 +253,8 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 5. The automated play-test (your main tool)
 
-- Run: `tools/run_test.sh` (all scenarios) or `tools/run_test.sh name1,name2`. The window
+- Run: `tools/run_test.sh` (Quick, ~4.5 min), `tools/run_test.sh full`
+  (~33.5 min), or `tools/run_test.sh name1,name2` (selected world scenarios). The window
   starts at the screen edge, then PlayTest moves it BEHIND all windows and hands focus
   back (run_test.sh passes the user's window as --refocus); muted unless focused, no
   mouse grab. The user asked for this: runs must not cover what they are doing, but
@@ -255,18 +272,18 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 - Every scenario starts via `fresh_hands()` (empty hands, map/journal closed). Order
   matters: `map` runs early because others reveal the map. The `save` scenario reloads
   the scene; the test resumes in `t_save_verify` through static `PlayTest.resume`.
-- **Three test levels (agreed with the user 2026-09-24, DESIGN.md section 6.4), to
-  be built next:** Quick (default, ~3-4 min: mechanics in the base gym + a world
-  smoke check by teleports, no long drives) after every change; Road check
-  (`python tools/gen/layout_check.py`, seconds) when roads/hills change; Full
-  (quick + `journey` + `routes`, ~35 min) only when roads change and before a
-  milestone hand-over. Today `journey` drives ~8 km (~8 of ~18 min), `routes` 16 min.
-- **The current default windowed suite takes roughly 10–20 minutes** because
-  `journey` drives in real time. On this Windows PC, invoke
+- **Three test levels (done 2026-09-25):** Quick (default, ~4.5 min): basic
+  input/vehicle checks in the base gym, then world map, story, water works,
+  carrying, controller, performance and save/load by teleport. Road check:
+  `python tools/gen/layout_check.py`, ~2 s, when roads or hills change. Full:
+  `tools/run_test.sh full`, ~33.5 min (gym, old broad suite, `journey`, all
+  eight routes), when roads change and before a milestone hand-over.
+- On this Windows PC, invoke
   `tools/run_test.sh` through Git Bash, capture the output to a log, and keep
   only one game instance running. Read the `[test]` PASS/FAIL lines and the
   final failure count; Godot warnings on stderr can make a PowerShell pipeline
-  report exit code 1 even when the suite passes.
+  report exit code 1 even when the suite passes. The script now exits nonzero
+  if any test check fails.
 - **Real input leaks in** only with `SHOW=1` (quiet runs never get focus); if a check
   fails spuriously, re-run that scenario. Re-run single scenarios to
   confirm before chasing a failure. Tell the user when long runs are going.
@@ -274,8 +291,8 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   they can be referenced, otherwise "Identifier not declared".
 - **Headless (Linux / GitHub, since 2026-09-24):** `tools/run_test_headless.sh
   [scenarios]` runs the same play-test with no window or GPU, `--fixed-fps 60`
-  (deterministic: every frame is one 1/60 s physics step), full default suite in
-  ~1.5 min. Screenshots are skipped and frame-rate / audio checks only logged
+  (deterministic: every frame is one 1/60 s physics step), Quick by default.
+  Screenshots are skipped and frame-rate / audio checks only logged
   (`PlayTest.headless`). GitHub runs it plus the road check on every push
   (`.github/workflows/playtest.yml`). Use it for logic; keep `tools/run_test.sh`
   for looks, sound and fps. The headless script requires a Linux Godot binary;
@@ -292,23 +309,17 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 6. What to do next
 
-**Milestone B and all six cloud PRs are done and merged. The user is opening a
-new thread to continue. Next, in this order:**
+**Milestone B, all six cloud PRs, and the three test levels are done. Milestone
+C has begun with the tyre gym. Next, in this order:**
 
-1. **Build the three test levels** (agreed; `DESIGN.md` section 6.4, section 5 here).
-   First add a per-scenario elapsed time to the play-test log and run once to see
-   where the minutes go. Then: move mechanic scenarios into the base gym; replace
-   long drives on the real map with teleport checks (quick default ~3-4 min); keep
-   `journey` + `routes` for a "full" level (e.g. `tools/run_test.sh full`) used only
-   when roads change and before a milestone hand-over; road changes are checked with
-   `python tools/gen/layout_check.py` first. Update section 5 when done.
-2. **Milestone C, the opening**, from `design/OPENING.md` (approved 2026-09-24:
+1. **Milestone C, the opening**, from `design/OPENING.md` (approved 2026-09-24:
    phone on P / D-pad right, read-only; split screen as now; town cars just bump;
    puncture at a fixed spot; enterable P2 house of two rooms + shed; mother's text
    starts the story, the parents' letter stays as an extra; torch batteries from
    the opening). Gyms first: tyre, house, traffic. Its "What is new to build" list
-   is the work plan; add it to `notes/TODO.md` with sub-steps before starting.
-3. Then hand over C (rule 2). Milestones D-G follow `notes/TODO.md` / `DESIGN.md`.
+   is the work plan, now expanded in `notes/TODO.md`. Build and test the tyre
+   gym first, then the house and traffic gyms, then place them in the world.
+2. Then hand over C (rule 2). Milestones D-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
    gym first. The merged `design/PUZZLES.md`, `design/WAY_OUT.md`,
    `design/CREATURES.md`, `design/NARESH.md`, `design/BESSI.md` and
@@ -421,6 +432,12 @@ new thread to continue. Next, in this order:**
   the canvas_items stretch, so look speed changed with the window size.
 - The coast blend must not leave a step at its inland edge (a line of "white
   dashes" in overhead shots was exactly that).
+- **Full preset order:** save/load reloads the scene and ends the test process,
+  so `routes` must run before `save`. The launcher runs the gym as a separate
+  process before the world; do not overlap game instances.
+- **Split HUD:** the top-left objective and top-centre fading controls
+  overlapped in 800 px views. The controls now wrap at bottom right, clear of
+  the gauges. Checked on foot and from both seats.
 
 ---
 

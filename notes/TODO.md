@@ -6,10 +6,10 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Building the three test levels. Baseline timing is done (951 s of scenarios,
-  0 failures): `journey` 488 s, `waterworks` 91 s, `lap` 69 s. Quick passed
-  (265 s of scenarios, 0 failures, no script errors). Full is running now to
-  verify its long drives and test ordering.
+- Starting Milestone C's tyre gym (2026-09-25), then house and traffic gyms.
+  The three test levels are complete: Quick 265 s of scenarios, Full 2010 s
+  with all eight road legs, Road check 2 s; all pass. The split-screen HUD
+  reminder overlap was fixed and checked on foot and in both seats.
   Milestone C follows from `design/OPENING.md`, gyms first.
 - `design/PUZZLES.md` and the D/E/F, creature and Naresh pages are proposals
   kept for future discussion. Their merge did not approve their puzzle choices.
@@ -23,7 +23,7 @@ being built and tested), so this always shows where the work is right now.
         judge whether they feel fun to a human player.
   - [x] #3 adds only five Markdown pages; its merge was checked. A redundant
         windowed run was stopped after 161 passes, 0 failures.
-- [~] Three test levels (agreed 2026-09-24): Quick (~3-4 min, mechanics in gyms +
+- [x] Three test levels (agreed 2026-09-24): Quick (~4.5 min, mechanics in gyms +
       a teleport check of the real map) after every change; Road check (layout
       script, seconds); Full (~35 min, long drives) only when roads change and
       before a hand-over. First step: time every scenario to see where it goes
@@ -33,11 +33,14 @@ being built and tested), so this always shows where the work is right now.
         passed: 265 s of scenarios (~4.5 min), 0 failures, no script errors;
         gym segment was 77 s. The world segment includes map, story, water
         works, carrying, controller, performance and save/load.
-  - [~] `full` includes the gym pass, old world suite, `journey`, and `routes`;
-        road check stays the layout script. Full windowed run is underway.
+  - [x] `full` includes the gym pass, old world suite, `journey`, and `routes`;
+        2010 s of scenarios (~33.5 min), 0 failures and no script errors.
   - [x] Road check: `python tools/gen/layout_check.py` completed in 2 s with
         "no problems" (2026-09-24).
-  - [ ] Verify Quick and Full, update launch instructions and handoff notes
+  - [x] Verify Quick and Full, update README and handoff notes. Quick and Full
+        each finished with 0 failures; `routes` drove all eight legs before save.
+  - [x] Moved the fading control reminder to bottom right in split views;
+        on-foot gym and both van seats checked in screenshots, 0 failures
 - [x] Play-test runs stay off your screen (2026-09-24)
   - [x] `tools/run_test.sh`: window opens off screen (x = 4000), 1600x900
   - [x] Muted, never takes keyboard focus, never grabs the mouse
@@ -229,8 +232,12 @@ test was fixed and now restores its starting layout before the pad test.
       an extra; torch batteries from the opening
 - [x] One-page design `design/OPENING.md` v1, approved (2026-09-24): phone on P /
       D-pad right, split screen as now, town cars just bump
-- [ ] Tyre gym: fixed puncture, pull and speed loss, spare-wheel swap, handbrake
+- [~] Tyre gym: fixed puncture, pull and speed loss, spare-wheel swap, handbrake
       on a 20% drive; automated input test and tuning
+  - [~] Inspect the current tyre/van and gym hooks, then write the measured
+        wheel-swap sequence in the gym
+  - [ ] Test puncture handling, wheel swap and handbrake independently in gym
+  - [ ] Add the finished mechanic to the world only after the gym passes
 - [ ] House gym: two rooms, upstairs window, stairs, drawers, shed, doors;
       battery search and fuel-drum interaction tested on its own map
 - [ ] Traffic gym: town cars on a loop, keep left, slow or stop behind the van,
