@@ -507,17 +507,49 @@ func _scatter() -> void:
 	var half := Landscape.EXTENT * 0.5 - 15.0
 	# the same density as the first 1.6 km valley, whatever the world size
 	var attempts := int(24000.0 * pow(Landscape.EXTENT / 1600.0, 2.0))
+	# Hot loop (150 000 tries at 4 km): the grid lookups are done by hand, once
+	# per try for all three layers, and the coastline is only asked about near
+	# the coast. Same tests, same order, same random numbers: the same forest.
+	var gn := Landscape.grid_n
+	var g0 := -Landscape.EXTENT * 0.5
+	var g_road := Landscape.grid_road_d
+	var g_river := Landscape.grid_river_d
+	var g_h := Landscape.grid_h
+	var coast_x0 := 1e9               # west of this, nowhere is near the beach
+	for cp in Landscape.coast:
+		coast_x0 = minf(coast_x0, cp.x)
+	coast_x0 -= Landscape.BEACH_W + 10.0
 	for _i in attempts:
 		var x := rng.randf_range(-half, half)
 		var z := rng.randf_range(-half, half)
 		var kind := rng.randf()
 		var keep := rng.randf()
-		var d := Landscape.road_distance(x, z)
+		# bilinear weights on the terrain grid (Landscape._grid_sample)
+		var gfx := (x - g0) / Landscape.STEP
+		var gfz := (z - g0) / Landscape.STEP
+		var inside := gn > 0 and not (gfx < 0.0 or gfz < 0.0 or gfx > gn - 1 or gfz > gn - 1)
+		var gk := 0
+		var tx := 0.0
+		var tz := 0.0
+		var d: float
+		if inside:
+			var gix := mini(int(gfx), gn - 2)
+			var giz := mini(int(gfz), gn - 2)
+			tx = gfx - gix
+			tz = gfz - giz
+			gk = giz * gn + gix
+			d = lerpf(lerpf(g_road[gk], g_road[gk + 1], tx), lerpf(g_road[gk + gn], g_road[gk + gn + 1], tx), tz)
+		else:
+			d = Landscape.road_distance(x, z)
 		if d < 9.5:
 			continue
-		if Landscape.coast_inland(x, z) < Landscape.BEACH_W + 10.0:
+		if x >= coast_x0 and Landscape.coast_inland(x, z) < Landscape.BEACH_W + 10.0:
 			continue
-		var rd := Landscape.river_distance(x, z)
+		var rd: float
+		if inside:
+			rd = lerpf(lerpf(g_river[gk], g_river[gk + 1], tx), lerpf(g_river[gk + gn], g_river[gk + gn + 1], tx), tz)
+		else:
+			rd = Landscape.river_distance(x, z)
 		if rd < Landscape.RIVER_HALF + 4.0:
 			continue
 		if _in_pond(x, z, 4.0):
@@ -534,7 +566,6 @@ func _scatter() -> void:
 			continue
 		if rd < 30.0 and keep < 0.5:
 			continue
-		var y := _h(x, z)
 		# Woods and meadows: a slow noise field decides which is which, so the
 		# land alternates between forest belts and open flowery clearings
 		# instead of one uniform carpet of trees.
@@ -550,20 +581,21 @@ func _scatter() -> void:
 					flower_cols.append(col)
 			continue
 
+		var y := lerpf(lerpf(g_h[gk], g_h[gk + 1], tx), lerpf(g_h[gk + gn], g_h[gk + gn + 1], tx), tz) if inside else _h(x, z)
 		if kind < 0.46:
 			var s := rng.randf_range(0.85, 1.5)
 			var yaw := rng.randf_range(0, TAU)
 			trunks.append(_xf(Vector3(x, y + 1.5 * s, z), yaw, Vector3(s, s, s)))
 			pines.append(_xf(Vector3(x, y + 5.4 * s, z), yaw, Vector3(s, s, s)))
 			pine_cols.append(C_LEAF_A.lerp(C_LEAF_C, rng.randf()))
-			_tile_body(bodies, colliders, x, z).add_child(_tree_shape(Vector3(x, y + 3.0, z), 0.55 * s, 6.0 * s))
+			_tile_shape(bodies, colliders, x, z, _cylinder(0.55 * s, 6.0 * s), Vector3(x, y + 3.0, z))
 		elif kind < 0.80:
 			var s2 := rng.randf_range(0.9, 1.7)
 			var yaw2 := rng.randf_range(0, TAU)
 			trunks.append(_xf(Vector3(x, y + 1.6 * s2, z), yaw2, Vector3(s2, s2, s2)))
 			blobs.append(_xf(Vector3(x, y + 4.2 * s2, z), yaw2, Vector3(s2, s2 * 0.85, s2)))
 			blob_cols.append(C_LEAF_B.lerp(C_LEAF_A, rng.randf()))
-			_tile_body(bodies, colliders, x, z).add_child(_tree_shape(Vector3(x, y + 3.0, z), 0.6 * s2, 6.0 * s2))
+			_tile_shape(bodies, colliders, x, z, _cylinder(0.6 * s2, 6.0 * s2), Vector3(x, y + 3.0, z))
 		elif kind < 0.90:
 			var s3 := rng.randf_range(0.5, 2.4)
 			var ryaw := rng.randf_range(0, TAU)
@@ -574,13 +606,10 @@ func _scatter() -> void:
 			# A sphere rather than a box: the capsule can ride up over the low
 			# ones instead of catching on a vertical edge.
 			if s3 > 0.8:
-				var rs := CollisionShape3D.new()
 				var sph := SphereShape3D.new()
 				sph.radius = s3 * 0.72
-				rs.shape = sph
 				# top of the sphere matches the top of the (squashed) rock
-				rs.position = Vector3(x, y + s3 * 0.25 + s3 * rys - sph.radius, z)
-				_tile_body(bodies, colliders, x, z).add_child(rs)
+				_tile_shape(bodies, colliders, x, z, sph, Vector3(x, y + s3 * 0.25 + s3 * rys - sph.radius, z))
 		else:
 			var s4 := rng.randf_range(0.7, 1.6)
 			bushes.append(_xf(Vector3(x, y + 0.35 * s4, z), rng.randf_range(0, TAU),
@@ -643,6 +672,22 @@ func _scatter() -> void:
 	world.add_child(_tiled("Reeds", reed_mesh, ToonMat.make(Color(0.46, 0.58, 0.28), 0.0), reeds, [], 450.0))
 	world.add_child(_tiled("Wildflowers", flower_mesh, ToonMat.make(Color.WHITE, 0.0), flowers, flower_cols, 350.0, false))
 	world.add_child(colliders)
+
+
+## A scatter collider: a shape straight on its tile's body, no node of its own
+## (about 59 000 of them at 4 km; a CollisionShape3D each took ~0.7 s to make).
+func _tile_shape(bodies: Dictionary, parent: Node3D, x: float, z: float, shape: Shape3D, at: Vector3) -> void:
+	var sb := _tile_body(bodies, parent, x, z)
+	var owner_id := sb.create_shape_owner(sb)
+	sb.shape_owner_add_shape(owner_id, shape)
+	sb.shape_owner_set_transform(owner_id, Transform3D(Basis(), at))
+
+
+func _cylinder(radius: float, height: float) -> CylinderShape3D:
+	var sh := CylinderShape3D.new()
+	sh.radius = radius
+	sh.height = height
+	return sh
 
 
 func _tile_body(bodies: Dictionary, parent: Node3D, x: float, z: float) -> StaticBody3D:
