@@ -1,3 +1,4 @@
+class_name Boot
 extends Node
 
 ## Prototype session root: builds the world, the two players and the
@@ -52,13 +53,25 @@ var _explore_t := 0.0
 var shot_mode := false
 ## Automated play-test running: never grab the mouse (the window sits off screen).
 var testing := false
+## Name of the gym (test map) loaded instead of the world, or "" for the game.
+## From `-- --gym=<name>`, or set before reloading the scene (the dev menu does;
+## "" there means the game world). "?" = nothing requested yet.
+static var gym_request := "?"
+var gym := ""
+var dev_menu: DevMenu
 var _frame := 0
 var _shot_n := 0
 
 
 func _ready() -> void:
 	var t0 := Time.get_ticks_msec()
-	builder = LevelBuilder.new()
+	if gym_request != "?":
+		gym = gym_request
+	else:
+		for a in OS.get_cmdline_user_args():
+			if a.begins_with("--gym"):
+				gym = a.get_slice("=", 1) if a.contains("=") else "base"
+	builder = GymBuilder.new(gym) if gym != "" else LevelBuilder.new()
 	world = builder.build()
 	# Main runs as PROCESS_MODE_ALWAYS so the pause menu keeps working; the
 	# simulation itself must stay pausable or ESC would not actually stop it.
@@ -82,6 +95,17 @@ func _ready() -> void:
 	add_child(story)
 	story.setup(self)
 	_set_layout(Layout.SOLO if devices[1].kind == InputDevice.Kind.KBM else Layout.SIDE_BY_SIDE)
+	dev_menu = DevMenu.new()
+	dev_menu.name = "DevMenu"
+	dev_menu.boot = self
+	add_child(dev_menu)
+	if gym != "":
+		# straight in: no title menu in a gym
+		started = true
+		menu = ""
+		overlay.visible = false
+		if not testing:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 	Input.joy_connection_changed.connect(_on_joy_changed)
 	print("[Boot] world built in %d ms" % (Time.get_ticks_msec() - t0))

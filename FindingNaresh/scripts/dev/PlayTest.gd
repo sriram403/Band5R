@@ -207,7 +207,9 @@ func _run() -> void:
 		await call("t_" + r)
 		_finish()
 		return
-	var all := ["audio", "fixes", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "fixes", "dev", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	if boot.gym != "":
+		all = ["gym"]          # gyms have their own scenarios
 	for s in all:
 		if only != "" and not s in only.split(","):
 			continue
@@ -1696,6 +1698,83 @@ func t_fixes() -> void:
 	await tap(KEY_SPACE)
 	await wait(1.5)
 	check(victim.eye_height > 1.3, "back on their feet, eyes at standing height")
+
+
+## The developer menu in the game world: F1, teleport by name, close.
+func t_dev() -> void:
+	var dm: DevMenu = boot.dev_menu
+	await tap(KEY_F1)
+	await physics_frames(2)
+	check(dm.open, "F1 opens the developer menu")
+	await shot("dev_menu")
+	dm._sel = 0
+	dm._place = dm.places().find("dock")
+	await tap(KEY_ENTER)
+	await physics_frames(5)
+	var dock: Vector3 = boot.builder.poi["dock"]
+	var d := Vector2(p1().global_position.x - dock.x, p1().global_position.z - dock.z).length()
+	log_line("teleported to the dock: %.1f m away" % d)
+	check(d < 6.0, "the menu teleports both players to a named place")
+	await tap(KEY_DOWN)
+	await tap(KEY_ENTER)
+	await physics_frames(10)
+	var vd := camper().global_position.distance_to(p1().global_position)
+	log_line("van brought: %.1f m from P1" % vd)
+	check(vd < 12.0 and camper().parking_brake, "the menu brings the van, handbrake on")
+	await tap(KEY_F1)
+	await physics_frames(2)
+	check(not dm.open, "F1 closes it again")
+	await place_player(p1(), boot.builder.player_spawns[0].origin, 0.0)
+
+
+## The base gym: flat measured ground, test slopes, props, the dev menu.
+func t_gym() -> void:
+	var b: GymBuilder = boot.builder as GymBuilder
+	check(b != null and boot.gym == "base", "the base gym loads instead of the world")
+	if b == null:
+		return
+	var flat := absf(Landscape.ground(0, 0)) + absf(Landscape.ground(-80, -80)) + absf(Landscape.ground(60, 40))
+	log_line("ground at three grid points: %.2f m total off level" % flat)
+	check(flat < 0.2, "the gym floor is level")
+	for s in GymBuilder.SLOPES:
+		var x := float(s[0])
+		var g := (Landscape.ground(x, 10.0) - Landscape.ground(x, 20.0)) / 10.0
+		log_line("slope sign %d%%: measured %.1f%%" % [int(float(s[1]) * 100.0), g * 100.0])
+		check(absf(g - float(s[1])) < 0.015, "the %d%% test slope really is %d%%" % [int(float(s[1]) * 100.0), int(float(s[1]) * 100.0)])
+	check(boot.world.get_node_or_null("Grid") != null, "the measuring grid is there")
+	check(find_can("gym_can_full") != null and boot.world.get_node_or_null("CoolantJug") != null, "cans and the coolant jug are there")
+	await wait(0.5)
+	await shot("gym_base")
+	# the van on the 20% slope: held by the handbrake, rolls without it
+	var c := camper()
+	var top: Vector3 = b.poi["slope_20"]
+	boot.dev_menu.van_to(top, 0.0)
+	await wait(2.5)            # let it land and settle on its springs
+	var p0 := c.global_position
+	await wait(2.0)
+	log_line("20%% slope, handbrake on: moved %.2f m" % p0.distance_to(c.global_position))
+	check(p0.distance_to(c.global_position) < 0.05, "the handbrake holds the van on the 20% gym slope")
+	c.set_parking_brake(false)
+	await wait(2.5)
+	log_line("20%% slope, handbrake off: rolled %.1f m" % p0.distance_to(c.global_position))
+	check(p0.distance_to(c.global_position) > 2.0, "and it rolls when the handbrake is off")
+	c.set_parking_brake(true)
+	# a lap of the test loop by keyboard
+	await reset_camper(0)
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
+	var ad := AutoDriver.new(self, b.route, c)
+	for _i in 60 * 20:
+		await get_tree().physics_frame
+		ad.step(50.0)
+	ad.release()
+	log_line("gym loop, 20 s at up to 50 km/h: %d samples along, off-road max %.1f m" % [ad.progress, ad.max_off])
+	check(ad.progress > 10 and ad.max_off < 6.0, "the van drives the gym's test loop")
+	key(KEY_S, true)
+	await wait(3.0)
+	key(KEY_S, false)
+	await tap(KEY_SPACE)
 
 
 ## Walk from the foot of the lookout ramp up onto the deck.

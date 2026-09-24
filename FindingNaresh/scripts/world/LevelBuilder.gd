@@ -160,6 +160,7 @@ func _lap(what: String, since: int) -> int:
 
 func _build_roads() -> void:
 	network = RoadNetwork.new()
+	Landscape.height_fn = Callable()     # a gym may have set its own ground
 	# Landscape needs ponds and mounds before any road can sample the ground.
 	Landscape.setup(null, null, PONDS, MOUNDS)
 	var base := Landscape.base_height

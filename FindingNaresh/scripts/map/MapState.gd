@@ -44,7 +44,7 @@ func setup(b: LevelBuilder) -> void:
 		river_pts.append(Vector2(p.x, p.z))
 	river_chunks.resize(int(ceil(river_pts.size() / float(ROAD_CHUNK))))
 	river_chunks.fill(false)
-	for pond in LevelBuilder.PONDS:
+	for pond in ([] if b is GymBuilder else LevelBuilder.PONDS):
 		var c: Vector3 = pond["pos"]
 		lakes.append({"pos": Vector2(c.x, c.z), "r": Landscape.pond_water_radius(float(pond["radius"])), "revealed": false})
 
@@ -61,6 +61,8 @@ func setup(b: LevelBuilder) -> void:
 
 	# What the players know leaving home: the homestead, the lane up to the
 	# windmill, and that the windmill is where the roads split.
+	if b is GymBuilder:
+		return
 	reveal_around(Vector2(b.poi["homestead"].x, b.poi["homestead"].z), 90.0)
 	_reveal_road("home_lane")
 	_reveal_landmark("windmill")

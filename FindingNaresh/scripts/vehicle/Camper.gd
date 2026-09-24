@@ -858,7 +858,9 @@ func _update_parked(delta: float, speed: float) -> void:
 	for w in _wheels:
 		if not w.is_in_contact():
 			grounded = false
-	var settle := parking_brake and speed < 0.25 and grounded
+	# once frozen, stay frozen: a frozen body's wheels stop reporting contact,
+	# and dropping out on that crept the van downhill a few cm at a time
+	var settle := parking_brake and speed < 0.25 and (grounded or freeze)
 	_parked_t = _parked_t + delta if settle else 0.0
 	var want := _parked_t > 0.6
 	if want != freeze:

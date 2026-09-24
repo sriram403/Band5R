@@ -38,6 +38,8 @@ static var mounds: Array = []
 ## Level building pads: {pos: Vector3, radius, blend}. Buildings sit on them
 ## so yards are flat and props neither float nor sink.
 static var pads: Array = []
+## Gyms replace the natural ground with their own shape (flat + test slopes).
+static var height_fn: Callable = Callable()
 
 
 static func setup(net: RoadNetwork, river_route: Route, pond_list: Array, mound_list: Array) -> void:
@@ -50,6 +52,8 @@ static func setup(net: RoadNetwork, river_route: Route, pond_list: Array, mound_
 # --- height layers -------------------------------------------------------------
 
 static func base_height(x: float, z: float) -> float:
+	if height_fn.is_valid():
+		return height_fn.call(x, z)
 	var h := _raw_height(x, z)
 	# A mound with a "plateau" radius gets a level top, so a plaza built there
 	# sits flush with the ground instead of floating over a dome.

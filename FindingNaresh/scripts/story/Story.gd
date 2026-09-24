@@ -22,6 +22,11 @@ var objectives: Array = []
 
 func setup(b: Node) -> void:
 	boot = b
+	if b.gym != "":
+		objectives = [{"id": "gym", "text": "GYM: %s  -  F1 developer menu" % b.gym,
+			"hint": "A test map. F1 opens the developer menu: teleport, spawn items, bring the van, back to the game.",
+			"done": func(): return false}]
+		return
 	objectives = [
 		{"id": "read_letter", "text": "Read the note on the porch",
 			"hint": "The homestead porch, right by where you start. Look at the paper on the crate and press E.",
@@ -87,6 +92,8 @@ func _physics_process(delta: float) -> void:
 
 ## One-off story moments, each fires once.
 func _beats() -> void:
+	if boot.gym != "":
+		return
 	if _van_near("j1", 60.0) and not flags.has("text_j1"):
 		flags["text_j1"] = true
 		_tell_all("Your phone finds one bar. An old message from Naresh, sent eight days ago:\n\n\"found the road!! we're taking the ridge, he says it's quicker. I mean I am. whatever. bessi tomorrow\"")
