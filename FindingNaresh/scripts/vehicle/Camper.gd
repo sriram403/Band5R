@@ -58,6 +58,17 @@ var headlights_on := false
 ## it rolls on any slope, engine running or not, driver or no driver. Throttle
 ## (or reverse) with the engine running lets it off, like a drive-away assist.
 var parking_brake := true
+## The nav screen swung over to the passenger (N / pad A, either seat). Then only
+## the passenger can read it: its display is on the driver's private visual
+## layer, which the driver's camera never draws. They have to talk.
+var nav_aside := false
+var _nav: Node3D
+var _nav_t := 0.0                  ## 0 = middle, 1 = aside (animated)
+var _mirrors: Array[SubViewport] = []
+var _mirror_turn := 0
+var _mirror_frame := 0
+const NAV_MIDDLE := [Vector3(0.02, 1.72, -2.52), Vector3(-18, 22, 0)]
+const NAV_ASIDE := [Vector3(0.50, 1.66, -2.40), Vector3(-14, 62, 0)]
 ## Starts low on purpose: the lamp comes on around Last Fuel, where the pumps
 ## are dead but cans are lying about - the first refuel teaches the cans.
 var fuel := 26.0
@@ -116,6 +127,7 @@ func _ready() -> void:
 	_build_interior()
 	_build_seats()
 	_build_service()
+	_build_mirrors()
 	_audio = EngineAudio.new()
 	add_child(_audio)
 
@@ -314,9 +326,10 @@ func _build_interior() -> void:
 	# up buried inside the screen box.
 	var nav := Node3D.new()
 	nav.name = "NavScreen"
-	nav.position = Vector3(0.02, 1.72, -2.52)
-	nav.rotation_degrees = Vector3(-18, 22, 0)
+	nav.position = NAV_MIDDLE[0]
+	nav.rotation_degrees = NAV_MIDDLE[1]
 	g.add_child(nav)
+	_nav = nav
 	nav.add_child(Build.box(Vector3(0.40, 0.25, 0.04), ToonMat.make(Color(0.16, 0.17, 0.20), 0.01), Vector3.ZERO, Vector3.ZERO, "Bezel"))
 	nav.add_child(Build.box(Vector3(0.36, 0.21, 0.01), ToonMat.flat(Color(0.05, 0.13, 0.14)), Vector3(0, 0, 0.021), Vector3.ZERO, "Glass"))
 	var navlabel := Build.label3d("", Vector3(0, 0, 0.03), Vector3.ZERO, 0.040, Color(0.50, 0.98, 0.82))
@@ -665,6 +678,8 @@ func _physics_process(delta: float) -> void:
 		if dev.just_pressed("swap_seat"):
 			swap_roles()
 			return
+		if dev.just_pressed("nav_swing") and not driver.map_open:
+			swing_nav()
 	if passenger != null and passenger.dev != null:
 		var pdev := passenger.dev
 		# the lever sits between the seats: the passenger can pull it too
@@ -672,6 +687,8 @@ func _physics_process(delta: float) -> void:
 			set_parking_brake(not parking_brake)
 		if pdev.just_pressed("headlights"):
 			set_headlights(not headlights_on)
+		if pdev.just_pressed("nav_swing") and not passenger.map_open:
+			swing_nav()
 		if pdev.just_pressed("swap_seat"):
 			swap_roles()
 			return
@@ -802,6 +819,7 @@ func _update_visuals(delta: float, speed: float, fwd_speed: float) -> void:
 	_set_lamp("lamp_batt", not engine_on and battery > 0.02)
 	_set_lamp("lamp_park", parking_brake and battery > 0.02)
 
+	_update_nav_screen(delta)
 	_nav_timer -= delta
 	var nav: Label3D = _needles.get("nav_label")
 	if nav and _nav_timer <= 0.0:
@@ -887,6 +905,108 @@ func recover() -> void:
 	angular_velocity = Vector3.ZERO
 	global_transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), global_position + Vector3.UP * 1.6)
 	reset_physics_interpolation()
+
+
+# --- mirrors and the nav screen ---------------------------------------------------
+
+## Two door mirrors and a rear-view mirror. Each is a small camera looking back,
+## drawn into a texture on the mirror glass (flipped, like a real mirror). They
+## only render while someone sits in the van.
+func _build_mirrors() -> void:
+	var dark := ToonMat.make(Color(0.16, 0.16, 0.18), 0.01)
+	var eye := Vector3(-0.62, 1.98, -1.80)            # the driver's eye, body space
+	for side in [-1.0, 1.0]:
+		var pos := Vector3(side * 1.36, 1.92, -2.72)
+		_body_root.add_child(Build.box(Vector3(0.16, 0.05, 0.05), dark, Vector3(side * 1.24, 1.80, -2.74), Vector3.ZERO, "MirrorArm"))
+		var face := Basis.looking_at(-(eye - pos).normalized(), Vector3.UP)   # +Z at the driver
+		_body_root.add_child(Build.box(Vector3(0.25, 0.19, 0.03), dark, pos - face.z * 0.03, face.get_euler() * (180.0 / PI), "MirrorBack"))
+		_add_mirror(pos, face, Vector2(0.23, 0.17), Vector2i(256, 190),
+			Vector3(side * 1.40, 1.95, -2.55), side * 9.0, 32.0, "Mirror%s" % ("L" if side < 0 else "R"))
+	# rear-view: inside, top middle of the windscreen; its camera sits on the
+	# back of the roof (the van has no rear window)
+	var rpos := Vector3(0.0, 2.36, -2.62)
+	var rface := Basis.looking_at(-(eye - rpos).normalized(), Vector3.UP)
+	_body_root.add_child(Build.box(Vector3(0.38, 0.11, 0.04), dark, rpos - rface.z * 0.025, rface.get_euler() * (180.0 / PI), "RearMirrorBack"))
+	_add_mirror(rpos, rface, Vector2(0.34, 0.09), Vector2i(420, 112), Vector3(0.0, 2.75, 3.05), 0.0, 22.0, "RearMirror")
+
+
+func _add_mirror(pos: Vector3, face: Basis, size: Vector2, px: Vector2i, cam_pos: Vector3, yaw_out: float, fov: float, nm: String) -> void:
+	var sv := SubViewport.new()
+	sv.name = nm + "View"
+	sv.size = px
+	sv.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	sv.positional_shadow_atlas_size = 0
+	sv.mesh_lod_threshold = 4.0
+	add_child(sv)
+	var cam := Camera3D.new()
+	cam.name = nm + "Cam"
+	cam.fov = fov
+	cam.near = 0.3
+	cam.far = 120.0              # plenty behind a van, and far cheaper to draw
+	sv.add_child(cam)
+	# looking back (+Z in the van's frame), turned a little outward
+	cam.set_meta("local", Transform3D(Basis(Vector3.UP, PI + deg_to_rad(yaw_out)) * Basis(Vector3.RIGHT, deg_to_rad(-4.0)), cam_pos + Vector3(0, BODY_Y, 0)))
+	var q := QuadMesh.new()
+	q.size = size
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_texture = sv.get_texture()
+	mat.uv1_scale = Vector3(-1, 1, 1)                  # a mirror shows it flipped
+	mat.uv1_offset = Vector3(1, 0, 0)
+	var glass := MeshInstance3D.new()
+	glass.name = nm
+	glass.mesh = q
+	glass.material_override = mat
+	glass.transform = Transform3D(face, pos)
+	glass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_body_root.add_child(glass)
+	_mirrors.append(sv)
+
+
+## Mirrors follow the rendered frame, not the physics tick.
+func _process(_delta: float) -> void:
+	_update_mirrors()
+
+
+## Each mirror is a whole extra view of the world (shadows included), with a
+## fixed cost however little it shows. They take turns: one mirror is redrawn
+## every second frame, so each updates ~24 times a second at 144 fps (drawing
+## all three every frame took 144 fps down to 58; one per frame, to 109).
+func _update_mirrors() -> void:
+	var occupied := driver != null or passenger != null
+	if not occupied or _mirrors.is_empty():
+		for sv in _mirrors:
+			sv.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		return
+	_mirror_frame += 1
+	if _mirror_frame % 2 == 1:
+		return
+	_mirror_turn = (_mirror_turn + 1) % _mirrors.size()
+	var sv := _mirrors[_mirror_turn]
+	var cam := sv.get_child(0) as Camera3D
+	cam.global_transform = get_global_transform_interpolated() * (cam.get_meta("local") as Transform3D)
+	sv.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+
+func swing_nav() -> void:
+	nav_aside = not nav_aside
+	Sfx.play3d("creak", global_transform * Vector3(0.3, 1.0, -2.4), -10.0)
+
+
+func _update_nav_screen(delta: float) -> void:
+	if _nav == null:
+		return
+	_nav_t = move_toward(_nav_t, 1.0 if nav_aside else 0.0, delta * 3.0)
+	var k := smoothstep(0.0, 1.0, _nav_t)
+	_nav.position = (NAV_MIDDLE[0] as Vector3).lerp(NAV_ASIDE[0], k)
+	_nav.rotation_degrees = (NAV_MIDDLE[1] as Vector3).lerp(NAV_ASIDE[1], k)
+	# aside: draw the display only for eyes other than the driver's
+	var layer := 1
+	if nav_aside and driver != null:
+		layer = 1 << (1 + driver.index)
+	for n in _nav.get_children():
+		if n is Label3D and (n as Label3D).layers != layer:
+			(n as Label3D).layers = layer
 
 
 # --- systems -------------------------------------------------------------------

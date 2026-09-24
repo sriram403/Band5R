@@ -92,6 +92,10 @@ Driving (once you are in the driver's seat):
 | Swap seats (stopped) | C | LB |
 | Get out (stopped) | E | X |
 | Travel journal (parked) | J | D-pad Right |
+| Swing the nav screen to the passenger / back (either seat) | N | A |
+
+Two door mirrors and a rear-view mirror show the road behind. Swung aside, the nav
+screen can only be read from the passenger seat: the driver has to be told the way.
 
 The handbrake is the only thing that holds the van: the red **P** lamp on the dash shows
 it is on. Leave it off and the van rolls on any slope, with or without anyone in it.

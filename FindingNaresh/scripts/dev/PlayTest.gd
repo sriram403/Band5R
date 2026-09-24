@@ -207,7 +207,7 @@ func _run() -> void:
 		await call("t_" + r)
 		_finish()
 		return
-	var all := ["audio", "fixes", "dev", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
 		all = ["gym"]          # gyms have their own scenarios
 	for s in all:
@@ -1775,6 +1775,66 @@ func t_gym() -> void:
 	await wait(3.0)
 	key(KEY_S, false)
 	await tap(KEY_SPACE)
+
+
+## Door and rear-view mirrors; the nav screen swung over to the passenger.
+func t_mirrors() -> void:
+	var c := camper()
+	await reset_camper(6)
+	await seat_p1_driver()
+	var p := p1()
+	var q := p2()
+	q.enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await wait(0.6)
+	var busy := 0
+	for sv in c._mirrors:
+		var img := sv.get_texture().get_image()
+		var lo := 9.0
+		var hi := -9.0
+		for k in 40:
+			var px := img.get_pixel(int(img.get_width() * (0.1 + 0.02 * k)), int(img.get_height() * (0.2 + 0.015 * k)))
+			lo = minf(lo, px.get_luminance())
+			hi = maxf(hi, px.get_luminance())
+		if hi - lo > 0.08:
+			busy += 1
+		log_line("%s: %dx%d, brightness range %.2f" % [sv.name, img.get_width(), img.get_height(), hi - lo])
+	check(busy == c._mirrors.size(), "all three mirrors show a picture while someone is in the van")
+	# the driver glances at the left door mirror, then up at the rear-view
+	p._seat_yaw = 0.75
+	p.pitch = -0.05
+	await wait(0.3)
+	await shot("mirror_left")
+	p._seat_yaw = 0.18
+	p.pitch = 0.32
+	await wait(0.3)
+	await shot("mirror_rear")
+	p._seat_yaw = 0.0
+	p.pitch = PlayerRig.SEATED_PITCH
+	# the nav, swung to the passenger with N
+	await tap(KEY_N)
+	await wait(0.6)
+	var label: Label3D = c._needles["nav_label"]
+	var driver_cam: Camera3D = p.cam
+	var pass_cam: Camera3D = q.cam
+	log_line("nav aside: %s, label layers %d, driver mask sees it %s, passenger mask sees it %s" % [c.nav_aside, label.layers, str(driver_cam.cull_mask & label.layers != 0), str(pass_cam.cull_mask & label.layers != 0)])
+	check(c.nav_aside and driver_cam.cull_mask & label.layers == 0, "swung aside, the driver's view does not show the nav")
+	check(pass_cam.cull_mask & label.layers != 0, "the passenger still sees it")
+	await shot("nav_aside_driver")
+	q._seat_yaw = 0.35
+	q.pitch = -0.25
+	await tap(KEY_TAB)
+	await wait(0.3)
+	await shot("nav_aside_passenger")
+	await tap(KEY_TAB)
+	await tap(KEY_N)
+	await wait(0.6)
+	check(not c.nav_aside and driver_cam.cull_mask & label.layers != 0, "N swings it back to the middle for both")
+	q.exit_vehicle()
+	await physics_frames(3)
+	p.force_exit = true
+	await physics_frames(3)
+	await wait(0.2)
+	check(c._mirrors[0].render_target_update_mode == SubViewport.UPDATE_DISABLED, "an empty van's mirrors stop rendering")
 
 
 ## Walk from the foot of the lookout ramp up onto the deck.

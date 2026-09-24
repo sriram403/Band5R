@@ -35,6 +35,8 @@ const KEYS := {
 	"map_next": KEY_E, "map_prev": KEY_Q, "map_zoom_in": KEY_EQUAL, "map_zoom_out": KEY_MINUS,
 	# travel journal
 	"journal": KEY_J, "menu_up": KEY_UP, "menu_down": KEY_DOWN, "menu_ok": KEY_ENTER,
+	# in the van: swing the nav screen between the middle and the passenger
+	"nav_swing": KEY_N,
 }
 ## Mouse buttons that also trigger an action (checked alongside KEYS).
 const MOUSE := {"throw": MOUSE_BUTTON_LEFT, "map_place": MOUSE_BUTTON_LEFT, "map_remove": MOUSE_BUTTON_RIGHT,
@@ -53,6 +55,7 @@ const BUTTONS := {
 	"map_zoom_in": JOY_BUTTON_Y, "map_zoom_out": JOY_BUTTON_B,
 	"journal": JOY_BUTTON_DPAD_RIGHT, "menu_up": JOY_BUTTON_DPAD_UP, "menu_down": JOY_BUTTON_DPAD_DOWN,
 	"menu_ok": JOY_BUTTON_A, "menu_back": JOY_BUTTON_B,
+	"nav_swing": JOY_BUTTON_A,
 }
 
 ## Every action any binding table knows about.
@@ -101,6 +104,7 @@ func glyph(action: String) -> String:
 			"recover": return "View"
 			"hint": return "R3"
 			"journal": return "D-Right"
+			"nav_swing": return "A"
 			"menu_ok": return "A"
 			"menu_back": return "B"
 			_: return "?"
@@ -118,6 +122,7 @@ func glyph(action: String) -> String:
 		"recover": return "R"
 		"hint": return "H"
 		"journal": return "J"
+		"nav_swing": return "N"
 		"menu_ok": return "Enter"
 		"menu_back": return "J"
 		"throw": return "LMB"
