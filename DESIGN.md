@@ -1,6 +1,6 @@
 # Finding Naresh: design document (demo)
 
-The single source of truth for what the demo is. Agreed with the user on 2026-09-24. `TODO.md` (local) tracks the build, `FUTURE.md`
+The single source of truth for what the demo is. Agreed with the user on 2026-09-24. `notes/TODO.md` tracks the build, `FUTURE.md`
 holds everything after the demo.
 
 ## 1. Theme
