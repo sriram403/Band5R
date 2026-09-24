@@ -312,9 +312,16 @@ func t_layout() -> void:
 	await wait(0.4)
 	var solo_default: bool = boot.layout == 2
 	check(solo_default == (Input.get_connected_joypads().size() == 0), "solo view is the default only when no controller is connected")
+	var pad_for_p2: bool = boot.devices[1].kind == InputDevice.Kind.PAD
+	if pad_for_p2:
+		boot._set_layout(Boot.Layout.SOLO)
 	await tap(KEY_TAB)
 	await wait(0.4)
-	check(boot.kbm_owner == 1 and boot.views[1].visible and not boot.views[0].visible, "TAB switches to P2 and shows P2's view")
+	if pad_for_p2:
+		check(boot.kbm_owner == 0 and boot.views[0].visible and not boot.views[1].visible, "with a pad for P2, TAB leaves the keyboard and solo view on P1")
+		boot._set_layout(Boot.Layout.SIDE_BY_SIDE)
+	else:
+		check(boot.kbm_owner == 1 and boot.views[1].visible and not boot.views[0].visible, "TAB switches to P2 and shows P2's view")
 	# P2 looks left at the nav screen
 	p2()._seat_yaw = deg_to_rad(38)
 	p2().pitch = deg_to_rad(-18)
@@ -325,12 +332,15 @@ func t_layout() -> void:
 	await wait(0.2)
 	await shot("passenger_forward")
 	await tap(KEY_TAB)
+	if pad_for_p2:
+		boot._set_layout(Boot.Layout.SOLO)
 	await tap(KEY_F2)
 	await wait(0.4)
 	check(boot.views[0].visible and boot.views[1].visible, "F2 goes to side-by-side split")
 	await shot("split_side")
 	await tap(KEY_F2)
 	await wait(0.4)
+	check(boot.views[0].visible and boot.views[1].visible and boot.split.vertical, "F2 goes to stacked split")
 	await shot("split_stacked")
 	await tap(KEY_F2)
 	await wait(0.2)
