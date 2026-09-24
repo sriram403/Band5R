@@ -243,7 +243,7 @@ into scene files later without changing the systems.
 | `scripts/vehicle/EngineAudio.gd` | Procedural engine / road noise. |
 | `scripts/world/Route.gd`, `RoadNetwork.gd` | Road and river centrelines: splines, pinned junction heights, nearest queries, chaining. |
 | `scripts/world/Landscape.gd` | Height layers, the grid-stamped terrain (mesh + height-map collision), roads, river, pads. |
-| `scripts/world/LevelBuilder.gd` | The world's layout data and assembly: roads, water, scatter, landmarks, items. |
+| `scripts/world/LevelBuilder.gd` (+ `LevelLayout`, `LevelScatter`, `LevelPlaces`, `LevelLandmarks`) | The world's assembly, split by job, each file extending the one before: the layout data and helpers, the trees and rocks, the greybox places, the Milestone A landmarks, then the build order, roads, spawns and items. |
 | `scripts/map/MapState.gd`, `PaperMap.gd` | Shared discovery + stamps; the drawn paper map. |
 | `scripts/story/Story.gd` | Objectives, hints, story beats, fragments and roses. |
 | `scripts/puzzles/CoolingStation.gd` | The water works co-op puzzle. |
