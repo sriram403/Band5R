@@ -11,7 +11,7 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, Milestone D: D1-D10 done (tagging, binoculars, stealth, creatures, traffic, mood, windmill, power line, lift bridge, ghat); next D11 the coast watchtower.
+Last updated: 2026-09-25, Milestone D: D1-D11 done (tagging, binoculars, stealth, creatures, traffic, mood, windmill, power line, lift bridge, ghat, coast watchtower); next D12 the optional puzzles.
 Milestones A, B and C are done. A ChatGPT session built the opening; a Claude
 session reviewed it, fixed what it and the user's test found (see TODO.md,
 "Review fixes" and "P2's side fixed") and added `opening_full` and
@@ -153,8 +153,8 @@ they/them.
   D8 the power line (`puzzles/PowerLine.gd`, bridge hut, `t_power`) done.
   D9 the lift bridge (`puzzles/LiftBridge.gd`, `t_bridge`) and D10 the ghat
   (`world/Ghat.gd`: fog, pace notes, glimpse, first attack; `t_ghat`) done.
-  Next: D11 the coast watchtower (`world/CoastWatch.gd`), D12, then the full
-  run D13 and the hand-over.
+  D11 the coast watchtower (`world/CoastWatch.gd`, `t_tower`) done. Next: D12
+  (barn maze, lookout relay), then the full run D13 and the hand-over.
   The tarp and the cardboard box are block-outs awaiting the user's look
   approval.
 
@@ -363,7 +363,7 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
    `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
    2026-09-25** with every recommended answer (their "Decisions" sections).
    D1-D10 are done (the four gyms, traffic, mood, windmill, power line, lift
-   bridge, ghat). Next: D11-D12 ( lift bridge, ghat fog and the first attack,
+   bridge, ghat, coast watchtower). Next: D12 ( lift bridge, ghat fog and the first attack,
    coast watchtower, optional puzzles), then the full run D13.
 2. Then Milestones E-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
@@ -544,6 +544,12 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   (0 passes): give such variables a type.
 - **Python patches through bash heredocs:** `"\n"` in a GDScript string
   didn't match; use the Edit tool for lines with backslash escapes.
+- **`Route.nearest` only searches the hash cells round the point:** for a
+  place well off a road (the coast tower, 40 m) it can return a far sample.
+  Scan the road's points by hand for "nearest bit of road to X".
+- **Checks must be tight enough to fail:** "higher than deck - 0.6 m" passed
+  while the lookout ramp stopped short of every deck. Check the exact thing
+  (feet on the deck, within its footprint).
 - **A failing gym segment stops the Quick run** (`|| exit`), so later
   segments don't run at all: read which segment failed, fix, and rerun Quick.
 

@@ -286,16 +286,22 @@ func _lookout(at: Vector3, DECK_H := 6.0, nm := "Lookout", label := "PINE RIDGE\
 		var fw := root.transform * Vector3(0, 0, 2.6 + run)
 		foot_rel = _h(fw.x, fw.z) - pos.y
 		run = (DECK_H - foot_rel) / slope
-	var rise := DECK_H - foot_rel
-	var ramp_len := sqrt(run * run + rise * rise) + 1.0
+	# the ramp's top surface meets the deck's top exactly at the deck's edge
+	# (it used to stop 0.14 m short and stick out past the edge, a lip you
+	# couldn't walk over); its foot runs on 0.8 m into the ground
+	var top := Vector3(0, DECK_H + 0.125 - 0.1, 2.6)
+	var bottom := Vector3(0, foot_rel - 0.1, 2.6 + run)
+	var along := (bottom - top).normalized()
+	var rise := top.y - bottom.y
+	var ramp_len := top.distance_to(bottom) + 0.8
 	var ang := atan2(rise, run)
-	var ramp_xf := Transform3D(Basis(Vector3.RIGHT, ang), Vector3(0, (DECK_H + foot_rel) * 0.5 - 0.12, 2.6 + run * 0.5))
+	var ramp_xf := Transform3D(Basis(Vector3.RIGHT, ang), top + along * ramp_len * 0.5)
 	var ramp := Build.box(Vector3(1.8, 0.2, ramp_len), wood)
 	ramp.transform = ramp_xf
 	root.add_child(ramp)
 	body.add_child(_box_shape(Vector3(1.8, 0.2, ramp_len), ramp_xf))
 	for sx in [-0.95, 0.95]:
-		var rail_xf := Transform3D(Basis(Vector3.RIGHT, ang), Vector3(sx, (DECK_H + foot_rel) * 0.5 + 0.85, 2.6 + run * 0.5))
+		var rail_xf := Transform3D(Basis(Vector3.RIGHT, ang), top + along * ramp_len * 0.5 + Vector3(sx, 0.95, 0))
 		var rail := Build.box(Vector3(0.08, 0.08, ramp_len), wood)
 		rail.transform = rail_xf
 		root.add_child(rail)

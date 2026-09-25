@@ -14,7 +14,8 @@ being built and tested), so this always shows where the work is right now.
   D7 the windmill brake puzzle done (Quick: 0 failures).
   D8 the power line done (Quick: 0 failures).
   D9 the lift bridge and D10 the ghat done (Quick: 414 checks, 0 failures).
-  Now: [~] D11 the coast watchtower (`world/CoastWatch.gd` being written).
+  D11 the coast watchtower done. Now: [~] D12 the optional puzzles
+  (`puzzles/BarnMaze.gd`, `puzzles/LookoutRelay.gd` written, not yet in the world).
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -553,7 +554,31 @@ test was fixed and now restores its starting layout before the pad test.
         (now 40 m); the notes overflowed the nav glass (header dropped, text
         fits); a parse error in the save test hid behind a discarded run
   - [x] Quick suite: 12 segments, 414 checks, 0 failures
-- [ ] D11. Coast watchtower: hide on foot, stamp the beach
+- [x] D11. Coast watchtower: hide on foot, stamp the beach
+  - [x] `world/CoastWatch.gd`: a creature paces an oval round the tower's
+        legs and the ramp's foot; it only comes out once someone is on foot
+        within 130 m or the van is parked there with the engine off (the
+        lesson is hiding on foot); a text says what to do. Cover between the
+        road and the ramp: two rocks (gym size: top 1.2 m, you can peek over),
+        a tall broken wall (lean past its end), crates; three cardboard boxes
+        by the road with a "FREE BOXES" card
+  - [x] Story: `to_tower` -> `tower` (up it unseen; done on the deck) ->
+        `stamp_beach` (a stamp within 300 m of the beach) -> `end_d`
+  - [x] `t_tower`: 12 checks (it wakes when you get out, paces 3.9 m in 3 s,
+        sees you standing at 16 m, not crouched behind the rock at 13 m, sees
+        you peeking over it; walked the ramp to the deck; a stamp elsewhere
+        doesn't count; the beach stamp does)
+  - [x] Bugs found on the way: **every lookout ramp stopped 0.14 m below the
+        deck and stuck out past its edge** (you couldn't walk onto the deck;
+        `climb` only checked "within 0.6 m" so it passed). Now the ramp meets
+        the deck exactly; `climb` checks you stand on it. The first rocks were
+        too tall to peek over (1.8 m); the road lookup for the tower picked a
+        point 338 m away (`Route.nearest` only searches nearby cells)
+  - [x] Quick: 423 checks, 1 failure (the ghat test expected the old last
+        objective; fixed, ghat + tower rerun 0 failures). Two flaky old checks
+        made tight: the lure (measured to the crate, which rolls; now to the
+        spot it heard) and the binocular pickup (read the prompt before the
+        gym had settled; now waits for it)
 - [ ] D12. Optional puzzles: barn maze (W2), lookout binocular relay (W4)
 - [ ] D13. Full run J1 -> Bessi on both routes; hand-over
 

@@ -21,7 +21,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
 const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "climb", "carry", "look", "pad", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "climb", "carry", "look", "pad", "perf", "save"]
 
 
 func _ready() -> void:
@@ -233,7 +233,7 @@ func _run() -> void:
 		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
 		_finish()
 		return
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -2347,7 +2347,10 @@ func t_binoculars() -> void:
 	mouse_button(MOUSE_BUTTON_RIGHT, false)
 	# take them off the table
 	await face_point(p, b.poi["gym_binoculars"], 1.4, Vector3(0.3, 0, 1))
-	await wait(0.1)
+	# the first second after the gym loads can crawl (shaders compiling)
+	var t_wait := Time.get_ticks_msec()
+	while p.prompt_text == "" and Time.get_ticks_msec() - t_wait < 2000:
+		await physics_frames(2)
 	log_line("prompt at the table: '%s'" % p.prompt_text)
 	await tap(KEY_E)
 	await physics_frames(3)
@@ -3102,11 +3105,109 @@ func t_ghat() -> void:
 	log_line("it gave up after %.1f s; leak %.2f, players taken: %s" % [(Time.get_ticks_msec() - t0) / 1000.0, c.attack.leak_rate(), str([p1().taken_grace > 0.0, q.taken_grace > 0.0])])
 	check(st.flags.has("first_attack_over") and c.attack.leak_rate() == 0.0, "under the tarp it loses interest and goes; the leak stops")
 	await wait(0.6)
-	check(st.current()["id"] == "end_d", "the objective moves on")
+	check(st.current()["id"] == "to_tower", "the objective moves on: to the coast watchtower")
 	c.attack.set_tarp(false)
 	mood.set_now(1.0)
 	if c.nav_aside:
 		c.swing_nav()
+
+
+## D11, the coast watchtower: park, get out, and the creature at its base
+## wakes and paces; it sees a player standing in the open; crouched behind
+## the cover it doesn't; up the ramp to the deck, then stamp the beach.
+func t_tower() -> void:
+	var b: LevelBuilder = boot.builder
+	var cw := get_tree().get_first_node_in_group("coast_watch") as CoastWatch
+	check(cw != null and cw.covers.size() >= 4 and cw.boxes.size() == 3, "the watchtower has cover and a stack of boxes")
+	if cw == null:
+		return
+	var st: Story = boot.story
+	st.flags.erase("tower_seen")
+	st.index = st.index_of("to_tower")
+	var ms: MapState = boot.map_state
+	ms.stamps.clear()
+	var c := camper()
+	await van_to(b.poi["coast_road_stop"])
+	if c.engine_on:
+		c.toggle_engine()
+	c.set_headlights(false)
+	var p := p1()
+	var q := p2()
+	for pl in [p, q]:
+		if pl.seat != null:
+			pl.force_exit = true
+	await physics_frames(4)
+	await place_player(p, b.poi["coast_arrive"] + Vector3(0, 0.5, 0), 0.0)
+	await place_player(q, b.poi["coast_arrive"] + Vector3(1.5, 0.5, 0), 0.0)
+	await wait(1.2)
+	log_line("arrive %.0f m from the tower, ramp foot %.0f m; P1 %.0f m" % [b.poi["coast_arrive"].distance_to(b.poi["coast_tower"]), b.poi["coast_tower_ramp_foot"].distance_to(b.poi["coast_tower"]), p.global_position.distance_to(b.poi["coast_tower"])])
+	check(cw.creature != null and st.flags.has("tower_seen"), "on foot near the tower, the creature at its base shows itself")
+	check(st.current()["id"] == "tower", "the objective: get up the tower unseen")
+	var cr := cw.creature
+	if cr == null:
+		return
+	var from := cr.global_position
+	await wait(3.0)
+	log_line("it paced %.1f m in 3 s" % cr.global_position.distance_to(from))
+	check(cr.global_position.distance_to(from) > 2.0, "it paces round the tower's base")
+	await look_at_point(p, cr.global_position + Vector3.UP * 1.5)
+	await shot("tower_arrive")
+	# standing in the open in front of it at 16 m: seen
+	var tower: Vector3 = b.poi["coast_tower"]
+	var spot := cw.patrol[0]
+	await calm_creature(cr, spot, 0.0)
+	var fwd := -cr.global_transform.basis.z
+	fwd.y = 0.0
+	await place_player(p, spot + fwd.normalized() * 16.0 + Vector3(0, 0.5, 0), 0.0)
+	await wait(1.0)
+	log_line("standing 16 m in front: seen %s, suspicion %.2f" % [cr.seen_now.has(p), cr.suspicion])
+	check(cr.seen_now.has(p), "standing in the open in front of it, it sees you")
+	# crouched behind the rock nearest the tower, with the rock between: not seen
+	var rock := cw.covers[2]
+	var away := rock.global_position - tower
+	away.y = 0.0
+	spot = rock.global_position - away.normalized() * 12.0
+	spot.y = Landscape.ground(spot.x, spot.z)
+	await calm_creature(cr, spot, atan2(-away.x, -away.z))
+	await place_player(p, rock.global_position + away.normalized() * 1.4 + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, spot + Vector3.UP * 1.5)
+	key(KEY_CTRL, true)
+	await wait(1.5)
+	var hidden := not cr.seen_now.has(p)
+	log_line("crouched behind the rock %.0f m from it: seen %s" % [p.global_position.distance_to(spot), cr.seen_now.has(p)])
+	check(hidden, "crouched behind the rock, it doesn't see you")
+	# peek over it: seen (it's looking this way)
+	await mouse_button(MOUSE_BUTTON_RIGHT, true)
+	await wait(1.0)
+	log_line("peeking: %s, seen %s" % [p.peeking, cr.seen_now.has(p)])
+	check(p.peeking and cr.seen_now.has(p), "peek over the rock (hold RMB): you see it, and it sees you")
+	await shot("tower_peek")
+	await mouse_button(MOUSE_BUTTON_RIGHT, false)
+	key(KEY_CTRL, false)
+	await wait(0.3)
+	# up the ramp to the deck (it's sent round the far side, off duty for the test)
+	cr.passive = true
+	await calm_creature(cr, tower + (tower - b.poi["coast_tower_ramp_foot"]).normalized() * 12.0, 0.0)
+	var foot: Vector3 = b.poi["coast_tower_ramp_foot"]
+	await place_player(p, foot + (foot - tower).normalized() * 2.0 + Vector3(0, 0.5, 0), 0.0)
+	var deck: Vector3 = b.poi["coast_tower_deck"]
+	var up := await walk_to(p, deck, "up the watchtower ramp", 1.2, 25.0)
+	await wait(0.6)
+	log_line("on the deck: %s, %.1f m up" % [p.global_position, p.global_position.y - tower.y])
+	check(up and st.current()["id"] == "stamp_beach", "walked up the ramp to the deck; now stamp the beach")
+	await look_at_point(p, b.poi["beach"] + Vector3.UP * 2.0)
+	await shot("tower_view")
+	var beach: Vector3 = b.poi["beach"]
+	ms.add_stamp("fuel", Vector2(tower.x, tower.z))                        # a stamp somewhere else doesn't count
+	await wait(0.6)
+	check(st.current()["id"] == "stamp_beach", "a stamp elsewhere doesn't count")
+	ms.add_stamp("puzzle", Vector2(beach.x + 40.0, beach.z - 30.0))
+	await wait(0.6)
+	check(st.current()["id"] == "end_d", "stamping the beach: done; the nav points there")
+	cr.passive = false
+	cr.queue_free()
+	cw.creature = null
+	ms.stamps.clear()
 
 
 ## Stealth gym: the cardboard box ("that box moved"), peeking from cover, and
@@ -3251,11 +3352,14 @@ func t_hiding() -> void:
 	check(cr.state == Creature.State.CURIOUS and cr.last_noticed.distance_to(land) < 3.0, "it hears the crate land and wants to look")
 	var reached := 99.0
 	t0 = Time.get_ticks_msec()
-	while Time.get_ticks_msec() - t0 < 12000 and reached > 2.5:
+	# it goes to where it heard the landing (the crate may roll on a bit) and
+	# stops 1.5 m short to look
+	var heard_at := cr.last_noticed
+	while Time.get_ticks_msec() - t0 < 12000 and reached > 2.0:
 		await wait(0.2)
-		reached = cr._flat_dist(crate.global_position)
+		reached = cr._flat_dist(heard_at)
 	await shot("lure")
-	check(reached <= 2.5 and cr.state != Creature.State.TAKE, "it walks over to where the crate landed (%.1f m)" % reached)
+	check(reached <= 2.0 and heard_at.distance_to(crate.global_position) < 3.0 and cr.state != Creature.State.TAKE, "it walks over to where the crate landed (%.1f m from the spot)" % reached)
 
 
 ## Creature gym: the van. It hears the engine and comes; while it stays within
@@ -4349,7 +4453,8 @@ func t_climb() -> void:
 	key(KEY_W, false)
 	await wait(0.5)
 	log_line("lookout climb: feet at %.1f m, deck at %.1f m, %.1f m from the deck centre" % [p.global_position.y, deck.y - 0.2, Vector2(p.global_position.x - deck.x, p.global_position.z - deck.z).length()])
-	check(p.global_position.y > deck.y - 0.6, "the lookout ramp can be walked up to the deck")
+	var flat_d := Vector2(p.global_position.x - deck.x, p.global_position.z - deck.z).length()
+	check(absf(p.global_position.y - (deck.y - 0.075)) < 0.15 and flat_d < 2.0, "the lookout ramp can be walked up and onto the deck")
 	await shot("lookout_climbed")
 
 

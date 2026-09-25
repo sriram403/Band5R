@@ -94,7 +94,16 @@ func setup(b: Node) -> void:
 		{"id": "hide_van", "text": "Something wants the van. Hide it, or get away",
 			"hint": "Pull over, engine off (X), lights off, both out, and hold E at the back of the van to pull the tarp over it. Keep out of its sight. Or just drive off.",
 			"done": func(): return flags.has("first_attack_over")},
-		{"id": "end_d", "text": "On to the coast (the watchtower comes next in milestone D)",
+		{"id": "to_tower", "text": "Over the pass towards the sea: stop at the coast watchtower",
+			"hint": "Beach Road runs down from the pass. The watchtower stands off the road on the left, high on its legs. From up there you'd see the whole coast.",
+			"done": func(): return _near_on_foot("coast_tower", 90.0) or _van_near("coast_tower", 70.0)},
+		{"id": "tower", "text": "Something paces round the watchtower. Get up it without being seen",
+			"hint": "Keep low (Ctrl / B) and keep cover between you and it; peek out (hold RMB / LT) to watch where it goes. Move when it's on the far side. A box from the stack by the road works too - keep still when it looks. The ramp is at the back.",
+			"done": func(): return _on_deck("coast_tower_deck")},
+		{"id": "stamp_beach", "text": "From the top: find Bessi beach and stamp it on your map",
+			"hint": "Look out to the sea: the long beach with the stalls, the rose-shaped hill behind it. Open the map (M), move the stamp over the beach and stamp it. The nav in the van will point there.",
+			"done": func(): return _stamp_near("beach", 300.0)},
+		{"id": "end_d", "text": "Down to Bessi beach (milestone E comes next)",
 			"hint": "This is where the build ends for now.",
 			"done": func(): return false},
 	]
@@ -342,6 +351,40 @@ func _can_on_rack() -> bool:
 	for s in boot.camper.storage_slots:
 		var it = boot.camper.stowed_item(s)
 		if it != null and it.kind == "fuel_can":
+			return true
+	return false
+
+
+func _near_on_foot(key: String, r: float) -> bool:
+	var poi: Dictionary = boot.builder.poi
+	if not poi.has(key):
+		return false
+	var at: Vector3 = poi[key]
+	for p in boot.players:
+		if p.seat == null and Vector2(p.global_position.x - at.x, p.global_position.z - at.z).length() < r:
+			return true
+	return false
+
+
+func _on_deck(key: String) -> bool:
+	var poi: Dictionary = boot.builder.poi
+	if not poi.has(key):
+		return false
+	for p in boot.players:
+		if p.global_position.distance_to(poi[key]) < 3.5:
+			return true
+	return false
+
+
+## A stamp on the paper map near a place (world metres).
+func _stamp_near(key: String, r: float) -> bool:
+	var poi: Dictionary = boot.builder.poi
+	if not poi.has(key):
+		return false
+	var at: Vector3 = poi[key]
+	for s in boot.map_state.stamps:
+		var sp: Vector2 = s["pos"]
+		if sp.distance_to(Vector2(at.x, at.z)) < r:
 			return true
 	return false
 

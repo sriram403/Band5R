@@ -86,6 +86,33 @@ func build() -> Node3D:
 	return world
 
 
+## D11: the creature, cover and boxes round the coast watchtower.
+func _coast_watch() -> void:
+	var at: Vector3 = poi["coast_tower"]
+	var face := ROSE_CENTRE - at
+	face.y = 0.0
+	var xf := Transform3D(Basis.looking_at(face, Vector3.UP), at)
+	var foot: Vector3 = poi["coast_tower_ramp_foot"]
+	var road := network.road("beach_road")
+	# the nearest bit of road to the tower (by hand: `nearest` only searches
+	# the cells round the point, and the tower stands well off the road)
+	var best_i := 0
+	for i in road.point_count():
+		if road.point(i).distance_to(at) < road.point(best_i).distance_to(at):
+			best_i = i
+	var arrive := road.point(best_i)
+	var off := at - arrive
+	off.y = 0.0
+	arrive += off.normalized() * (Landscape.ROAD_HALF + 3.0)     # the verge, not the road
+	arrive.y = _h(arrive.x, arrive.z)
+	var cw := CoastWatch.new()
+	cw.name = "CoastWatch"
+	world.add_child(cw)
+	cw.setup(xf, foot, arrive, _h)
+	poi["coast_arrive"] = arrive
+	poi["coast_road_stop"] = road.point(best_i)
+
+
 func _lap(what: String, since: int) -> int:
 	var now := Time.get_ticks_msec()
 	print("[World] %s %d ms" % [what, now - since])
@@ -325,6 +352,7 @@ func _landmarks() -> void:
 	_roadworks()
 	_traffic()
 	_lookout(COAST_TOWER, 16.0, "CoastTower", "COAST\nWATCHTOWER", ROSE_CENTRE, "coast_tower")
+	_coast_watch()
 	_lookout(END_TOWER, 22.0, "EndTower", "OLD\nWATCHTOWER", Vector3(400, 0, -300), "end_tower")
 	_beach()
 	_fishing_village()
