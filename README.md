@@ -203,7 +203,7 @@ every fix. What it found and what changed:
 Run the windowed play-test behind your other windows:
 
 ```
-tools/run_test.sh                  (Quick: base gym + world checks, ~4-5 min)
+tools/run_test.sh                  (Quick: opening, P2 walked on foot, the gyms + world checks, ~7 min)
 python tools/gen/layout_check.py  (Road check when roads or hills change, ~2 s)
 tools/run_test.sh full             (Full: all checks, the whole opening played through, long drives, ~40 min)
 tools/run_test.sh drive,map        (selected world scenarios)

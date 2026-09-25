@@ -6,15 +6,13 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Milestone C is built, reviewed and play-tested (2026-09-25) and is with you
-  for your test. Nothing is pushed until you approve.
-  A ChatGPT session built the opening. Claude then reviewed it and fixed
-  eleven problems (see "Review fixes" under Milestone C) and added
-  `opening_full`, the whole opening played through with the real controls:
-  27 checks, 0 failures, about 3.3 min with no hesitation. Quick after all
-  fixes: 238 checks, 0 failures, no script errors. After the P2 fixes: 8 segments, 262 checks, 0 failures; opening_full 27/27.
-- `design/PUZZLES.md` and the D/E/F, creature and Naresh pages are proposals
-  kept for future discussion. Their merge did not approve their puzzle choices.
+- Milestone C approved by you and pushed (2026-09-25). Your test found P2's
+  house problems (stairs, doors, drive lip, battery hint) and a nail trap
+  that only worked after the refuel; all fixed and re-tested. Quick: 8
+  segments incl. P2 walked for real; `opening_full` plays the whole opening.
+- Next: Milestone D (the way out), gyms first. The D/E/F, creature and
+  Naresh design pages are proposals; discuss their open questions before
+  building.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -293,6 +291,9 @@ test was fixed and now restores its starting layout before the pad test.
   - [x] A 0.2 m lip at the top of the drive stopped you walking out of the
         front door; the slab is flush now, and the drive's cutting is wide
         enough that the grass no longer humps through the concrete
+  - [x] Nails puncture the van any time during the opening; they used to
+        work only after the Town Fuel refuel, so driving straight there
+        missed the puncture
   - [x] Batteries sit in the pulled-out drawer (they fell at your feet) and
         holding them says "[F] Fit the batteries in your torch"; the drawer's
         spent "Drawer is open" zone no longer covers them
@@ -307,9 +308,9 @@ test was fixed and now restores its starting layout before the pad test.
       pace.
   - [x] Quick after all fixes: 7 segments, 238 checks, 0 failures, no script
         errors, 388 s of scenarios
-- [~] Milestone C hand-over after my play-test; push only after your approval
+- [x] Milestone C hand-over after my play-test; push only after your approval
   - [x] My play-test (above)
-  - [ ] Your test
+  - [x] Your test; fixes above; approved and pushed (2026-09-25)
 - [x] Phone: texts between players, the message from Naresh's mother
 - [x] P1's home (the current homestead); P2's home
 - [~] P1 drives alone to P2's home and learns the van: driving, fuel, tyre

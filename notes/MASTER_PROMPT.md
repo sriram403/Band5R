@@ -11,12 +11,11 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, Milestone C built and handed to the user for testing.
-Milestone B and the opening design are approved; all six cloud PRs are merged.
-A ChatGPT session built the opening gyms, phone and per-player objectives; a
-Claude session then reviewed all of it, fixed what it found (see TODO.md,
-"Review fixes") and added `opening_full`, the whole opening played through.
-Nothing is pushed: the user tests C first, then approves the push.
+Last updated: 2026-09-25, Milestone C approved by the user and pushed.
+Milestones A, B and C are done. A ChatGPT session built the opening; a Claude
+session reviewed it, fixed what it and the user's test found (see TODO.md,
+"Review fixes" and "P2's side fixed") and added `opening_full` and
+`opening_p2`. Next is Milestone D.
 Start at section 6.
 
 ---
@@ -137,8 +136,10 @@ they/them.
   work, listed in `notes/TODO.md` under "Review fixes" (controller journal
   button, Town Fuel off the road, town cars jamming, gym crash, tyre and nail
   visuals, phone redesign, test helper bugs). `opening_full` plays the whole
-  opening with the real controls: see TODO.md for its timing. Milestone C is
-  with the user for their test; push only after their approval.
+  opening with the real controls: see TODO.md for its timing. The user's test
+  then found P2's house unusable (stairs, doors, drive lip) and the nails
+  gated behind the refuel; fixed, `opening_p2` added to Quick (P2 walked for
+  real), and Milestone C was approved and pushed.
 
 ---
 
@@ -330,11 +331,12 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 6. What to do next
 
-**Milestone C is built, reviewed and play-tested; it is with the user.**
+**Milestone C is approved and pushed. Next, in this order:**
 
-1. Wait for the user's test of Milestone C. Fix what they report, re-run
-   Quick (and `full` if roads changed), then commit and push when they approve.
-2. Then Milestones D-G follow `notes/TODO.md` / `DESIGN.md`.
+1. Milestone D, the way out (`notes/TODO.md`, `DESIGN.md`,
+   `design/WAY_OUT.md`): discuss the proposal's open questions with the user,
+   then gyms first (tagging, binoculars, hiding, creatures).
+2. Then Milestones E-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
    gym first. The merged `design/PUZZLES.md`, `design/WAY_OUT.md`,
    `design/CREATURES.md`, `design/NARESH.md`, `design/BESSI.md` and

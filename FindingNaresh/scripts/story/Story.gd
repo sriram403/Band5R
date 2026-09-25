@@ -197,7 +197,7 @@ func _opening_done(who: int, step: int) -> bool:
 			0: return phone_unread(0) == 0
 			1: return _van_near("town_fuel", 35.0)
 			2: return flags.has("town_fuel_filled") and boot.camper.fuel >= 12.0
-			3: return boot.camper.tyre_flat
+			3: return flags.has("opening_puncture_done")   # even if it came before the refuel
 			4: return flags.has("opening_puncture_done") and not boot.camper.tyre_flat and not boot.camper.spare_available
 			5: return _van_near("p2_home", 30.0) and boot.camper.parking_brake
 			6: return _opening_gear_stowed()

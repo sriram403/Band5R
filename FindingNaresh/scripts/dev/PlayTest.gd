@@ -2055,6 +2055,20 @@ func t_roadworks() -> void:
 	await physics_frames(8)
 	check(c.tyre_flat and flags.has("opening_puncture_done"),
 		"an armed opening punctures the van once at the fixed nails")
+	# during the opening the nails work without any arming (no refuel first)
+	flags.erase("opening_puncture_armed")
+	flags.erase("opening_puncture_done")
+	c.tyre_flat = false
+	c.refresh_tyre_visuals()
+	boot.story.opening_mode = true
+	c.global_transform = Transform3D(basis, lane.point(505) + Vector3.UP * 0.8)
+	c.reset_physics_interpolation()
+	await physics_frames(8)
+	c.global_transform = Transform3D(basis, lane.point(520) + Vector3.UP * 0.8)
+	c.reset_physics_interpolation()
+	await physics_frames(8)
+	boot.story.opening_mode = false
+	check(c.tyre_flat, "during the opening the nails puncture the van even before the refuel")
 	flags.erase("opening_puncture_armed")
 	flags.erase("opening_puncture_done")
 	c.tyre_flat = false

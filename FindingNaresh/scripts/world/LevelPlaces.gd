@@ -108,9 +108,9 @@ func _town() -> void:
 		world.add_child(car)
 
 
-## Fixed opening puncture, after Town Fuel and before P2's turning. The story
-## arms it when P1 has reached the roadworks beat; old saves and route tests
-## can still travel this road without a surprise flat.
+## Fixed opening puncture, after Town Fuel and before P2's turning. It works
+## once, any time during the opening; after the pick-up (and in older route
+## tests) the road is safe to drive.
 func _roadworks() -> void:
 	var lane := network.road("home_lane")
 	var i := 520
@@ -136,7 +136,9 @@ func _roadworks() -> void:
 		if not body is Camper:
 			return
 		var story := trap.get_tree().get_first_node_in_group("story") as Story
-		if story == null or not story.flags.has("opening_puncture_armed") or story.flags.has("opening_puncture_done"):
+		# any time during the opening (refuelled or not); tests can arm it outside it
+		var live: bool = story != null and (story.opening_mode or story.flags.has("opening_puncture_armed"))
+		if not live or story.flags.has("opening_puncture_done"):
 			return
 		story.flags["opening_puncture_done"] = true
 		body.puncture())
