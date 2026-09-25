@@ -10,8 +10,8 @@ being built and tested), so this always shows where the work is right now.
   creature page with every recommended answer (see "Decisions" at the end of
   `design/WAY_OUT.md` and `design/CREATURES.md`).
 - D1 tagging and D2 binoculars done (Quick: 0 failures). D3/D4 stealth and
-  creatures: all four steps done (stealth gym: 3 tests; creature gym: the
-  van test; 0 failures). Next: D5 the traffic system.
+  creatures: all four steps done. D5 traffic and D6 the mood curve done.
+  Next: D7 the windmill brake puzzle at J1.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -426,9 +426,38 @@ test was fixed and now restores its starting layout before the pad test.
         counted as "moving" and drew the creature from 45 m (now only
         horizontal speed over 1.5 m/s); horn and door sounds would have sent
         it pushing into the van's middle (it goes to the van's side now)
-- [ ] D5. Traffic system: table-driven counts per road, keep left, stop for the
-      van, the one lorry; thinning out to none after J2
-- [ ] D6. Mood curve: one dial for sky, fog, sun, birds and traffic
+- [x] D5. Traffic system. `LevelLayout.TRAFFIC` is the table (road, stretch,
+      cars): town 4, P2's home to J1 2, valley 2, ridge 1, none after J2;
+      `world/Traffic.gd` places them and has a `density` dial (mood).
+      `TrafficCar`: half speed with something 32 m ahead in its lane, stops
+      at 13 m, sleeps beyond 600 m from everyone. `world/Lorry.gd`, the one
+      lorry: waits in a lay-by on the lane north of P2's home, pulls out when
+      the van is 25-60 m behind, crawls 70 m at 22 km/h, pulls in to the verge
+      and stays. Traffic gym: a second straight for it. `t_lorry`: 5 checks
+      (pulled out 60 m ahead, held the van up 12.4 s, closest 11.4 m, pulled
+      in, van passed after 32 s); `t_traffic_world` checks the table
+      ([6, 2, 1, 0, 0] cars on lane / valley / ridge / pump house / ghat) and
+      the density dial
+  - [x] Bugs found on the way: the lorry held you up 24 s and pulled out
+        100 m ahead (now ~12 s, 25-60 m); the test's driver braked too late
+        and touched it (now brakes by speed, like a person)
+- [x] D6. Mood curve. `world/Mood.gd`: one value 1 (bright) to 0 (dark),
+      eased slowly (0.012 a second) towards a target that falls as the
+      players reach each place on the way out (P2's home 1.0, J1 0.95, J2
+      0.85, bridge 0.78, ghat pass 0.7, coast tower 0.62, the roses 0.6) and
+      never rises on the way out. Drives sky and horizon colours, fog colour
+      and distance, sun energy and colour, ambient light, colour saturation,
+      `Ambience.liveliness` (birds first), `Traffic.density` (all gone by 0.6)
+      and the creatures' light (dusk below 0.45, night below 0.2). Saved with
+      the game (and the tarp). Developer menu: mood left/right, spawn a
+      creature, spawn a box, give binoculars. `t_mood`: 6 checks (1.0 -> 0.6:
+      sun 1.6 -> 1.12, saturation 1.22 -> 1.03, birds 1.0 -> 0.6, lane cars
+      6 -> 0; at J2 the target is 0.85 and it eases; J1 again doesn't brighten)
+  - [x] Found on the way: a thrown crate was sometimes heard as a 10 m drop,
+        because the contact reports the speed after the bounce; a throw's
+        first landing now always counts as a throw (15 m). A tossed box
+        could land between the rock and the creature and block the peek
+        check (the test puts it back)
 - [ ] D7. Windmill brake puzzle (J1) and the valley map section reward
 - [ ] D8. Water works turbine lights the power line to the bridge hut
 - [ ] D9. Lift bridge puzzle (levers, convex safety mirror, gear, counterweight)

@@ -58,6 +58,10 @@ func items() -> Array:
 		["Spawn a full fuel can", "spawn_can"],
 		["Spawn a crate", "spawn_crate"],
 		["Skip to the next objective", "skip"],
+		["Mood:  < %.1f >  (1 bright, 0 dark)" % _mood_value(), "mood"],
+		["Spawn a creature 25 m in front", "spawn_creature"],
+		["Spawn a cardboard box", "spawn_box"],
+		["Give both players binoculars", "binoculars"],
 		["Load:  < %s >" % gyms[_gym % gyms.size()], "load"],
 		["Close (F1)", "close"],
 	]
@@ -86,6 +90,10 @@ func _input(event: InputEvent) -> void:
 				_place = wrapi(_place + d, 0, maxi(1, places().size()))
 			elif list[_sel][1] == "load":
 				_gym = wrapi(_gym + d, 0, GymBuilder.GYMS.size() + 1)
+			elif list[_sel][1] == "mood":
+				var mood := get_tree().get_first_node_in_group("mood") as Mood
+				if mood != null:
+					mood.set_now(snappedf(mood.value + 0.1 * d, 0.1))
 		KEY_ENTER, KEY_KP_ENTER:
 			run(list[_sel][1])
 		KEY_ESCAPE:
@@ -153,6 +161,23 @@ func run(action: String) -> void:
 			st.index = mini(st.index + 1, st.objectives.size() - 1)
 			st.objective_changed.emit()
 			_note = "Objective: " + st.objective_text()
+		"mood":
+			_note = "Left/Right changes the mood"
+		"spawn_creature":
+			var cr := Creature.new()
+			boot.world.add_child(cr)
+			cr.global_position = _in_front(p1, 25.0)
+			cr.rotation.y = p1.yaw
+			_note = "A creature 25 m in front of P1, facing them"
+		"spawn_box":
+			var bx := CardboardBox.new()
+			boot.world.add_child(bx)
+			bx.global_position = _in_front(p1, 2.0)
+			_note = "A cardboard box at P1's feet (E with it in hand to get under it)"
+		"binoculars":
+			for p in boot.players:
+				p.has_binoculars = true
+			_note = "Both have binoculars (hold RMB / LT)"
 		"load":
 			var gyms: Array = ["(game world)"] + GymBuilder.GYMS
 			var pick: String = gyms[_gym % gyms.size()]
@@ -161,6 +186,11 @@ func run(action: String) -> void:
 			boot.get_tree().reload_current_scene()
 		"close":
 			toggle()
+
+
+func _mood_value() -> float:
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	return mood.value if mood != null else 1.0
 
 
 func _in_front(p: PlayerRig, dist: float) -> Vector3:

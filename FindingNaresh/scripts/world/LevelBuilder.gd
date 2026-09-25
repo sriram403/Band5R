@@ -80,6 +80,9 @@ func build() -> Node3D:
 		var sp := lake + Vector3(cos(a), 0, sin(a)) * shore_r * 0.85
 		amb.add_water(Vector3(sp.x, Landscape.ground(sp.x, sp.z) + 1.0, sp.z), world)
 	_lap("landmarks", t)
+	var mood := Mood.new()
+	mood.name = "Mood"
+	world.add_child(mood)
 	return world
 
 
@@ -315,6 +318,7 @@ func _landmarks() -> void:
 	_p2_home()
 	_town()
 	_roadworks()
+	_traffic()
 	_lookout(COAST_TOWER, 16.0, "CoastTower", "COAST\nWATCHTOWER", ROSE_CENTRE, "coast_tower")
 	_lookout(END_TOWER, 22.0, "EndTower", "OLD\nWATCHTOWER", Vector3(400, 0, -300), "end_tower")
 	_beach()

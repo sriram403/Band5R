@@ -32,7 +32,7 @@ if [ -n "$SHOW" ]; then
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=binoculars --gym=binoculars $ARGS --show || exit $?
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=stealth,taken,hiding --gym=stealth $ARGS --show || exit $?
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=van --gym=creature $ARGS --show || exit $?
-		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=traffic --gym=traffic $ARGS --show || exit $?
+		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=traffic,lorry --gym=traffic $ARGS --show || exit $?
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=house --gym=house $ARGS --show || exit $?
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=tyre --gym=tyre $ARGS --show || exit $?
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=gym_quick --gym=base $ARGS --show || exit $?
@@ -54,7 +54,7 @@ if [ -z "$GYM" ] && { [ -z "$1" ] || [ "$1" = quick ] || [ "$1" = full ]; }; the
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=binoculars --gym=binoculars $ARGS "--refocus=${FG:-0}" || exit $?
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=stealth,taken,hiding --gym=stealth $ARGS "--refocus=${FG:-0}" || exit $?
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=van --gym=creature $ARGS "--refocus=${FG:-0}" || exit $?
-	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=traffic --gym=traffic $ARGS "--refocus=${FG:-0}" || exit $?
+	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=traffic,lorry --gym=traffic $ARGS "--refocus=${FG:-0}" || exit $?
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=house --gym=house $ARGS "--refocus=${FG:-0}" || exit $?
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=tyre --gym=tyre $ARGS "--refocus=${FG:-0}" || exit $?
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=gym_quick --gym=base $ARGS "--refocus=${FG:-0}" || exit $?

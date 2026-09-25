@@ -20,6 +20,7 @@ var holders: Array = []          ## PlayerRig list
 var stowed_in: Node3D = null     ## storage slot while stowed
 var pouring := false             ## tipped spout-down at a filler (set by the holder)
 var _last_safe := Transform3D()  ## last place it was seen resting, for the safety net
+var _thrown := false             ## thrown and not yet landed: its landing is loud
 var _safe_t := 0.0
 
 const MAX_SPEED := 30.0          ## m/s; nothing a player does should go faster
@@ -78,6 +79,7 @@ func _refresh_prompt() -> void:
 func grab(p) -> void:
 	if p in holders:
 		return
+	_thrown = false
 	if stowed_in != null:
 		unstow()
 	elif freeze:
@@ -102,6 +104,7 @@ func throw_from(p, dir: Vector3) -> void:
 		var d := dir.normalized()
 		d.y = maxf(d.y, -0.15)
 		linear_velocity = d.normalized() * speed + Vector3.UP * 1.8
+		_thrown = true
 		angular_velocity = Vector3(randf_range(-2, 2), randf_range(-2, 2), randf_range(-2, 2)) * (1.0 - heaviness())
 
 
@@ -155,7 +158,7 @@ var _last_hit_t := 0
 func _on_hit(_body: Node) -> void:
 	var v := linear_velocity.length()
 	var now := Time.get_ticks_msec()
-	if v < 1.5 or now - _last_hit_t < 150 or stowed_in != null:
+	if (v < 1.5 and not _thrown) or now - _last_hit_t < 150 or stowed_in != null:
 		return
 	_last_hit_t = now
 	var key := "hit_soft"
@@ -164,8 +167,11 @@ func _on_hit(_body: Node) -> void:
 		"crate": key = "hit_wood"
 	Sfx.play3d(key, global_position, clampf(-18.0 + v * 3.0, -18.0, 0.0))
 	if holders.is_empty():
-		# a thrown thing lands loudly: throw one to pull a creature away
-		Hearing.emit(global_position, Hearing.ITEM_LANDS if v > 4.0 else Hearing.LANDING, "item")
+		# a thrown thing lands loudly: throw one to pull a creature away. The
+		# contact reports the speed after the bounce, so a throw's first
+		# landing always counts as a throw.
+		Hearing.emit(global_position, Hearing.ITEM_LANDS if v > 4.0 or _thrown else Hearing.LANDING, "item")
+	_thrown = false
 
 
 ## Physics must never lose an item for good. Remember where it last sat still;

@@ -53,6 +53,11 @@ static func write(boot: Node, slot: int) -> bool:
 	return true
 
 
+static func _mood(boot: Node) -> float:
+	var m := boot.get_tree().get_first_node_in_group("mood") as Mood
+	return m.value if m != null else 1.0
+
+
 # --- gather ----------------------------------------------------------------------
 
 static func collect(boot: Node) -> Dictionary:
@@ -92,7 +97,7 @@ static func collect(boot: Node) -> Dictionary:
 		"camper": {
 			"xf": _xf(c.global_transform), "fuel": c.fuel, "temp": c.temp, "battery": c.battery,
 			"odometer": c.odometer, "leak": c.coolant_leak, "lockout": c.heat_lockout,
-			"headlights": c.headlights_on, "coolant_added": c.coolant_added, "coolant": c.coolant,
+			"headlights": c.headlights_on, "tarp": c.attack.tarped, "coolant_added": c.coolant_added, "coolant": c.coolant,
 			"park_brake": c.parking_brake, "tyre_flat": c.tyre_flat,
 			"tyre_stage": c.tyre_stage, "tyre_work": c.tyre_work,
 			"spare_available": c.spare_available,
@@ -103,6 +108,7 @@ static func collect(boot: Node) -> Dictionary:
 		"station": station.to_dict() if station else {},
 		"house": house.to_dict() if house else {},
 		"town_pump_litres": town_pump.litres if town_pump else 0.0,
+		"mood": _mood(boot),
 	}
 
 
@@ -157,7 +163,11 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	c.spare_available = bool(cd.get("spare_available", true))
 	c.refresh_tyre_visuals()
 	c.set_headlights(bool(cd.get("headlights", false)))
+	c.attack.set_tarp(bool(cd.get("tarp", false)))
 	c.reset_physics_interpolation()
+	var mood := boot.get_tree().get_first_node_in_group("mood") as Mood
+	if mood != null:
+		mood.set_now(float(d.get("mood", 1.0)))
 
 	# story first: other systems read from it (collected fragments, flags)
 	boot.story.from_dict(d.get("story", {}))

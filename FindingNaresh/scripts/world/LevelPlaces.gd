@@ -99,13 +99,20 @@ func _town() -> void:
 	fuel.add_child(Build.label3d("TOWN FUEL  -  OPEN", Vector3(0, 4.6, 3.55), Vector3.ZERO, 0.5, Color(0.15, 0.40, 0.25)))
 	world.add_child(fuel)
 	poi["town_fuel"] = pos
-	# Four ordinary cars patrol the busy part of Homestead Lane. Their left
-	# lanes are relative to their travel direction; they yield to a blocked van.
-	for car_idx in 4:
-		var car := TrafficCar.new()
-		car.name = "TownCar%d" % car_idx
-		car.configure(lane, 170, 470, 190 + car_idx * 75, 1 if car_idx % 2 == 0 else -1)
-		world.add_child(car)
+	# the town's cars come from the traffic table (_traffic)
+
+
+## Every ordinary car from the table, and the one lorry waiting in its lay-by
+## on the lane up to J1 (it pulls out ahead of the van once).
+func _traffic() -> void:
+	traffic = Traffic.build(world, network, TRAFFIC)
+	var lane := network.road("home_lane")
+	var at := int(lane.nearest(LORRY_AT.x, LORRY_AT.y)["index"])
+	var lorry := Lorry.new()
+	lorry.name = "Lorry"
+	lorry.configure(lane, at, mini(at + 110, lane.point_count() - 2), at, 1)
+	world.add_child(lorry)
+	poi["lorry"] = lane.point(at)
 
 
 ## Fixed opening puncture, after Town Fuel and before P2's turning. It works

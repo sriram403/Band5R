@@ -11,7 +11,7 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, Milestone D: gyms D1-D4 done (tagging, binoculars, stealth, creatures); next D5 traffic.
+Last updated: 2026-09-25, Milestone D: D1-D6 done (tagging, binoculars, stealth, creatures, traffic, mood); next D7 the windmill.
 Milestones A, B and C are done. A ChatGPT session built the opening; a Claude
 session reviewed it, fixed what it and the user's test found (see TODO.md,
 "Review fixes" and "P2's side fixed") and added `opening_full` and
@@ -146,8 +146,10 @@ they/them.
   a pin both players see, 200 m, 20 s), `binoculars` (pick-up, RMB / LT 4x),
   `stealth` (creature sight, hearing, suspicion, chase; being taken to a drop
   point; the cardboard box, peeking, thrown lures) and `creature` (the van:
-  engine/door/horn noises, the staged attack, the tarp). Metrics are in
-  `DESIGN.md` 6.1. Next: D5 traffic, then D6 mood and the places (D7-D12).
+  engine/door/horn noises, the staged attack, the tarp). Then D5 traffic
+  (table-driven, `world/Traffic.gd`, the one `Lorry`) and D6 the mood curve
+  (`world/Mood.gd`). Metrics are in `DESIGN.md` 6.1. Next: the places
+  (D7-D12), then the full run D13 and the hand-over.
   The tarp and the cardboard box are block-outs awaiting the user's look
   approval.
 
@@ -242,6 +244,8 @@ MPG/
       creatures/Creature.gd     sight, hearing, suspicion, states WANDER/CURIOUS/SEARCH/TAKE/VAN
       creatures/Taken.gd        caught = whiteout, wake at a drop point (builder.drop_points)
       vehicle/VanAttack.gd      the van's noises, the creature attack stages, the tarp, the horn
+      world/Traffic.gd, TrafficCar.gd, Lorry.gd   table-driven traffic, density dial, the one lorry
+      world/Mood.gd             the mood dial (sky, fog, sun, grade, birds, traffic, creature light)
       ui/BinocularView.gd, BoxView.gd   eyepiece and box-slit overlays (shaders)
       vehicle/Camper.gd         VehicleBody3D van: driving, fuel/temp/coolant/battery,
                                 dashboard, nav screen, filler, radiator, rear rack, seats
@@ -353,8 +357,9 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 1. Milestone D, the way out (`notes/TODO.md` D1-D13, `DESIGN.md`,
    `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
    2026-09-25** with every recommended answer (their "Decisions" sections).
-   The gyms D1-D4 are done (tagging, binoculars, stealth, creature). Next:
-   D5 traffic, D6 mood, then the places D7-D12 and the full run D13.
+   D1-D6 are done (the four gyms, traffic, mood). Next: the places D7-D12
+   (windmill, turbine power line, lift bridge, ghat fog and the first attack,
+   coast watchtower, optional puzzles), then the full run D13.
 2. Then Milestones E-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
    gym first. The merged `design/PUZZLES.md`, `design/WAY_OUT.md`,
@@ -514,6 +519,14 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   start has a vertical speed (only horizontal speed counts as driving).
 - **E while holding the box means "get under it":** toss it with G/LMB to
   put it down.
+- **Contact callbacks report the speed after the bounce:** `body_entered`
+  on a RigidBody gives the already-slowed velocity. A thrown item carries a
+  `_thrown` flag so its first landing is always loud.
+- **Things left lying around make tests flaky:** a tossed box between the
+  rock and the creature hid the peeking player one run in three. Tests put
+  such items back where they belong before the next check.
+- **A failing gym segment stops the Quick run** (`|| exit`), so later
+  segments don't run at all: read which segment failed, fix, and rerun Quick.
 
 ---
 

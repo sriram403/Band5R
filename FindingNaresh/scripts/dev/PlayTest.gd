@@ -19,9 +19,9 @@ var headless := DisplayServer.get_name() == "headless"
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
-const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
+const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "driveway", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
 
 
 func _ready() -> void:
@@ -2997,6 +2997,140 @@ func t_traffic_world() -> void:
 	log_line("town traffic: %s speed %.1f waiting=%s progress %.1f" % [cars[0].global_position, cars[0].speed, cars[0].waiting, cars[0].progress])
 	check(cars[0].global_position.distance_to(start) > 5.0,
 		"the town cars move along the lane")
+	# the table: fewer on each road after J1, none after J2; the lorry waits
+	var tr: Traffic = boot.builder.traffic
+	var counts := [tr.count_on("home_lane"), tr.count_on("valley_road"), tr.count_on("ridge_track"), tr.count_on("pump_house_road"), tr.count_on("ghat_road")]
+	log_line("traffic per road (lane, valley, ridge, pump house, ghat): %s" % str(counts))
+	check(counts == [6, 2, 1, 0, 0], "traffic thins out after J1 and there is none after J2")
+	var lo := boot.world.get_node_or_null("Lorry") as Lorry
+	check(lo != null and lo.phase == Lorry.Phase.PARKED and lo.global_position.distance_to(boot.builder.poi["p2_home"]) < 400.0,
+		"the lorry waits in its lay-by on the lane up from P2's home")
+	tr.density = 0.5
+	var half := tr.count_on("home_lane")
+	tr.density = 1.0
+	check(half == 3 and tr.count_on("home_lane") == 6, "the mood dial takes cars off the road and puts them back")
+
+
+## The mood dial: one number greys the sky, fog, sun and colours, quietens
+## the birds, thins the traffic and at dusk shortens the creatures' sight.
+## On the way out it falls, slowly, as the players reach each place.
+func t_mood() -> void:
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	check(mood != null and mood.value > 0.9, "the mood dial is there, bright on the way out's first stretch")
+	if mood == null:
+		return
+	mood.set_now(1.0)        # earlier checks may have walked someone up to J1
+	var sun: DirectionalLight3D = boot.world.get_node("Sun")
+	var env := (boot.world.get_node("Environment") as WorldEnvironment).environment
+	var amb := boot.world.get_node("Ambience") as Ambience
+	var tr: Traffic = boot.builder.traffic
+	var p := p1()
+	var view: Vector3 = boot.builder.poi["j1"]
+	await place_player(p, Vector3(view.x - 30, view.y + 0.5, view.z + 40), 0.6)
+	await wait(0.5)
+	var b := [sun.light_energy, env.adjustment_saturation, amb.liveliness, tr.count_on("home_lane")]
+	await shot("mood_bright")
+	mood.set_now(0.6)
+	await wait(0.4)
+	var g := [sun.light_energy, env.adjustment_saturation, amb.liveliness, tr.count_on("home_lane")]
+	log_line("mood 1.0 -> 0.6: sun %.2f -> %.2f, saturation %.2f -> %.2f, liveliness %.2f -> %.2f, lane cars %d -> %d" % [b[0], g[0], b[1], g[1], b[2], g[2], b[3], g[3]])
+	check(g[0] < b[0] and g[1] < b[1] and g[2] < b[2] and g[3] == 0 and b[3] == 6,
+		"greyer: less sun, less colour, quieter, no traffic")
+	await shot("mood_grey")
+	mood.set_now(0.3)
+	await wait(0.4)
+	check(mood.light() == 1, "at 0.3 it is dusk for the creatures (their sight shortens)")
+	await shot("mood_dusk")
+	mood.set_now(1.0)
+	await wait(0.3)
+	# the way out: at J2 the target falls to 0.85 and the dial eases towards it
+	# (visiting J2 draws it on the paper map: put the map back afterwards)
+	var map_before: Dictionary = boot.map_state.to_dict()
+	await place_player(p, boot.builder.poi["j2"] + Vector3(0, 0.5, 0), 0.0)
+	await wait(1.5)
+	log_line("at J2: target %.2f, value %.3f" % [mood.target, mood.value])
+	check(is_equal_approx(mood.target, 0.85) and mood.value < 1.0 and mood.value > 0.95, "at J2 it starts greying, slowly")
+	await place_player(p, boot.builder.poi["j1"] + Vector3(0, 0.5, 0), 0.0)
+	await wait(1.0)
+	check(is_equal_approx(mood.target, 0.85), "going back to J1 does not brighten it")
+	mood.set_now(1.0)
+	await place_player(p, boot.builder.poi["homestead"] + Vector3(0, 0.5, 0), 0.0)
+	boot.map_state.from_dict(map_before)
+
+
+## Traffic gym: the one lorry. It waits on the verge, pulls out just ahead of
+## the van coming up behind, crawls along holding it up, then pulls in and
+## stops for good, and the van gets past. Driven like a player would: on the
+## throttle, easing off and braking when close behind it.
+func t_lorry() -> void:
+	var lo := boot.world.get_node_or_null("GymLorry") as Lorry
+	check(lo != null and lo.phase == Lorry.Phase.PARKED and lo.lane_offset > Landscape.ROAD_HALF, "the lorry waits on the verge")
+	if lo == null:
+		return
+	var road: Route = boot.builder.network.road("gym_lorry")
+	var start := int(lo.progress) - 110          # the van 220 m behind it
+	var f := road.forward(start)
+	var c := camper()
+	var p := p1()
+	c.linear_velocity = Vector3.ZERO
+	c.angular_velocity = Vector3.ZERO
+	c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP),
+		road.point(start) - road.right(start) * TrafficCar.LANE_OFFSET + Vector3.UP * 0.8)
+	c.reset_physics_interpolation()
+	c.parking_brake = true
+	await wait(0.6)
+	await place_player(p, c.global_position + Vector3(-3, 0, 0), 0.0)
+	p.enter_seat(c, c.seat_nodes["driver"], "driver")
+	await wait(0.3)
+	if not c.engine_on:
+		await tap(KEY_X)
+	await wait(0.5)
+	var out_gap := -1.0
+	var min_gap := 999.0
+	var passed := false
+	var shot_taken := false
+	var w_down := false
+	var s_down := false
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 70000:
+		await physics_frames(1)
+		var gap := lo._van_gap()
+		if out_gap < 0.0 and lo.phase != Lorry.Phase.PARKED:
+			out_gap = gap
+		var ahead := lo.phase != Lorry.Phase.PARKED and lo.phase != Lorry.Phase.DONE and gap > 0.0
+		var vs := c.linear_velocity.length()
+		# brake early enough to stop 10 m behind it (about 4 m/s² of braking)
+		var closing := maxf(0.0, vs - lo.speed)
+		var want_s := ahead and closing > 0.3 and gap - 10.0 < closing * closing / 8.0 + 2.0
+		var want_w := (not ahead or gap > 22.0) and not want_s
+		if want_w != w_down:
+			key(KEY_W, want_w)
+			w_down = want_w
+		if want_s != s_down:
+			key(KEY_S, want_s)
+			s_down = want_s
+		if ahead and lo.phase != Lorry.Phase.PULL_IN:
+			min_gap = minf(min_gap, gap)     # while it is in the lane
+			if not shot_taken and gap < 24.0:
+				shot_taken = true
+				await shot("lorry_ahead")
+		var vi := int(road.nearest(c.global_position.x, c.global_position.z)["index"])
+		if lo.phase == Lorry.Phase.DONE and vi > int(lo.progress) + 8:
+			passed = true
+			break
+	key(KEY_W, false)
+	key(KEY_S, false)
+	var took := (Time.get_ticks_msec() - t0) / 1000.0
+	log_line("lorry: pulled out with the van %.0f m behind; held up %.1f s; closest %.1f m; %s after %.1f s" % [out_gap, lo.held_up_s, min_gap, "passed" if passed else "NOT passed", took])
+	check(out_gap >= Lorry.TRIGGER.x - 5.0 and out_gap <= Lorry.TRIGGER.y + 5.0, "it pulls out just ahead of the van coming up behind")
+	check(lo.held_up_s > 5.0 and lo.held_up_s < 20.0, "it holds the van up briefly (%.0f s)" % lo.held_up_s)
+	check(min_gap > 7.5, "the van never runs into it (closest %.1f m, middle to middle)" % min_gap)
+	check(lo.phase == Lorry.Phase.DONE and lo.lane_offset > Landscape.ROAD_HALF and passed, "then it pulls in, stops on the verge, and the van gets past")
+	await shot("lorry_passed")
+	await tap(KEY_SPACE)
+	await wait(1.5)
+	p.force_exit = true
+	await physics_frames(3)
 
 
 func t_driveway() -> void:

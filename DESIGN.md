@@ -125,6 +125,11 @@ minutes (up to ~3 hours is fine); pacing and fun matter, not length.
 | Van attack | while one stays within 15 m | leak 1 L/min after 2 s; engine 60% power and coughing after 30 s; puncture after 60 s; stops 5 s after it leaves | creature |
 | Van interest | how long it stays | 20-40 s (per creature) after it last noticed the van; circles at 7 m | creature |
 | Tarp | pull on / off | hold E 4 s / 2 s at the back; everyone out, engine and lights off | creature |
+| Traffic | per road | town 4, P2 -> J1 2, valley 2, ridge 1, after J2 none (`LevelLayout.TRAFFIC`) | traffic |
+| Traffic | following | half speed with something 32 m ahead in the lane, stop at 13 m | traffic |
+| Lorry | holding you up | pulls out with the van 25-60 m behind; 70 m at 22 km/h (~12 s); then the verge | traffic |
+| Mood | the way out | P2's home 1.0, J1 0.95, J2 0.85, bridge 0.78, ghat 0.7, coast tower 0.62, roses 0.6; eases 0.012/s | world |
+| Mood | what it drives | sun 1.6 -> 1.0 (0.5) -> 0.25 (0); saturation 1.22 -> 0.98 -> 0.8; cars gone by 0.6; dusk < 0.45 | world |
 | Puzzle rule | a code meant for binoculars only | letters between distance / 450 and distance / 250 (readable zoomed in split view, never by eye) | binoculars |
 
 ## 7. Decisions (2026-09-24)

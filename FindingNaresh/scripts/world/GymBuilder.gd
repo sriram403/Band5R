@@ -63,6 +63,8 @@ func build() -> Node3D:
 	route = network.add(Route.new(loop, true, base), "gym_loop")
 	# a straight for acceleration and braking runs, joining the loop at its south
 	network.add(Route.new(PackedVector2Array([Vector2(-300, 250), Vector2(0, 250), Vector2(300, 250)]), false, base), "gym_straight")
+	# a second straight for the lorry, clear of the town car's patrol
+	network.add(Route.new(PackedVector2Array([Vector2(-300, 340), Vector2(0, 340), Vector2(300, 340)]), false, base), "gym_lorry")
 	# a short stream in the north-west corner for water tests
 	river = Route.new(PackedVector2Array([Vector2(-420, -520), Vector2(-300, -400), Vector2(-180, -330)]), false, base, NAN, NAN, 40)
 	river.make_monotonic_descending()
@@ -204,6 +206,11 @@ func _traffic_gym() -> void:
 	car.configure(road, 45, 210, 95, 1)
 	world.add_child(car)
 	poi["traffic_block"] = road.point(145) - road.right(145) * TrafficCar.LANE_OFFSET
+	var lr := network.road("gym_lorry")
+	var lorry := Lorry.new()
+	lorry.name = "GymLorry"
+	lorry.configure(lr, 150, 270, 150, 1)
+	world.add_child(lorry)
 
 
 func _tagging_gym() -> void:

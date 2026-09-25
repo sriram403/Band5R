@@ -108,6 +108,17 @@ const MOUNDS := [
 
 const HOMESTEAD := Vector3(-1600, 0, 1480)   ## P1's home
 const P2_HOME := Vector3(-490, 0, 1590)
+## Traffic, per stretch of road: [road, first sample, last sample (-1 = the
+## end), cars, node name pattern]. Samples are 2 m apart. Busy through town,
+## a couple on to J1, fewer on each road after, none after J2 (Traffic.gd).
+const TRAFFIC := [
+	["home_lane", 170, 470, 4, "TownCar%d"],
+	["home_lane", 600, -1, 2, "LaneCar%d"],
+	["valley_road", 20, -20, 2, "ValleyCar%d"],
+	["ridge_track", 20, -20, 1, "RidgeCar%d"],
+]
+## The one lorry's lay-by, on the lane from P2's home up to J1.
+const LORRY_AT := Vector2(-548, 1340)
 const TOWN_FUEL := Vector3(-1250, 0, 1598)     ## forecourt meets the lane verge
 const WINDMILL := Vector3(-640, 0, 990)
 const LOOKOUT := Vector3(-340, 0, 665)
@@ -172,6 +183,7 @@ var poi: Dictionary = {}         ## named points of interest, for tests and late
 ## Where a taken player wakes: [{"pos": Vector3, "near": "the windmill"}], placed
 ## by hand near landmarks, never in water or behind a closed gate.
 var drop_points: Array = []
+var traffic: Traffic
 ## Scatter transforms by kind ("Rocks", "Trunks", ...), kept for tests and
 ## later systems: a headless run cannot read them back from the MultiMeshes.
 var scatter: Dictionary = {}
