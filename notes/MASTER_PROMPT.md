@@ -11,7 +11,7 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, Milestone D: D1-D12 done (gyms, traffic, mood, windmill, power line, lift bridge, ghat, coast watchtower, barn maze, lookout relay); next D13 the full run and hand-over.
+Last updated: 2026-09-26, Milestone D: D1-D13 done and tested; handed over for the user's test (not pushed).
 Milestones A, B and C are done. A ChatGPT session built the opening; a Claude
 session reviewed it, fixed what it and the user's test found (see TODO.md,
 "Review fixes" and "P2's side fixed") and added `opening_full` and
@@ -155,7 +155,9 @@ they/them.
   (`world/Ghat.gd`: fog, pace notes, glimpse, first attack; `t_ghat`) done.
   D11 the coast watchtower (`world/CoastWatch.gd`, `t_tower`) and D12
   (`puzzles/BarnMaze.gd`, `puzzles/LookoutRelay.gd`, `t_maze`, `t_relay`)
-  done. Next: D13 `t_way_out` (Full only), then Full and the hand-over.
+  done. D13 `t_way_out` (Full only) drives J1 -> the watchtower on both
+  routes. Full: 525 checks (1 fixed and rerun); Quick 436, 0 failures.
+  **Handed over 2026-09-26 for the user's test; push only after approval.**
   The tarp and the cardboard box are block-outs awaiting the user's look
   approval.
 
@@ -360,7 +362,10 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 **Milestone C is approved and pushed. Next, in this order:**
 
-1. Milestone D, the way out (`notes/TODO.md` D1-D13, `DESIGN.md`,
+0. **Milestone D is handed over.** Wait for the user's test; fix what they
+   find; push after approval. Then Milestone E (Bessi beach and Naresh):
+   discuss `design/BESSI.md` and `design/NARESH.md` open questions first.
+1. (done) Milestone D, the way out (`notes/TODO.md` D1-D13, `DESIGN.md`,
    `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
    2026-09-25** with every recommended answer (their "Decisions" sections).
    D1-D10 are done (the four gyms, traffic, mood, windmill, power line, lift
@@ -551,6 +556,9 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 - **Checks must be tight enough to fail:** "higher than deck - 0.6 m" passed
   while the lookout ramp stopped short of every deck. Check the exact thing
   (feet on the deck, within its footprint).
+- **Pretend pads leak between scenarios:** tests that call
+  `boot._on_joy_changed(0, true)` leave P2 on a pad; `_run` now calls
+  `_unplug_test_pad()` after each scenario (skipped when a real pad is in).
 - **A failing gym segment stops the Quick run** (`|| exit`), so later
   segments don't run at all: read which segment failed, fix, and rerun Quick.
 

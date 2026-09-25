@@ -264,10 +264,25 @@ func _run() -> void:
 		await fresh_hands()
 		await call("t_" + s)
 		release_all()
+		await _unplug_test_pad()
 		log_line("time %s %.1f s" % [s, (Time.get_ticks_msec() - started_at) / 1000.0])
 		if PlayTest.resume != "":
 			return      # the scene is reloading; the new test node finishes up
 	_finish()
+
+
+## Scenarios that plug in a pretend pad for P2 leave it plugged in; unplug it
+## (and clear the pause that causes) so the next one starts as a real session
+## would. A real connected pad is left alone.
+func _unplug_test_pad() -> void:
+	if not Input.get_connected_joypads().is_empty() or boot.devices.size() < 2:
+		return
+	if boot.devices[1].kind == InputDevice.Kind.PAD:
+		boot._on_joy_changed(boot.devices[1].pad, false)
+		await physics_frames(2)
+		if boot.paused:
+			boot._toggle_pause()
+		await physics_frames(2)
 
 
 func _finish() -> void:

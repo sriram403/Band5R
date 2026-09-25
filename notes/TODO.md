@@ -6,17 +6,12 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Milestone D started (2026-09-25). You approved the way-out plan and the
-  creature page with every recommended answer (see "Decisions" at the end of
-  `design/WAY_OUT.md` and `design/CREATURES.md`).
-- D1 tagging and D2 binoculars done (Quick: 0 failures). D3/D4 stealth and
-  creatures: all four steps done. D5 traffic and D6 the mood curve done.
-  D7 the windmill brake puzzle done (Quick: 0 failures).
-  D8 the power line done (Quick: 0 failures).
-  D9 the lift bridge and D10 the ghat done (Quick: 414 checks, 0 failures).
-  D11 the watchtower and D12 the optional puzzles done (Quick: 436 checks, 0
-  failures). Now: [~] D13 the full run J1 -> coast watchtower on both routes
-  (`t_way_out` passes), Full suite running, then the hand-over.
+- Milestone D is built and tested: D1-D13 all done (Full: 525 checks, the one
+  failure fixed and rerun; Quick: 436 checks, 0 failures). **Waiting for your
+  test and approval**, then push. Local commits only, not pushed.
+- Look approvals still open: the tarp, the cardboard box, and the new
+  block-outs (windmill platform, power poles, bridge hut and machinery house,
+  lift leaf, safety mirror, watchtower cover, hay maze, relay boards).
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -620,7 +615,13 @@ test was fixed and now restores its starting layout before the pad test.
         ridge 0.8 not ~1.5)
   - [x] Found: the drive stopped the story at "refuel" (the van reached Last
         Fuel without a full tank); the script now refuels there like players
-  - [~] Full suite before the hand-over
+  - [x] Full suite: 13 segments, 525 checks, 1 failure: the new tests left a
+        pretend P2 pad plugged in, so the old `layout` check later in the
+        same session saw a controller. The run loop now unplugs a test pad
+        after each scenario; that order rerun and a last Quick (436 checks,
+        144 fps driving) both 0 failures. All eight roads 16.0 min; the way out
+        valley 4.3 / ridge 3.2 min
+  - [ ] Your test and approval, then push
 
 ## Milestone E: Bessi beach and Naresh
 - [ ] Beach greybox: sand, sea, promenade, empty lit stalls, boats, casuarinas, memorial
