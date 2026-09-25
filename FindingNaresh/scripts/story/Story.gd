@@ -61,6 +61,9 @@ func setup(b: Node) -> void:
 		{"id": "to_windmill", "text": "Drive up the lane to the windmill",
 			"hint": "Driver's door is on the left of the van. X starts the engine, W to go. The windmill is where the lane ends.",
 			"done": func(): return _van_near("j1", 45.0)},
+		{"id": "windmill", "text": "The windmill is jammed. Free it: the miller's box at its foot holds a map",
+			"hint": "One climbs the ladder at the back of the tower to the platform and tags the blade with the rope round it (T). The other works the brake lever out front: let it off, and put it back on when the tagged blade comes down to the platform. Then cut the rope (hold E).",
+			"done": func(): return flags.has("windmill_map") or _van_near("j2", 70.0)},
 		{"id": "choose_road", "text": "Pick a road to Bessi: Valley Road or Ridge Track",
 			"hint": "Both reach Last Fuel. The ridge track is shorter but steep - watch the temperature gauge. The signpost and your map (M) help.",
 			"done": func(): return _van_near("j2", 70.0)},
@@ -245,7 +248,7 @@ func _beats() -> void:
 		flags["text_j1"] = true
 		_tell_all("Your phone finds one bar. An old message from Naresh, sent eight days ago:\n\n\"found the road!! we're taking the ridge, he says it's quicker. I mean I am. whatever. bessi tomorrow\"")
 	# the hose goes on the climb toward the water works, whichever way you came
-	if not flags.has("leak_started") and _van_near("facility", 150.0) and index >= 5:
+	if not flags.has("leak_started") and _van_near("facility", 150.0) and index >= index_of("pump_road"):
 		flags["leak_started"] = true
 		boot.camper.spring_leak()
 		_tell_all("A bang from under the bonnet, then a long hiss. Steam pours out of the grille - the coolant hose has split! The needle is climbing. The water works is just ahead.")
@@ -331,8 +334,17 @@ func _can_on_rack() -> bool:
 	return false
 
 
+## Where an objective is in the chain (-1 if there is none by that id).
+func index_of(id: String) -> int:
+	for i in objectives.size():
+		if objectives[i]["id"] == id:
+			return i
+	return -1
+
+
 func to_dict() -> Dictionary:
-	return {"flags": flags.duplicate(), "index": index, "fragments": fragments,
+	# the objective's id too: an objective added later must not shift old saves
+	return {"flags": flags.duplicate(), "index": index, "objective": current()["id"] if index < objectives.size() else "", "fragments": fragments,
 		"collected": collected.duplicate(), "roses_spent": roses_spent,
 		"opening_mode": opening_mode, "opening_steps": opening_steps.duplicate(),
 		"phone_threads": phone_threads.duplicate(true), "phone_seen": phone_seen.duplicate()}
@@ -341,6 +353,9 @@ func to_dict() -> Dictionary:
 func from_dict(d: Dictionary) -> void:
 	flags = (d.get("flags", {}) as Dictionary).duplicate()
 	index = int(d.get("index", 0))
+	var by_id := index_of(String(d.get("objective", "")))
+	if by_id >= 0:
+		index = by_id
 	fragments = int(d.get("fragments", 0))
 	collected = (d.get("collected", []) as Array).duplicate()
 	roses_spent = int(d.get("roses_spent", 0))

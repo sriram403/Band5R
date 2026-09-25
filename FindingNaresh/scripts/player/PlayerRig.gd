@@ -83,6 +83,9 @@ var whiteout := 0.0                    ## 0..1 white over this player's view
 var in_box := false                    ## hiding under the cardboard box
 var box: CardboardBox = null           ## the box you are in
 var peeking := false                   ## leaning out from cover
+var ladder: Ladder = null              ## the ladder you are on
+var _climb_h := 0.0
+var _climb_since := 0
 var peek_offset := Vector3.ZERO        ## head offset while peeking (body space)
 var _peek_side := Vector3.ZERO         ## the way you last leaned (kept while it works)
 var _box_slot: Node3D
@@ -264,6 +267,8 @@ func _physics_process(delta: float) -> void:
 	_update_map()
 	if seat != null:
 		_seated(delta)
+	elif ladder != null:
+		_climb(delta)
 	else:
 		_walk(delta)
 	if map_open:
@@ -412,6 +417,7 @@ func knock(impulse: Vector3, van: PhysicsBody3D = null) -> void:
 	if seat != null or knocked_t > 0.0:
 		return
 	leave_box(false)
+	ladder = null
 	drop_held()
 	set_map_open(false)
 	journal_open = false
@@ -514,6 +520,13 @@ func _scan() -> void:
 	if in_box:
 		_scan_box()
 		return
+	if ladder != null:
+		var t := "[%s/%s]  Climb     [%s]  Let go" % [dev.glyph("fwd"), dev.glyph("back"), dev.glyph("interact")]
+		if t != prompt_text:
+			prompt_text = t
+			prompt_changed.emit(t)
+		current_target = null
+		return
 	if held != null:
 		_scan_holding()
 		return
@@ -562,6 +575,53 @@ func _scan() -> void:
 	# things you hold E on (pump handles, cranks) get called every tick
 	if target != null and target.has_meta("hold_fn") and dev.held("interact"):
 		(target.get_meta("hold_fn") as Callable).call(self, get_physics_process_delta_time())
+
+
+# --- climbing ------------------------------------------------------------------
+
+## Onto a ladder, at whatever height you are next to it (the foot, or the top).
+func start_climb(l: Ladder) -> void:
+	if held != null or seat != null or in_box:
+		return
+	ladder = l
+	_climb_h = clampf(global_position.y - l.global_position.y, 0.0, l.height)
+	_climb_since = Engine.get_physics_frames()
+	if crouching:
+		crouching = false
+		_capsule.height = STAND_HEIGHT
+		(get_node("Collider") as CollisionShape3D).position.y = STAND_HEIGHT * 0.5
+	velocity = Vector3.ZERO
+	_plan_vel = Vector2.ZERO
+	yaw = l.climb_yaw()
+	rotation.y = yaw
+	global_position = l.point_at(_climb_h)
+	Sfx.play3d("hit_metal", global_position + Vector3.UP, -12.0)
+
+
+## W / S up and down the rungs; off the top onto the platform, off the bottom
+## onto the ground; E or jump lets go.
+func _climb(delta: float) -> void:
+	var mv := dev.move()
+	var before := _climb_h
+	_climb_h += mv.y * Ladder.SPEED * delta
+	velocity = Vector3.ZERO
+	if _climb_h >= ladder.height and mv.y > 0.1:
+		var top := ladder.global_transform * ladder.exit_top
+		ladder = null
+		global_position = top + Vector3.UP * 0.05
+		return
+	if _climb_h <= 0.0 and mv.y < -0.1:
+		var foot := ladder.global_transform * ladder.exit_bottom
+		ladder = null
+		global_position = foot + Vector3.UP * 0.05
+		return
+	_climb_h = clampf(_climb_h, 0.0, ladder.height)
+	global_position = ladder.point_at(_climb_h)
+	if int(before / Ladder.RUNG) != int(_climb_h / Ladder.RUNG):
+		Sfx.play3d("hit_metal", global_position + Vector3.UP * 0.4, -18.0)
+		Hearing.emit(global_position, Hearing.WALK_STEP, "step")
+	if Engine.get_physics_frames() > _climb_since + 3 and (dev.just_pressed("jump") or dev.just_pressed("interact")):
+		ladder = null      # let go
 
 
 # --- hiding --------------------------------------------------------------------

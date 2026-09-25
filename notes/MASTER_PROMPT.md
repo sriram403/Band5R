@@ -11,7 +11,7 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, Milestone D: D1-D6 done (tagging, binoculars, stealth, creatures, traffic, mood); next D7 the windmill.
+Last updated: 2026-09-25, Milestone D: D1-D7 done (tagging, binoculars, stealth, creatures, traffic, mood, windmill); next D8 the turbine power line.
 Milestones A, B and C are done. A ChatGPT session built the opening; a Claude
 session reviewed it, fixed what it and the user's test found (see TODO.md,
 "Review fixes" and "P2's side fixed") and added `opening_full` and
@@ -148,8 +148,9 @@ they/them.
   point; the cardboard box, peeking, thrown lures) and `creature` (the van:
   engine/door/horn noises, the staged attack, the tarp). Then D5 traffic
   (table-driven, `world/Traffic.gd`, the one `Lorry`) and D6 the mood curve
-  (`world/Mood.gd`). Metrics are in `DESIGN.md` 6.1. Next: the places
-  (D7-D12), then the full run D13 and the hand-over.
+  (`world/Mood.gd`). Metrics are in `DESIGN.md` 6.1. D7 the windmill brake
+  (`puzzles/WindmillBrake.gd`, `world/Ladder.gd`, `t_windmill`, saved) done.
+  Next: the places D8-D12, then the full run D13 and the hand-over.
   The tarp and the cardboard box are block-outs awaiting the user's look
   approval.
 
@@ -357,8 +358,8 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 1. Milestone D, the way out (`notes/TODO.md` D1-D13, `DESIGN.md`,
    `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
    2026-09-25** with every recommended answer (their "Decisions" sections).
-   D1-D6 are done (the four gyms, traffic, mood). Next: the places D7-D12
-   (windmill, turbine power line, lift bridge, ghat fog and the first attack,
+   D1-D7 are done (the four gyms, traffic, mood, windmill). Next: D8-D12
+   (turbine power line, lift bridge, ghat fog and the first attack,
    coast watchtower, optional puzzles), then the full run D13.
 2. Then Milestones E-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
@@ -525,6 +526,12 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 - **Things left lying around make tests flaky:** a tossed box between the
   rock and the creature hid the peeking player one run in three. Tests put
   such items back where they belong before the next check.
+- **Interactables need a `prompt` meta**: `PlayerRig._find_interactable` walks up
+  to the first node with `prompt`; `prompt_fn` alone is ignored (the ladder was
+  unusable). **Story steps by id**, never by number (`Story.index_of`): adding
+  the windmill step shifted a hard-coded `index >= 5`. Named scenarios outside
+  the `all` list run after `save`, which reloads the scene, so they never run:
+  add new world scenarios to `all` before `save`.
 - **A failing gym segment stops the Quick run** (`|| exit`), so later
   segments don't run at all: read which segment failed, fix, and rerun Quick.
 

@@ -50,6 +50,7 @@ func _ready() -> void:
 	player.drop_held()
 	player.set_map_open(false)
 	player.leave_box(false)     # the box stays behind where you were
+	player.ladder = null
 	var partner := _partner()
 	both = partner != null and partner.taken_grace > 0.0 and partner.global_position.distance_to(from) > 30.0
 	_choose_drop()

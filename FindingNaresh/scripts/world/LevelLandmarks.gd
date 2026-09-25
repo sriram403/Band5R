@@ -90,7 +90,7 @@ func _windmill(at: Vector3) -> void:
 	rotor.name = "Rotor"
 	rotor.position = Vector3(0, 14.2, -0.8)
 	rotor.axis = Vector3.FORWARD
-	rotor.speed = 1.4
+	rotor.speed = 0.0             # WindmillBrake turns it
 	root.add_child(rotor)
 	var blade := ToonMat.make(Color(0.92, 0.92, 0.88), 0.012)
 	for b in 12:
@@ -99,11 +99,48 @@ func _windmill(at: Vector3) -> void:
 		holder.add_child(Build.box(Vector3(0.35, 2.2, 0.04), blade, Vector3(0, 1.5, 0), Vector3(0, 18, 0), "Blade"))
 		rotor.add_child(holder)
 	root.add_child(Build.solid_cyl(1.6, 1.2, ToonMat.make(C_STONE), Vector3(3.0, 0.6, 0.0), Vector3.ZERO, "Trough"))
+	# solid legs (not a solid tower: you climb inside its frame), a platform
+	# under the hub where the lowest blade tip comes by, and a ladder up the back
 	var body := StaticBody3D.new()
-	body.add_child(_cyl_shape(Vector3(0, 7, 0), 1.8, 14.0))
+	body.name = "TowerBody"
+	for k in 4:
+		var a := TAU * k / 4.0 + PI * 0.25
+		var cs := CollisionShape3D.new()
+		var cyl := CylinderShape3D.new()
+		cyl.radius = 0.14
+		cyl.height = 14.0
+		cs.shape = cyl
+		cs.position = Vector3(cos(a) * 1.6, 6.9, sin(a) * 1.6)
+		cs.rotation_degrees = Vector3(sin(a) * 6.5, 0, -cos(a) * 6.5)
+		body.add_child(cs)
+	var deck := ToonMat.make(C_WOOD, 0.012)
+	const PLAT_Y := 11.3
+	root.add_child(Build.box(Vector3(2.6, 0.15, 2.2), deck, Vector3(0, PLAT_Y, 0.5), Vector3.ZERO, "Platform"))
+	body.add_child(_box_shape(Vector3(2.6, 0.15, 2.2), Transform3D(Basis(), Vector3(0, PLAT_Y, 0.5))))
+	for spec in [[Vector3(0.06, 1.0, 2.2), Vector3(-1.3, PLAT_Y + 0.55, 0.5)], [Vector3(0.06, 1.0, 2.2), Vector3(1.3, PLAT_Y + 0.55, 0.5)],
+			[Vector3(2.6, 1.0, 0.06), Vector3(0, PLAT_Y + 0.55, -0.55)],
+			[Vector3(0.9, 1.0, 0.06), Vector3(-0.85, PLAT_Y + 0.55, 1.6)], [Vector3(0.9, 1.0, 0.06), Vector3(0.85, PLAT_Y + 0.55, 1.6)]]:
+		var sz: Vector3 = spec[0]
+		var rail_at: Vector3 = spec[1]
+		root.add_child(Build.box(Vector3(sz.x, 0.06, sz.z), steel, rail_at + Vector3(0, 0.45, 0), Vector3.ZERO, "Rail"))
+		body.add_child(_box_shape(sz, Transform3D(Basis(), rail_at)))
 	root.add_child(body)
+	Ladder.make(root, Vector3(0, 0, 1.75), PLAT_Y + 0.15, Vector3(0, 0, -1), Vector3(0, PLAT_Y + 0.1, 1.0), "WindmillLadder")
+	# the puzzle: brake lever and miller's box out front, where the blades show
+	var lever_at := Vector3(-3.2, 0, -3.6)
+	var box_at := Vector3(3.2, 0, -3.2)
+	lever_at.y = _h(pos.x + lever_at.x, pos.z + lever_at.z) - pos.y
+	box_at.y = _h(pos.x + box_at.x, pos.z + box_at.z) - pos.y
+	var puzzle := WindmillBrake.new()
+	puzzle.name = "WindmillBrake"
+	root.add_child(puzzle)
+	puzzle.setup(rotor, lever_at, box_at)
 	world.add_child(root)
 	poi["windmill"] = pos
+	poi["windmill_ladder"] = pos + Vector3(0, 0, 2.6)
+	poi["windmill_platform"] = pos + Vector3(0, PLAT_Y + 0.2, 0.3)
+	poi["windmill_lever"] = pos + lever_at
+	poi["windmill_box"] = pos + box_at
 
 
 func _junction_signpost() -> void:

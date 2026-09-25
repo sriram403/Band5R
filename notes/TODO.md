@@ -11,7 +11,8 @@ being built and tested), so this always shows where the work is right now.
   `design/WAY_OUT.md` and `design/CREATURES.md`).
 - D1 tagging and D2 binoculars done (Quick: 0 failures). D3/D4 stealth and
   creatures: all four steps done. D5 traffic and D6 the mood curve done.
-  Next: D7 the windmill brake puzzle at J1.
+  D7 the windmill brake puzzle done (Quick: 0 failures).
+  Next: D8 the water works turbine lights the power line to the bridge hut.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -458,7 +459,28 @@ test was fixed and now restores its starting layout before the pad test.
         first landing now always counts as a throw (15 m). A tossed box
         could land between the rock and the creature and block the peek
         check (the test puts it back)
-- [ ] D7. Windmill brake puzzle (J1) and the valley map section reward
+- [x] D7. Windmill brake puzzle (J1) and the valley map section reward
+  - [x] `world/Ladder.gd` (E on, W/S climb, off at the top or bottom, E/jump
+        lets go; hands must be empty) and `PlayerRig` climbing
+  - [x] Tower: solid legs instead of a solid core, a platform under the hub
+        (11.3 m) with rails, a ladder up the back
+  - [x] `puzzles/WindmillBrake.gd`: snagged blade (tag follows the blade),
+        brake lever, rope cut (hold E, only with the blade at the bottom and
+        stopped), miller's box opens after 3 s of free spin, map of the valley
+        (`MapState.reveal_valley`), story objective `windmill`
+  - [x] `t_windmill` (real controls, P2 on a pad): 11 checks pass, 27 s.
+        P1 climbs in 5.2 s, tags the blade from the platform; "out of reach"
+        until it comes down; P2 brakes it 2 deg from the bottom; cut, spin,
+        box opens, map taken, climb back down. In Quick and Full
+  - [x] Bugs found on the way: the ladder had no `prompt` meta, so nobody
+        could use it; the box lid swung down into the chest and eased in so
+        slowly it looked shut; the map lay inside the solid chest; the
+        water-works hose trigger used a fixed story index (5) that the new
+        objective shifted (now by id: `Story.index_of`)
+  - [x] Saved: the windmill (rope, brake, blade angle, box, map) and the
+        objective by its id, so objectives added later don't shift old saves.
+        `save` checks both; story/windmill/waterworks/save: 0 failures
+  - [x] Quick suite: 12 segments, 382 checks, 0 failures, no script errors
 - [ ] D8. Water works turbine lights the power line to the bridge hut
 - [ ] D9. Lift bridge puzzle (levers, convex safety mirror, gear, counterweight)
 - [ ] D10. Ghat fog and pace notes on the swung nav; the first creature attack

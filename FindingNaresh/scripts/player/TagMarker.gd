@@ -82,6 +82,8 @@ static func name_for(hit: Object, by: PlayerRig = null) -> String:
 static func _mover(hit: Object) -> Node3D:
 	var n := hit as Node
 	while n != null:
+		if n.has_meta("tag_follow"):
+			return n as Node3D          # a moving part (a windmill blade)
 		if n is RigidBody3D or n is CharacterBody3D:
 			return n as Node3D
 		if n is StaticBody3D or n is Area3D:

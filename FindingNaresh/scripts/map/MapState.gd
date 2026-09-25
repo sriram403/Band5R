@@ -126,6 +126,18 @@ func reveal_around(p: Vector2, radius: float) -> void:
 	changed.emit()
 
 
+## The miller's map from the windmill: both roads from J1 to Last Fuel and
+## what is along them.
+func reveal_valley() -> void:
+	_reveal_road("valley_road")
+	_reveal_road("ridge_track")
+	for id in ["dock", "billboard", "barn", "lookout", "wreck", "gas_station"]:
+		_reveal_landmark(id)
+	for l in lakes:
+		l["revealed"] = true
+	changed.emit()
+
+
 func _reveal_road(road_name: String) -> void:
 	for r in roads:
 		if r["name"] == road_name:

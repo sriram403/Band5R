@@ -21,7 +21,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
 const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
 
 
 func _ready() -> void:
@@ -233,7 +233,7 @@ func _run() -> void:
 		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
 		_finish()
 		return
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -1152,7 +1152,7 @@ func t_story() -> void:
 	await van_to(b.poi["j1"])
 	await wait(0.8)
 	log_line("objective at the windmill: '%s'" % st.objective_text())
-	check(st.current()["id"] == "choose_road", "at the windmill: choose a road")
+	check(st.current()["id"] == "windmill", "at the windmill: free the jammed windmill")
 	check(st.flags.has("text_j1") and boot.huds[0]._note_text.text.contains("I mean I am"), "an old text from Naresh arrives at the windmill")
 	await shot("story_text_j1")
 
@@ -1190,7 +1190,7 @@ func t_waterworks() -> void:
 	var road := b.network.road("pump_house_road")
 	var start_i: int = int(road.nearest(b.poi["facility"].x, b.poi["facility"].z)["index"]) - 110
 	await van_to(road.point(start_i))
-	st.index = 5
+	st.index = st.index_of("pump_road")
 	c.coolant_leak = false
 	c.heat_lockout = false
 	c.temp = Camper.TEMP_NORMAL
@@ -1434,6 +1434,8 @@ func t_save() -> void:
 	station().valve_a = "b"
 	station().valve_b = "coolant"
 	station()._update_pointers()
+	var wm := get_tree().get_first_node_in_group("windmill_brake") as WindmillBrake
+	wm.from_dict({"snagged": false, "brake_on": true, "angle": 1.0, "box_open": true, "map_taken": true})
 	await place_player(p2(), b.poi["j2"] + Vector3(6, 1, 6), 1.0)
 	await seat_p1_driver()
 	await wait(1.5)
@@ -1459,8 +1461,9 @@ func t_save() -> void:
 	var expect := {
 		"van": c.global_position, "fuel": c.fuel, "stowed": String(can.name), "stamps": ms.stamps.size(),
 		"index": st.index, "fragments": st.fragments, "spent": st.roses_spent, "p2": p2().global_position,
-		"valve_a": station().valve_a,
+		"valve_a": station().valve_a, "objective": st.current()["id"],
 	}
+	wm.from_dict({})     # jammed again: loading must free it
 	# now wreck the state, then load
 	p.force_exit = true
 	await physics_frames(3)
@@ -1496,6 +1499,9 @@ func t_save_verify() -> void:
 	check(p1().seat_role == "driver", "the driver is back in the driver's seat")
 	check(p2().global_position.distance_to(e["p2"]) < 0.8, "the other player is back where they stood")
 	check(station().valve_a == e["valve_a"], "loading restores the water works valves")
+	var wm := get_tree().get_first_node_in_group("windmill_brake") as WindmillBrake
+	check(wm != null and not wm.snagged and wm.box_open and wm.map_taken and not wm._rope.visible, "loading restores the freed windmill and the taken map")
+	check(st.current()["id"] == e["objective"], "loading restores the objective by its id")
 	for id in ["dock", "lookout", "shed"]:
 		check(boot.world.find_child("Fragment_" + id, true, false) == null, "collected fragment '%s' stays collected" % id)
 	await shot("after_load")
@@ -2651,6 +2657,133 @@ func t_taken() -> void:
 	c.fuel_leak = 0.0
 	for pl in boot.players:
 		pl.taken_grace = 0.0
+
+
+## W1, the windmill brake, with the real controls. P1 climbs the ladder and
+## tags the snagged blade from the platform; P2 at the lever lets the brake
+## off and puts it back on when the tagged blade comes down to the platform;
+## P1 cuts the rope; P2 lets the brake off; the box opens; P2 takes the map.
+func t_windmill() -> void:
+	var b: LevelBuilder = boot.builder
+	var wm := boot.world.find_child("WindmillBrake", true, false) as WindmillBrake
+	var lad := boot.world.find_child("WindmillLadder", true, false) as Ladder
+	check(wm != null and lad != null and wm.snagged and wm.brake_on, "the windmill is jammed: a rope round one blade, the brake on")
+	if wm == null or lad == null:
+		return
+	var p := p1()
+	var q := p2()
+	var st: Story = boot.story
+	boot._on_joy_changed(0, true)      # P2 on a pad
+	await wait(0.3)
+	# P1: walk to the ladder, climb it (hold W), step off at the top
+	await place_player(p, lad.global_transform * Vector3(0, 0.3, 1.6), lad.climb_yaw())
+	await look_at_point(p, lad.global_transform * Vector3(0, 1.6, 0))
+	await wait(0.2)
+	log_line("at the ladder's foot: '%s', looking at %s" % [p.prompt_text, p.current_target.name if p.current_target else "nothing"])
+	await tap(KEY_E)
+	check(p.ladder == lad, "E at the ladder: you are on it")
+	key(KEY_W, true)
+	var t0 := Time.get_ticks_msec()
+	while p.ladder != null and Time.get_ticks_msec() - t0 < 12000:
+		await physics_frames(1)
+	key(KEY_W, false)
+	var up := (Time.get_ticks_msec() - t0) / 1000.0
+	await wait(0.4)
+	var plat: Vector3 = b.poi["windmill_platform"]
+	log_line("climbed in %.1f s; on the platform at %s (%.1f m up)" % [up, p.global_position, p.global_position.y - b.poi["windmill"].y])
+	check(p.ladder == null and p.global_position.distance_to(plat) < 1.5 and p.is_on_floor(), "hold W: up the ladder and off onto the platform")
+	# P1 tags the snagged blade (it is up at the side, out of reach)
+	var snag_area := _snag_area(wm)
+	await look_at_point(p, snag_area.global_position)
+	await tap(KEY_T)
+	var tag := TagMarker.of(0)
+	check(tag != null and tag.thing == "the snagged blade", "from the platform P1 tags the snagged blade")
+	await shot("windmill_tag")
+	# P1 can't cut it up there
+	await look_at_point(p, snag_area.global_position)
+	await wait(0.2)
+	log_line("looking at the snag, out of reach: '%s'" % p.prompt_text)
+	# P2 at the lever: brake off, watch the tag come down, brake on
+	await place_player(q, b.poi["windmill_lever"] + Vector3(0.9, 0.3, 0.9), 0.0)
+	await look_at_point(q, b.poi["windmill_lever"] + Vector3(0, 1.0, 0))
+	await key_pad_interact(q)
+	check(not wm.brake_on and wm.speed >= 0.0, "P2 lets the brake off")
+	var caught := false
+	t0 = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 30000:
+		await physics_frames(1)
+		# the lever player sees the tag on screen; they brake when it nears the bottom
+		var ahead := wrapf(PI - (wm.angle + TAU * float(WindmillBrake.SNAG) / 12.0), -PI, PI)
+		var stop_in := wm.speed * wm.speed / (2.0 * WindmillBrake.BRAKE)
+		if wm.speed > 0.05 and ahead > 0.0 and ahead <= stop_in + 0.04:
+			await key_pad_interact(q)
+			caught = true
+			break
+	await wait(1.0)
+	log_line("braked: the snagged blade stopped %.1f deg from the bottom, speed %.2f" % [wm.snag_from_bottom(), wm.speed])
+	check(caught and wm.brake_on and wm.snag_in_reach(), "P2 puts the brake on as the tagged blade reaches the platform")
+	# P1 cuts the rope (hold E)
+	await look_at_point(p, snag_area.global_position)
+	await wait(0.2)
+	log_line("P1 looking at the rope: '%s'" % p.prompt_text)
+	key(KEY_E, true)
+	await wait(WindmillBrake.CUT_S + 0.4)
+	key(KEY_E, false)
+	check(not wm.snagged, "P1 holds E and cuts the rope")
+	await shot("windmill_cut")
+	# brake off: it spins up and the box opens
+	await key_pad_interact(q)
+	t0 = Time.get_ticks_msec()
+	while not wm.box_open and Time.get_ticks_msec() - t0 < 12000:
+		await wait(0.2)
+	check(wm.box_open and wm.speed > WindmillBrake.SPIN * 0.8, "brake off: the blades spin and the miller's box springs open")
+	await place_player(q, b.poi["windmill_box"] + Vector3(0, 0.3, -1.5), PI)   # at its front, by the label
+	await look_at_point(q, b.poi["windmill_box"] + Vector3(0, 0.5, 0))
+	await wait(0.6)
+	log_line("lid at %.0f deg" % rad_to_deg(wm._lid.rotation.x))
+	await shot("windmill_box_open")
+	await key_pad_interact(q)
+	var ms = boot.map_state
+	var valley_known := false
+	for r in ms.roads:
+		if r["name"] == "valley_road":
+			valley_known = not (r["chunks"] as Array).has(false)
+	check(wm.map_taken and valley_known and st.flags.has("windmill_map"), "P2 takes the map: both roads to Last Fuel are on the paper map")
+	await shot("windmill_done")
+	# climb back down
+	await place_player(p, plat, lad.climb_yaw() + PI)
+	await look_at_point(p, lad.global_transform * Vector3(0, lad.height + 0.6, 0))   # the rails above the deck
+	await wait(0.2)
+	log_line("at the top: '%s', looking at %s, ray hits %s" % [p.prompt_text, p.current_target.name if p.current_target else "nothing",
+		p.ray.get_collider().name if p.ray.is_colliding() else "nothing"])
+	await tap(KEY_E)
+	log_line("after E: on the ladder %s" % (p.ladder != null))
+	key(KEY_S, true)
+	t0 = Time.get_ticks_msec()
+	while p.ladder != null and Time.get_ticks_msec() - t0 < 12000:
+		await physics_frames(1)
+	key(KEY_S, false)
+	await wait(0.4)
+	check(p.ladder == null and p.global_position.y < b.poi["windmill"].y + 1.0, "E at the top and hold S: back down to the ground")
+
+
+func _snag_area(wm: WindmillBrake) -> Area3D:
+	var h := wm.rotor.get_child(WindmillBrake.SNAG)
+	for c in h.get_children():
+		if c is Area3D:
+			return c
+	return null
+
+
+## P2 presses their interact button (keyboard P1 is busy): the pad X button.
+func key_pad_interact(pl: PlayerRig) -> void:
+	if pl.dev.kind == InputDevice.Kind.PAD:
+		pad_button(JOY_BUTTON_X, true)
+		await wait(0.1)
+		pad_button(JOY_BUTTON_X, false)
+		await wait(0.1)
+	else:
+		await tap(KEY_E)
 
 
 ## Stealth gym: the cardboard box ("that box moved"), peeking from cover, and
