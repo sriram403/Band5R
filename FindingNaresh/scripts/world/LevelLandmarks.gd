@@ -384,6 +384,14 @@ func _gas_station(at: Vector3) -> void:
 		body.add_child(_box_shape(Vector3(0.8, 1.6, 0.5), Transform3D(Basis(), Vector3(px, 0.95, 0))))
 	root.add_child(Build.solid_box(Vector3(6.0, 3.2, 4.5), white, Vector3(0, 1.6, -8.0), Vector3.ZERO, "Kiosk"))
 	root.add_child(Build.box(Vector3(2.4, 1.2, 0.05), ToonMat.make(Color(0.32, 0.46, 0.56)), Vector3(-1.2, 1.7, -5.73), Vector3.ZERO, "KioskWindow"))
+	# a note taped to the kiosk door: why the pumps are dead (D8)
+	root.add_child(Build.box(Vector3(0.3, 0.4, 0.02), ToonMat.make(Color(0.95, 0.93, 0.85)), Vector3(1.4, 1.5, -5.74), Vector3.ZERO, "KioskNote"))
+	root.add_child(Build.interact_area(Vector3(0.8, 0.9, 0.8), Vector3(1.4, 1.5, -5.4), "Read the note on the door", func(p):
+		p.say("SORRY - NO FUEL
+
+Power's been off since the turbine at the water works stopped. No power, no pumps. If you're heading north, the old lift bridge runs off the same line.
+
+- M.", 10.0), "KioskNoteArea"))
 	var sign_n := Node3D.new()
 	sign_n.position = Vector3(7.5, 0, 5.0)
 	sign_n.add_child(Build.cyl(0.14, 7.0, ToonMat.make(C_STEEL), Vector3(0, 3.5, 0), Vector3.ZERO, 8, "Pole"))
@@ -406,6 +414,7 @@ func _water_facility(at: Vector3) -> void:
 	var rp := _snap(river, Vector2(at.x, at.z))
 	var to_river := Vector3(rp.x - at.x, 0, rp.z - at.z)
 	root.basis = Basis.looking_at(to_river, Vector3.UP)     # -Z points at the river
+	facility_xf = root.transform
 	var brick := ToonMat.make(Color(0.66, 0.40, 0.32))
 	var concrete := ToonMat.make(Color(0.70, 0.70, 0.68))
 	var pipe := ToonMat.make(Color(0.36, 0.52, 0.60), 0.012)
@@ -443,6 +452,7 @@ func _water_facility(at: Vector3) -> void:
 	var station := CoolingStation.new()
 	station.name = "CoolingStation"
 	root.add_child(station)
+	cooling_station = station
 
 	# a low tool shed, clear of the intake pipes; something glints on its
 	# roof (optional: stack crates)
@@ -576,6 +586,107 @@ func _broken_bridge() -> void:
 		root.add_child(sign_n)
 	poi["bridge"] = road.point(mid)
 	poi["bridge_barrier_near"] = road.point(first - 14)
+	bridge_span = Vector2i(first, last)
+
+
+## D8: the bridge's control hut on the near bank (the lift bridge, D9, is
+## worked from it) and the power line to it from the water works: a turbine
+## where the intake pipes meet the river, poles in the yard, then a pole every
+## 30 m along the road to the hut. `PowerLine` lights it when the blue tank fills.
+func _bridge_hut_and_power() -> void:
+	var road := network.road("pump_house_road")
+	var hi := bridge_span.x - 9
+	# the hut goes on the side of the road farther from the water works
+	var fac := facility_xf.origin
+	var s := 1.0 if (road.point(hi) + road.right(hi) * 10.0).distance_to(fac) > (road.point(hi) - road.right(hi) * 10.0).distance_to(fac) else -1.0
+	var out := road.right(hi) * s
+	out.y = 0.0
+	out = out.normalized()
+	var hp := road.point(hi) + out * (Landscape.ROAD_HALF + 4.5)
+	var floor_y := road.point(hi).y + 0.25
+	for c in [Vector2(-1.8, -1.8), Vector2(1.8, -1.8), Vector2(-1.8, 1.8), Vector2(1.8, 1.8)]:
+		floor_y = maxf(floor_y, _h(hp.x + c.x, hp.z + c.y) + 0.15)
+	hp.y = floor_y
+	var hut := Node3D.new()
+	hut.name = "BridgeHut"
+	var z := out                            # +Z away from the road, the door on -Z
+	var x := Vector3.UP.cross(z).normalized()
+	hut.transform = Transform3D(Basis(x, Vector3.UP, z), hp)
+	world.add_child(hut)
+	var toward_bridge := signf(x.dot(road.forward(hi)))     # local X side that faces the bridge
+	var wall := ToonMat.make(Color(0.78, 0.74, 0.62))
+	var trim := ToonMat.make(Color(0.30, 0.44, 0.40))
+	const W := 3.4
+	const H := 2.6
+	const T := 0.15
+	hut.add_child(Build.solid_box(Vector3(W, 0.2, W), ToonMat.make(C_WOOD), Vector3(0, -0.1, 0), Vector3.ZERO, "HutFloor"))
+	hut.add_child(Build.box(Vector3(W + 0.5, 0.18, W + 0.5), ToonMat.make(Color(0.36, 0.38, 0.42)), Vector3(0, H + 0.09, 0), Vector3.ZERO, "HutRoof"))
+	var roof_body := StaticBody3D.new()
+	roof_body.add_child(_box_shape(Vector3(W + 0.5, 0.18, W + 0.5), Transform3D(Basis(), Vector3(0, H + 0.09, 0))))
+	hut.add_child(roof_body)
+	# back wall, and the far side wall
+	hut.add_child(Build.solid_box(Vector3(W, H, T), wall, Vector3(0, H * 0.5, W * 0.5), Vector3.ZERO, "WallBack"))
+	hut.add_child(Build.solid_box(Vector3(T, H, W), wall, Vector3(-toward_bridge * W * 0.5, H * 0.5, 0), Vector3.ZERO, "WallSide"))
+	# the bridge side: a wide window above waist height
+	var bx := toward_bridge * W * 0.5
+	hut.add_child(Build.solid_box(Vector3(T, 1.0, W), wall, Vector3(bx, 0.5, 0), Vector3.ZERO, "WallBridgeLow"))
+	hut.add_child(Build.solid_box(Vector3(T, 0.5, W), wall, Vector3(bx, H - 0.25, 0), Vector3.ZERO, "WallBridgeHigh"))
+	# an open window (no glass): a sill and a middle post
+	hut.add_child(Build.box(Vector3(0.3, 0.06, W), trim, Vector3(bx, 1.03, 0), Vector3.ZERO, "WindowSill"))
+	hut.add_child(Build.box(Vector3(0.1, 1.1, 0.1), trim, Vector3(bx, 1.55, 0), Vector3.ZERO, "WindowPost"))
+	# the road side: a door gap in the middle
+	for side in [-1.0, 1.0]:
+		hut.add_child(Build.solid_box(Vector3(1.1, H, T), wall, Vector3(side * (W * 0.5 - 0.55), H * 0.5, -W * 0.5), Vector3.ZERO, "WallFront"))
+	hut.add_child(Build.solid_box(Vector3(1.2, 0.5, T), wall, Vector3(0, H - 0.25, -W * 0.5), Vector3.ZERO, "WallDoorHead"))
+	hut.add_child(Build.box(Vector3(1.4, 0.25, 0.05), trim, Vector3(0, H + 0.35, -W * 0.5 - 0.05), Vector3.ZERO, "HutSign"))
+	hut.add_child(Build.label3d("BRIDGE CONTROL", Vector3(0, H + 0.35, -W * 0.5 - 0.09), Vector3(0, 180, 0), 0.16, Color(0.95, 0.92, 0.8)))
+	# stilts down to the ground, and a ramp from the ground up to the door
+	for c in [Vector2(-1.5, -1.5), Vector2(1.5, -1.5), Vector2(-1.5, 1.5), Vector2(1.5, 1.5)]:
+		var g := hut.transform * Vector3(c.x, 0, c.y)
+		var drop := floor_y - _h(g.x, g.z)
+		if drop > 0.25:
+			hut.add_child(Build.cyl(0.1, drop + 0.3, ToonMat.make(C_WOOD), Vector3(c.x, -drop * 0.5, c.y), Vector3.ZERO, 6, "Stilt"))
+	var door_out := hut.transform * Vector3(0, 0, -W * 0.5 - 2.4)
+	var rise := floor_y - _h(door_out.x, door_out.z)
+	if rise > 0.12:
+		var run := 2.4
+		var ang := atan2(rise, run)
+		var len := sqrt(rise * rise + run * run)
+		var ramp := Build.solid_box(Vector3(1.2, 0.12, len + 0.2), ToonMat.make(C_WOOD), Vector3(0, -rise * 0.5 - 0.06, -W * 0.5 - run * 0.5), Vector3(-rad_to_deg(ang), 0, 0), "HutRamp")
+		hut.add_child(ramp)
+	poi["bridge_hut"] = hp
+	poi["bridge_hut_door"] = hut.transform * Vector3(0, 0, -W * 0.5 - 1.2)
+
+	# the poles: by the turbine, in the yard, then along the road on the hut's side
+	var feet: Array[Vector3] = []
+	var sides: Array[Vector3] = []
+	var turbine_xf := facility_xf * Transform3D(Basis(), Vector3(-9.0, 0, -22.0))
+	turbine_xf.origin.y = _h(turbine_xf.origin.x, turbine_xf.origin.z)
+	for lp in [Vector3(-9.0, 0, -18.5), Vector3(-11.0, 0, 8.8)]:
+		feet.append(facility_xf * lp)
+	var gate := facility_xf * Vector3(0, 0, 10.0)
+	var fi := int(road.nearest(gate.x, gate.z)["index"])
+	var i := fi + 6
+	while i < hi - 4:
+		var r := road.right(i) * s
+		r.y = 0.0
+		feet.append(road.point(i) + r.normalized() * (Landscape.ROAD_HALF + 2.6))
+		sides.append(-r.normalized())
+		i += 15
+	# the first two face the next pole
+	for k in 2:
+		var d := feet[k + 1] - feet[k]
+		d.y = 0.0
+		sides.insert(k, d.normalized())
+	for k in feet.size():
+		feet[k].y = _h(feet[k].x, feet[k].z)
+	var line := PowerLine.new()
+	line.name = "PowerLine"
+	world.add_child(line)
+	line.setup(cooling_station, turbine_xf, feet, sides, hut.transform * Vector3(0, H - 0.35, 0))
+	poi["turbine"] = turbine_xf.origin
+	poi["power_line_first"] = feet[2]
+	poi["power_line_last"] = feet[feet.size() - 1]
 
 
 ## The destination silhouette: five giant rose monuments on the central hill.

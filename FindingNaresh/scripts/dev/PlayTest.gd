@@ -21,7 +21,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
 const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "climb", "carry", "look", "pad", "perf", "save"]
 
 
 func _ready() -> void:
@@ -233,7 +233,7 @@ func _run() -> void:
 		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
 		_finish()
 		return
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -1502,6 +1502,8 @@ func t_save_verify() -> void:
 	var wm := get_tree().get_first_node_in_group("windmill_brake") as WindmillBrake
 	check(wm != null and not wm.snagged and wm.box_open and wm.map_taken and not wm._rope.visible, "loading restores the freed windmill and the taken map")
 	check(st.current()["id"] == e["objective"], "loading restores the objective by its id")
+	var line := get_tree().get_first_node_in_group("power_line") as PowerLine
+	check(line != null and line.hut_powered == station().solved and line.powered == station().solved, "loading restores the power line to match the water works (powered: %s)" % station().solved)
 	for id in ["dock", "lookout", "shed"]:
 		check(boot.world.find_child("Fragment_" + id, true, false) == null, "collected fragment '%s' stays collected" % id)
 	await shot("after_load")
@@ -2784,6 +2786,62 @@ func key_pad_interact(pl: PlayerRig) -> void:
 		await wait(0.1)
 	else:
 		await tap(KEY_E)
+
+
+## D8: filling the blue tank starts the turbine, the lamps light one by one
+## along the road and the bridge's control hut gets power. Then P1 walks up
+## the ramp into the hut.
+func t_power() -> void:
+	var b: LevelBuilder = boot.builder
+	var line := get_tree().get_first_node_in_group("power_line") as PowerLine
+	var stn := station()
+	check(line != null and line.lamps.size() >= 5, "a power line runs from the water works to the bridge hut (%d lamps)" % (line.lamps.size() if line else 0))
+	if line == null:
+		return
+	var was_solved := stn.solved
+	stn.solved = false
+	line.sync()
+	check(not line.powered and not line.hut_powered and line.lamps[0].material_override == null, "before the tank fills: the turbine is still and the lamps are dark")
+	var p := p1()
+	var q := p2()
+	await go_to(p, b.poi["power_line_first"], 7.0)
+	await look_at_point(p, b.poi["power_line_last"] + Vector3(0, 6.0, 0))
+	await go_to(q, b.poi["turbine"], 9.0)
+	await look_at_point(q, b.poi["turbine"] + Vector3(0, 1.2, 0))
+	stn.solved = true
+	stn.solved_changed.emit()
+	await wait(1.2)
+	var lit := line.lamps.filter(func(l): return l.material_override != null).size()
+	log_line("1.2 s after the tank filled: %d of %d lamps lit, turbine at %.1f rad/s" % [lit, line.lamps.size(), line._spin])
+	check(line.powered and lit > 0 and lit < line.lamps.size(), "the tank fills: the turbine starts and the lamps come on one after another")
+	await shot("power_wave")
+	var t0 := Time.get_ticks_msec()
+	while not line.hut_powered and Time.get_ticks_msec() - t0 < 15000:
+		await wait(0.2)
+	log_line("the hut had power %.1f s after the tank filled" % ((Time.get_ticks_msec() - t0) / 1000.0 + 1.2))
+	check(line.hut_powered and line.hut_light.visible and line._hum.target > 0.0, "the wave reaches the bridge hut: its lamp is on and it hums")
+	check(line._spin > 2.0, "the turbine wheel is turning")
+	await go_to(p, b.poi["turbine"], 8.0, b.poi["facility"] - b.poi["turbine"])
+	await look_at_point(p, b.poi["turbine"] + Vector3(0, 1.2, 0))
+	await shot("power_turbine")
+	await go_to(p, b.poi["power_line_first"], 12.0)
+	await look_at_point(p, b.poi["power_line_last"] + Vector3(0, 5.0, 0))
+	await shot("power_lit")
+	# walk up the ramp and in through the door
+	var door: Vector3 = b.poi["bridge_hut_door"]
+	var hut: Vector3 = b.poi["bridge_hut"]
+	var out := door - hut
+	out.y = 0.0
+	await place_player(p, door + out.normalized() * 4.0 + Vector3(0, 0.6, 0), atan2(out.x, out.z))
+	await wait(0.4)
+	var inside := await walk_to(p, hut, "into the bridge hut", 0.6, 12.0)
+	log_line("in the hut: %s, %.2f m above its floor" % [p.global_position, p.global_position.y - hut.y])
+	check(inside and absf(p.global_position.y - hut.y) < 0.3, "P1 walks up the ramp and into the hut")
+	await look_at_point(p, b.poi["bridge"] + Vector3(0, 1.0, 0))
+	await shot("power_hut")
+	if not was_solved:
+		stn.solved = false
+		line.sync()
 
 
 ## Stealth gym: the cardboard box ("that box moved"), peeking from cover, and

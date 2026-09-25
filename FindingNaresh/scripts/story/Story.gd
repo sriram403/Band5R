@@ -80,7 +80,7 @@ func setup(b: Node) -> void:
 			"hint": "Carry the blue jug to the front of the van and hold E at the grille.",
 			"done": func(): return flags.has("leak_fixed")},
 		{"id": "to_bridge", "text": "Carry on north to the old bridge",
-			"hint": "Pump House Road continues past the water works to the river crossing.",
+			"hint": "Pump House Road continues past the water works to the river crossing. Follow the lit poles.",
 			"done": func(): return _van_near("bridge_barrier_near", 45.0)},
 		{"id": "end_a", "text": "The bridge is out. (The crossing comes in milestone B.)",
 			"hint": "This is the end of milestone A.",

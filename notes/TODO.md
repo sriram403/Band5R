@@ -12,7 +12,8 @@ being built and tested), so this always shows where the work is right now.
 - D1 tagging and D2 binoculars done (Quick: 0 failures). D3/D4 stealth and
   creatures: all four steps done. D5 traffic and D6 the mood curve done.
   D7 the windmill brake puzzle done (Quick: 0 failures).
-  Next: D8 the water works turbine lights the power line to the bridge hut.
+  D8 the power line done (Quick: 0 failures).
+  Now: [~] D9 the lift bridge (`puzzles/LiftBridge.gd` being written).
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -481,8 +482,36 @@ test was fixed and now restores its starting layout before the pad test.
         objective by its id, so objectives added later don't shift old saves.
         `save` checks both; story/windmill/waterworks/save: 0 failures
   - [x] Quick suite: 12 segments, 382 checks, 0 failures, no script errors
-- [ ] D8. Water works turbine lights the power line to the bridge hut
-- [ ] D9. Lift bridge puzzle (levers, convex safety mirror, gear, counterweight)
+- [x] D8. Water works turbine lights the power line to the bridge hut
+  - [x] `puzzles/PowerLine.gd`: a turbine house where the intake pipes meet
+        the river (a flywheel on the yard side, so you see it turn), poles
+        in the yard and every 30 m along Pump House Road (6 lamps), wires
+        with a sag. When the blue tank fills the turbine spins up and the
+        lamps light one by one, 0.6 s apart (a glow halo so it reads by day);
+        then the control hut's lamp, light and hum come on (`hut_powered`)
+  - [x] The bridge control hut on the near bank (`_bridge_hut_and_power`):
+        on stilts with a ramp to the door (the terrain can't be padded after
+        it is built), an open window onto the bridge, "BRIDGE CONTROL"
+  - [x] Last Fuel kiosk note: power off since the turbine stopped; the lift
+        bridge runs off the same line
+  - [x] Saved via the water works (`PowerLine.sync()` after a load)
+  - [x] `t_power`: 7 checks (dark before; 2 of 6 lit after 1.2 s; hut
+        powered 4.9 s after; turbine turning; P1 walks the ramp into the hut)
+  - [x] Found on the way: the window was an opaque panel (now open), 5 lamps
+        lit in 1.1 s so the wave didn't read, the first wheel faced the river
+  - [x] Quick suite: 12 segments, 389 checks, 0 failures
+- [~] D9. Lift bridge puzzle (levers, convex safety mirror, gear, counterweight)
+  - [x] Plan: a bascule leaf stuck up at 70 deg fills the gap. Hut: RAISE /
+        LOWER levers (hold E) and a safety mirror outside the window showing
+        the machinery house across the road (gear, wedge, counterweight pit),
+        which the hut can't see into. (1) A wedge in the gear comes out only
+        while RAISE is held and the deck player holds E. (2) The counterweight
+        is short a block: below 30 deg with nobody on it the leaf runs away and
+        the cut-out hauls it back to 45. The counterweight rises out of its
+        pit as the leaf lowers; the operator stops it level with the floor,
+        the partner steps on, and it comes down and locks; barriers go
+  - [~] `puzzles/LiftBridge.gd` written; next: build it into the world, story,
+        save, `t_bridge`
 - [ ] D10. Ghat fog and pace notes on the swung nav; the first creature attack
 - [ ] D11. Coast watchtower: hide on foot, stamp the beach
 - [ ] D12. Optional puzzles: barn maze (W2), lookout binocular relay (W4)

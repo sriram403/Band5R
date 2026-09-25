@@ -177,6 +177,9 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	var station := boot.get_tree().get_first_node_in_group("cooling_station") as CoolingStation
 	if station and d.has("station"):
 		station.from_dict(d["station"], boot.story.collected)
+	var line := boot.get_tree().get_first_node_in_group("power_line") as PowerLine
+	if line:
+		line.sync()
 	var windmill := boot.get_tree().get_first_node_in_group("windmill_brake") as WindmillBrake
 	if windmill and d.has("windmill"):
 		windmill.from_dict(d["windmill"])

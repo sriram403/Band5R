@@ -314,6 +314,7 @@ func _landmarks() -> void:
 	_water_facility(FACILITY)
 	_radio_mast(RADIO_MAST)
 	_broken_bridge()
+	_bridge_hut_and_power()
 	_five_roses(ROSE_CENTRE)
 	_p2_home()
 	_town()

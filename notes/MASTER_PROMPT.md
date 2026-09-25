@@ -11,7 +11,7 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, Milestone D: D1-D7 done (tagging, binoculars, stealth, creatures, traffic, mood, windmill); next D8 the turbine power line.
+Last updated: 2026-09-25, Milestone D: D1-D8 done (tagging, binoculars, stealth, creatures, traffic, mood, windmill, power line); next D9 the lift bridge.
 Milestones A, B and C are done. A ChatGPT session built the opening; a Claude
 session reviewed it, fixed what it and the user's test found (see TODO.md,
 "Review fixes" and "P2's side fixed") and added `opening_full` and
@@ -150,7 +150,9 @@ they/them.
   (table-driven, `world/Traffic.gd`, the one `Lorry`) and D6 the mood curve
   (`world/Mood.gd`). Metrics are in `DESIGN.md` 6.1. D7 the windmill brake
   (`puzzles/WindmillBrake.gd`, `world/Ladder.gd`, `t_windmill`, saved) done.
-  Next: the places D8-D12, then the full run D13 and the hand-over.
+  D8 the power line (`puzzles/PowerLine.gd`, bridge hut, `t_power`) done.
+  Next: D9 the lift bridge (`puzzles/LiftBridge.gd`, plan in TODO.md), D10-D12,
+  then the full run D13 and the hand-over.
   The tarp and the cardboard box are block-outs awaiting the user's look
   approval.
 
@@ -358,8 +360,8 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 1. Milestone D, the way out (`notes/TODO.md` D1-D13, `DESIGN.md`,
    `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
    2026-09-25** with every recommended answer (their "Decisions" sections).
-   D1-D7 are done (the four gyms, traffic, mood, windmill). Next: D8-D12
-   (turbine power line, lift bridge, ghat fog and the first attack,
+   D1-D8 are done (the four gyms, traffic, mood, windmill, power line). Next: D9-D12
+   ( lift bridge, ghat fog and the first attack,
    coast watchtower, optional puzzles), then the full run D13.
 2. Then Milestones E-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
