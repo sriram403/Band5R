@@ -6,13 +6,10 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Milestone C approved by you and pushed (2026-09-25). Your test found P2's
-  house problems (stairs, doors, drive lip, battery hint) and a nail trap
-  that only worked after the refuel; all fixed and re-tested. Quick: 8
-  segments incl. P2 walked for real; `opening_full` plays the whole opening.
-- Next: Milestone D (the way out), gyms first. The D/E/F, creature and
-  Naresh design pages are proposals; discuss their open questions before
-  building.
+- Milestone D started (2026-09-25). You approved the way-out plan and the
+  creature page with every recommended answer (see "Decisions" at the end of
+  `design/WAY_OUT.md` and `design/CREATURES.md`).
+- Working on: D1, the tagging gym.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -322,14 +319,33 @@ test was fixed and now restores its starting layout before the pad test.
 - [x] Pick-up: loading P2's cans into the van
 
 ## Milestone D: The way out
-- [ ] Gyms first: tagging, binoculars, hiding (crouch, peek, cardboard box), creatures
-      (sight, hearing, catch = separated, damage to the van, camouflage tarp)
-- [ ] Landmark puzzle chain (each puzzle causes the next), teaching every co-op mechanic
-- [ ] Creatures introduced once both players are in the van
-- [ ] NPC traffic that thins out and disappears halfway
-- [ ] Colour and mood slowly greying towards the coast
-- [ ] Coast watchtower: first sight of the beach; stamp it on the map
-- [ ] Optional puzzles (they count towards the hidden tracker)
+- [x] Discussed the proposals with you (2026-09-25): plan as proposed; binoculars
+      at the ridge lookout and Last Fuel; one brief lorry; first ghat attack always,
+      once; white smoke when taken; a faint trail for the partner; the box is in;
+      controls tag T / MMB / pad RT, zoom and peek RMB / pad LT
+- [~] D1. Tagging gym (`--gym=tagging`)
+  - [ ] `tag` action: T, middle mouse, pad RT (trigger read as a button)
+  - [ ] Tag marker in the world, seen on both screens (player colour, name,
+        fades after 20 s, one per player, follows moving things)
+  - [ ] Names for tagged things ("lever", "fuel can", "the van", "there")
+  - [ ] Edge arrow on the partner's screen when the tag is off screen
+  - [ ] Gym: targets at 10, 25, 50, 100 m; fix the reach and the marker size
+  - [ ] Test scenario `t_tagging` (key, mouse and pad; both screens; fade; reach)
+- [ ] D2. Binoculars gym (`--gym=binoculars`): pick-up, hold to zoom 4x, signs
+      at known distances, smallest readable text; tagging while zoomed
+- [ ] D3. Stealth gym: crouch, cover, peek, the cardboard box, thrown lures
+- [ ] D4. Creature gym: sight, hearing, suspicion, taken = white smoke to a drop
+      point, partner's trail, grace; the van attack (leak, engine, puncture), tarp
+- [ ] D5. Traffic system: table-driven counts per road, keep left, stop for the
+      van, the one lorry; thinning out to none after J2
+- [ ] D6. Mood curve: one dial for sky, fog, sun, birds and traffic
+- [ ] D7. Windmill brake puzzle (J1) and the valley map section reward
+- [ ] D8. Water works turbine lights the power line to the bridge hut
+- [ ] D9. Lift bridge puzzle (levers, convex safety mirror, gear, counterweight)
+- [ ] D10. Ghat fog and pace notes on the swung nav; the first creature attack
+- [ ] D11. Coast watchtower: hide on foot, stamp the beach
+- [ ] D12. Optional puzzles: barn maze (W2), lookout binocular relay (W4)
+- [ ] D13. Full run J1 -> Bessi on both routes; hand-over
 
 ## Milestone E: Bessi beach and Naresh
 - [ ] Beach greybox: sand, sea, promenade, empty lit stalls, boats, casuarinas, memorial

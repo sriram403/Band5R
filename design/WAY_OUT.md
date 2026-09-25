@@ -1,7 +1,7 @@
 # The way out (Milestone D): design v1 (proposal)
 
-Merged for future reference in PR #3; this page remains a proposal for approval
-before anything is built. Follows the story arc (`DESIGN.md`
+Merged in PR #3. **Approved by the user on 2026-09-25** ("build it as proposed",
+with the answers in "Decisions" at the end). Follows the story arc (`DESIGN.md`
 section 2, beats 3-5), the beat chart (`design/BEAT_CHART.md`, 6:00-25:00) and the
 creature rules (`design/CREATURES.md`). The puzzle ideas come from the catalogue in
 `design/PUZZLES.md` (W1-W9), so the details here are the suggested picks.
@@ -94,3 +94,13 @@ minutes for a first pair, driving plus stops.
    fun or annoying?
 3. The first creature attack on the ghat: scripted to always happen (a lesson), or
    only if you stop in its area? Proposal: always, once.
+
+## Decisions (user, 2026-09-25)
+
+- The chain above is approved as proposed; build it gyms first.
+- Binoculars: **both** places (ridge lookout early; Last Fuel as the backstop).
+- Lorry: **once, briefly** (one lorry on the lane near town holds you up for a few
+  seconds, then pulls in).
+- First creature attack on the ghat: **always, once** (a scripted lesson).
+- Controls: tag = T / middle mouse (pad RT on foot); binocular zoom = hold right
+  mouse / LT (4x); peek = crouched at a cover edge + hold right mouse / LT.

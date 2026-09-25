@@ -1,6 +1,6 @@
 # The creatures: design v1 (proposal)
 
-One page, for approval. Follows `DESIGN.md` sections 5 and 7 (hiding, caught =
+One page. **Approved by the user on 2026-09-25** (answers under "Decisions" at the end). Follows `DESIGN.md` sections 5 and 7 (hiding, caught =
 separated, van damage, flare gun, they follow Naresh, no sight cones). Every number
 below is a **starting value to fix in the creature gym**, then written back into
 `DESIGN.md` (section 6: metrics are fixed in gyms).
@@ -144,3 +144,10 @@ can always escape by breaking line of sight and going quiet. That is the skill.
 2. Should the partner see where the taken player went (a faint smoke trail on the
    horizon for a few seconds), or is searching the point?
 3. The comedy box ("that box moved"): in, or too silly for the mood?
+
+## Decisions (user, 2026-09-25)
+
+1. Taken look: **white smoke** (the Five Roses' smoke), screen to white.
+2. The partner sees **a faint smoke trail for a few seconds**, roughly the way the
+   taken player went; the map, texts and horn still do the regrouping.
+3. The comedy cardboard box is **in**.

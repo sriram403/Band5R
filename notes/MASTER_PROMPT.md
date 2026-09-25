@@ -11,7 +11,7 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, Milestone C approved by the user and pushed.
+Last updated: 2026-09-25, Milestone D started (plan approved, tagging gym).
 Milestones A, B and C are done. A ChatGPT session built the opening; a Claude
 session reviewed it, fixed what it and the user's test found (see TODO.md,
 "Review fixes" and "P2's side fixed") and added `opening_full` and
@@ -333,9 +333,11 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 **Milestone C is approved and pushed. Next, in this order:**
 
-1. Milestone D, the way out (`notes/TODO.md`, `DESIGN.md`,
-   `design/WAY_OUT.md`): discuss the proposal's open questions with the user,
-   then gyms first (tagging, binoculars, hiding, creatures).
+1. Milestone D, the way out (`notes/TODO.md` D1-D13, `DESIGN.md`,
+   `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
+   2026-09-25** with every recommended answer (their "Decisions" sections).
+   Gyms first (tagging, binoculars, stealth, creatures), then traffic, mood
+   and the places.
 2. Then Milestones E-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
    gym first. The merged `design/PUZZLES.md`, `design/WAY_OUT.md`,
