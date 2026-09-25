@@ -6,18 +6,13 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Milestone C tyre gym works (2026-09-25): fixed nail trap and the complete
-  physical spare-wheel swap passed 17 checks in 33.5 s, 0 failures or script
-  errors. Default Quick including the tyre gym passed with 0 failures and no
-  script errors. The fixed world nails past Town Fuel passed a three-check
-  story-gated teleport test. The house gym's 15 interaction and stair/window
-  checks and its seven world placement/pump checks pass. Traffic gym passed its
-  obstruction test; four town cars and P2's 20.9% drive pass world checks.
-  Default Quick repeat is next, then phone and per-player opening objectives.
-  The three test levels are complete: Quick 265 s of scenarios, Full 2010 s
-  with all eight road legs, Road check 2 s; all pass. The split-screen HUD
-  reminder overlap was fixed and checked on foot and in both seats.
-  Milestone C follows from `design/OPENING.md`, gyms first.
+- Milestone C is built, reviewed and play-tested (2026-09-25) and is with you
+  for your test. Nothing is pushed until you approve.
+  A ChatGPT session built the opening. Claude then reviewed it and fixed
+  eleven problems (see "Review fixes" under Milestone C) and added
+  `opening_full`, the whole opening played through with the real controls:
+  27 checks, 0 failures, about 3.3 min with no hesitation. Quick after all
+  fixes: 238 checks, 0 failures, no script errors.
 - `design/PUZZLES.md` and the D/E/F, creature and Naresh pages are proposals
   kept for future discussion. Their merge did not approve their puzzle choices.
 
@@ -257,30 +252,59 @@ test was fixed and now restores its starting layout before the pad test.
 - [x] Traffic gym: a car loops, keeps left, stops behind a parked van and
       continues after it clears; three checks pass. Four town cars are placed
       and six world checks pass. Bumps have no damage system yet.
-- [ ] Phone and objectives: read-only texts (P / D-pad right), mother's message
-      starts the story, per-player opening objectives, shared line after pick-up
-- [ ] Split start: P1 at the homestead, P2 inside their house; preserve correct
-      positions and opening state through save/load
-- [~] Torch batteries: dead initially for P2 in the house gym; drawer pickup,
-      10-minute drain, dim flicker and replacement built; save/load and opening
-      world state still to check
-- [~] Fuel drum and Town Fuel pump fill cans by holding E, with the can's
-      amount and weight changing. House gym and seven-check world teleport
-      both pass; opening story integration and save/load remain
-- [x] Greybox placement: enterable P2 house + shed and upstairs road view,
-      Town Fuel pump, fixed warning sign/nails, four town cars and 20.9% P2
-      drive. The handbrake holds there; without it the van rolls. Terrain
-      supports the slab and the rendered approach was inspected.
-- [ ] Opening play-test: timed P1 drive and P2 preparation, pick-up and rack
-      loading, objective merge; Quick teleport checks and Full route check
-- [ ] Milestone C hand-over after my play-test; push only after your approval
-- [ ] Phone: texts between players, the message from Naresh's mother
-- [ ] P1's home (the current homestead); P2's home
-- [ ] P1 drives alone to P2's home and learns the van: driving, fuel, heat, coolant,
-      battery, tyre puncture, handbrake, parking
-- [ ] P2 prepares at home: fuel can and half coolant can, torch batteries, journal,
-      paper map and stamps, navigation and guiding
-- [ ] Pick-up: loading P2's cans into the van
+- [x] Phone and objectives: read-only texts (P / D-pad right), mother's message
+      starts the story, per-player opening objectives (P1 8 steps, P2 7), one
+      shared line again after the pick-up (resumes at "drive to the windmill")
+  - [x] Review pass (2026-09-25, Claude): phone redrawn as a handset with
+        bubbles, sized to each view; badge moved off the rear-view mirror;
+        texts arriving while it is open count as read
+- [x] Split start: P1 at the homestead with 6 L, P2 in the kitchen with a dead
+      torch; the opening (steps, texts, house, pump) survives save/load
+- [x] Torch batteries: drawer, 10-minute drain, flicker, fit with F, saved
+- [x] Fuel drum and Town Fuel pump fill cans by holding E; saved with the game
+- [x] Review fixes (2026-09-25) to the earlier Milestone C work
+  - [x] Controller journal: D-pad right became the phone and left pads with no
+        way to open the journal (no saving). Now RB in the parked van.
+  - [x] Opening started in gyms reached from the dev menu (crash on the
+        missing windmill); Story now follows Boot's opening flag
+  - [x] P2 no longer has to go upstairs if already out at the drive; the jug
+        only fits the rack's right-hand slot, and the hints say so
+  - [x] Tyre: the fitted spare looked flat until the jack came down; the flat
+        wheel now drops as a real object instead of vanishing
+  - [x] Nail trap redrawn: broken nail boards, small loose nails, split box,
+        cones on the left verge (was 24 cm white sticks); gym uses the same
+  - [x] House doors say Close when open
+  - [x] Town Fuel moved from 40 m off the lane to the roadside (13 m): you
+        could not reach the pump without driving across the grass
+  - [x] Town cars: stop for people on foot, look ahead with a car-wide box,
+        U-turn smoothly at the patrol ends (they snapped 180 degrees), and
+        keep 2.4 m from the centre so a van driven down the middle can pass
+        (one stopped nose to nose with it and jammed the road)
+  - [x] Test helper `hold_physics` sent a fresh key press every tick (read as
+        60 taps a second); it now only re-sends a dropped press
+- [x] Opening play-test (`opening_full`, in `full`): the whole opening with the
+      real controls, P2's house jobs, the drive to Town Fuel, filling and
+      pouring, the roadworks puncture and full wheel swap, the turn up P2's
+      drive (van checked on the slab), loading, both aboard. 27 checks, 0
+      failures. Scripted with no hesitation it takes about 3.3 min (P1 184 s
+      to arrive, of which 124 s driving and 16 s on the wheel; P2's house
+      jobs 52 s); people reading, looking and fumbling should land it in the
+      5-10 minute target. Walks between jobs are teleports counted at walking
+      pace.
+  - [x] Quick after all fixes: 7 segments, 238 checks, 0 failures, no script
+        errors, 388 s of scenarios
+- [~] Milestone C hand-over after my play-test; push only after your approval
+  - [x] My play-test (above)
+  - [ ] Your test
+- [x] Phone: texts between players, the message from Naresh's mother
+- [x] P1's home (the current homestead); P2's home
+- [~] P1 drives alone to P2's home and learns the van: driving, fuel, tyre
+      puncture, handbrake, parking are taught. Heat, coolant and battery are
+      not part of the opening yet (heat and coolant come at the water works).
+- [~] P2 prepares at home: fuel can and half coolant can, torch batteries,
+      journal note, paper map and a stamp. Navigating and guiding P1 over the
+      phone is not built (the phone is read-only, as agreed).
+- [x] Pick-up: loading P2's cans into the van
 
 ## Milestone D: The way out
 - [ ] Gyms first: tagging, binoculars, hiding (crouch, peek, cardboard box), creatures

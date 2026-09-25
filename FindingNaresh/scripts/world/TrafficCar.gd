@@ -2,10 +2,14 @@ class_name TrafficCar
 extends AnimatableBody3D
 
 ## Simple town traffic. Cars follow one road's sampled centreline, keep left,
-## brake for a blocked lane, and turn around at the ends of their patrol.
+## brake for anything in their lane (the van, another car, a person on foot)
+## and U-turn across the road at the ends of their patrol.
 
 const CRUISE := 9.0             ## m/s, about 32 km/h
-const LANE_OFFSET := 2.1
+const TURN_SPEED := 3.5         ## m/s round the U-turn
+## Lane centre from the road's centre line (the road is 8 m wide). Close to the
+## verge, so a 2.24 m van driven down the middle still passes with room to spare.
+const LANE_OFFSET := 2.4
 const LOOK_AHEAD := 13.0
 
 var route: Route
@@ -15,6 +19,9 @@ var progress := 0.0            ## route sample index, including fractions
 var direction := 1             ## +1 along the route, -1 toward its start
 var speed := 0.0
 var waiting := false
+var _turn := -1.0              ## 0..1 through a U-turn at a patrol end, else -1
+var _heading := Vector3.FORWARD
+var _probe: BoxShape3D
 
 
 func configure(r: Route, a: int, b: int, start: int, way: int) -> void:
@@ -42,27 +49,44 @@ func _ready() -> void:
 	cs.shape = box
 	cs.position = Vector3(0, 0.75, 0)
 	add_child(cs)
+	_probe = BoxShape3D.new()
+	_probe.size = Vector3(1.8, 1.1, LOOK_AHEAD)   # this lane only, not the one beside it
 	_position_on_road()
 
 
 func _physics_process(delta: float) -> void:
 	if route == null:
 		return
-	var forward := route.forward(int(progress)) * float(direction)
-	var start := global_position + Vector3.UP * 0.65 + forward * 2.0
-	var q := PhysicsRayQueryParameters3D.create(start, start + forward * LOOK_AHEAD, 1 | 8, [get_rid()])
-	var hit := get_world_3d().direct_space_state.intersect_ray(q)
-	waiting = not hit.is_empty() and (hit["collider"] is Camper or hit["collider"] is TrafficCar)
-	var target := 0.0 if waiting else CRUISE
+	waiting = _blocked()
+	var cruise := TURN_SPEED if _turn >= 0.0 else CRUISE
+	var target := 0.0 if waiting else cruise
 	speed = move_toward(speed, target, (12.0 if waiting else 2.0) * delta)
-	progress += float(direction) * speed * delta / Route.SAMPLE_SPACING
-	if progress >= float(last):
-		progress = float(last)
-		direction = -1
-	elif progress <= float(first):
-		progress = float(first)
-		direction = 1
+	if _turn >= 0.0:
+		_turn += speed * delta / (PI * LANE_OFFSET)
+		if _turn >= 1.0:
+			_turn = -1.0
+			direction = -direction
+	else:
+		progress += float(direction) * speed * delta / Route.SAMPLE_SPACING
+		if progress >= float(last) or progress <= float(first):
+			progress = clampf(progress, float(first), float(last))
+			_turn = 0.0
 	_position_on_road()
+
+
+## Anything solid in a car-wide box over the next LOOK_AHEAD metres of lane.
+func _blocked() -> bool:
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = _probe
+	q.collision_mask = 1 | 2 | 8
+	q.exclude = [get_rid()]
+	q.transform = Transform3D(Basis.looking_at(_heading, Vector3.UP),
+		global_position + Vector3.UP * 0.95 + _heading * (2.0 + LOOK_AHEAD * 0.5))
+	for hit in get_world_3d().direct_space_state.intersect_shape(q, 16):
+		var body: Object = hit["collider"]
+		if body is Camper or body is TrafficCar or body is PlayerRig:
+			return true
+	return false
 
 
 func _position_on_road() -> void:
@@ -73,5 +97,16 @@ func _position_on_road() -> void:
 	var p := route.point(i).lerp(route.point(i + 1), t)
 	var f := route.forward(i).lerp(route.forward(i + 1), t).normalized() * float(direction)
 	var left := -route.right(i).lerp(route.right(i + 1), t).normalized() * float(direction)
-	p += left * LANE_OFFSET
-	global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP), p + Vector3.UP * 0.13)
+	f.y = 0.0
+	left.y = 0.0
+	f = f.normalized()
+	left = left.normalized()
+	if _turn >= 0.0:
+		# half a circle about the centreline, from this lane into the other
+		var a := _turn * PI
+		p += left * LANE_OFFSET * cos(a) + f * LANE_OFFSET * sin(a)
+		_heading = (f * cos(a) - left * sin(a)).normalized()
+	else:
+		p += left * LANE_OFFSET
+		_heading = f
+	global_transform = Transform3D(Basis.looking_at(_heading, Vector3.UP), p + Vector3.UP * 0.13)

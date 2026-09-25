@@ -11,13 +11,12 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, after all three opening gyms and world placement. Milestone B
-and the opening design are approved; all six cloud PRs are merged. Quick,
-Road check and Full now work and have passed locally. Milestone C has begun
-with the tyre gym and physical wheel swap, which pass their automated checks.
-The world puncture passed its gated teleport check. The house gym and its
-world placement pass. Traffic and the steep P2 drive pass; the story opening,
-phone, split start and pick-up remain.
+Last updated: 2026-09-25, Milestone C built and handed to the user for testing.
+Milestone B and the opening design are approved; all six cloud PRs are merged.
+A ChatGPT session built the opening gyms, phone and per-player objectives; a
+Claude session then reviewed all of it, fixed what it found (see TODO.md,
+"Review fixes") and added `opening_full`, the whole opening played through.
+Nothing is pushed: the user tests C first, then approves the push.
 Start at section 6.
 
 ---
@@ -130,9 +129,16 @@ they/them.
   pump; seven world checks pass. Traffic gym passed three obstruction checks;
   four cars are placed on the town lane and six world checks pass. P2's drive
   measures 20.9%, holds the van with the handbrake and rolls it without one;
-  the terrain joins the slab and its screenshot was inspected. A default Quick
-  repeat is pending. Phone, objectives, split start, pickup and save/load
-  integration remain.
+  the terrain joins the slab and its screenshot was inspected. The default
+  Quick repeat across all three opening gyms, base gym and world passed with
+  zero failures and no script errors. The phone, per-player objectives, split
+  start, pick-up and save/load of the opening followed.
+- **Milestone C review (2026-09-25, Claude):** eleven fixes to the earlier
+  work, listed in `notes/TODO.md` under "Review fixes" (controller journal
+  button, Town Fuel off the road, town cars jamming, gym crash, tyre and nail
+  visuals, phone redesign, test helper bugs). `opening_full` plays the whole
+  opening with the real controls: see TODO.md for its timing. Milestone C is
+  with the user for their test; push only after their approval.
 
 ---
 
@@ -324,19 +330,11 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 6. What to do next
 
-**Milestone B, all six cloud PRs, and the three test levels are done. Milestone
-C has begun with the tested tyre gym. Next, in this order:**
+**Milestone C is built, reviewed and play-tested; it is with the user.**
 
-1. **Milestone C, the opening**, from `design/OPENING.md` (approved 2026-09-24:
-   phone on P / D-pad right, read-only; split screen as now; town cars just bump;
-   puncture at a fixed spot; enterable P2 house of two rooms + shed; mother's text
-   starts the story, the parents' letter stays as an extra; torch batteries from
-   the opening). Gyms first: tyre, house, traffic. Its "What is new to build" list
-   is the work plan, now expanded in `notes/TODO.md`. Build and test the tyre
-   gym first (tyre, house and traffic done), then complete the story and world
-   opening. The puncture, house, town cars and steep drive are placed and
-   targeted checks pass. Run Quick after these world changes.
-2. Then hand over C (rule 2). Milestones D-G follow `notes/TODO.md` / `DESIGN.md`.
+1. Wait for the user's test of Milestone C. Fix what they report, re-run
+   Quick (and `full` if roads changed), then commit and push when they approve.
+2. Then Milestones D-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
    gym first. The merged `design/PUZZLES.md`, `design/WAY_OUT.md`,
    `design/CREATURES.md`, `design/NARESH.md`, `design/BESSI.md` and
@@ -452,6 +450,20 @@ C has begun with the tested tyre gym. Next, in this order:**
 - **Full preset order:** save/load reloads the scene and ends the test process,
   so `routes` must run before `save`. The launcher runs the gym as a separate
   process before the world; do not overlap game instances.
+- **Test helpers vs input latching:** `InputDevice.feed_event` latches every
+  pressed event as a tap, so re-sending a held key each tick reads as 60 taps
+  a second. `hold_physics` only re-sends a press that a focus change dropped,
+  and waits 3 ticks after release (a pour holds the can at the filler until
+  the release lands). Never edit PlayTest.gd while a run is going: later
+  segments load the file fresh.
+- **Teleporting players (`go_to`)**: cast down from just above the target's
+  own height, or inside the house you land on the upper floor.
+- **Driving into P2's drive:** the auto-driver's 8-12 m look-ahead cuts the
+  90-degree corner onto the bank. Feed it a turning arc (9 m tangents) and a
+  short look-ahead; check the van is on the slab (across < 1.4 m), not just
+  near the house.
+- **Town traffic clearance:** the van is 2.24 m wide; cars sit 2.4 m off the
+  centre and look ahead with a 1.8 m box, so a van down the middle passes.
 - **Split HUD:** the top-left objective and top-centre fading controls
   overlapped in 800 px views. The controls now wrap at bottom right, clear of
   the gauges. Checked on foot and from both seats.

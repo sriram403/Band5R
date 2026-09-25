@@ -59,12 +59,22 @@ func _build() -> void:
 		add_child(Build.box(Vector3(0.09, 1.45, 0.08), blue, Vector3(x, 4.65, 4.19), Vector3.ZERO, "WindowFrame"))
 	for y in [3.93, 5.38]:
 		add_child(Build.box(Vector3(1.78, 0.08, 0.08), blue, Vector3(-2.5, y, 4.19), Vector3.ZERO, "WindowFrame"))
-	var door := _part(Vector3(1.6, 2.5, 0.16), Vector3(0, 1.25, 4.12), wood, "FrontDoor")
+	_part(Vector3(2.4, 0.8, 1.1), Vector3(-3.4, 3.65, -1.8), wood, "UpstairsDesk")
+	add_child(Build.box(Vector3(0.75, 0.02, 0.55), ToonMat.make(Color(0.94, 0.88, 0.66)),
+		Vector3(-3.9, 4.08, -1.7), Vector3.ZERO, "PaperMapOnDesk"))
+	add_child(Build.interact_area(Vector3(0.9, 0.55, 0.5), Vector3(-3.9, 4.15, -0.95),
+		"Open the paper map", func(p): p.set_map_open(true), "MapDesk"))
+	add_child(Build.box(Vector3(0.42, 0.12, 0.55), ToonMat.make(Color(0.36, 0.26, 0.18)),
+		Vector3(-2.8, 4.1, -1.7), Vector3.ZERO, "HouseJournal"))
+	add_child(Build.interact_area(Vector3(0.65, 0.55, 0.5), Vector3(-2.8, 4.15, -0.95),
+		"Read the travel journal note", func(p):
+			p.say("The travel journal is kept in the camper. Three Memory Fragments make one Rose; writing a save spends one Rose. There are no automatic checkpoints.", 10.0),
+		"JournalNote"))
+	_part(Vector3(1.6, 2.5, 0.16), Vector3(0, 1.25, 4.12), wood, "FrontDoor")
 	var handle := Build.interact_area(Vector3(2.2, 2.6, 0.5), Vector3(0, 1.3, 4.48),
 		"Open front door", func(_p):
 			front_open = not front_open
-			door.visible = not front_open
-			door.collision_layer = 0 if front_open else 1,
+			_show_doors(),
 		"FrontDoorHandle")
 	add_child(handle)
 	# Kitchen drawer reveals a physical packet that can be carried and fitted.
@@ -94,12 +104,11 @@ func _build() -> void:
 	_part(Vector3(5.2, 3.2, 0.25), Vector3(sx, 1.6, -3), wood, "ShedBack")
 	for x in [sx - 1.8, sx + 1.8]:
 		_part(Vector3(1.5, 3.2, 0.25), Vector3(x, 1.6, 3), wood, "ShedFront")
-	var shed_door := _part(Vector3(1.5, 2.5, 0.14), Vector3(sx, 1.25, 3.1), wood, "ShedDoor")
+	_part(Vector3(1.5, 2.5, 0.14), Vector3(sx, 1.25, 3.1), wood, "ShedDoor")
 	var shed_handle := Build.interact_area(Vector3(1.9, 2.6, 0.5), Vector3(sx, 1.3, 3.46),
 		"Open shed door", func(_p):
 			shed_open = not shed_open
-			shed_door.visible = not shed_open
-			shed_door.collision_layer = 0 if shed_open else 1,
+			_show_doors(),
 		"ShedDoorHandle")
 	add_child(shed_handle)
 	drum = FuelSource.new()
@@ -115,3 +124,29 @@ func _build() -> void:
 	coolant_jug.litres = CoolantJug.CAPACITY * 0.5
 	add_child(coolant_jug)
 	coolant_jug.position = Vector3(sx + 1.1, 0.2, 0.1)
+
+
+func to_dict() -> Dictionary:
+	return {"front_open": front_open, "shed_open": shed_open,
+		"drawer_open": drawer_open, "drum_litres": drum.litres}
+
+
+func from_dict(d: Dictionary) -> void:
+	front_open = bool(d.get("front_open", false))
+	shed_open = bool(d.get("shed_open", false))
+	drawer_open = bool(d.get("drawer_open", false))
+	drum.litres = float(d.get("drum_litres", drum.litres))
+	_show_doors()
+	if drawer_open:
+		get_node("BatteryDrawer").position.z = -1.78
+		get_node("DrawerHandle").set_meta("prompt", "Drawer is open")
+
+
+## Doors and their prompts follow the open/closed state.
+func _show_doors() -> void:
+	for pair in [["FrontDoor", front_open, "front door"], ["ShedDoor", shed_open, "shed door"]]:
+		var door := get_node(pair[0]) as StaticBody3D
+		var open: bool = pair[1]
+		door.visible = not open
+		door.collision_layer = 0 if open else 1
+		get_node(pair[0] + "Handle").set_meta("prompt", ("Close " if open else "Open ") + pair[2])

@@ -350,6 +350,8 @@ func _items() -> void:
 
 	var home: Node3D = world.get_node("Homestead")
 	_place_can(home.transform * Vector3(-6.2, 0, 4.6), FuelCan.CAPACITY, "home_can")
+	var town: Node3D = world.get_node("TownFuel")
+	_place_can(town.transform * Vector3(-4.5, 0, 2.2), 0.0, "town_empty")
 	var station: Node3D = world.get_node("LastFuel")
 	_place_can(station.transform * Vector3(2.2, 0, -10.8), FuelCan.CAPACITY, "station_can_a")
 	_place_can(station.transform * Vector3(2.8, 0, -10.6), FuelCan.CAPACITY, "station_can_b")

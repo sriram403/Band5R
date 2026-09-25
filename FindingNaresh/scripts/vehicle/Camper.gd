@@ -574,12 +574,24 @@ func puncture() -> void:
 func refresh_tyre_visuals() -> void:
 	_wheels[0].wheel_friction_slip = 1.0 if tyre_flat else 3.1
 	_wheels[0].wheel_radius = WHEEL_RADIUS * (0.78 if tyre_flat else 1.0)
-	_wheel_meshes[0].scale = Vector3(1.0, 0.76, 0.76) if tyre_flat else Vector3.ONE
+	# from stage 5 the round spare is on the hub, the van still on the jack
+	_wheel_meshes[0].scale = Vector3(1.0, 0.76, 0.76) if tyre_flat and tyre_stage < 5 else Vector3.ONE
 	_wheel_meshes[0].visible = tyre_stage != 4
 	_spare_mesh.visible = spare_available and tyre_stage == 0
 	var jack := _body_root.get_node_or_null("WheelJack") as Node3D
 	if jack != null:
 		jack.visible = tyre_flat and tyre_stage >= 2
+
+
+## The punctured wheel comes off as a real, carryable thing, dropped by the hub.
+func _drop_flat_wheel() -> void:
+	var w := SpareWheel.make_flat()
+	w.name = "FlatWheel"
+	get_tree().get_first_node_in_group("world_root").add_child(w)
+	# lying flat just behind the wheel arch, out of the way of the hub
+	w.global_transform = Transform3D(global_basis * Basis(Vector3.RIGHT, PI * 0.5),
+		global_transform * Vector3(-2.1, 0.5, -WHEELBASE + 1.5))
+	w.reset_physics_interpolation()
 
 
 func _tyre_parked() -> bool:
@@ -608,17 +620,15 @@ func _build_tyre_service() -> void:
 	var nuts := Build.interact_area(Vector3(0.7, 0.9, 1.0), Vector3(-1.55, 0.48, -WHEELBASE), "", func(_p):
 		if tyre_flat and tyre_stage == 1 and _tyre_parked():
 			tyre_stage = 2
-			jack_visual.visible = true
+			refresh_tyre_visuals()
 		elif tyre_flat and tyre_stage == 3 and _tyre_parked():
 			tyre_stage = 4
-			_wheel_meshes[0].visible = false
+			refresh_tyre_visuals()
+			_drop_flat_wheel()
 		elif tyre_flat and tyre_stage == 5 and _tyre_parked():
 			tyre_stage = 0
 			tyre_flat = false
-			jack_visual.visible = false
-			_wheels[0].wheel_friction_slip = 3.1
-			_wheels[0].wheel_radius = WHEEL_RADIUS
-			_wheel_meshes[0].scale = Vector3.ONE, "WheelNuts")
+			refresh_tyre_visuals(), "WheelNuts")
 	nuts.set_meta("prompt_fn", func(_p) -> String:
 		if not tyre_flat or not _tyre_parked(): return ""
 		if tyre_stage == 1: return "Set the jack under the front left sill"
@@ -644,7 +654,7 @@ func _build_tyre_service() -> void:
 				tyre_work = 0.0
 				tyre_stage = 5
 				spare_available = false
-				_wheel_meshes[0].visible = true)
+				refresh_tyre_visuals())
 	_body_root.add_child(nuts)
 
 

@@ -148,6 +148,9 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	var journal := JournalPanel.new()
 	journal.player = p
 	add_child(journal)
+	var phone := PhonePanel.new()
+	phone.player = p
+	add_child(phone)
 
 	p.prompt_changed.connect(_on_prompt)
 	p.message.connect(show_note)
@@ -215,9 +218,9 @@ func _process(delta: float) -> void:
 	var st := get_tree().get_first_node_in_group("story") as Story
 	if st != null:
 		var d := player.dev
-		_objective.text = "> " + st.objective_text()
+		_objective.text = "> " + st.objective_text(player.index)
 		if d != null and d.held("hint"):
-			_objective_hint.text = st.hint_text()
+			_objective_hint.text = st.hint_text(player.index)
 		else:
 			_objective_hint.text = "(hold %s for a hint)" % (d.glyph("hint") if d else "H")
 	var seated := player.seat != null

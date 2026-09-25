@@ -18,6 +18,9 @@ if [ -z "$GODOT" ]; then
 	exit 2
 fi
 if [ -z "$GYM" ] && { [ -z "$1" ] || [ "$1" = quick ] || [ "$1" = full ]; }; then
+	"$0" opening || exit $?
+	"$0" opening_save || exit $?
+	if [ "$1" = full ]; then "$0" opening_full || exit $?; fi
 	GYM=traffic "$0" traffic || exit $?
 	GYM=house "$0" house || exit $?
 	GYM=tyre "$0" tyre || exit $?

@@ -108,7 +108,7 @@ const MOUNDS := [
 
 const HOMESTEAD := Vector3(-1600, 0, 1480)   ## P1's home
 const P2_HOME := Vector3(-490, 0, 1590)
-const TOWN_FUEL := Vector3(-1250, 0, 1625)
+const TOWN_FUEL := Vector3(-1250, 0, 1598)     ## forecourt meets the lane verge
 const WINDMILL := Vector3(-640, 0, 990)
 const LOOKOUT := Vector3(-340, 0, 665)
 const BARN := Vector3(-500, 0, 205)

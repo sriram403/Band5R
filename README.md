@@ -94,8 +94,9 @@ Driving (once you are in the driver's seat):
 | Headlights | L | D-pad Left |
 | Swap seats (stopped) | C | LB |
 | Get out (stopped) | E | X |
-| Travel journal (parked) | J | D-pad Right |
+| Travel journal (parked) | J | RB |
 | Swing the nav screen to the passenger / back (either seat) | N | A |
+| Phone (read-only texts; on foot too) | P | D-pad Right |
 
 Two door mirrors and a rear-view mirror show the road behind. Swung aside, the nav
 screen can only be read from the passenger seat: the driver has to be told the way.
@@ -118,10 +119,30 @@ Other keys: **[ / ]** mouse sensitivity (saved) · **TAB** switch player (solo) 
 **F2** layout · **F11** fullscreen · **F3** teleport both players to the camper ·
 **ESC** pause (resume / load / quit; quitting warns about unsaved progress).
 
+## The opening (Milestone C, 5-10 minutes)
+
+A new game starts split: P1 at the homestead beside a nearly dry van, P2 in the
+kitchen of their own house across town with a dead torch. Each player has their
+own objective line and a read-only phone (**P** / **D-pad Right**); the story and
+the other player text it.
+
+- **P1:** read Naresh's mother's text, start the van and drive to **Town Fuel**,
+  fill the empty can at the pump (hold E) and pour it in, then head for P2. The
+  roadworks past town puncture a tyre: park on the handbrake, take the spare off
+  the back, jack, nuts, flat off, spare on, jack down. Then up P2's steep drive
+  (about 20 %; the handbrake holds it there).
+- **P2:** batteries from the kitchen drawer (F fits them), the shed's empty can
+  filled at the drum, the windmill stamped on the paper map, then watch for the
+  van from the upstairs window (or wait by the drive).
+- **Pick-up:** stow P2's can and the half coolant jug on the rack (the jug only
+  fits the right-hand slot), both get in, and the shared journey carries on
+  from "drive up the lane to the windmill". The parents' letter on the porch
+  is still there as an extra.
+
 ## Milestone A walkthrough
 
-1. **Homestead.** Read the letter on the crate by the porch. Take the red fuel can by
-   the garage and stow it on the van's rear rack (the van starts low on fuel).
+1. **Homestead.** (Before Milestone C this was the start: read the letter on the
+   crate by the porch and stow the red fuel can on the van's rear rack.)
 2. **The lane** runs east through the little town (Town Fuel) past P2's house, then
    north to the windmill. At the **windmill junction** choose: the
    scenic **Valley Road** (Mirror Lake with a dock, a faded billboard, a red barn) or
@@ -184,7 +205,7 @@ Run the windowed play-test behind your other windows:
 ```
 tools/run_test.sh                  (Quick: base gym + world checks, ~4-5 min)
 python tools/gen/layout_check.py  (Road check when roads or hills change, ~2 s)
-tools/run_test.sh full             (Full: all checks and long drives, ~35 min)
+tools/run_test.sh full             (Full: all checks, the whole opening played through, long drives, ~40 min)
 tools/run_test.sh drive,map        (selected world scenarios)
 SHOW=1 tools/run_test.sh drive     (on screen, with sound, to watch it)
 ```

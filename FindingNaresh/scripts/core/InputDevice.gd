@@ -28,7 +28,7 @@ var _latched: Dictionary = {}
 const KEYS := {
 	"fwd": KEY_W, "back": KEY_S, "left": KEY_A, "right": KEY_D,
 	"sprint": KEY_SHIFT, "crouch": KEY_CTRL, "jump": KEY_SPACE,
-	"interact": KEY_E, "flashlight": KEY_F, "map": KEY_M,
+	"interact": KEY_E, "flashlight": KEY_F, "map": KEY_M, "phone": KEY_P,
 	"handbrake": KEY_SPACE, "ignition": KEY_X, "headlights": KEY_L,
 	"hint": KEY_H, "swap_seat": KEY_C, "recover": KEY_R, "throw": KEY_G,
 	# paper map (only read while the map is up)
@@ -53,7 +53,9 @@ const BUTTONS := {
 	"map_place": JOY_BUTTON_A, "map_remove": JOY_BUTTON_X,
 	"map_next": JOY_BUTTON_RIGHT_SHOULDER, "map_prev": JOY_BUTTON_LEFT_SHOULDER,
 	"map_zoom_in": JOY_BUTTON_Y, "map_zoom_out": JOY_BUTTON_B,
-	"journal": JOY_BUTTON_DPAD_RIGHT, "menu_up": JOY_BUTTON_DPAD_UP, "menu_down": JOY_BUTTON_DPAD_DOWN,
+	# the journal opens from a seat in the parked van, where RB has no other job
+	"journal": JOY_BUTTON_RIGHT_SHOULDER,
+	"phone": JOY_BUTTON_DPAD_RIGHT, "menu_up": JOY_BUTTON_DPAD_UP, "menu_down": JOY_BUTTON_DPAD_DOWN,
 	"menu_ok": JOY_BUTTON_A, "menu_back": JOY_BUTTON_B,
 	"nav_swing": JOY_BUTTON_A,
 }
@@ -103,7 +105,8 @@ func glyph(action: String) -> String:
 			"handbrake": return "B"
 			"recover": return "View"
 			"hint": return "R3"
-			"journal": return "D-Right"
+			"journal": return "RB"
+			"phone": return "D-Right"
 			"nav_swing": return "A"
 			"menu_ok": return "A"
 			"menu_back": return "B"
@@ -122,6 +125,7 @@ func glyph(action: String) -> String:
 		"recover": return "R"
 		"hint": return "H"
 		"journal": return "J"
+		"phone": return "P"
 		"nav_swing": return "N"
 		"menu_ok": return "Enter"
 		"menu_back": return "J"

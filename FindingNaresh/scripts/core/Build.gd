@@ -134,3 +134,45 @@ static func label3d(text: String, pos: Vector3, rot := Vector3.ZERO, size := 0.3
 static func _xf(pos: Vector3, rot: Vector3) -> Transform3D:
 	var b := Basis.from_euler(Vector3(deg_to_rad(rot.x), deg_to_rad(rot.y), deg_to_rad(rot.z)))
 	return Transform3D(b, pos)
+
+
+## Roadworks spill for the opening puncture: two broken pallet boards with nails
+## standing up out of them (readable from the driver's seat), loose nails
+## scattered over the lane, a split nail box and a line of cones on the left verge.
+## Local frame: +X across the road (right), -Z the way traffic comes through.
+## Purely visual; the trap itself is an Area3D the caller adds.
+static func nail_spill(width := 7.0) -> Node3D:
+	var root := Node3D.new()
+	root.name = "NailSpill"
+	var wood := ToonMat.make(Color(0.55, 0.40, 0.24))
+	var steel := ToonMat.make(Color(0.62, 0.64, 0.66), 0.015, 0.35)
+	var card := ToonMat.make(Color(0.76, 0.60, 0.38))
+	var orange := ToonMat.make(Color(0.96, 0.45, 0.10))
+	var white := ToonMat.make(Color(0.95, 0.95, 0.92))
+	for b in 2:
+		var board := Node3D.new()
+		board.name = "NailBoard%d" % b
+		board.position = Vector3(-1.4 + b * 2.6, 0.03, -0.6 + b * 1.3)
+		board.rotation_degrees.y = 12.0 - b * 27.0
+		board.add_child(box(Vector3(1.3, 0.04, 0.15), wood, Vector3.ZERO, Vector3.ZERO, "Plank"))
+		for k in 6:
+			board.add_child(cyl(0.012, 0.09, steel, Vector3(-0.55 + k * 0.22, 0.06, 0.02 * (k % 2)),
+				Vector3(8.0 * (k % 3 - 1), 0, 6.0 * (k % 2)), 5, "Spike"))
+		root.add_child(board)
+	for k in 40:
+		# a fixed scatter (golden-angle spiral), denser in the middle of the lane
+		var a := float(k) * 2.39996
+		var r := sqrt(float(k) / 40.0)
+		var x := cos(a) * r * width * 0.5
+		var z := sin(a) * r * 3.0
+		root.add_child(box(Vector3(0.11, 0.014, 0.014), steel, Vector3(x, 0.012, z),
+			Vector3(0, float(k * 47 % 180), 0), "LooseNail"))
+	# on the left verge, the side keep-left traffic passes and the sign stands
+	root.add_child(box(Vector3(0.36, 0.22, 0.28), card, Vector3(-width * 0.5 - 0.3, 0.11, 1.2),
+		Vector3(0, 25, 70), "NailBox"))
+	for k in 4:
+		var c := Vector3(-width * 0.5 - 0.6, 0.0, 5.0 + k * 3.5)
+		root.add_child(cone(0.2, 0.62, orange, c + Vector3(0, 0.31, 0), Vector3.ZERO, 12, "Cone"))
+		root.add_child(cyl(0.125, 0.09, white, c + Vector3(0, 0.36, 0), Vector3.ZERO, 12, "ConeBand"))
+		root.add_child(box(Vector3(0.44, 0.04, 0.44), orange, c + Vector3(0, 0.02, 0), Vector3.ZERO, "ConeFoot"))
+	return root

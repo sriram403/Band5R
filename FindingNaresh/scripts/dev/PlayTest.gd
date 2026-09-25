@@ -92,6 +92,18 @@ func tap(k: Key, hold_s := 0.07) -> void:
 	await wait(0.08)
 
 
+## Hold a key for whole physics ticks. The press is sent again only if a window
+## focus change dropped it: a fresh press every tick would read as 60 taps a second.
+func hold_physics(k: Key, seconds: float) -> void:
+	key(k, true)
+	for _i in int(ceil(seconds * 60.0)):
+		await get_tree().physics_frame
+		if not Input.is_physical_key_pressed(k):
+			key(k, true)
+	key(k, false)
+	await physics_frames(3)  # let the release land (a pour lets go of the can)
+
+
 func mouse(rel: Vector2) -> void:
 	var e := InputEventMouseMotion.new()
 	e.relative = rel
@@ -636,6 +648,10 @@ func t_pad() -> void:
 	check(boot.devices[1].kind == InputDevice.Kind.PAD, "a connected controller becomes Player 2")
 	check(boot.layout == 0 and boot.views[0].visible and boot.views[1].visible, "plugging a controller in switches to split-screen")
 	var p := p2()
+	await pad_tap(JOY_BUTTON_DPAD_RIGHT)
+	check(p.phone_open, "D-pad right raises Player 2's phone")
+	await pad_tap(JOY_BUTTON_DPAD_RIGHT)
+	check(not p.phone_open, "D-pad right puts Player 2's phone away")
 	var q := p1()
 	var r: Route = boot.builder.route
 	var gp := r.point(100) + r.right(100) * 12.0
@@ -1928,6 +1944,8 @@ func t_tyre() -> void:
 	await seat_p1_driver()
 	if not c.engine_on:
 		c.toggle_engine()
+	c.set_parking_brake(false)
+	c.freeze = false
 	key(KEY_W, true)
 	var elapsed := 0.0
 	while elapsed < 20.0 and not c.tyre_flat:
@@ -1969,9 +1987,7 @@ func t_tyre() -> void:
 	check(p1().prompt_text.contains("jack"), "the sill offers a jack point")
 	await tap(KEY_E)
 	check(c.tyre_stage == 2, "E sets the jack")
-	key(KEY_E, true)
-	await wait(6.3)
-	key(KEY_E, false)
+	await hold_physics(KEY_E, 7.0)
 	check(c.tyre_stage == 3, "holding E loosens the nuts")
 	await wait(0.2)  # one released physics tick before the next press
 	await tap(KEY_E)
@@ -1981,9 +1997,7 @@ func t_tyre() -> void:
 	check(p1().held == wheel, "the player picks the spare back up")
 	await face_point(p1(), front, 1.8, -c.global_transform.basis.x)
 	check(p1().prompt_text.contains("fit the spare"), "the spare fits onto the exposed hub")
-	key(KEY_E, true)
-	await wait(6.3)
-	key(KEY_E, false)
+	await hold_physics(KEY_E, 7.0)
 	check(c.tyre_stage == 5 and p1().held == null, "holding E fits the spare")
 	await wait(0.2)
 	await tap(KEY_E)
@@ -2024,6 +2038,14 @@ func t_roadworks() -> void:
 	c.reset_physics_interpolation()
 	await physics_frames(8)
 	check(not c.tyre_flat, "unarmed roadworks leave an older route run alone")
+	# what the driver sees coming up to the spill
+	c.global_transform = Transform3D(basis, lane.point(505) + Vector3.UP * 0.8)
+	c.reset_physics_interpolation()
+	await seat_p1_driver()
+	await wait(0.6)
+	await shot("roadworks_approach")
+	p1().force_exit = true
+	await physics_frames(3)
 	c.global_transform = Transform3D(basis, lane.point(510) + Vector3.UP * 0.8)
 	c.reset_physics_interpolation()
 	await physics_frames(8)
@@ -2184,6 +2206,31 @@ func t_traffic() -> void:
 	check(car.progress > stopped + 3.0 and car.speed > 5.0,
 		"the car continues when the van clears the lane")
 	await shot("traffic_gym")
+	# someone on foot in the lane
+	var j := int(car.progress) + 12
+	var walker := road.point(j) - road.right(j) * TrafficCar.LANE_OFFSET
+	await place_player(p1(), walker + Vector3.UP * 0.2, 0.0)
+	await wait(4.0)
+	check(car.waiting and car.speed < 1.0 and car.global_position.distance_to(p1().global_position) > 2.5,
+		"the car stops for a person standing in its lane")
+	await place_player(p1(), Vector3(0, 0.3, 30), 0.0)
+	# the U-turn at the end of the patrol: no jumps, into the other lane
+	var last_pos := car.global_position
+	var max_step := 0.0
+	var turned := false
+	var t := 0.0
+	while t < 40.0 and not (car.direction < 0 and car._turn < 0.0):
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		max_step = maxf(max_step, car.global_position.distance_to(last_pos))
+		last_pos = car.global_position
+		turned = turned or car._turn >= 0.0
+	await wait(1.0)
+	var k := int(car.progress)
+	var side := (car.global_position - road.point(k)).dot(road.right(k))
+	log_line("traffic U-turn: %.1f s, largest step %.2f m, now %.1f m right of the centreline" % [t, max_step, side])
+	check(turned and car.direction < 0 and max_step < 0.4 and side > 1.0,
+		"the car U-turns smoothly into the other lane at the end of its patrol")
 
 
 func t_traffic_world() -> void:
@@ -2197,6 +2244,8 @@ func t_traffic_world() -> void:
 	if cars.size() < 4:
 		return
 	for car in cars:
+		if car._turn >= 0.0:
+			continue      # mid U-turn at a patrol end, crossing between lanes
 		var i := int(car.progress)
 		var offset := car.global_position - lane.point(i)
 		check(offset.dot(lane.right(i)) * float(car.direction) < -1.0,
@@ -2240,6 +2289,508 @@ func t_driveway() -> void:
 	check(c.global_position.distance_to(parked) > 1.5,
 		"the van rolls down P2's drive without the handbrake")
 	c.set_parking_brake(true)
+
+
+## Opening story state in the actual world. Gym scenarios cover the long
+## physical tasks; this checks their story handoffs and the two HUD threads.
+func t_opening() -> void:
+	var st: Story = boot.story
+	var house := boot.world.get_node_or_null("P2Home") as HouseInterior
+	var c := camper()
+	check(st.opening_mode and house != null, "a new game begins the two-player opening")
+	if not st.opening_mode or house == null:
+		return
+	check(absf(c.fuel - 6.0) < 0.1 and p1().global_position.distance_to(p2().global_position) > 800.0,
+		"P1 starts with a nearly dry van while P2 starts at the other house")
+	check(p2().flashlight_seconds <= 0.0 and st.phone_unread(0) == 2 and st.phone_unread(1) == 2,
+		"P2's torch is dead and both phones have the mother's news")
+	check(boot.map_state.is_revealed("windmill"), "the windmill is printed on P2's opening map for stamping")
+	await tap(KEY_P, 0.2)
+	await wait(0.35)
+	log_line("opening phone P1: open=%s seen=%d step=%d owner=%d" % [p1().phone_open, st.phone_seen[0], st.opening_steps[0], boot.kbm_owner])
+	check(p1().phone_open and st.opening_steps[0] == 1,
+		"P1 reads the phone and gets the Town Fuel objective")
+	await shot("opening_phone")
+	await tap(KEY_ESCAPE, 0.2)
+	check(not p1().phone_open and not boot.paused, "ESC puts the phone away without pausing")
+	await tap(KEY_TAB, 0.2)
+	await tap(KEY_P, 0.2)
+	await wait(0.35)
+	log_line("opening phone P2: open=%s seen=%d step=%d owner=%d" % [p2().phone_open, st.phone_seen[1], st.opening_steps[1], boot.kbm_owner])
+	check(p2().phone_open and st.opening_steps[1] == 1,
+		"P2 reads the same news and gets the battery objective")
+	await tap(KEY_P, 0.2)
+	var side := house.global_basis * Vector3(0, 0, 1)
+	await face_point(p2(), house.to_global(Vector3(-3.0, 0.85, -1.92)), 1.5, side)
+	log_line("opening drawer prompt: '%s'" % p2().prompt_text)
+	await tap(KEY_E)
+	check(house.drawer_open and house.battery_pack != null, "P2 finds batteries in the kitchen drawer")
+	if house.battery_pack == null:
+		return
+	await face_point(p2(), house.battery_pack.global_position + Vector3.UP * 0.2, 1.3, side)
+	await tap(KEY_E)
+	await tap(KEY_F)
+	await wait(0.35)
+	check(st.opening_steps[1] == 2 and st.phone_unread(0) > 0,
+		"fitting batteries advances P2 and tells P1")
+	var shed := house.to_global(Vector3(8.5, 1.3, 3.46))
+	await face_point(p2(), shed, 1.5, side)
+	await tap(KEY_E)
+	await face_point(p2(), house.fuel_can.global_position + Vector3.UP * 0.2, 1.4, side)
+	await tap(KEY_E)
+	check(p2().held == house.fuel_can, "P2 can carry the shed's empty can")
+	if p2().held == house.fuel_can:
+		await face_point(p2(), house.drum.to_global(Vector3(0, 0.85, 0.75)), 1.25, side)
+		log_line("opening drum prompt: '%s' can %.1f" % [p2().prompt_text, house.fuel_can.litres])
+		await hold_physics(KEY_E, 5.5)
+		p2().drop_held()
+	await wait(0.35)
+	log_line("opening shed: can %.1f step %d" % [house.fuel_can.litres, st.opening_steps[1]])
+	check(st.opening_steps[1] == 3, "the full shed can advances P2 to the map")
+	var j1: Vector3 = boot.builder.poi["j1"]
+	boot.map_state.add_stamp("unexplored", Vector2(j1.x, j1.z))
+	await wait(0.35)
+	check(st.opening_steps[1] == 4, "stamping the windmill advances P2 to the window")
+	await tap(KEY_TAB)
+	var town := boot.world.get_node("TownFuel") as Node3D
+	c.global_position = town.to_global(Vector3(5.0, 0.85, 5.0))
+	c.linear_velocity = Vector3.ZERO
+	c.reset_physics_interpolation()
+	await wait(0.4)
+	check(st.opening_steps[0] == 2, "reaching Town Fuel advances P1 to filling a can")
+	var pump := town.get_node("WorkingPump") as FuelSource
+	var can := find_can("town_empty")
+	check(can != null and can.litres <= 0.01, "an empty can waits at Town Fuel")
+	if can == null:
+		return
+	await face_point(p1(), can.global_position + Vector3.UP * 0.2, 1.3, pump.global_basis.z)
+	log_line("town can: %s prompt '%s'" % [can.global_position, p1().prompt_text])
+	await tap(KEY_E)
+	log_line("town held: %s" % [p1().held])
+	if p1().held == can:
+		await face_point(p1(), pump.to_global(Vector3(0, 0.85, 0.75)), 1.3, pump.global_basis.z)
+		log_line("town pump prompt: '%s'" % p1().prompt_text)
+		log_line("town positions: p1 %s pump %s van %s collider %s" % [p1().global_position, pump.global_position, c.global_position, p1().ray.get_collider()])
+		await hold_physics(KEY_E, 5.5)
+		p1().drop_held()
+	check(st.flags.has("town_fuel_filled") and can.litres > 19.0,
+		"P1 fills the stand's can at the working pump")
+	c.fuel = 14.0  # the real pouring path is checked in the carry scenario
+	await wait(0.35)
+	check(st.opening_steps[0] == 3 and st.flags.has("opening_puncture_armed"),
+		"refueling arms the fixed roadworks beat")
+	var lane: Route = boot.builder.network.road("home_lane")
+	var f := lane.forward(520)
+	c.set_parking_brake(false)
+	c.freeze = false
+	c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP), lane.point(510) + Vector3.UP * 0.8)
+	c.reset_physics_interpolation()
+	await wait(0.2)
+	c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP), lane.point(520) + Vector3.UP * 0.8)
+	c.sleeping = false
+	c.reset_physics_interpolation()
+	await wait(0.7)
+	log_line("opening nails: flat=%s armed=%s done=%s step=%d pos=%s" % [c.tyre_flat,
+		st.flags.has("opening_puncture_armed"), st.flags.has("opening_puncture_done"), st.opening_steps[0], c.global_position])
+	var trap := boot.world.get_node("RoadworksNails/PunctureArea") as Area3D
+	log_line("opening trap: %s overlapping=%s van layer=%d freeze=%s" % [trap.global_position, trap.get_overlapping_bodies(), c.collision_layer, c.freeze])
+	check(c.tyre_flat and st.opening_steps[0] == 4,
+		"crossing the nails advances P1 to the spare-wheel repair")
+	c.tyre_flat = false
+	c.tyre_stage = 0
+	c.spare_available = false
+	c.refresh_tyre_visuals()  # the gym checks the full physical repair
+	await wait(0.35)
+	check(st.opening_steps[0] == 5 and st.phone_unread(1) > 0,
+		"repair advances P1 and sends P2 a puncture text")
+	var slab := boot.world.get_node("P2Driveway") as StaticBody3D
+	c.parking_brake = true
+	c.global_transform = Transform3D(slab.global_basis, slab.global_position + Vector3.UP * 1.2)
+	c.reset_physics_interpolation()
+	var out := house.global_basis * Vector3(0, 0, 1)
+	await place_player(p2(), house.to_global(Vector3(-2.5, 3.35, 2.4)), atan2(-out.x, -out.z))
+	await wait(0.4)
+	check(st.opening_steps[0] == 6 and st.opening_steps[1] == 5,
+		"parking and watching from the window lead both players to loading")
+	house.fuel_can.stow(c.storage_slots[0])
+	house.coolant_jug.stow(c.storage_slots[2])
+	await wait(0.35)
+	check(st.opening_steps[0] == 7 and st.opening_steps[1] == 6,
+		"stowing both supplies advances each player's objective")
+	p1().enter_seat(c, c.seat_nodes["driver"], "driver")
+	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await wait(0.35)
+	check(not st.opening_mode and st.flags.has("opening_complete") and st.index == 2,
+		"both seated reunites the objectives at the windmill journey")
+
+
+func t_opening_save() -> void:
+	var st: Story = boot.story
+	var house := boot.world.get_node("P2Home") as HouseInterior
+	var pump := boot.world.get_node("TownFuel/WorkingPump") as FuelSource
+	var c := camper()
+	check(st.opening_mode, "the opening can be saved before pick-up")
+	st.opening_steps = [2, 2]
+	st.phone_seen = [2, 0]
+	st.flags["opening_puncture_armed"] = true
+	house.from_dict({"front_open": true, "shed_open": true, "drawer_open": true, "drum_litres": 87.0})
+	house.fuel_can.litres = 8.0
+	house.fuel_can._update_mass()
+	pump.litres = 930.0
+	c.fuel = 9.0
+	c.tyre_flat = true
+	c.refresh_tyre_visuals()
+	p2().flashlight_seconds = 123.0
+	p2().flashlight.visible = true
+	p2().beam.visible = true
+	await physics_frames(3)
+	check(SaveGame.write(boot, 1), "the opening writes a save slot")
+	PlayTest.expect = {"p2": p2().global_position}
+	PlayTest.carried_failures = _failures.duplicate()
+	PlayTest.resume = "opening_save_verify"
+	boot.load_slot(1)
+
+
+func t_opening_save_verify() -> void:
+	await wait(1.2)
+	var st: Story = boot.story
+	var house := boot.world.get_node("P2Home") as HouseInterior
+	var pump := boot.world.get_node("TownFuel/WorkingPump") as FuelSource
+	log_line("opening restored: mode=%s steps=%s unread=%d flags=%s" % [st.opening_mode,
+		st.opening_steps, st.phone_unread(1), st.flags])
+	check(st.opening_mode and st.opening_steps == [2, 2] and st.phone_unread(1) == 2,
+		"loading restores both opening objectives and unread phone texts")
+	check(house.front_open and house.shed_open and house.drawer_open and absf(house.drum.litres - 87.0) < 0.1,
+		"loading restores the house doors, drawer and drum")
+	check(absf(house.fuel_can.litres - 8.0) < 0.1 and absf(pump.litres - 930.0) < 0.1,
+		"loading restores both cans' fuel source state")
+	check(absf(camper().fuel - 9.0) < 0.1 and camper().tyre_flat,
+		"loading restores the opening van's fuel and puncture")
+	check(p2().global_position.distance_to(PlayTest.expect["p2"]) < 0.5 and
+		absf(p2().flashlight_seconds - 123.0) < 2.0 and p2().flashlight.visible,
+		"loading returns P2 to the house with the torch battery state")
+
+
+## Metres each player would have walked between the spots the full opening
+## teleports them to (the test stands them at each job, a person walks there).
+var _walk_m := [0.0, 0.0]
+
+
+## face_point for places off the terrain (a driveway slab, house floors): the
+## player stands on whatever solid is below the spot.
+func go_to(p: PlayerRig, target: Vector3, dist: float, side := Vector3.ZERO) -> void:
+	var dir := side if side != Vector3.ZERO else Vector3(1, 0, 0.3)
+	dir.y = 0.0
+	dir = dir.normalized()
+	var stand := target + dir * dist
+	# from just above the target's own height, so a ceiling is not taken for the floor
+	var top := Vector3(stand.x, target.y + 0.6, stand.z)
+	var q := PhysicsRayQueryParameters3D.create(top, top + Vector3.DOWN * 10.0, 1)
+	q.exclude = [p.get_rid(), camper().get_rid()]
+	var hit := p.get_world_3d().direct_space_state.intersect_ray(q)
+	stand.y = (hit["position"] as Vector3).y + 0.1 if not hit.is_empty() else Landscape.ground(stand.x, stand.z) + 0.1
+	var from := p.global_position
+	_walk_m[p.index] += Vector2(stand.x - from.x, stand.z - from.z).length()
+	var d := target - stand
+	var had := p.held
+	await place_player(p, stand, atan2(-d.x, -d.z))
+	if had != null and p.held == null:
+		log_line("go_to: %s dropped on the move; stand %s, item %s, hold point %s" % [had.name, stand, had.global_position, p.hold_point(had)])
+	var eye := stand + Vector3.UP * (PlayerRig.STAND_HEIGHT - 0.16)
+	p.pitch = atan2(target.y - eye.y, Vector2(target.x - eye.x, target.z - eye.z).length())
+	await physics_frames(3)
+	if had != null and p.held == null:
+		log_line("go_to: %s dropped after aiming; item %s, hold point %s" % [had.name, had.global_position, p.hold_point(had)])
+
+
+## Drive P1's van along `path` with the keyboard until `done` or the stop index,
+## then brake to a halt and set the handbrake. Returns the seconds driven.
+func drive_until(path: Route, stop_idx: int, done: Callable, limit_s: float, target_kmh := -1.0, lane := -1.8, look_min := 4) -> float:
+	var c := camper()
+	c.freeze = false
+	var ad := AutoDriver.new(self, path, c)
+	ad.lane = lane    # keep left, as the town cars do
+	if look_min < 4:
+		ad.look_min = look_min
+		ad.look_gain = 0.25
+	var t := 0.0
+	var stuck := 0.0
+	while t < limit_s:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		# ease off before the stop like a driver looking for the place
+		var left := stop_idx - ad.idx
+		var tk := target_kmh
+		if left < 40:
+			tk = 25.0 if tk < 0.0 else minf(tk, 25.0)
+		if left < 14:
+			tk = minf(tk, 10.0)
+		ad.step(tk)
+		stuck = stuck + 1.0 / 60.0 if kmh() < 2.0 else 0.0
+		if ad.idx >= stop_idx or done.call() or (stuck > 8.0 and t > 10.0):
+			break
+	ad.release()
+	key(KEY_S, true)
+	var braking := 0.0
+	while kmh() > 0.5 and braking < 8.0:
+		await get_tree().physics_frame
+		braking += 1.0 / 60.0
+		key(KEY_S, true)
+	# let go of S first: held at a standstill it reverses, which releases the handbrake
+	key(KEY_S, false)
+	if not c.parking_brake:
+		await tap(KEY_SPACE)
+	await wait(0.5)
+	log_line("drive: %.0f s, %.0f m, off-road max %.1f m, now %s, fuel %.1f L" % [t, ad.progress * Route.SAMPLE_SPACING,
+		ad.max_off, c.global_position, c.fuel])
+	return t + braking
+
+
+func enter_door(p: PlayerRig, role: String) -> void:
+	var c := camper()
+	var sx := -1.2 if role == "driver" else 1.2
+	var door := c.global_transform * Vector3(sx, 1.2, -1.8)
+	await go_to(p, door, 2.2, c.global_basis.x * signf(sx))
+	await tap(KEY_E)
+	await physics_frames(3)
+	if role == "driver" and p.seat_role == "driver" and not c.engine_on:
+		await tap(KEY_X)
+		await wait(1.0)
+
+
+## The whole opening played through in the real world with the real controls:
+## P2's house jobs, P1's drive through town, filling and pouring a can, the
+## roadworks puncture and full wheel swap, the drive up P2's steep drive,
+## loading the gear and both getting in. Walks between jobs are teleports,
+## counted as metres and added to the timing at walking pace.
+## `tools/run_test.sh full` runs it; alone: `tools/run_test.sh opening_full`.
+func t_opening_full() -> void:
+	var st: Story = boot.story
+	var house := boot.world.get_node_or_null("P2Home") as HouseInterior
+	var c := camper()
+	check(st.opening_mode and house != null, "a new game begins the two-player opening")
+	if not st.opening_mode or house == null:
+		return
+	_walk_m = [0.0, 0.0]
+	var t_start := Time.get_ticks_msec()
+	var side := house.global_basis * Vector3(0, 0, 1)
+
+	# --- P2 in the house, while P1 gets going (the two run side by side) ---
+	var p2_start := Time.get_ticks_msec()
+	await tap(KEY_TAB, 0.2)
+	await tap(KEY_P, 0.2)
+	await wait(4.0)  # reading the mother's text
+	await tap(KEY_P, 0.2)
+	check(st.opening_steps[1] == 1, "P2 reads the phone and is sent for the batteries")
+	await go_to(p2(), house.to_global(Vector3(-3.0, 0.85, -1.92)), 1.5, side)
+	await tap(KEY_E)
+	if house.battery_pack != null:
+		await go_to(p2(), house.battery_pack.global_position + Vector3.UP * 0.2, 1.3, side)
+		await tap(KEY_E)
+		await tap(KEY_F)
+	await wait(0.4)
+	check(st.opening_steps[1] == 2 and p2().flashlight.visible, "P2 fits the batteries and the torch works")
+	await go_to(p2(), house.to_global(Vector3(0, 1.3, 4.48)), 1.5, side)
+	if not house.front_open:
+		await tap(KEY_E)
+	await go_to(p2(), house.to_global(Vector3(8.5, 1.3, 3.46)), 1.5, side)
+	await tap(KEY_E)
+	await go_to(p2(), house.fuel_can.global_position + Vector3.UP * 0.2, 1.4, side)
+	await tap(KEY_E)
+	if p2().held == house.fuel_can:
+		await go_to(p2(), house.drum.to_global(Vector3(0, 0.85, 0.75)), 1.25, side)
+		await hold_physics(KEY_E, 5.5)
+		await go_to(p2(), house.to_global(Vector3(7.4, 0.3, 0.6)), 1.2, side)
+		await tap(KEY_E)  # put it down inside the shed door
+	await wait(0.4)
+	check(st.opening_steps[1] == 3 and house.fuel_can.litres > 19.0, "P2 fills the shed can from the drum")
+	await tap(KEY_M, 0.2)
+	await wait(0.3)
+	var j1: Vector3 = boot.builder.poi["j1"]
+	check(p2().map_open, "P2 raises the paper map")
+	# Pencil placement is checked in the map scenario; here the stamp lands on the windmill.
+	boot.map_state.add_stamp("unexplored", Vector2(j1.x, j1.z))
+	await wait(0.4)
+	await tap(KEY_M, 0.2)
+	check(st.opening_steps[1] == 4, "stamping the windmill sends P2 to watch from the window")
+	var p2_solo_s := (Time.get_ticks_msec() - p2_start) / 1000.0 + 20.0  # + ~20 s to find and stamp the windmill
+
+	# --- P1: phone, van, Town Fuel ---
+	var p1_start := Time.get_ticks_msec()
+	await tap(KEY_TAB, 0.2)
+	await tap(KEY_P, 0.2)
+	await wait(4.0)
+	await tap(KEY_P, 0.2)
+	check(st.opening_steps[0] == 1, "P1 reads the phone and is sent to Town Fuel")
+	await enter_door(p1(), "driver")
+	check(p1().seat_role == "driver", "P1 gets into the driver's seat")
+	check(c.engine_on, "X starts the nearly dry van")
+	var lane: Route = boot.builder.network.road("home_lane")
+	var town := boot.world.get_node("TownFuel") as Node3D
+	var town_near := lane.nearest(town.global_position.x, town.global_position.z)
+	var town_i := int(town_near["index"])
+	log_line("Town Fuel stands %.0f m from the lane centre" % float(town_near["dist"]))
+	var drive_s := await drive_until(lane, town_i + 3, func(): return false, 240.0)
+	log_line("OPENING town fuel reached in %.0f s of driving, %.1f L left, van %.0f m from the station" % [drive_s, c.fuel,
+		Vector2(c.global_position.x - town.global_position.x, c.global_position.z - town.global_position.z).length()])
+	check(st.opening_steps[0] == 2 and c.engine_on, "P1 drives to Town Fuel without running dry")
+	await tap(KEY_E)
+	await physics_frames(3)
+	check(p1().seat == null, "P1 gets out at the forecourt")
+	var pump := town.get_node("WorkingPump") as FuelSource
+	var can := find_can("town_empty")
+	await go_to(p1(), can.global_position + Vector3.UP * 0.2, 1.3, pump.global_basis.z)
+	await tap(KEY_E)
+	check(p1().held == can, "P1 picks up the empty can at the stand")
+	await go_to(p1(), pump.to_global(Vector3(0, 0.85, 0.75)), 1.3, pump.global_basis.z)
+	await hold_physics(KEY_E, 5.5)
+	check(can.litres > 19.0, "holding E at the pump fills the can")
+	var inlet := c.global_transform * (Vector3(-1.2, 1.40, 1.9) + Vector3(0, Camper.BODY_Y, 0))
+	await go_to(p1(), inlet, 1.5, -c.global_basis.x)
+	var f0 := c.fuel
+	await hold_physics(KEY_E, 4.0)
+	log_line("OPENING poured %.1f L; tank %.1f L; holding %s" % [c.fuel - f0, c.fuel, p1().held])
+	await go_to(p1(), c.storage_slots[0].global_position + Vector3.UP * 0.3, 1.9, c.global_basis.z)
+	await wait(0.3)
+	log_line("at the rack: '%s', holding %s" % [p1().prompt_text, p1().held])
+	await tap(KEY_E)
+	check(c.stowed_item(c.storage_slots[0]) == can, "the town can rides on the rack")
+	await wait(0.4)
+	check(st.opening_steps[0] == 3, "refuelling sends P1 on towards P2")
+
+	# --- the roadworks and the wheel swap ---
+	await enter_door(p1(), "driver")
+	var nails_i := 520
+	drive_s += await drive_until(lane, nails_i + 30, func(): return c.tyre_flat, 120.0)
+	check(c.tyre_flat and st.opening_steps[0] == 4, "the roadworks nails puncture the van")
+	if not c.tyre_flat:
+		return
+	await wait(1.0)
+	check(c.parking_brake, "P1 stops on the handbrake for the repair")
+	await tap(KEY_E)
+	await physics_frames(3)
+	var swap_start := Time.get_ticks_msec()
+	var rear := c.global_transform * Vector3(0, 2.05 + Camper.BODY_Y, 3.25)
+	await go_to(p1(), rear, 2.0, c.global_basis.z)
+	await tap(KEY_E)
+	check(p1().held is SpareWheel, "P1 takes the spare off the back")
+	var wheel := p1().held as SpareWheel
+	var front := c.global_transform * Vector3(-1.55, 0.48 + Camper.BODY_Y, -Camper.WHEELBASE)
+	await go_to(p1(), front, 2.0, -c.global_basis.x)
+	await tap(KEY_E)
+	if wheel != null:
+		wheel.global_position = c.global_transform * Vector3(-3.3, 0.7, -Camper.WHEELBASE - 1.0)
+		wheel.linear_velocity = Vector3.ZERO
+		wheel.reset_physics_interpolation()
+	await go_to(p1(), front, 1.8, -c.global_basis.x)
+	await tap(KEY_E)
+	await hold_physics(KEY_E, 7.0)
+	await wait(0.2)
+	await tap(KEY_E)
+	if wheel != null:
+		await go_to(p1(), wheel.global_position, 1.5)
+		await tap(KEY_E)
+	await go_to(p1(), front, 1.8, -c.global_basis.x)
+	await hold_physics(KEY_E, 7.0)
+	await wait(0.2)
+	await tap(KEY_E)
+	await wait(0.4)
+	var swap_s := (Time.get_ticks_msec() - swap_start) / 1000.0
+	log_line("OPENING wheel swap took %.0f s (walks as teleports)" % swap_s)
+	check(not c.tyre_flat and not c.spare_available and st.opening_steps[0] == 5,
+		"P1 swaps the wheel and P2 hears about the puncture")
+	await shot("opening_full_swap")
+
+	# --- P2's steep drive ---
+	await enter_door(p1(), "driver")
+	# the same two ends LevelPlaces._p2_home builds the drive between
+	var turn_i := int(lane.nearest(house.global_position.x, house.global_position.z)["index"])
+	var bottom := lane.point(turn_i) + Vector3.UP * 0.1
+	var top := house.to_global(Vector3(0, 0.1, 4.8))
+	top = top.lerp(bottom, 0.25)  # stop short of the front door
+	# down the lane, a turning arc (tangent 9 m each side of the corner, about
+	# the van's full lock) into the drive, then straight up the middle of it
+	var tangent := 9.0
+	var up_drive := top - bottom
+	up_drive.y = 0.0
+	up_drive = up_drive.normalized()
+	var arc_in_i := turn_i - int(tangent / Route.SAMPLE_SPACING)
+	var arc_in := lane.point(arc_in_i)
+	var arc_out := bottom.lerp(top, tangent / bottom.distance_to(top))
+	var pts := PackedVector3Array()
+	var cur_i := int(lane.nearest(c.global_position.x, c.global_position.z)["index"])
+	for i in range(cur_i, arc_in_i, 2):
+		pts.append(lane.point(i))
+	for k in 12:
+		var s := float(k + 1) / 12.0
+		pts.append(arc_in.lerp(bottom, s).lerp(bottom.lerp(arc_out, s), s))
+	for k in 12:
+		pts.append(arc_out.lerp(top, float(k + 1) / 12.0))
+	var drive_path := Route.from_points(pts, false)
+	var to_p2 := await drive_until(drive_path, drive_path.point_count() - 4, func():
+		return c.global_position.distance_to(top) < 4.5, 120.0, 12.0, 0.0, 2)
+	drive_s += to_p2
+	log_line("OPENING drive up: van %.1f m from the top of the drive, %.1f m from the house, grade under the van %.0f%%" % [
+		c.global_position.distance_to(top), Vector2(c.global_position.x - house.global_position.x,
+		c.global_position.z - house.global_position.z).length(), rad_to_deg(acos(clampf(c.global_basis.y.y, -1, 1)))])
+	var slab := boot.world.get_node("P2Driveway") as Node3D
+	var axis := top - bottom
+	axis.y = 0.0
+	var rel := c.global_position - bottom
+	rel.y = 0.0
+	var along_m := rel.dot(axis.normalized())
+	var across_m := rel.dot(axis.normalized().cross(Vector3.UP))
+	log_line("OPENING drive geometry: bottom %s top %s (%.0f m), slab centre %s; van %.1f m along, %.1f m across, heading off the drive by %.0f deg" % [
+		bottom, top, axis.length(), slab.global_position, along_m, across_m,
+		rad_to_deg((-c.global_basis.z * Vector3(1, 0, 1)).normalized().angle_to(axis.normalized()))])
+	await wait(2.5)
+	var parked := c.global_position
+	await wait(2.0)
+	check(absf(across_m) < 1.4 and along_m > 8.0, "P1 drives the van up onto P2's drive")
+	check(c.parking_brake and c.global_position.distance_to(parked) < 0.15 and st.opening_steps[0] == 6,
+		"P1 parks on P2's steep drive with the handbrake")
+	await shot("opening_full_driveway")
+	var p1_arrive_s := (Time.get_ticks_msec() - p1_start) / 1000.0
+
+	# --- together: the window, the gear, into the van ---
+	var after_start := Time.get_ticks_msec()
+	await tap(KEY_TAB, 0.2)
+	var out := house.global_basis * Vector3(0, 0, 1)
+	_walk_m[1] += 12.0  # up the stairs
+	await place_player(p2(), house.to_global(Vector3(-2.5, 3.35, 2.4)), atan2(-out.x, -out.z))
+	await wait(1.5)
+	check(st.opening_steps[1] == 5, "P2 sees the van from the upstairs window")
+	await go_to(p2(), house.fuel_can.global_position + Vector3.UP * 0.2, 1.4, side)
+	await wait(0.3)
+	log_line("shed can: '%s' at %s" % [p2().prompt_text, house.fuel_can.global_position])
+	await tap(KEY_E)
+	check(p2().held == house.fuel_can, "P2 picks up the full shed can")
+	await go_to(p2(), c.storage_slots[1].global_position + Vector3.UP * 0.3, 1.9, c.global_basis.z)
+	await tap(KEY_E)
+	await go_to(p2(), house.coolant_jug.global_position + Vector3.UP * 0.2, 1.4, side)
+	await tap(KEY_E)
+	await go_to(p2(), c.storage_slots[2].global_position + Vector3.UP * 0.3, 1.9, c.global_basis.z)
+	await tap(KEY_E)
+	await wait(0.4)
+	check(st.opening_steps[0] == 7 and st.opening_steps[1] == 6, "P2 loads the can and coolant onto the rack")
+	await enter_door(p2(), "passenger")
+	await wait(0.6)
+	check(p2().seat_role == "passenger", "P2 gets in beside P1")
+	check(not st.opening_mode and st.flags.has("opening_complete") and st.index == 2,
+		"together in the van, the shared journey begins")
+	var after_s := (Time.get_ticks_msec() - after_start) / 1000.0
+
+	var walk1: float = _walk_m[0] / PlayerRig.WALK
+	var walk2: float = _walk_m[1] / PlayerRig.WALK
+	var p1_total := p1_arrive_s + walk1
+	var p2_ready := p2_solo_s + walk2 * 0.6
+	var total := maxf(p1_total, p2_ready) + after_s + walk2 * 0.4
+	log_line("OPENING timing: P1 %.0f s to arrive (%.0f s driving, %.0f s tyre, %.0f m walked = %.0f s)" % [
+		p1_total, drive_s, swap_s, _walk_m[0], walk1])
+	log_line("OPENING timing: P2 %.0f s of house jobs before the van comes (%.0f m walked)" % [p2_ready, _walk_m[1]])
+	log_line("OPENING timing: loading and boarding %.0f s; whole opening about %.1f min (script, no hesitation; the test ran %.0f s)" % [
+		after_s, total / 60.0, (Time.get_ticks_msec() - t_start) / 1000.0])
+	check(total < 600.0, "the scripted opening stays inside the 10-minute ceiling")
 
 
 ## Door and rear-view mirrors; the nav screen swung over to the passenger.
@@ -2762,6 +3313,11 @@ class AutoDriver:
 	var van: Camper
 	var idx := -1
 	var progress := 0
+	## metres right of the centre line to steer for; negative keeps left
+	var lane := 0.0
+	## look-ahead: (min samples, samples per m/s); shorter for tight turn-ins
+	var look_min := 4
+	var look_gain := 0.55
 	var max_off := 0.0
 	var off_time := 0.0
 	var steer_switches := 0
@@ -2792,8 +3348,8 @@ class AutoDriver:
 	func steer_only() -> void:
 		_track()
 		var v := van.linear_velocity.length()
-		var look := int(4 + v * 0.55)
-		var target := route.point(idx + look)
+		var look := int(look_min + v * look_gain)
+		var target := route.point(idx + look) + route.right(idx + look) * lane
 		var local := van.global_transform.affine_inverse() * target
 		var ang := atan2(local.x, -local.z)
 		var want := 0

@@ -79,11 +79,13 @@ static func collect(boot: Node) -> Dictionary:
 			e["slot"] = stowed[it.name]
 		items.append(e)
 	var station := boot.get_tree().get_first_node_in_group("cooling_station") as CoolingStation
+	var house := boot.world.get_node_or_null("P2Home") as HouseInterior
+	var town_pump := boot.world.get_node_or_null("TownFuel/WorkingPump") as FuelSource
 	return {
 		"version": VERSION,
 		"meta": {
 			"saved_at": Time.get_datetime_string_from_system(false, true),
-			"objective": boot.story.objective_text(),
+			"objective": boot.story.objective_text(0),
 			"place": nearest_place(boot, c.global_position),
 		},
 		"players": players,
@@ -99,6 +101,8 @@ static func collect(boot: Node) -> Dictionary:
 		"map": boot.map_state.to_dict(),
 		"story": boot.story.to_dict(),
 		"station": station.to_dict() if station else {},
+		"house": house.to_dict() if house else {},
+		"town_pump_litres": town_pump.litres if town_pump else 0.0,
 	}
 
 
@@ -161,6 +165,12 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	var station := boot.get_tree().get_first_node_in_group("cooling_station") as CoolingStation
 	if station and d.has("station"):
 		station.from_dict(d["station"], boot.story.collected)
+	var house := world.get_node_or_null("P2Home") as HouseInterior
+	if house and d.has("house"):
+		house.from_dict(d["house"])
+	var town_pump := world.get_node_or_null("TownFuel/WorkingPump") as FuelSource
+	if town_pump and d.has("town_pump_litres"):
+		town_pump.litres = float(d["town_pump_litres"])
 
 	# items: match by name, recreate anything made at runtime, drop the rest
 	var saved := {}
@@ -227,6 +237,8 @@ static func _make_item(e: Dictionary) -> Carryable:
 			return Crate.new()
 		"spare_wheel":
 			return SpareWheel.new()
+		"flat_wheel":
+			return SpareWheel.make_flat()
 		"batteries":
 			return BatteryPack.new()
 	return null

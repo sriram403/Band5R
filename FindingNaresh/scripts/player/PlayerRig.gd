@@ -61,6 +61,7 @@ var paper_map: PaperMap = null         ## injected by this player's HUD
 var map_open := false
 var _plan_vel := Vector2.ZERO          ## intended horizontal velocity (see _walk)
 var journal_open := false              ## reading the van's travel journal
+var phone_open := false                ## read-only opening texts
 var journal_sel := 0
 var journal_confirm := false
 var journal_note := ""
@@ -202,6 +203,12 @@ func recolor(c: Color) -> void:
 func _physics_process(delta: float) -> void:
 	if dev == null:
 		return
+	if dev.just_pressed("phone"):
+		phone_open = not phone_open
+		if phone_open:
+			var st := get_tree().get_first_node_in_group("story") as Story
+			if st != null:
+				st.mark_phone_read(index)
 	if flashlight.visible:
 		flashlight_seconds = maxf(0.0, flashlight_seconds - delta)
 		if flashlight_seconds <= 0.0:
@@ -240,7 +247,7 @@ func _physics_process(delta: float) -> void:
 		_map_controls()
 	else:
 		_scan()
-	if seat != null and dev.just_pressed("journal") and _van_parked():
+	if seat != null and not map_open and dev.just_pressed("journal") and _van_parked():
 		_open_journal()
 
 

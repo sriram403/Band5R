@@ -139,13 +139,10 @@ func _roadworks() -> void:
 		story.flags["opening_puncture_done"] = true
 		body.puncture())
 	root.add_child(trap)
-	var metal := ToonMat.make(Color(0.78, 0.78, 0.76))
-	for k in 23:
-		var x := -4.0 + float(k % 8) * 1.1
-		var z := -3.8 + float(k / 8) * 2.0
-		var np := r * x + f * z + Vector3.UP * 0.08
-		root.add_child(Build.box(Vector3(0.08, 0.06, 0.24), metal, np,
-			Vector3(0, float(k * 31 % 180), 0), "LooseNail"))
+	var spill := Build.nail_spill(7.5)
+	spill.basis = Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP)   # cones on the approach
+	spill.position.y = 0.04
+	root.add_child(spill)
 	var sign_pos := p - f * 30.0 - r * 7.0
 	sign_pos.y = _h(sign_pos.x, sign_pos.z)
 	root.add_child(Build.box(Vector3(0.14, 2.2, 0.14), ToonMat.make(C_WOOD),

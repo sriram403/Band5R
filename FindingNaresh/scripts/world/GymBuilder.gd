@@ -158,11 +158,10 @@ func _tyre_trap() -> void:
 		if body is Camper:
 			body.puncture())
 	world.add_child(trap)
-	var metal := ToonMat.make(Color(0.78, 0.78, 0.76))
-	for k in 9:
-		world.add_child(Build.box(Vector3(0.08, 0.06, 0.24), metal,
-			Vector3(-1.8 + float(k) * 0.45, 0.08, 249.0 + float(k % 3) * 0.8),
-			Vector3(0, float(k) * 19.0, 0), "Nail"))
+	var spill := Build.nail_spill(6.0)
+	spill.basis = Basis.looking_at(Vector3(1, 0, 0), Vector3.UP)   # the van comes from -X
+	spill.position = Vector3(0, 0.02, 250)
+	world.add_child(spill)
 	world.add_child(Build.label3d("ROADWORKS - NAILS", Vector3(-8, 2.1, 250), Vector3.ZERO, 0.7, Color(1, 0.8, 0.3)))
 	poi["tyre_nails"] = trap.position
 

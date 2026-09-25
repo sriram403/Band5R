@@ -55,6 +55,7 @@ var pause_note := ""
 var shot_mode := false
 ## Automated play-test running: never grab the mouse (the window sits off screen).
 var testing := false
+var opening_run := false
 ## Name of the gym (test map) loaded instead of the world, or "" for the game.
 ## From `-- --gym=<name>`, or set before reloading the scene (the dev menu does;
 ## "" there means the game world). "?" = nothing requested yet.
@@ -73,6 +74,12 @@ func _ready() -> void:
 		for a in OS.get_cmdline_user_args():
 			if a.begins_with("--gym"):
 				gym = a.get_slice("=", 1) if a.contains("=") else "base"
+	var has_playtest := false
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--playtest"):
+			has_playtest = true
+			opening_run = a.begins_with("--playtest=opening")
+	opening_run = gym == "" and (opening_run or not has_playtest)
 	builder = GymBuilder.new(gym) if gym != "" else LevelBuilder.new()
 	world = builder.build()
 	# Main runs as PROCESS_MODE_ALWAYS so the pause menu keeps working; the
@@ -144,6 +151,8 @@ func _spawn_camper() -> void:
 	camper.name = "Camper"
 	world.add_child(camper)
 	camper.transform = builder.camper_spawn
+	if opening_run:
+		camper.fuel = 6.0
 
 
 func _spawn_players() -> void:
@@ -156,6 +165,13 @@ func _spawn_players() -> void:
 		p.recolor(tints[i])
 		p.dev = devices[i]
 		p.transform = builder.player_spawns[i]
+		if opening_run and i == 1:
+			var house := world.get_node_or_null("P2Home") as HouseInterior
+			if house != null:
+				var look := house.global_basis * Vector3(-0.5, 0, -1.5)
+				p.global_transform = Transform3D(Basis.looking_at(look.normalized(), Vector3.UP),
+					house.to_global(Vector3(-2.5, 0.25, -0.5)))
+				p.flashlight_seconds = 0.0
 		p.yaw = p.transform.basis.get_euler().y
 		players.append(p)
 
@@ -588,6 +604,9 @@ func _esc_dismiss() -> bool:
 	if kbm_owner >= players.size():
 		return false
 	var p: PlayerRig = players[kbm_owner]
+	if p.phone_open:
+		p.phone_open = false
+		return true
 	if p.journal_open:
 		p.journal_open = false
 		return true

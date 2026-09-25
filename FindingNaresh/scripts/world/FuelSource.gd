@@ -38,5 +38,9 @@ func _ready() -> void:
 		item.litres += moved
 		item._update_mass()
 		item._refresh_prompt()
-		litres -= moved)
+		litres -= moved
+		if pump_style and moved > 0.0:
+			var story := get_tree().get_first_node_in_group("story") as Story
+			if story != null:
+				story.flags["town_fuel_filled"] = true)
 	add_child(area)
