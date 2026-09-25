@@ -248,6 +248,7 @@ func _run() -> void:
 			all = GYM_SCENARIOS.get(boot.gym, QUICK_GYM).duplicate()
 		else:
 			all.insert(all.find("save"), "routes")
+			all.insert(all.find("save"), "way_out")
 		selection = ""
 	# Scenarios outside a preset can still run by name.
 	if selection != "":
@@ -4717,6 +4718,124 @@ func t_routes() -> void:
 		check(arrived and not flipped, "the auto-driver gets through: " + leg[0])
 		check(ad.max_off < 6.0, "stays on the road: " + leg[0])
 	log_line("ROUTE all roads driven in %.1f min" % (total / 60.0))
+
+
+## D13: the whole way out in one drive, J1 -> the coast watchtower, on both
+## routes (valley, then ridge), the story running. The puzzles are done by
+## script where the van gets to them (the water works fixed, the turbine
+## lit, the bridge lowered); the ghat fog, the glimpse and the first attack
+## happen for real (the van drives on, which is one way out of it). Timed
+## leg by leg against the beat chart. `tools/run_test.sh way_out` (Full only).
+func t_way_out() -> void:
+	var b: LevelBuilder = boot.builder
+	var st: Story = boot.story
+	var c := camper()
+	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+	var ghat := get_tree().get_first_node_in_group("ghat") as Ghat
+	var stn := station()
+	for route in ["valley_road", "ridge_track"]:
+		# a fresh way out: the puzzles as they are in a new game
+		stn.solved = false
+		stn.fill["coolant"] = 0.0
+		(get_tree().get_first_node_in_group("power_line") as PowerLine).sync()
+		lift.from_dict({})
+		for f in ["leak_started", "leak_fixed", "bridge_down", "ghat_glimpse", "first_attack", "first_attack_over", "tower_seen", "windmill_map"]:
+			st.flags.erase(f)
+		st.index = st.index_of("windmill")
+		var mood := get_tree().get_first_node_in_group("mood") as Mood
+		mood.set_now(0.95)
+		var path := b.network.chain([[route], ["pump_house_road"], ["ghat_road"], ["beach_road"]])
+		var stop: Vector3 = b.poi["coast_road_stop"]
+		var stop_at := int(path.nearest(stop.x, stop.z)["index"])
+		# the van at J1, both in
+		c.freeze = false
+		var f0 := path.forward(4)
+		c.linear_velocity = Vector3.ZERO
+		c.angular_velocity = Vector3.ZERO
+		c.global_transform = Transform3D(Basis.looking_at(Vector3(f0.x, 0, f0.z), Vector3.UP), path.point(4) + Vector3.UP * 0.9)
+		c.reset_physics_interpolation()
+		c.fuel = 40.0
+		c.temp = Camper.TEMP_NORMAL
+		c.coolant = 1.0
+		c.coolant_leak = false
+		c.heat_lockout = false
+		c.fuel_leak = 0.0
+		c.attack.set_tarp(false)
+		c.parking_brake = false
+		await physics_frames(30)
+		await seat_p1_driver()
+		var q := p2()
+		if q.seat == null:
+			q.enter_seat(c, c.seat_nodes["passenger"], "passenger")
+		await physics_frames(3)
+		if not c.engine_on:
+			c.toggle_engine()
+		var ad := AutoDriver.new(self, path, c)
+		var t := 0.0
+		var stuck := 0.0
+		var marks := {}          # place -> seconds after J1
+		var places := [["j2", 60.0], ["facility", 60.0], ["bridge", 40.0], ["j3", 60.0], ["ghat_pass", 50.0], ["coast_road_stop", 30.0]]
+		var fog_max := 0.0
+		while t < 1500.0 and ad.idx < stop_at:
+			await get_tree().physics_frame
+			t += 1.0 / 60.0
+			ad.step(-1.0)
+			stuck = stuck + 1.0 / 60.0 if kmh() < 2.0 else 0.0
+			if stuck > 10.0:
+				break
+			if ghat != null:
+				fog_max = maxf(fog_max, ghat.fog)
+			for pl in places:
+				var at: Vector3 = b.poi[pl[0]]
+				if not marks.has(pl[0]) and Vector2(c.global_position.x - at.x, c.global_position.z - at.z).length() < float(pl[1]):
+					marks[pl[0]] = t
+			# the water works: the hose splits on the way in; fixed by script
+			# (the valves and pump are tested in `waterworks`), which lights
+			# the power line
+			if c.coolant_leak:
+				c.coolant_leak = false
+				c.heat_lockout = false
+				c.temp = Camper.TEMP_NORMAL
+				c.coolant = 1.0
+				stn.solved = true
+				stn.solved_changed.emit()
+			# the bridge: lowered by script before the van gets there (`bridge`
+			# tests it for real)
+			if not lift.locked and c.global_position.distance_to(b.poi["bridge"]) < 160.0:
+				lift.jammed = false
+				lift._lock()
+			# Last Fuel: the players refuel from the cans there (tested in
+			# `story`); by script, the moment the objective asks for it
+			if st.current()["id"] == "refuel" or c.fuel < 8.0:
+				c.fuel = 45.0
+		ad.release()
+		key(KEY_S, true)
+		await wait(2.0)
+		key(KEY_S, false)
+		await tap(KEY_SPACE)
+		var arrived := ad.idx >= stop_at
+		var times := []
+		for pl in places:
+			times.append("%s %s" % [pl[0], ("%.1f min" % (float(marks[pl[0]]) / 60.0)) if marks.has(pl[0]) else "-"])
+		log_line("WAY OUT by %s: arrived=%s in %.1f min driving; %s; fog max %.2f; glimpse %s, attack %s (over %s); objective now '%s'" % [
+			route, arrived, t / 60.0, ", ".join(times), fog_max, st.flags.has("ghat_glimpse"), st.flags.has("first_attack"), st.flags.has("first_attack_over"), st.current()["id"]])
+		if not arrived:
+			await shot("way_out_stuck_" + route)
+		check(arrived, "the way out by %s: J1 to the coast watchtower in one drive (%.1f min)" % [route, t / 60.0])
+		check(stn.solved and lift.locked and st.flags.has("bridge_down"), "by %s: the water works lit the line and the bridge came down" % route)
+		check(fog_max > 0.9 and st.flags.has("ghat_glimpse") and st.flags.has("first_attack"), "by %s: fog on the hairpins, the glimpse, the first creature at the pass" % route)
+		var obj: String = st.current()["id"]
+		check(obj in ["hide_van", "to_tower", "tower"], "by %s: the story kept up with the drive (now '%s')" % [route, obj])
+		await shot("way_out_" + route)
+		p1().force_exit = true
+		q.force_exit = true
+		await physics_frames(4)
+		var cr := get_tree().get_root().find_child("FirstCreature", true, false)
+		if cr != null:
+			cr.queue_free()
+		if ghat != null:
+			ghat.attacker = null
+			ghat.glimpse = null
 
 
 ## Mouse travel must map to the same turn however it is split across frames.

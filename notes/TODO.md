@@ -16,7 +16,7 @@ being built and tested), so this always shows where the work is right now.
   D9 the lift bridge and D10 the ghat done (Quick: 414 checks, 0 failures).
   D11 the watchtower and D12 the optional puzzles done (Quick: 436 checks, 0
   failures). Now: [~] D13 the full run J1 -> coast watchtower on both routes
-  (`t_way_out`), then Full and the hand-over.
+  (`t_way_out` passes), Full suite running, then the hand-over.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -606,7 +606,21 @@ test was fixed and now restores its starting layout before the pad test.
         (now 150 m, 1.6 m pictures, all one colour so only the shape tells);
         the dials read right to left from the front (now 1-4, left to right)
   - [x] Quick: 12 segments, 436 checks, 0 failures
-- [ ] D13. Full run J1 -> Bessi on both routes; hand-over
+- [~] D13. Full run J1 -> Bessi on both routes; hand-over
+  - [x] `t_way_out` (Full only): J1 -> the coast watchtower in one drive,
+        story running, both routes. Puzzles by script where the van gets to
+        them (refuel at Last Fuel, the water works fix and turbine, the
+        bridge); the fog, the glimpse and the first attack for real (the van
+        drives on). 8 checks pass. Driving time: valley 4.3 min (J2 at 1.8,
+        water works 2.5, bridge 2.7, J3 2.8, pass 3.9, tower 4.3); ridge 3.2
+        min (J2 at 0.8). With the stops (windmill ~2 min, water works ~3,
+        bridge ~2-3, the attack ~1, the tower ~2) about 14-15 min from J1 to
+        the tower, near the beat chart's 13.5 (7:30 -> 21:00). The roads
+        themselves are shorter than the chart's guesses (valley 1.8 not ~3,
+        ridge 0.8 not ~1.5)
+  - [x] Found: the drive stopped the story at "refuel" (the van reached Last
+        Fuel without a full tank); the script now refuels there like players
+  - [~] Full suite before the hand-over
 
 ## Milestone E: Bessi beach and Naresh
 - [ ] Beach greybox: sand, sea, promenade, empty lit stalls, boats, casuarinas, memorial
