@@ -15,7 +15,8 @@ Last updated: 2026-09-25, after the tyre gym and its Quick repeat. Milestone B
 and the opening design are approved; all six cloud PRs are merged. Quick,
 Road check and Full now work and have passed locally. Milestone C has begun
 with the tyre gym and physical wheel swap, which pass their automated checks.
-The world puncture, house and traffic remain. Start at section 6.
+The world puncture passed its gated teleport check. House and traffic remain.
+Start at section 6.
 
 ---
 
@@ -120,8 +121,8 @@ they/them.
   checklist. The tyre gym has a fixed trap, a physical spare-wheel swap, flat
   handling and a 20% handbrake slope. Its 17 checks pass in 33.5 s; the
   default Quick repeat including it finished with zero failures and script
-  errors. Place the puncture in the world next, then build the house and
-  traffic gyms.
+  errors. The world puncture is after Town Fuel; its story-gated teleport
+  check passes (three checks). Build the house and traffic gyms next.
 
 ---
 
@@ -323,7 +324,7 @@ C has begun with the tested tyre gym. Next, in this order:**
    the opening). Gyms first: tyre, house, traffic. Its "What is new to build" list
    is the work plan, now expanded in `notes/TODO.md`. Build and test the tyre
    gym first (done), then the house and traffic gyms, then place them in the
-   world. The tyre puncture is ready for world placement and testing.
+   world. The tyre puncture is already placed and tested on Homestead Lane.
 2. Then hand over C (rule 2). Milestones D-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
    gym first. The merged `design/PUZZLES.md`, `design/WAY_OUT.md`,

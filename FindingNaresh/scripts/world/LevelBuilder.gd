@@ -314,6 +314,7 @@ func _landmarks() -> void:
 	_five_roses(ROSE_CENTRE)
 	_p2_home()
 	_town()
+	_roadworks()
 	_lookout(COAST_TOWER, 16.0, "CoastTower", "COAST\nWATCHTOWER", ROSE_CENTRE, "coast_tower")
 	_lookout(END_TOWER, 22.0, "EndTower", "OLD\nWATCHTOWER", Vector3(400, 0, -300), "end_tower")
 	_beach()

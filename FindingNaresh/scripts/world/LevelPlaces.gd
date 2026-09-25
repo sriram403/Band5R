@@ -73,6 +73,55 @@ func _town() -> void:
 	poi["town_fuel"] = pos
 
 
+## Fixed opening puncture, after Town Fuel and before P2's turning. The story
+## arms it when P1 has reached the roadworks beat; old saves and route tests
+## can still travel this road without a surprise flat.
+func _roadworks() -> void:
+	var lane := network.road("home_lane")
+	var i := 520
+	var p := lane.point(i)
+	var f := lane.forward(i)
+	var r := lane.right(i)
+	var root := Node3D.new()
+	root.name = "RoadworksNails"
+	root.position = p
+	world.add_child(root)
+	var trap := Area3D.new()
+	trap.name = "PunctureArea"
+	trap.collision_layer = 0
+	trap.collision_mask = 8
+	trap.monitoring = true
+	trap.position.y = 0.35
+	var cs := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(10.0, 0.8, 10.0)
+	cs.shape = box
+	trap.add_child(cs)
+	trap.body_entered.connect(func(body: Node3D):
+		if not body is Camper:
+			return
+		var story := trap.get_tree().get_first_node_in_group("story") as Story
+		if story == null or not story.flags.has("opening_puncture_armed") or story.flags.has("opening_puncture_done"):
+			return
+		story.flags["opening_puncture_done"] = true
+		body.puncture())
+	root.add_child(trap)
+	var metal := ToonMat.make(Color(0.78, 0.78, 0.76))
+	for k in 23:
+		var x := -4.0 + float(k % 8) * 1.1
+		var z := -3.8 + float(k / 8) * 2.0
+		var np := r * x + f * z + Vector3.UP * 0.08
+		root.add_child(Build.box(Vector3(0.08, 0.06, 0.24), metal, np,
+			Vector3(0, float(k * 31 % 180), 0), "LooseNail"))
+	var sign_pos := p - f * 30.0 - r * 7.0
+	sign_pos.y = _h(sign_pos.x, sign_pos.z)
+	root.add_child(Build.box(Vector3(0.14, 2.2, 0.14), ToonMat.make(C_WOOD),
+		sign_pos - p + Vector3.UP * 1.1, Vector3.ZERO, "WarningPost"))
+	root.add_child(Build.label3d("ROADWORKS\nLOOSE NAILS", sign_pos - p + Vector3.UP * 2.5,
+		Vector3.ZERO, 0.6, Color(1.0, 0.78, 0.2)))
+	poi["roadworks_nails"] = p
+
+
 ## Bessi beach (greybox): a promenade of stalls behind the sand, boats drawn
 ## up, a line of casuarinas and the memorial. Milestone E builds it properly.
 func _beach() -> void:

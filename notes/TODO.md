@@ -9,8 +9,8 @@ being built and tested), so this always shows where the work is right now.
 - Milestone C tyre gym works (2026-09-25): fixed nail trap and the complete
   physical spare-wheel swap passed 17 checks in 33.5 s, 0 failures or script
   errors. Default Quick including the tyre gym passed with 0 failures and no
-  script errors. Next place the fixed puncture on the opening lane and test it
-  in the real world. House and traffic gyms follow.
+  script errors. The fixed world nails past Town Fuel passed a three-check
+  story-gated teleport test. House and traffic gyms follow.
   The three test levels are complete: Quick 265 s of scenarios, Full 2010 s
   with all eight road legs, Road check 2 s; all pass. The split-screen HUD
   reminder overlap was fixed and checked on foot and in both seats.
@@ -245,7 +245,8 @@ test was fixed and now restores its starting layout before the pad test.
         fixed; the clean repeat reported no script errors.
   - [x] Repaired van holds on the gym's 20% slope with the handbrake, rolls
         without it; both checks pass
-  - [ ] Place the fixed puncture on the opening lane and test it in the world
+  - [x] Place the fixed puncture on the opening lane after Town Fuel: a warning
+        sign and nails; three-check story-gated world test passed, 0 failures
 - [ ] House gym: two rooms, upstairs window, stairs, drawers, shed, doors;
       battery search and fuel-drum interaction tested on its own map
 - [ ] Traffic gym: town cars on a loop, keep left, slow or stop behind the van,

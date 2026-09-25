@@ -19,7 +19,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
 
 
 func _ready() -> void:
@@ -1996,6 +1996,44 @@ func t_tyre() -> void:
 	await wait(2.5)
 	check(c.global_position.distance_to(slope_start) > 2.0,
 		"and rolls on the 20% slope when the handbrake is released")
+
+
+## Teleport check of the fixed world puncture. The opening story arms it later;
+## all the existing long-route checks keep their original route conditions.
+func t_roadworks() -> void:
+	var lane: Route = boot.builder.network.road("home_lane")
+	var trap: Area3D = boot.world.get_node_or_null("RoadworksNails/PunctureArea")
+	check(trap != null and boot.builder.poi.has("roadworks_nails"),
+		"the roadworks nails and warning sign are placed past Town Fuel")
+	if trap == null:
+		return
+	var c := camper()
+	var flags: Dictionary = boot.story.flags
+	flags.erase("opening_puncture_armed")
+	flags.erase("opening_puncture_done")
+	var f: Vector3 = lane.forward(520)
+	var basis := Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP)
+	c.parking_brake = true
+	c.linear_velocity = Vector3.ZERO
+	c.angular_velocity = Vector3.ZERO
+	c.global_transform = Transform3D(basis, lane.point(520) + Vector3.UP * 0.8)
+	c.reset_physics_interpolation()
+	await physics_frames(8)
+	check(not c.tyre_flat, "unarmed roadworks leave an older route run alone")
+	c.global_transform = Transform3D(basis, lane.point(510) + Vector3.UP * 0.8)
+	c.reset_physics_interpolation()
+	await physics_frames(8)
+	flags["opening_puncture_armed"] = true
+	c.global_transform = Transform3D(basis, lane.point(520) + Vector3.UP * 0.8)
+	c.reset_physics_interpolation()
+	await physics_frames(8)
+	check(c.tyre_flat and flags.has("opening_puncture_done"),
+		"an armed opening punctures the van once at the fixed nails")
+	flags.erase("opening_puncture_armed")
+	flags.erase("opening_puncture_done")
+	c.tyre_flat = false
+	c.tyre_stage = 0
+	c.refresh_tyre_visuals()
 
 
 ## Door and rear-view mirrors; the nav screen swung over to the passenger.
