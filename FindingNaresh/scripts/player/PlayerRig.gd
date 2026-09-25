@@ -582,7 +582,10 @@ func _scan_holding() -> void:
 		var still_there := _using == ctx or (is_instance_valid(_using) and (_using as Node3D).global_position.distance_to(head.global_position) < 3.0)
 		if dev.held("interact") and still_there and held != null:
 			(_using.get_meta("held_action") as Callable).call(self, held, get_physics_process_delta_time(), false)
-			held.pouring = _using.has_meta("pour")
+			if held != null:  # an action may consume the carried item
+				held.pouring = _using.has_meta("pour")
+			else:
+				_using = null
 		else:
 			_using = null
 			if held != null:

@@ -90,7 +90,9 @@ static func collect(boot: Node) -> Dictionary:
 			"xf": _xf(c.global_transform), "fuel": c.fuel, "temp": c.temp, "battery": c.battery,
 			"odometer": c.odometer, "leak": c.coolant_leak, "lockout": c.heat_lockout,
 			"headlights": c.headlights_on, "coolant_added": c.coolant_added, "coolant": c.coolant,
-			"park_brake": c.parking_brake,
+			"park_brake": c.parking_brake, "tyre_flat": c.tyre_flat,
+			"tyre_stage": c.tyre_stage, "tyre_work": c.tyre_work,
+			"spare_available": c.spare_available,
 		},
 		"items": items,
 		"map": boot.map_state.to_dict(),
@@ -144,6 +146,11 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	c.coolant = float(cd.get("coolant", 1.0))
 	c.engine_on = false
 	c.parking_brake = bool(cd.get("park_brake", true))
+	c.tyre_flat = bool(cd.get("tyre_flat", false))
+	c.tyre_stage = int(cd.get("tyre_stage", 0))
+	c.tyre_work = float(cd.get("tyre_work", 0.0))
+	c.spare_available = bool(cd.get("spare_available", true))
+	c.refresh_tyre_visuals()
 	c.set_headlights(bool(cd.get("headlights", false)))
 	c.reset_physics_interpolation()
 
@@ -214,6 +221,8 @@ static func _make_item(e: Dictionary) -> Carryable:
 			return j
 		"crate":
 			return Crate.new()
+		"spare_wheel":
+			return SpareWheel.new()
 	return null
 
 

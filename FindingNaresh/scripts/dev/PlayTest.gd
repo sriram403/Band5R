@@ -221,14 +221,17 @@ func _run() -> void:
 		return
 	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
-		all = ["gym"]          # gyms have their own scenarios
+		all = ["tyre"] if boot.gym == "tyre" else ["gym"]
 	var selection := only
 	if selection == "quick" or selection == "gym_quick":
-		all = QUICK_GYM.duplicate() if boot.gym != "" else QUICK_WORLD.duplicate()
+		if boot.gym == "tyre":
+			all = ["tyre"]
+		else:
+			all = QUICK_GYM.duplicate() if boot.gym != "" else QUICK_WORLD.duplicate()
 		selection = ""
 	elif selection == "full":
 		if boot.gym != "":
-			all = QUICK_GYM.duplicate()
+			all = ["tyre"] if boot.gym == "tyre" else QUICK_GYM.duplicate()
 		else:
 			all.insert(all.find("save"), "routes")
 		selection = ""
@@ -1911,6 +1914,88 @@ func t_gym() -> void:
 	await wait(3.0)
 	key(KEY_S, false)
 	await tap(KEY_SPACE)
+
+
+## Puncture on the measuring straight, then the real E/hold-E wheel sequence.
+func t_tyre() -> void:
+	var c := camper()
+	check(boot.gym == "tyre" and boot.world.get_node_or_null("TyreNails") != null,
+		"the tyre gym has a fixed, visible nail trap")
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
+	key(KEY_W, true)
+	var elapsed := 0.0
+	while elapsed < 20.0 and not c.tyre_flat:
+		await get_tree().physics_frame
+		elapsed += 1.0 / 60.0
+		key(KEY_W, true)  # reassert after a window focus event clears Input's held keys
+	key(KEY_W, false)
+	log_line("tyre approach: %.1f s, van %s, speed %.0f km/h" % [elapsed, c.global_position, kmh()])
+	check(c.tyre_flat, "crossing the nails punctures the front-left tyre")
+	if not c.tyre_flat:
+		return
+	check(c._wheels[0].wheel_friction_slip < 2.0 and c._wheels[0].wheel_radius < Camper.WHEEL_RADIUS,
+		"the flat has less grip and a visibly smaller radius")
+	key(KEY_S, true)
+	await wait(4.0)
+	key(KEY_S, false)
+	if not c.parking_brake:
+		await tap(KEY_SPACE)
+	await wait(1.0)
+	check(c.parking_brake and kmh() < 3.0, "the van is parked on its handbrake before the repair")
+	p1().force_exit = true
+	await physics_frames(3)
+	var rear := c.global_transform * Vector3(0, 2.05 + Camper.BODY_Y, 3.25)
+	await face_point(p1(), rear, 2.0, c.global_transform.basis.z)
+	check(p1().prompt_text.contains("spare"), "the rear mount offers the spare wheel")
+	await tap(KEY_E)
+	check(c.tyre_stage == 1 and p1().held is SpareWheel, "E takes a physical spare off the rear mount")
+	if not p1().held is SpareWheel:
+		return
+	var wheel := p1().held as SpareWheel
+	var front := c.global_transform * Vector3(-1.55, 0.48 + Camper.BODY_Y, -Camper.WHEELBASE)
+	await face_point(p1(), front, 2.0, -c.global_transform.basis.x)
+	await tap(KEY_E)  # put the spare on the ground while working the jack
+	check(p1().held == null, "the spare can be put down beside the flat")
+	wheel.global_position = c.global_transform * Vector3(-3.3, 0.7, -Camper.WHEELBASE - 1.0)
+	wheel.linear_velocity = Vector3.ZERO
+	wheel.reset_physics_interpolation()
+	await face_point(p1(), front, 1.8, -c.global_transform.basis.x)
+	check(p1().prompt_text.contains("jack"), "the sill offers a jack point")
+	await tap(KEY_E)
+	check(c.tyre_stage == 2, "E sets the jack")
+	key(KEY_E, true)
+	await wait(6.3)
+	key(KEY_E, false)
+	check(c.tyre_stage == 3, "holding E loosens the nuts")
+	await wait(0.2)  # one released physics tick before the next press
+	await tap(KEY_E)
+	check(c.tyre_stage == 4 and not c._wheel_meshes[0].visible, "the flat wheel comes off")
+	await face_point(p1(), wheel.global_position, 1.5)
+	await tap(KEY_E)
+	check(p1().held == wheel, "the player picks the spare back up")
+	await face_point(p1(), front, 1.8, -c.global_transform.basis.x)
+	check(p1().prompt_text.contains("fit the spare"), "the spare fits onto the exposed hub")
+	key(KEY_E, true)
+	await wait(6.3)
+	key(KEY_E, false)
+	check(c.tyre_stage == 5 and p1().held == null, "holding E fits the spare")
+	await wait(0.2)
+	await tap(KEY_E)
+	check(not c.tyre_flat and not c.spare_available and c.tyre_stage == 0,
+		"lowering the jack restores grip and consumes the spare")
+	await shot("tyre_repaired")
+	boot.dev_menu.van_to(boot.builder.poi["slope_20"], 0.0)
+	await wait(2.5)
+	var slope_start := c.global_position
+	await wait(2.0)
+	check(c.parking_brake and c.global_position.distance_to(slope_start) < 0.05,
+		"the repaired van holds on the 20% slope with the handbrake set")
+	c.set_parking_brake(false)
+	await wait(2.5)
+	check(c.global_position.distance_to(slope_start) > 2.0,
+		"and rolls on the 20% slope when the handbrake is released")
 
 
 ## Door and rear-view mirrors; the nav screen swung over to the passenger.

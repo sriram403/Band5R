@@ -11,10 +11,11 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, after completing the three test levels. Milestone B
+Last updated: 2026-09-25, after the tyre gym and its Quick repeat. Milestone B
 and the opening design are approved; all six cloud PRs are merged. Quick,
 Road check and Full now work and have passed locally. Milestone C has begun
-with the tyre gym; no Milestone C mechanics are built yet. Start at section 6.
+with the tyre gym and physical wheel swap, which pass their automated checks.
+The world puncture, house and traffic remain. Start at section 6.
 
 ---
 
@@ -116,8 +117,11 @@ they/them.
   failures). Current local commits are beyond the merged cloud PRs; do not
   push before the user's milestone approval.
 - **Milestone C started:** `notes/TODO.md` has the approved opening's detailed
-  checklist. The tyre gym is marked in progress; the actual mechanic is not
-  yet built.
+  checklist. The tyre gym has a fixed trap, a physical spare-wheel swap, flat
+  handling and a 20% handbrake slope. Its 17 checks pass in 33.5 s; the
+  default Quick repeat including it finished with zero failures and script
+  errors. Place the puncture in the world next, then build the house and
+  traffic gyms.
 
 ---
 
@@ -310,7 +314,7 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 ## 6. What to do next
 
 **Milestone B, all six cloud PRs, and the three test levels are done. Milestone
-C has begun with the tyre gym. Next, in this order:**
+C has begun with the tested tyre gym. Next, in this order:**
 
 1. **Milestone C, the opening**, from `design/OPENING.md` (approved 2026-09-24:
    phone on P / D-pad right, read-only; split screen as now; town cars just bump;
@@ -318,7 +322,8 @@ C has begun with the tyre gym. Next, in this order:**
    starts the story, the parents' letter stays as an extra; torch batteries from
    the opening). Gyms first: tyre, house, traffic. Its "What is new to build" list
    is the work plan, now expanded in `notes/TODO.md`. Build and test the tyre
-   gym first, then the house and traffic gyms, then place them in the world.
+   gym first (done), then the house and traffic gyms, then place them in the
+   world. The tyre puncture is ready for world placement and testing.
 2. Then hand over C (rule 2). Milestones D-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
    gym first. The merged `design/PUZZLES.md`, `design/WAY_OUT.md`,

@@ -6,7 +6,11 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Starting Milestone C's tyre gym (2026-09-25), then house and traffic gyms.
+- Milestone C tyre gym works (2026-09-25): fixed nail trap and the complete
+  physical spare-wheel swap passed 17 checks in 33.5 s, 0 failures or script
+  errors. Default Quick including the tyre gym passed with 0 failures and no
+  script errors. Next place the fixed puncture on the opening lane and test it
+  in the real world. House and traffic gyms follow.
   The three test levels are complete: Quick 265 s of scenarios, Full 2010 s
   with all eight road legs, Road check 2 s; all pass. The split-screen HUD
   reminder overlap was fixed and checked on foot and in both seats.
@@ -234,10 +238,14 @@ test was fixed and now restores its starting layout before the pad test.
       D-pad right, split screen as now, town cars just bump
 - [~] Tyre gym: fixed puncture, pull and speed loss, spare-wheel swap, handbrake
       on a 20% drive; automated input test and tuning
-  - [~] Inspect the current tyre/van and gym hooks, then write the measured
+  - [x] Inspect the current tyre/van and gym hooks, then write the measured
         wheel-swap sequence in the gym
-  - [ ] Test puncture handling, wheel swap and handbrake independently in gym
-  - [ ] Add the finished mechanic to the world only after the gym passes
+  - [x] Test puncture handling and wheel swap through real input: 17 checks,
+        0 failures, 33.5 s. A null-held script error found during the run was
+        fixed; the clean repeat reported no script errors.
+  - [x] Repaired van holds on the gym's 20% slope with the handbrake, rolls
+        without it; both checks pass
+  - [ ] Place the fixed puncture on the opening lane and test it in the world
 - [ ] House gym: two rooms, upstairs window, stairs, drawers, shed, doors;
       battery search and fuel-drum interaction tested on its own map
 - [ ] Traffic gym: town cars on a loop, keep left, slow or stop behind the van,

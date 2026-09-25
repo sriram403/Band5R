@@ -104,6 +104,12 @@ var _glug: AudioStreamPlayer3D
 var _pour_t := 0.0
 var coolant_added := 0.0
 var coolant := 1.0                 ## 0..1 of the cooling system's fill; the split hose drains it
+## Opening puncture: one front-left wheel, one spare, a short physical swap.
+var tyre_flat := false
+var spare_available := true
+var tyre_stage := 0                 ## 0 spare, 1 jack, 2 nuts, 3 flat off, 4 spare on, 5 jack down
+var tyre_work := 0.0
+var _spare_mesh: Node3D
 const COOLANT_DRAIN := 0.03        ## per second through the split hose (engine running)
 const COOLANT_L := 4.0             ## litres to go from empty to full   ## rear rack positions; a stowed Carryable is the slot's child
 var _parked_t := 0.0
@@ -222,7 +228,8 @@ func _build_body() -> void:
 	g.add_child(Build.box(Vector3(0.96, 1.20, 0.06), accent, Vector3(-0.53, 1.45, 2.96), Vector3.ZERO, "DoorL"))
 	g.add_child(Build.box(Vector3(0.96, 1.20, 0.06), accent, Vector3(0.53, 1.45, 2.96), Vector3.ZERO, "DoorR"))
 	# spare wheel on the back
-	g.add_child(Build.cyl(0.44, 0.26, ToonMat.make(Color(0.15, 0.15, 0.17)), Vector3(0.0, 2.05, 3.10), Vector3(90, 0, 0), 16, "Spare"))
+	_spare_mesh = Build.cyl(0.44, 0.26, ToonMat.make(Color(0.15, 0.15, 0.17)), Vector3(0.0, 2.05, 3.10), Vector3(90, 0, 0), 16, "Spare")
+	g.add_child(_spare_mesh)
 
 	# nose: bonnet high enough to meet the windscreen, so the driver's sightline
 	# starts just above the dash instead of into bodywork
@@ -471,6 +478,7 @@ func _build_service() -> void:
 			for pl in get_tree().get_nodes_in_group("player"):
 				pl.say("The coolant gurgles in and the sealant in the mix grabs the split. The hissing stops.", 5.0))
 	_body_root.add_child(rad)
+	_build_tyre_service()
 
 	# steam from the grille when it's boiling
 	_steam = CPUParticles3D.new()
@@ -551,6 +559,93 @@ func _build_service() -> void:
 				return
 			item.stow(slot))
 		_body_root.add_child(area)
+
+
+func puncture() -> void:
+	if tyre_flat:
+		return
+	tyre_flat = true
+	refresh_tyre_visuals()
+	Sfx.play3d("hit_metal_heavy", global_position + global_transform.basis * Vector3(-1.0, 0, -WHEELBASE), 2.0)
+	for pl in get_tree().get_nodes_in_group("player"):
+		pl.say("A tyre bursts. The van pulls left and struggles for speed. Park with the handbrake, then take the spare off the rear door.", 7.0)
+
+
+func refresh_tyre_visuals() -> void:
+	_wheels[0].wheel_friction_slip = 1.0 if tyre_flat else 3.1
+	_wheels[0].wheel_radius = WHEEL_RADIUS * (0.78 if tyre_flat else 1.0)
+	_wheel_meshes[0].scale = Vector3(1.0, 0.76, 0.76) if tyre_flat else Vector3.ONE
+	_wheel_meshes[0].visible = tyre_stage != 4
+	_spare_mesh.visible = spare_available and tyre_stage == 0
+	var jack := _body_root.get_node_or_null("WheelJack") as Node3D
+	if jack != null:
+		jack.visible = tyre_flat and tyre_stage >= 2
+
+
+func _tyre_parked() -> bool:
+	return linear_velocity.length() < 0.8 and parking_brake
+
+
+func _build_tyre_service() -> void:
+	var spare := Build.interact_area(Vector3(0.9, 1.0, 0.9), Vector3(0, 2.05, 3.25), "", func(p):
+		if tyre_flat and tyre_stage == 0 and _tyre_parked():
+			var wheel := SpareWheel.new()
+			wheel.name = "OpeningSpareWheel"
+			get_tree().get_first_node_in_group("world_root").add_child(wheel)
+			wheel.global_position = global_transform * Vector3(0, 0.9, 4.1)
+			p.pick_up(wheel)
+			tyre_stage = 1
+			_spare_mesh.visible = false, "SpareMount")
+	spare.set_meta("prompt_fn", func(_p) -> String:
+		return "Take the spare wheel" if tyre_flat and tyre_stage == 0 and _tyre_parked() else "")
+	spare.set_meta("blocked_fn", func() -> String:
+		return "Park and set the handbrake before changing the wheel" if tyre_flat and tyre_stage == 0 and not _tyre_parked() else "")
+	_body_root.add_child(spare)
+
+	var jack_visual := Build.box(Vector3(0.5, 0.45, 0.55), ToonMat.make(Color(0.90, 0.66, 0.16)), Vector3(-1.30, 0.25, -WHEELBASE), Vector3.ZERO, "WheelJack")
+	jack_visual.visible = false
+	_body_root.add_child(jack_visual)
+	var nuts := Build.interact_area(Vector3(0.7, 0.9, 1.0), Vector3(-1.55, 0.48, -WHEELBASE), "", func(_p):
+		if tyre_flat and tyre_stage == 1 and _tyre_parked():
+			tyre_stage = 2
+			jack_visual.visible = true
+		elif tyre_flat and tyre_stage == 3 and _tyre_parked():
+			tyre_stage = 4
+			_wheel_meshes[0].visible = false
+		elif tyre_flat and tyre_stage == 5 and _tyre_parked():
+			tyre_stage = 0
+			tyre_flat = false
+			jack_visual.visible = false
+			_wheels[0].wheel_friction_slip = 3.1
+			_wheels[0].wheel_radius = WHEEL_RADIUS
+			_wheel_meshes[0].scale = Vector3.ONE, "WheelNuts")
+	nuts.set_meta("prompt_fn", func(_p) -> String:
+		if not tyre_flat or not _tyre_parked(): return ""
+		if tyre_stage == 1: return "Set the jack under the front left sill"
+		if tyre_stage == 2: return "Hold to loosen the wheel nuts"
+		if tyre_stage == 3: return "Pull off the flat wheel"
+		if tyre_stage == 4: return "Bring the spare wheel here"
+		if tyre_stage == 5: return "Lower and remove the jack"
+		return "")
+	nuts.set_meta("hold_fn", func(_p, dt: float):
+		if tyre_flat and tyre_stage == 2 and _tyre_parked():
+			tyre_work += dt
+			if tyre_work >= 6.0:
+				tyre_work = 0.0
+				tyre_stage = 3)
+	nuts.set_meta("held_prompt_fn", func(_p, item) -> String:
+		return "Hold to fit the spare wheel" if tyre_flat and tyre_stage == 4 and item.kind == "spare_wheel" and _tyre_parked() else "")
+	nuts.set_meta("held_action", func(p, item, dt: float, _first: bool):
+		if tyre_flat and tyre_stage == 4 and item.kind == "spare_wheel" and _tyre_parked():
+			tyre_work += dt
+			if tyre_work >= 6.0:
+				p.drop_held()
+				item.queue_free()
+				tyre_work = 0.0
+				tyre_stage = 5
+				spare_available = false
+				_wheel_meshes[0].visible = true)
+	_body_root.add_child(nuts)
 
 
 func stowed_item(slot: Node3D) -> Carryable:
@@ -699,7 +794,7 @@ func _physics_process(delta: float) -> void:
 	var rate := STEER_SPEED if absf(steer_in) > 0.05 else STEER_RETURN
 	_steer = move_toward(_steer, target, rate * lock * delta)
 	# Godot's `steering` is positive-left; our input is positive-right.
-	steering = -_steer
+	steering = -_steer + (0.055 if tyre_flat and speed > 2.0 else 0.0)
 
 	# engine
 	var out := 0.0
@@ -711,6 +806,8 @@ func _physics_process(delta: float) -> void:
 			out = -REVERSE_FORCE * brake_in
 	# Measured: positive engine_force pushes this rig toward +Z, but the van's
 	# nose is -Z, so drive forces are negated here rather than flipping the mesh.
+	if tyre_flat:
+		out *= 0.52
 	engine_force = -out
 
 	var b := 0.0
@@ -744,7 +841,7 @@ func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 		var load: float = throttle_in * (1.0 + clampf(_grade() * 4.0, 0.0, 1.6))
 		var km := speed * delta / 1000.0
 		var cargo := 1.0 + cargo_mass() / CARGO_FUEL_KG
-		fuel = maxf(0.0, fuel - km * FUEL_PER_KM * (0.6 + load) * cargo - FUEL_IDLE_PER_S * delta)
+		fuel = maxf(0.0, fuel - km * FUEL_PER_KM * (0.6 + load) * cargo * (1.35 if tyre_flat else 1.0) - FUEL_IDLE_PER_S * delta)
 		# Equilibrium model: heat target rises with load, falls with airflow.
 		# Ordinary driving settles near TEMP_NORMAL; only load beyond flat full
 		# throttle (climbing, towing) pushes it toward the warning lamp.

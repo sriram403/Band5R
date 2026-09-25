@@ -12,7 +12,7 @@ extends LevelBuilder
 ## More gyms (tagging, hiding, creatures, Naresh, storm) are added as those
 ## mechanics are built; each one starts as a copy of `base`.
 
-const GYMS := ["base"]
+const GYMS := ["base", "tyre"]
 const GRID_HALF := 120.0           ## measuring grid covers +-120 m around the centre
 ## Test slopes: [x centre, grade]. Each is a 20 m wide hump across the road loop's
 ## east side, rising for 50 m, so the van can be parked mid-slope.
@@ -70,6 +70,8 @@ func build() -> Node3D:
 	_grid()
 	_slope_signs()
 	_gym_props()
+	if gym == "tyre":
+		_tyre_trap()
 	_world_edge()
 	_gym_spawns()
 	return world
@@ -136,8 +138,35 @@ func _gym_props() -> void:
 	world.add_child(title)
 
 
+func _tyre_trap() -> void:
+	var trap := Area3D.new()
+	trap.name = "TyreNails"
+	trap.position = Vector3(0, 0.35, 250)
+	trap.collision_layer = 0
+	trap.collision_mask = 8
+	trap.monitoring = true
+	var cs := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(4.0, 0.8, 9.0)
+	cs.shape = box
+	trap.add_child(cs)
+	trap.body_entered.connect(func(body):
+		if body is Camper:
+			body.puncture())
+	world.add_child(trap)
+	var metal := ToonMat.make(Color(0.78, 0.78, 0.76))
+	for k in 9:
+		world.add_child(Build.box(Vector3(0.08, 0.06, 0.24), metal,
+			Vector3(-1.8 + float(k) * 0.45, 0.08, 249.0 + float(k % 3) * 0.8),
+			Vector3(0, float(k) * 19.0, 0), "Nail"))
+	world.add_child(Build.label3d("ROADWORKS - NAILS", Vector3(-8, 2.1, 250), Vector3.ZERO, 0.7, Color(1, 0.8, 0.3)))
+	poi["tyre_nails"] = trap.position
+
+
 func _gym_spawns() -> void:
 	camper_spawn = Transform3D(Basis(), Vector3(0, 0.8, 30))
+	if gym == "tyre":
+		camper_spawn = Transform3D(Basis.looking_at(Vector3(1, 0, 0), Vector3.UP), Vector3(-85, 0.8, 250))
 	poi["camper_spawn"] = camper_spawn.origin
 	poi["homestead"] = Vector3(0, 0, 40)
 	for k in 2:
