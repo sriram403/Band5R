@@ -19,7 +19,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
-const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth"]}
+const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
 const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "driveway", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
 
@@ -2441,6 +2441,10 @@ func calm_creature(cr: Creature, at: Vector3, facing := PI) -> void:
 	cr.last_noticed = at
 	cr._heard_id = Hearing.last_id()
 	cr.reset_physics_interpolation()
+	for tk in get_tree().get_nodes_in_group("taken"):
+		(tk as Taken).cancel()
+	for pl in boot.players:
+		pl.taken_grace = 0.0
 	await physics_frames(2)
 
 
@@ -2564,6 +2568,88 @@ func t_stealth() -> void:
 	log_line("out of sight: gave up after %.1f s, taken %s" % [(Time.get_ticks_msec() - t0) / 1000.0, not took.is_empty()])
 	check(gave_up and took.is_empty(), "out of sight and quiet, it gives up the chase")
 	await calm_creature(cr, eye)
+
+
+## Being taken: white, a drop point, the partner's trail, texts, grace; both
+## taken = both at the van with a leak.
+func t_taken() -> void:
+	var b := boot.builder as GymBuilder
+	var cr := boot.world.get_node_or_null("GymCreature") as Creature
+	if cr == null:
+		check(false, "the stealth gym has a creature")
+		return
+	var eye := GymBuilder.STEALTH_EYE
+	var p := p1()
+	var q := p2()
+	var story := get_tree().get_first_node_in_group("story") as Story
+	var texts0 := [story.phone_threads[0].size(), story.phone_threads[1].size()]
+	await calm_creature(cr, eye)
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	boot._set_layout(Boot.Layout.SIDE_BY_SIDE)
+	await place_player(q, eye + Vector3(-8, 0.25, 40), 0.0)     # P2 watches from 40 m
+	var start := eye + Vector3(-5, 0.25, 8)
+	await place_player(p, start, 0.0)
+	var white := 0.0
+	var frozen := false
+	var t0 := Time.get_ticks_msec()
+	var tk: Taken = null
+	while Time.get_ticks_msec() - t0 < 9000:
+		await physics_frames(1)
+		if tk == null:
+			tk = boot.world.get_node_or_null("Taken1") as Taken
+			if tk != null:
+				# P1 tries to run: the input is ignored while taken
+				key(KEY_W, true)
+		white = maxf(white, p.whiteout)
+		if p.taken_hold > 0.0 and planar_speed(p) < 0.05:
+			frozen = true
+		if tk != null and p.whiteout == 0.0 and p.taken_hold <= 0.0 and white > 0.9:
+			break
+	key(KEY_W, false)
+	check(tk != null, "the creature takes P1")
+	if tk == null:
+		return
+	var moved := p.global_position.distance_to(start)
+	log_line("taken: woke %.0f m away by %s; white reached %.2f" % [moved, tk.near, white])
+	check(white > 0.95 and frozen, "P1's view goes white and P1 cannot move meanwhile")
+	check(moved >= Taken.DROP_MIN - 5.0 and moved <= Taken.DROP_MAX + 5.0 and tk.near == "the south post",
+		"P1 wakes at a drop point 150-400 m away, by a landmark")
+	check(boot.world.find_child("Trail", true, false) != null, "P2 sees a smoke trail drift off P1's way")
+	await shot("taken_trail")
+	await wait(0.5)
+	check(story.phone_threads[0].size() > texts0[0] and story.phone_threads[1].size() > texts0[1]
+		and String(story.phone_threads[1].back()["body"]).contains("south post"), "both get a text; P2's says where P1 is")
+	check(p.taken_grace > 100.0, "P1 cannot be taken again for 2 minutes")
+	await shot("taken_wake")
+	# in grace: stand right in front of it and it ignores you
+	await calm_creature(cr, eye)
+	p.taken_grace = 60.0
+	await place_player(p, eye + Vector3(-3, 0.25, 6), 0.0)
+	await wait(3.0)
+	check(boot.world.get_node_or_null("Taken1") == null and cr.state != Creature.State.TAKE, "during the grace time it cannot take you")
+	# both taken: P2 is out on their own when P1 goes too -> both at the van, leaking
+	var c := camper()
+	c.fuel_leak = 0.0
+	c.parking_brake = true
+	await calm_creature(cr, eye)
+	q.taken_grace = 90.0          # P2 was taken a moment ago
+	await place_player(q, eye + Vector3(40, 0.25, 90), 0.0)
+	await place_player(p, start, 0.0)
+	t0 = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 9000 and boot.world.get_node_or_null("Taken1") == null:
+		await wait(0.1)
+	await wait(Taken.WHITE_IN + Taken.WHITE_HOLD + 0.3)
+	var vd := p.global_position.distance_to(c.global_position)
+	var qd := q.global_position.distance_to(c.global_position)
+	log_line("both taken: P1 %.1f m and P2 %.1f m from the van, leak %.1f L/min" % [vd, qd, c.fuel_leak])
+	check(vd < 4.0 and qd < 4.0 and c.fuel_leak > 0.0, "both taken: both wake at the van, and it is leaking fuel")
+	var f0 := c.fuel
+	await wait(3.0)
+	check(c.fuel < f0, "the leak drains the tank")
+	c.fuel_leak = 0.0
+	for pl in boot.players:
+		pl.taken_grace = 0.0
 
 
 func t_traffic() -> void:

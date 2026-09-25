@@ -248,6 +248,7 @@ func _move(delta: float) -> void:
 				suspicion = 0.2
 				target = null
 				took.emit(p)
+				Taken.take(p, self)
 	var to := goal - global_position
 	to.y = 0.0
 	var v := Vector3.ZERO

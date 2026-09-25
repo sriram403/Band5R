@@ -311,6 +311,13 @@ func _stealth_gym() -> void:
 	c.rotation.y = PI       # facing +Z, the players' side
 	c.patrol = PackedVector3Array([STEALTH_EYE + Vector3(-15, 0, 0), STEALTH_EYE + Vector3(15, 0, 0)])
 	poi["creature"] = STEALTH_EYE
+	# drop points 150-400 m away, each by a marked post
+	for spec in [[Vector3(60, 0, 190), "the south post"], [Vector3(-200, 0, -60), "the west post"], [Vector3(60, 0, -560), "the far north post"]]:
+		var at: Vector3 = spec[0]
+		at.y = _h(at.x, at.z)
+		world.add_child(Build.box(Vector3(0.3, 4.0, 0.3), ToonMat.make(Color(0.9, 0.3, 0.25)), at + Vector3(2, 2, 0), Vector3.ZERO, "DropPost"))
+		world.add_child(Build.label3d(spec[1], at + Vector3(2, 4.6, 0), Vector3.ZERO, 0.8, Color(1, 0.95, 0.8)))
+		drop_points.append({"pos": at, "near": spec[1]})
 
 
 func _gym_spawns() -> void:

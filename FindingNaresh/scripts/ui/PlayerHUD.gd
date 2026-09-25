@@ -10,6 +10,7 @@ var camper: Camper
 var _crosshair: Control
 var _arrows: Control
 var binoculars: BinocularView
+var _white: ColorRect
 ## tag owner index -> where its edge arrow was last drawn (tests read this)
 var tag_arrow_at := {}
 var _prompt: Label
@@ -167,6 +168,14 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	phone.player = p
 	add_child(phone)
 
+	# being taken: the view goes white (on top of everything)
+	_white = ColorRect.new()
+	_white.name = "Whiteout"
+	_white.color = Color(0.97, 0.97, 1.0, 0.0)
+	_white.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_white.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_white)
+
 	p.prompt_changed.connect(_on_prompt)
 	p.message.connect(show_note)
 
@@ -239,6 +248,8 @@ func _process(delta: float) -> void:
 		else:
 			_objective_hint.text = "(hold %s for a hint)" % (d.glyph("hint") if d else "H")
 	_arrows.queue_redraw()
+	_white.color.a = player.whiteout
+	_white.visible = player.whiteout > 0.001
 	binoculars.amount = clampf(player.zoom - 1.0, 0.0, 1.0)
 	var seated := player.seat != null
 	_update_hint(delta, seated)

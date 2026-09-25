@@ -10,8 +10,8 @@ being built and tested), so this always shows where the work is right now.
   creature page with every recommended answer (see "Decisions" at the end of
   `design/WAY_OUT.md` and `design/CREATURES.md`).
 - D1 tagging and D2 binoculars done (Quick: 0 failures). D3/D4 stealth and
-  creatures: step (a) senses and chase done, 17 checks pass. Next: (b) being
-  taken.
+  creatures: (a) senses and chase and (b) being taken done. Next: (c) the
+  cardboard box, peeking from cover, thrown lures.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -375,9 +375,17 @@ test was fixed and now restores its starting layout before the pad test.
   - [x] Bugs found on the way: class name `Noise` clashes with Godot's own
         (renamed `Hearing`); the chase homed in on your live position unseen;
         heard sounds didn't turn its head
-  - [ ] (b) Taken: white smoke, screen to white, a drop point near a landmark,
-        the partner's faint smoke trail, phone texts, 2 min grace; both taken
-        = both at the van with a new leak
+  - [x] (b) Taken (`creatures/Taken.gd`): white smoke, the view goes white
+        and you can't move, you wake at the nearest drop point 150-400 m away
+        facing back the way you came, the partner sees a faint smoke trail for
+        a few seconds, both get a text naming the landmark, 2 min grace. Both
+        taken (partner already out there alone) = both wake at the van, which
+        now leaks 1 L/min (`Camper.fuel_leak`). Stealth gym has three drop
+        posts. `t_taken`: 10 checks pass (woke 207 m away by the south post;
+        both taken: both 2.8 m from the van, leak 1.0 L/min, tank draining)
+  - [x] Bugs found on the way: a running take teleported P1 in the middle of
+        later checks (takes can now be cancelled; tests cancel them); the
+        trail's stop timer outlived a cancelled take (now a tween on the trail)
   - [ ] (c) The cardboard box ("that box moved"), peeking from cover, thrown
         lures
   - [ ] (d) The van attack (leak, engine failing, puncture) and the tarp

@@ -169,6 +169,9 @@ var world: Node3D
 var camper_spawn := Transform3D.IDENTITY
 var player_spawns: Array[Transform3D] = []
 var poi: Dictionary = {}         ## named points of interest, for tests and later systems
+## Where a taken player wakes: [{"pos": Vector3, "near": "the windmill"}], placed
+## by hand near landmarks, never in water or behind a closed gate.
+var drop_points: Array = []
 ## Scatter transforms by kind ("Rocks", "Trunks", ...), kept for tests and
 ## later systems: a headless run cannot read them back from the MultiMeshes.
 var scatter: Dictionary = {}

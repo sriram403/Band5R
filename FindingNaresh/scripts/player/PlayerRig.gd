@@ -78,6 +78,8 @@ var has_binoculars := false
 var zoom := 1.0                        ## current magnification (eases to BINOCULAR_ZOOM)
 var base_fov := 78.0                   ## the layout's field of view, set by Boot
 var taken_grace := 0.0                 ## s left in which no creature can take you
+var taken_hold := 0.0                  ## s left frozen while being taken (Taken.gd)
+var whiteout := 0.0                    ## 0..1 white over this player's view
 var in_box := false                    ## hiding under the cardboard box
 var peeking := false                   ## leaning out from cover
 
@@ -234,6 +236,11 @@ func _physics_process(delta: float) -> void:
 	if knocked_t > 0.0:
 		_knocked(delta)
 		return
+	if taken_hold > 0.0:
+		taken_hold -= delta
+		velocity = Vector3.ZERO
+		_plan_vel = Vector2.ZERO
+		return
 	if _knock_van != null and is_instance_valid(_knock_van) and _knock_van.global_position.distance_to(global_position) > 5.0:
 		remove_collision_exception_with(_knock_van)
 		_knock_van = null
@@ -272,7 +279,7 @@ func _process(delta: float) -> void:
 			zoom = want
 		if map_open and paper_map != null:
 			paper_map.move_cursor(dev.cursor_delta(delta))
-		else:
+		elif taken_hold <= 0.0:
 			_look(delta)
 	if cam == null:
 		return

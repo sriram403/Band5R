@@ -95,6 +95,9 @@ var debug_steer := 0.0
 var _nav_timer := 0.0
 var storage_slots: Array[Node3D] = []
 var coolant_leak := false
+## litres a minute dripping out of the tank (a creature has been at it)
+var fuel_leak := 0.0
+const CREATURE_LEAK := 1.0
 var heat_lockout := false          ## cut out from overheating; no restart until cool
 var start_fail := ""               ## why the last start attempt failed, for the HUD
 var start_fail_t := 0.0
@@ -762,6 +765,8 @@ func swap_roles() -> void:
 # --- driving -------------------------------------------------------------------
 
 func _physics_process(delta: float) -> void:
+	if fuel_leak > 0.0:
+		fuel = maxf(0.0, fuel - fuel_leak / 60.0 * delta)
 	var speed := linear_velocity.length()
 	var fwd_speed := -global_transform.basis.z.dot(linear_velocity)
 
