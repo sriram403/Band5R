@@ -315,6 +315,10 @@ func _landmarks() -> void:
 	_radio_mast(RADIO_MAST)
 	_broken_bridge()
 	_bridge_hut_and_power()
+	var ghat := Ghat.new()
+	ghat.name = "Ghat"
+	world.add_child(ghat)
+	ghat.setup(self)
 	_five_roses(ROSE_CENTRE)
 	_p2_home()
 	_town()

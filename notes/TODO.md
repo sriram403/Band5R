@@ -13,7 +13,8 @@ being built and tested), so this always shows where the work is right now.
   creatures: all four steps done. D5 traffic and D6 the mood curve done.
   D7 the windmill brake puzzle done (Quick: 0 failures).
   D8 the power line done (Quick: 0 failures).
-  Now: [~] D9 the lift bridge (`puzzles/LiftBridge.gd` being written).
+  D9 the lift bridge and D10 the ghat done (Quick: 414 checks, 0 failures).
+  Now: [~] D11 the coast watchtower (`world/CoastWatch.gd` being written).
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -500,7 +501,7 @@ test was fixed and now restores its starting layout before the pad test.
   - [x] Found on the way: the window was an opaque panel (now open), 5 lamps
         lit in 1.1 s so the wave didn't read, the first wheel faced the river
   - [x] Quick suite: 12 segments, 389 checks, 0 failures
-- [~] D9. Lift bridge puzzle (levers, convex safety mirror, gear, counterweight)
+- [x] D9. Lift bridge puzzle (levers, convex safety mirror, gear, counterweight)
   - [x] Plan: a bascule leaf stuck up at 70 deg fills the gap. Hut: RAISE /
         LOWER levers (hold E) and a safety mirror outside the window showing
         the machinery house across the road (gear, wedge, counterweight pit),
@@ -510,9 +511,48 @@ test was fixed and now restores its starting layout before the pad test.
         the cut-out hauls it back to 45. The counterweight rises out of its
         pit as the leaf lowers; the operator stops it level with the floor,
         the partner steps on, and it comes down and locks; barriers go
-  - [~] `puzzles/LiftBridge.gd` written; next: build it into the world, story,
-        save, `t_bridge`
-- [ ] D10. Ghat fog and pace notes on the swung nav; the first creature attack
+  - [x] `puzzles/LiftBridge.gd`: leaf (AnimatableBody3D, the van drives
+        over it), machinery house across the road with a door from the deck,
+        the gear, pinion and wedge, the counterweight in its pit (rises from
+        -2.3 to +1.6 m as the leaf lowers; steppable when its top is within
+        0.3 m of the floor, ~32-43 deg), the fallen block down in the pit. Hut:
+        RAISE / LOWER levers, a panel readout (LEAF 42 deg / JAMMED / CUT-OUT /
+        NO POWER / LOCKED), the safety mirror outside the window (a camera in
+        the machinery house, drawn only with someone within 12 m of the hut,
+        every other frame). Barriers and signs are their own node, taken away
+        when it locks. Saved (angle, wedge, locked)
+  - [x] Story: `to_bridge` -> `bridge` (lower it) -> `cross` (to J3) -> `end_d`
+  - [x] `t_bridge` (P1 keyboard at the levers, P2 pad in the machinery house):
+        14 checks pass, 45 s. LOWER strains while jammed; wedge refuses alone
+        ("back it off"); RAISE + pull frees it; lowering alone cuts out and
+        returns to 45; stopped at 41.7 deg (top -0.22 m); P2 steps on and rides
+        up 2.2 m; locked, barriers gone; the van crosses in 12.6 s
+  - [x] From the shots: the first mirror camera looked straight down (the gear
+        was unreadable), lowered to eye height in the back corner
+  - [x] Save/load: the lowered bridge comes back down with its barriers gone
+        (in `save`)
+- [x] D10. Ghat fog and pace notes on the swung nav; the first creature attack
+  - [x] `world/Ghat.gd`: finds the hairpins from the road's own bends (2);
+        fog from 150 m before the first hairpin to the pass (`Mood.fog_boost`,
+        eased in: visible to ~45 m, grey)
+  - [x] Pace notes on the swung nav, worked out from the bends ahead (260 m):
+        "70 LEFT HAIRPIN / DON'T CUT / 170 LEFT 3", grades 1-6 by radius,
+        TIGHTENS, NOW when you're in it; the driver can't see them (the
+        existing private layer). The nav text now shrinks to fit the glass
+  - [x] The glimpse: a passive creature 15 m out on the second hairpin, seen
+        from 40 m, walks off uphill, gone after 12 s
+  - [x] The first attack, always, once: with both in the van, 45 m from the
+        pass, one steps out 22 m ahead and comes for the van (leak after 2 s).
+        Over when it has lost interest and walked off (or the van is 90 m
+        away); a text says what they do. Story: `ghat` -> `hide_van` -> `end_d`
+  - [x] `t_ghat`: 15 checks (notes, driver can't see them, fog 45 m, drove
+        the hairpins in 49 s with the auto-driver, glimpse, attack, leak
+        1 L/min, tarp, it gave up in 25 s, leak stopped, objective moves on).
+        The creature's 20-40 s of patience is shortened to 3 s in the test
+  - [x] Found on the way: the glimpse fired 91 m away, invisible in the fog
+        (now 40 m); the notes overflowed the nav glass (header dropped, text
+        fits); a parse error in the save test hid behind a discarded run
+  - [x] Quick suite: 12 segments, 414 checks, 0 failures
 - [ ] D11. Coast watchtower: hide on foot, stamp the beach
 - [ ] D12. Optional puzzles: barn maze (W2), lookout binocular relay (W4)
 - [ ] D13. Full run J1 -> Bessi on both routes; hand-over

@@ -62,6 +62,7 @@ var parking_brake := true
 ## the passenger can read it: its display is on the driver's private visual
 ## layer, which the driver's camera never draws. They have to talk.
 var nav_aside := false
+var nav_override: Callable              ## returns text to show instead (the ghat's pace notes), or ""
 var _nav: Node3D
 var _nav_t := 0.0                  ## 0 = middle, 1 = aside (animated)
 var _mirrors: Array[SubViewport] = []
@@ -958,7 +959,17 @@ func _update_visuals(delta: float, speed: float, fwd_speed: float) -> void:
 	var nav: Label3D = _needles.get("nav_label")
 	if nav and _nav_timer <= 0.0:
 		_nav_timer = 0.25
-		nav.text = _nav_text()
+		var t := _nav_text()
+		if t != nav.text:
+			nav.text = t
+			# shrink the text to fit the glass (0.36 x 0.21 m): pace notes run long
+			var longest := 1
+			var lines := t.split("
+")
+			for l in lines:
+				longest = maxi(longest, l.length())
+			var size := minf(0.040, minf(0.33 / (longest * 0.6), 0.17 / (lines.size() * 1.35)))
+			nav.pixel_size = size / 96.0
 
 
 ## Broad direction only, per the design: no map, no route, just where Bessi is.
@@ -967,6 +978,10 @@ func _update_visuals(delta: float, speed: float, fwd_speed: float) -> void:
 func _nav_text() -> String:
 	if battery <= 0.02:
 		return ""
+	if nav_override.is_valid():
+		var t: String = nav_override.call()
+		if t != "":
+			return t
 	var ms := get_tree().get_first_node_in_group("map_state") as MapState
 	if ms == null or ms.stamps.is_empty():
 		return "NAV\nno marks\nstamp the map (M)"

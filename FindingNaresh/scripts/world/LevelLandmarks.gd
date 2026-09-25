@@ -521,9 +521,11 @@ func _radio_mast(at: Vector3) -> void:
 	poi["radio_mast"] = pos
 
 
-## Where Pump House Road crosses the river: an old timber bridge with its middle
-## span gone. Decks either side are solid; the gap is not. Barriers and signs
-## stop the van before it gets there (milestone B turns this into a puzzle).
+## Where Pump House Road crosses the river: an old timber bridge whose middle
+## span is a lift leaf (`LiftBridge`, built with the hut in
+## `_bridge_hut_and_power`). Decks either side are solid; barriers and signs
+## stop the van until the leaf is down (they live in their own node, which the
+## bridge takes away).
 func _broken_bridge() -> void:
 	var road := network.road("pump_house_road")
 	var root := Node3D.new()
@@ -559,14 +561,17 @@ func _broken_bridge() -> void:
 			for s in [-1.0, 1.0]:
 				var post := Build.cyl(0.12, 1.2, wood, c + road.right(i) * s * (Landscape.ROAD_HALF + 0.2) + Vector3.UP * 0.6, Vector3.ZERO, 6, "RailPost")
 				root.add_child(post)
-	# piers under the ends of the gap, snapped timbers hanging into the water
+	# piers under the ends of the gap
 	for gi in [mid - 3, mid + 3]:
 		var gp := road.point(gi)
 		root.add_child(Build.cyl(0.5, 7.0, wood, gp + Vector3.DOWN * 3.5, Vector3.ZERO, 8, "Pier"))
-		var hang := Build.box(Vector3(Landscape.ROAD_HALF * 1.6, 0.25, 3.0), wood, gp + Vector3.DOWN * 1.2, Vector3.ZERO, "Snapped")
-		hang.basis = Basis.looking_at(road.forward(gi), Vector3.UP) * Basis(Vector3.RIGHT, deg_to_rad(40 if gi < mid else -40))
-		root.add_child(hang)
 	# barrier and warning signs on both approaches
+	var bar_root := Node3D.new()
+	bar_root.name = "BridgeBarriers"
+	root.add_child(bar_root)
+	var bar_body := StaticBody3D.new()
+	bar_body.name = "BarrierBody"
+	bar_root.add_child(bar_body)
 	for end in [[first - 14, 1.0], [last + 14, -1.0]]:
 		var bi: int = end[0]
 		var bp := road.point(bi)
@@ -574,19 +579,21 @@ func _broken_bridge() -> void:
 		var bx := Transform3D(Basis.looking_at(fwd, Vector3.UP), bp + Vector3.UP * 0.5)
 		var bar := Build.box(Vector3(Landscape.ROAD_HALF * 2.0, 0.25, 0.2), ToonMat.make(Color(0.95, 0.55, 0.15)), Vector3.ZERO, Vector3.ZERO, "Barrier")
 		bar.transform = bx.translated_local(Vector3(0, 0.6, 0))
-		root.add_child(bar)
+		bar_root.add_child(bar)
 		for s in [-1.0, 1.0]:
-			root.add_child(Build.cyl(0.08, 1.2, ToonMat.make(C_STEEL), bp + road.right(bi) * s * 3.6 + Vector3.UP * 0.6, Vector3.ZERO, 6, "BarrierLeg"))
-		body.add_child(_box_shape(Vector3(Landscape.ROAD_HALF * 2.0, 1.2, 0.3), bx.translated_local(Vector3(0, 0.1, 0))))
+			bar_root.add_child(Build.cyl(0.08, 1.2, ToonMat.make(C_STEEL), bp + road.right(bi) * s * 3.6 + Vector3.UP * 0.6, Vector3.ZERO, 6, "BarrierLeg"))
+		bar_body.add_child(_box_shape(Vector3(Landscape.ROAD_HALF * 2.0, 1.2, 0.3), bx.translated_local(Vector3(0, 0.1, 0))))
 		var sign_n := Node3D.new()
 		sign_n.transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), bp + road.right(bi) * 5.5)
 		sign_n.add_child(Build.cyl(0.07, 2.4, ToonMat.make(C_STEEL), Vector3(0, 1.2, 0), Vector3.ZERO, 6, "Post"))
 		sign_n.add_child(Build.box(Vector3(1.8, 1.0, 0.06), ToonMat.make(Color(0.98, 0.82, 0.20)), Vector3(0, 2.3, 0), Vector3.ZERO, "Plate"))
-		sign_n.add_child(Build.label3d("BRIDGE\nOUT", Vector3(0, 2.3, 0.05), Vector3.ZERO, 0.32, Color(0.15, 0.12, 0.10)))
-		root.add_child(sign_n)
+		sign_n.add_child(Build.label3d("BRIDGE\nUP", Vector3(0, 2.3, 0.05), Vector3.ZERO, 0.32, Color(0.15, 0.12, 0.10)))
+		bar_root.add_child(sign_n)
 	poi["bridge"] = road.point(mid)
 	poi["bridge_barrier_near"] = road.point(first - 14)
 	bridge_span = Vector2i(first, last)
+	bridge_mid = mid
+	bridge_barriers = bar_root
 
 
 ## D8: the bridge's control hut on the near bank (the lift bridge, D9, is
@@ -684,6 +691,33 @@ func _bridge_hut_and_power() -> void:
 	line.name = "PowerLine"
 	world.add_child(line)
 	line.setup(cooling_station, turbine_xf, feet, sides, hut.transform * Vector3(0, H - 0.35, 0))
+
+	# D9: the lift leaf over the gap, its lever panel in the hut window and the
+	# safety mirror just outside it
+	var pa := road.point(bridge_mid - 2)
+	var pb := road.point(bridge_mid + 3)
+	var fwd := (pb - pa).normalized()
+	var bz := -fwd
+	var bxa := Vector3.UP.cross(bz).normalized()
+	var bxf := Transform3D(Basis(bxa, bz.cross(bxa), bz), pa + Vector3.UP * 0.17)
+	var m := -signf(bxa.dot(out))                  # the machinery house faces the hut across the road
+	var win := hut.transform.basis.x * toward_bridge   # from the hut out through its window
+	var panel_xf := Transform3D(Basis.looking_at(win, Vector3.UP), hut.transform * Vector3(bx - toward_bridge * 0.55, 0, -0.5))
+	panel_xf.basis = Basis.looking_at(win, Vector3.UP)     # -Z at the window: the operator faces it
+	var mirror_xf := Transform3D(Basis.looking_at(win, Vector3.UP), hut.transform * Vector3(bx + toward_bridge * 0.9, 1.75, 0.95))
+	var lift := LiftBridge.new()
+	lift.name = "LiftBridge"
+	world.add_child(lift)
+	lift.setup(bxf, pa.distance_to(pb) + 0.1, Landscape.ROAD_HALF * 2.0 + 0.6, m, panel_xf, mirror_xf, line, bridge_barriers)
+	poi["lift_pivot"] = bxf.origin
+	poi["bridge_panel"] = panel_xf.origin
+	poi["bridge_mirror"] = mirror_xf.origin
+	poi["bridge_far"] = road.point(bridge_mid + 6)
+	var inner := lift.deck_w * 0.5 + 0.3
+	poi["machinery_door"] = bxf * Vector3(m * (inner - 1.0), 0.1, 0.6)
+	poi["machinery_in"] = bxf * Vector3(m * (inner + 0.8), 0.1, 0.6)
+	poi["wedge"] = bxf * lift.wedge.position
+	poi["counterweight_edge"] = bxf * Vector3(m * (inner + 1.0), 0.1, 1.3)
 	poi["turbine"] = turbine_xf.origin
 	poi["power_line_first"] = feet[2]
 	poi["power_line_last"] = feet[feet.size() - 1]

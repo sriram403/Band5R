@@ -11,7 +11,7 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, Milestone D: D1-D8 done (tagging, binoculars, stealth, creatures, traffic, mood, windmill, power line); next D9 the lift bridge.
+Last updated: 2026-09-25, Milestone D: D1-D10 done (tagging, binoculars, stealth, creatures, traffic, mood, windmill, power line, lift bridge, ghat); next D11 the coast watchtower.
 Milestones A, B and C are done. A ChatGPT session built the opening; a Claude
 session reviewed it, fixed what it and the user's test found (see TODO.md,
 "Review fixes" and "P2's side fixed") and added `opening_full` and
@@ -151,8 +151,10 @@ they/them.
   (`world/Mood.gd`). Metrics are in `DESIGN.md` 6.1. D7 the windmill brake
   (`puzzles/WindmillBrake.gd`, `world/Ladder.gd`, `t_windmill`, saved) done.
   D8 the power line (`puzzles/PowerLine.gd`, bridge hut, `t_power`) done.
-  Next: D9 the lift bridge (`puzzles/LiftBridge.gd`, plan in TODO.md), D10-D12,
-  then the full run D13 and the hand-over.
+  D9 the lift bridge (`puzzles/LiftBridge.gd`, `t_bridge`) and D10 the ghat
+  (`world/Ghat.gd`: fog, pace notes, glimpse, first attack; `t_ghat`) done.
+  Next: D11 the coast watchtower (`world/CoastWatch.gd`), D12, then the full
+  run D13 and the hand-over.
   The tarp and the cardboard box are block-outs awaiting the user's look
   approval.
 
@@ -360,8 +362,8 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 1. Milestone D, the way out (`notes/TODO.md` D1-D13, `DESIGN.md`,
    `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
    2026-09-25** with every recommended answer (their "Decisions" sections).
-   D1-D8 are done (the four gyms, traffic, mood, windmill, power line). Next: D9-D12
-   ( lift bridge, ghat fog and the first attack,
+   D1-D10 are done (the four gyms, traffic, mood, windmill, power line, lift
+   bridge, ghat). Next: D11-D12 ( lift bridge, ghat fog and the first attack,
    coast watchtower, optional puzzles), then the full run D13.
 2. Then Milestones E-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
@@ -534,6 +536,14 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   the windmill step shifted a hard-coded `index >= 5`. Named scenarios outside
   the `all` list run after `save`, which reloads the scene, so they never run:
   add new world scenarios to `all` before `save`.
+- **Background runs and edits:** a Quick run in the background still loads
+  later segments fresh, so editing any game script while it runs spoils it.
+  Check `tasklist | grep -i godot` before editing; write only new files then.
+- **Untyped builder:** `boot.builder` is untyped in PlayTest, so `var x :=
+  boot.builder.foo...` is a parse error that stops the whole world segment
+  (0 passes): give such variables a type.
+- **Python patches through bash heredocs:** `"\n"` in a GDScript string
+  didn't match; use the Edit tool for lines with backslash escapes.
 - **A failing gym segment stops the Quick run** (`|| exit`), so later
   segments don't run at all: read which segment failed, fix, and rerun Quick.
 

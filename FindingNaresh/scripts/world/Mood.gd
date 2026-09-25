@@ -29,6 +29,7 @@ const LOOKS := {
 }
 
 var value := 1.0
+var fog_boost := 0.0             ## 0..1 local fog on top (the ghat hairpins), set by Ghat
 var target := 1.0
 var _env: Environment
 var _sky: ProceduralSkyMaterial
@@ -92,8 +93,10 @@ func apply() -> void:
 		_sky.ground_horizon_color = _blend("sky_horizon").darkened(0.25)
 	if _env != null:
 		_env.fog_light_color = _blend("fog")
-		_env.fog_depth_begin = _blend("fog_begin")
-		_env.fog_depth_end = _blend("fog_end")
+		_env.fog_depth_begin = lerpf(_blend("fog_begin"), 3.0, fog_boost)
+		_env.fog_depth_end = lerpf(_blend("fog_end"), 40.0, fog_boost)
+		if fog_boost > 0.0:
+			_env.fog_light_color = _blend("fog").lerp(Color(0.72, 0.74, 0.76), fog_boost)
 		_env.ambient_light_energy = _blend("ambient")
 		_env.adjustment_saturation = _blend("saturation")
 	if _sun != null:

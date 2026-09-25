@@ -21,7 +21,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
 const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "climb", "carry", "look", "pad", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "climb", "carry", "look", "pad", "perf", "save"]
 
 
 func _ready() -> void:
@@ -233,7 +233,7 @@ func _run() -> void:
 		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
 		_finish()
 		return
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -1436,6 +1436,8 @@ func t_save() -> void:
 	station()._update_pointers()
 	var wm := get_tree().get_first_node_in_group("windmill_brake") as WindmillBrake
 	wm.from_dict({"snagged": false, "brake_on": true, "angle": 1.0, "box_open": true, "map_taken": true})
+	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+	lift.from_dict({"locked": true})
 	await place_player(p2(), b.poi["j2"] + Vector3(6, 1, 6), 1.0)
 	await seat_p1_driver()
 	await wait(1.5)
@@ -1464,6 +1466,7 @@ func t_save() -> void:
 		"valve_a": station().valve_a, "objective": st.current()["id"],
 	}
 	wm.from_dict({})     # jammed again: loading must free it
+	lift.from_dict({})   # up again: loading must bring it down
 	# now wreck the state, then load
 	p.force_exit = true
 	await physics_frames(3)
@@ -1502,6 +1505,9 @@ func t_save_verify() -> void:
 	var wm := get_tree().get_first_node_in_group("windmill_brake") as WindmillBrake
 	check(wm != null and not wm.snagged and wm.box_open and wm.map_taken and not wm._rope.visible, "loading restores the freed windmill and the taken map")
 	check(st.current()["id"] == e["objective"], "loading restores the objective by its id")
+	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+	var bars: Array = boot.builder.bridge_barriers.find_children("*", "CollisionShape3D", true, false)
+	check(lift != null and lift.locked and lift.angle == 0.0 and bars.all(func(c): return c.disabled), "loading restores the lowered lift bridge, barriers gone")
 	var line := get_tree().get_first_node_in_group("power_line") as PowerLine
 	check(line != null and line.hut_powered == station().solved and line.powered == station().solved, "loading restores the power line to match the water works (powered: %s)" % station().solved)
 	for id in ["dock", "lookout", "shed"]:
@@ -2842,6 +2848,265 @@ func t_power() -> void:
 	if not was_solved:
 		stn.solved = false
 		line.sync()
+
+
+## W6, the lift bridge, with the real controls: P1 (keyboard) works the levers
+## in the hut, P2 (pad) is in the machinery house. Jammed; the wedge only
+## comes out while RAISE is held; lowered alone it runs away and cuts out;
+## stopped with the counterweight level, P2 steps on and it comes down and
+## locks; the barriers go and the van drives across.
+func t_bridge() -> void:
+	var b: LevelBuilder = boot.builder
+	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+	var line := get_tree().get_first_node_in_group("power_line") as PowerLine
+	check(lift != null and line != null, "the bridge has a lift leaf")
+	if lift == null:
+		return
+	var stn := station()
+	var was_solved := stn.solved
+	stn.solved = true
+	line.sync()
+	lift.from_dict({})
+	boot.story.flags.erase("bridge_down")
+	boot.story.index = boot.story.index_of("to_bridge")
+	await van_to(b.poi["bridge_barrier_near"])      # you drive here: "carry on to the old bridge" is done
+	check(lift.jammed and absf(lift.angle - LiftBridge.UP_DEG) < 0.1, "the leaf is up and jammed")
+	boot._on_joy_changed(0, true)      # P2 on a pad
+	await wait(0.3)
+	var p := p1()
+	var q := p2()
+	var road := b.network.road("pump_house_road")
+	var view_i := b.bridge_span.x - 16
+	await place_player(p, road.point(view_i) + road.right(view_i) * 2.0 + Vector3(0, 0.5, 0), 0.0)
+	await look_at_point(p, b.poi["lift_pivot"] + Vector3(0, 3.0, 0))
+	await place_player(q, road.point(view_i + 5) - road.right(view_i) * 7.0 + Vector3(0, 0.5, 0), 0.0)
+	await look_at_point(q, b.poi["lift_pivot"] + Vector3(0, 2.0, 0))
+	await wait(0.5)
+	check(boot.story.current()["id"] == "bridge", "at the bridge the objective is: lower the lift bridge")
+	await shot("bridge_up")
+	var raise_lever := lift.find_child("RAISELever", true, false) as Node3D
+	var lower_lever := lift.find_child("LOWERLever", true, false) as Node3D
+	var panel: Vector3 = b.poi["bridge_panel"]
+	var hut: Vector3 = b.poi["bridge_hut"]
+	var back := hut - panel
+	back.y = 0.0
+	# P1 at the levers: LOWER strains
+	await place_player(p, panel + back.normalized() * 0.9 + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, lower_lever.global_position)
+	await wait(0.2)
+	log_line("at the panel: '%s'" % p.prompt_text)
+	key(KEY_E, true)
+	await wait(1.2)
+	key(KEY_E, false)
+	check(lift.jammed and lift.angle > 69.0, "LOWER with the wedge in: the motor strains, the leaf stays up")
+	await look_at_point(p, b.poi["bridge_mirror"])
+	await wait(0.4)
+	await shot("bridge_mirror")
+	# P2 walks into the machinery house from the deck and tries the wedge
+	await place_player(q, b.poi["machinery_door"] + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(q, b.poi["machinery_in"])
+	await wait(0.3)
+	pad_axis(JOY_AXIS_LEFT_Y, -1.0)
+	await wait(0.6)
+	pad_axis(JOY_AXIS_LEFT_Y, 0.0)
+	await wait(0.3)
+	log_line("P2 in the machinery house at %s (%.1f m from inside point)" % [q.global_position, q.global_position.distance_to(b.poi["machinery_in"])])
+	await look_at_point(q, lift.wedge.global_position)
+	await wait(0.3)
+	log_line("P2 at the wedge: '%s'" % q.prompt_text)
+	check(q.prompt_text.contains("back it off"), "the wedge won't budge while the gear presses on it (it says why)")
+	await shot("bridge_wedge")
+	# together: P1 holds RAISE, P2 pulls
+	await look_at_point(p, raise_lever.global_position)
+	key(KEY_E, true)
+	await wait(0.3)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(LiftBridge.PULL_S + 0.5)
+	pad_button(JOY_BUTTON_X, false)
+	key(KEY_E, false)
+	check(not lift.jammed, "P1 holds RAISE while P2 pulls: the wedge comes out")
+	# lowering alone: it runs away and cuts out
+	await look_at_point(p, lower_lever.global_position)
+	key(KEY_E, true)
+	var t0 := Time.get_ticks_msec()
+	while lift.cut_outs == 0 and Time.get_ticks_msec() - t0 < 15000:
+		await physics_frames(1)
+	key(KEY_E, false)
+	await wait(4.0)
+	log_line("cut-outs %d, leaf back at %.1f deg" % [lift.cut_outs, lift.angle])
+	check(lift.cut_outs == 1 and absf(lift.angle - LiftBridge.RESET_DEG) < 1.0, "lowered with nobody on the counterweight it runs away: the cut-out hauls it back to 45")
+	# the operator watches the mirror and stops it with the counterweight level
+	key(KEY_E, true)
+	t0 = Time.get_ticks_msec()
+	while not lift.can_step_on() and Time.get_ticks_msec() - t0 < 10000:
+		await physics_frames(1)
+	await physics_frames(6)
+	key(KEY_E, false)
+	await wait(0.3)
+	log_line("stopped at %.1f deg, counterweight top %.2f m from the floor" % [lift.angle, lift.counterweight_top()])
+	check(lift.can_step_on() and lift.cut_outs == 1, "P1 stops the leaf with the counterweight level with the floor")
+	await shot("bridge_level")
+	# P2 steps on
+	var cw := lift.counterweight.global_position
+	await place_player(q, b.poi["counterweight_edge"] + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(q, cw + Vector3(0, 0.5, 0))
+	await wait(0.2)
+	pad_axis(JOY_AXIS_LEFT_Y, -1.0)
+	t0 = Time.get_ticks_msec()
+	while not lift.rider_on() and Time.get_ticks_msec() - t0 < 3000:
+		await physics_frames(1)
+	await wait(0.4)
+	pad_axis(JOY_AXIS_LEFT_Y, 0.0)
+	await wait(0.4)
+	check(lift.rider_on(), "P2 steps onto the counterweight")
+	# down it comes, with P2 riding the counterweight up
+	await look_at_point(p, lower_lever.global_position)
+	key(KEY_E, true)
+	t0 = Time.get_ticks_msec()
+	while not lift.locked and Time.get_ticks_msec() - t0 < 15000:
+		await physics_frames(1)
+	key(KEY_E, false)
+	await wait(0.5)
+	log_line("locked %s, cut-outs %d, P2 %.2f m above the floor" % [lift.locked, lift.cut_outs, q.global_position.y - b.poi["lift_pivot"].y])
+	check(lift.locked and lift.cut_outs == 1 and boot.story.flags.has("bridge_down"), "with P2's weight on it the leaf comes down and locks")
+	var bar_shapes := b.bridge_barriers.find_children("*", "CollisionShape3D", true, false)
+	check(not b.bridge_barriers.visible and bar_shapes.all(func(c): return c.disabled), "the barriers are gone")
+	await wait(0.6)
+	check(boot.story.current()["id"] == "cross", "the objective moves on to: cross the river")
+	await place_player(q, b.poi["machinery_in"] + Vector3(0, 0.4, 0), 0.0)
+	await place_player(p, road.point(view_i) + road.right(view_i) * 2.0 + Vector3(0, 0.5, 0), 0.0)
+	await look_at_point(p, b.poi["bridge_far"])
+	await wait(0.5)
+	await shot("bridge_down")
+	# the van drives across
+	await van_to(road.point(b.bridge_span.x - 22))
+	var c := camper()
+	c.fuel = 40.0
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
+	var ad := AutoDriver.new(self, road, c)
+	var far: Vector3 = b.poi["bridge_far"]
+	var lowest := INF
+	var tt := 0.0
+	while tt < 30.0 and Vector2(c.global_position.x - far.x, c.global_position.z - far.z).length() > 4.0:
+		await get_tree().physics_frame
+		tt += 1.0 / 60.0
+		ad.step(20.0)
+		lowest = minf(lowest, c.global_position.y)
+	ad.release()
+	key(KEY_S, true)
+	await wait(1.5)
+	key(KEY_S, false)
+	log_line("van reached the far bank in %.1f s (lowest %.2f, deck %.2f)" % [tt, lowest, b.poi["lift_pivot"].y])
+	check(Vector2(c.global_position.x - far.x, c.global_position.z - far.z).length() < 6.0 and lowest > b.poi["lift_pivot"].y - 1.5, "the van drives across the lowered leaf")
+	await tap(KEY_SPACE)
+	p.force_exit = true
+	await physics_frames(3)
+	if not was_solved:
+		stn.solved = false
+		line.sync()
+
+
+## D10, the ghat: pace notes on the swung nav, the fog on the hairpins, a
+## glimpse on the second hairpin, then the first creature at the pass comes
+## for the van; hidden under the tarp, it loses interest and goes.
+func t_ghat() -> void:
+	var b: LevelBuilder = boot.builder
+	var g := get_tree().get_first_node_in_group("ghat") as Ghat
+	check(g != null and g.hairpins.size() >= 2, "the ghat road has its hairpins (%d)" % (g.hairpins.size() if g else 0))
+	if g == null or g.hairpins.size() < 2:
+		return
+	var st: Story = boot.story
+	for f in ["ghat_glimpse", "first_attack", "first_attack_over"]:
+		st.flags.erase(f)
+	st.index = st.index_of("ghat")
+	var c := camper()
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	mood.set_now(0.7)
+	boot._on_joy_changed(0, true)      # P2 on a pad, in the passenger seat
+	await wait(0.3)
+	await van_to(g.road.point(g.fog_from + 10))
+	c.fuel = 45.0
+	c.attack.set_tarp(false)
+	await seat_p1_driver()
+	var q := p2()
+	if q.seat == null:
+		q.enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await physics_frames(3)
+	if not c.engine_on:
+		c.toggle_engine()
+	# P2 swings the nav (pad A) and reads the pace notes
+	pad_button(JOY_BUTTON_A, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_A, false)
+	await wait(1.0)
+	var nav: Label3D = c._needles.get("nav_label")
+	log_line("pace notes: %s" % nav.text.replace("\n", " | "))
+	check(c.nav_aside and (nav.text.contains("LEFT") or nav.text.contains("RIGHT")), "the swung nav reads pace notes on the ghat")
+	check(nav.layers == 1 << (1 + p1().index), "the driver can't see them")
+	var t0 := Time.get_ticks_msec()
+	while g.fog < 0.99 and Time.get_ticks_msec() - t0 < 8000:
+		await wait(0.2)
+	var env := (boot.world.get_node("Environment") as WorldEnvironment).environment
+	log_line("fog %.2f: visible to %.0f m" % [g.fog, env.fog_depth_end])
+	check(g.fog > 0.9 and env.fog_depth_end < 60.0, "fog comes down on the hairpins (%.0f m)" % env.fog_depth_end)
+	await shot("ghat_notes")
+	# drive up: the glimpse, then the pass
+	var ad := AutoDriver.new(self, g.road, c)
+	var tt := 0.0
+	var glimpsed := false
+	var notes_seen := {}
+	while tt < 150.0 and not st.flags.has("first_attack"):
+		await get_tree().physics_frame
+		tt += 1.0 / 60.0
+		ad.step(24.0)
+		if int(tt * 60.0) % 30 == 0:
+			notes_seen[nav.text.get_slice("\n", 1).strip_edges()] = true
+		if not glimpsed and g.glimpse != null:
+			glimpsed = true
+			log_line("glimpse at %.0f s, %.0f m from the van" % [tt, g.glimpse.global_position.distance_to(c.global_position)])
+			await shot("ghat_glimpse")
+	log_line("notes read on the way up: %s" % str(notes_seen.keys()))
+	check(glimpsed and st.flags.has("ghat_glimpse"), "on the second hairpin a creature is glimpsed between the trees")
+	check(st.flags.has("first_attack") and g.attacker != null, "at the pass the first creature steps out (drove %.0f s)" % tt)
+	ad.release()
+	key(KEY_S, true)
+	await wait(2.0)
+	key(KEY_S, false)
+	await tap(KEY_SPACE)
+	await wait(0.3)
+	await shot("ghat_attack")
+	t0 = Time.get_ticks_msec()
+	while c.attack.stage() < 1 and Time.get_ticks_msec() - t0 < 25000:
+		await wait(0.2)
+	await wait(2.5)
+	log_line("it reached the van in %.1f s: stage %d, leak %.1f L/min" % [(Time.get_ticks_msec() - t0) / 1000.0, c.attack.stage(), c.attack.leak_rate()])
+	check(c.attack.stage() >= 1 and c.attack.leak_rate() > 0.0, "it comes for the van and the fuel starts to leak")
+	check(st.current()["id"] == "hide_van", "the objective: hide the van, or get away")
+	# engine and lights off, both out and away up the road, the tarp on
+	await tap(KEY_X)
+	c.set_headlights(false)
+	p1().force_exit = true
+	q.force_exit = true
+	await physics_frames(4)
+	var back := g.road.point(maxi(0, g.road.point_count() - 60))
+	await place_player(p1(), back + Vector3(0, 0.5, 0), 0.0)
+	await place_player(q, back + Vector3(3, 0.5, 0), 0.0)
+	c.attack.set_tarp(true)
+	check(c.attack.tarped, "the van is under the tarp")
+	g.attacker.van_interest = minf(g.attacker.van_interest, 3.0)    # its 20-40 s of patience, shortened
+	t0 = Time.get_ticks_msec()
+	while not st.flags.has("first_attack_over") and Time.get_ticks_msec() - t0 < 40000:
+		await wait(0.25)
+	log_line("it gave up after %.1f s; leak %.2f, players taken: %s" % [(Time.get_ticks_msec() - t0) / 1000.0, c.attack.leak_rate(), str([p1().taken_grace > 0.0, q.taken_grace > 0.0])])
+	check(st.flags.has("first_attack_over") and c.attack.leak_rate() == 0.0, "under the tarp it loses interest and goes; the leak stops")
+	await wait(0.6)
+	check(st.current()["id"] == "end_d", "the objective moves on")
+	c.attack.set_tarp(false)
+	mood.set_now(1.0)
+	if c.nav_aside:
+		c.swing_nav()
 
 
 ## Stealth gym: the cardboard box ("that box moved"), peeking from cover, and

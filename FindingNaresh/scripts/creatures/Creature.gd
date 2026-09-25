@@ -49,6 +49,7 @@ var seen_now: Array = []             ## players it can see right now (tests read
 var box_moved := false               ## it is watching a box move right now (tests read this)
 var _box_notice := false             ## what it last noticed was a box
 var _item_ms := -99999               ## when and where the last item it heard landed
+var passive := false                 ## only walks its patrol and shows itself (a glimpse)
 var van_interest := 0.0              ## s left of wanting to be at the van
 var _van_memory := randf_range(VAN_MEMORY.x, VAN_MEMORY.y)   ## this one's patience with the van
 var _item_at := Vector3.ZERO
@@ -134,6 +135,12 @@ func _build() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if passive:
+		state = State.WANDER
+		_noticed_t = 99.0
+		_move(delta)
+		_show(delta)
+		return
 	_noticed_t += delta
 	_sight_t += delta
 	van_interest = maxf(0.0, van_interest - delta)
