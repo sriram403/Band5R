@@ -86,6 +86,8 @@ static func collect(boot: Node) -> Dictionary:
 	var station := boot.get_tree().get_first_node_in_group("cooling_station") as CoolingStation
 	var windmill := boot.get_tree().get_first_node_in_group("windmill_brake") as WindmillBrake
 	var lift := boot.get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+	var maze := boot.get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+	var relay := boot.get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
 	var house := boot.world.get_node_or_null("P2Home") as HouseInterior
 	var town_pump := boot.world.get_node_or_null("TownFuel/WorkingPump") as FuelSource
 	return {
@@ -110,6 +112,8 @@ static func collect(boot: Node) -> Dictionary:
 		"station": station.to_dict() if station else {},
 		"windmill": windmill.to_dict() if windmill else {},
 		"lift_bridge": lift.to_dict() if lift else {},
+		"maze": maze.to_dict() if maze else {},
+		"relay": relay.to_dict() if relay else {},
 		"house": house.to_dict() if house else {},
 		"town_pump_litres": town_pump.litres if town_pump else 0.0,
 		"mood": _mood(boot),
@@ -188,6 +192,12 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	var lift := boot.get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
 	if lift and d.has("lift_bridge"):
 		lift.from_dict(d["lift_bridge"])
+	var maze := boot.get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+	if maze and d.has("maze"):
+		maze.from_dict(d["maze"])
+	var relay := boot.get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
+	if relay and d.has("relay"):
+		relay.from_dict(d["relay"])
 	var house := world.get_node_or_null("P2Home") as HouseInterior
 	if house and d.has("house"):
 		house.from_dict(d["house"])

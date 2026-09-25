@@ -21,7 +21,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
 const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "climb", "carry", "look", "pad", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "maze", "relay", "climb", "carry", "look", "pad", "perf", "save"]
 
 
 func _ready() -> void:
@@ -233,7 +233,7 @@ func _run() -> void:
 		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
 		_finish()
 		return
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "maze", "relay", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -1438,6 +1438,10 @@ func t_save() -> void:
 	wm.from_dict({"snagged": false, "brake_on": true, "angle": 1.0, "box_open": true, "map_taken": true})
 	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
 	lift.from_dict({"locked": true})
+	var maze := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+	var relay := get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
+	maze.from_dict({"chest_open": true, "dust_done": true})
+	relay.from_dict({"dials": relay.code.duplicate(), "opened": true})
 	await place_player(p2(), b.poi["j2"] + Vector3(6, 1, 6), 1.0)
 	await seat_p1_driver()
 	await wait(1.5)
@@ -1467,6 +1471,8 @@ func t_save() -> void:
 	}
 	wm.from_dict({})     # jammed again: loading must free it
 	lift.from_dict({})   # up again: loading must bring it down
+	maze.from_dict({})
+	relay.from_dict({"dials": [0, 0, 0, 0], "opened": false})
 	# now wreck the state, then load
 	p.force_exit = true
 	await physics_frames(3)
@@ -1508,6 +1514,9 @@ func t_save_verify() -> void:
 	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
 	var bars: Array = boot.builder.bridge_barriers.find_children("*", "CollisionShape3D", true, false)
 	check(lift != null and lift.locked and lift.angle == 0.0 and bars.all(func(c): return c.disabled), "loading restores the lowered lift bridge, barriers gone")
+	var maze := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+	var relay := get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
+	check(maze != null and maze.chest_open and relay != null and relay.opened and relay.dials == relay.code, "loading restores the opened feed chest and supply box")
 	var line := get_tree().get_first_node_in_group("power_line") as PowerLine
 	check(line != null and line.hut_powered == station().solved and line.powered == station().solved, "loading restores the power line to match the water works (powered: %s)" % station().solved)
 	for id in ["dock", "lookout", "shed"]:
@@ -3208,6 +3217,138 @@ func t_tower() -> void:
 	cr.queue_free()
 	cw.creature = null
 	ms.stamps.clear()
+
+
+## W2, the hay maze by the barn: up the loft ladder; the walls stop you
+## walking straight through; walk the way the loft would call it; the dust
+## blows in over the middle; the feed chest at the end.
+func t_maze() -> void:
+	var b: LevelBuilder = boot.builder
+	var maze := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+	var lad := boot.world.find_child("LoftLadder", true, false) as Ladder
+	check(maze != null and lad != null, "the barn has a maze and a ladder to its loft")
+	if maze == null or lad == null:
+		return
+	maze.from_dict({})
+	var way := maze.path(maze.entrance, maze.goal)
+	log_line("maze: %d cells from the way in to the chest" % way.size())
+	check(way.size() >= 8 and way[way.size() - 1] == maze.goal, "there is one way through, and it's long enough (%d cells)" % way.size())
+	var p := p1()
+	var q := p2()
+	# P1 up the loft ladder with the real keys
+	await place_player(p, b.poi["loft_ladder"] + Vector3(0, 0.4, 0), lad.climb_yaw())
+	await look_at_point(p, lad.global_transform * Vector3(0, 1.6, 0))
+	await wait(0.2)
+	await tap(KEY_E)
+	key(KEY_W, true)
+	var t0 := Time.get_ticks_msec()
+	while p.ladder != null and Time.get_ticks_msec() - t0 < 10000:
+		await physics_frames(1)
+	key(KEY_W, false)
+	await wait(0.4)
+	log_line("loft: at %s, %.2f m from the balcony" % [p.global_position, p.global_position.distance_to(b.poi["loft"])])
+	check(p.ladder == null and p.global_position.distance_to(b.poi["loft"]) < 1.8 and p.is_on_floor(), "up the ladder onto the loft balcony")
+	await look_at_point(p, b.poi["maze"])
+	await shot("maze_loft")
+	# the walker: P1 comes down (teleport), P2 takes the loft
+	await place_player(q, b.poi["loft"] + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(q, b.poi["maze"])
+	var at_in := maze.global_transform * (maze.cell_pos(maze.entrance) + Vector3(0, 0, BarnMaze.CELL))
+	await place_player(p, at_in + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.3)
+	# straight at the chest: the hedges stop you
+	var chest_at := maze.global_transform * maze.cell_pos(maze.goal)
+	var straight := await walk_to(p, chest_at, "straight through the maze", 0.8, 4.0)
+	check(not straight, "you can't walk straight through the hedges")
+	await place_player(p, at_in + Vector3(0, 0.4, 0), 0.0)
+	var ok := true
+	var dust_seen := false
+	for c in way:
+		var target := maze.global_transform * maze.cell_pos(c)
+		# the chest stands in the middle of the last cell: stop in front of it
+		if not await walk_to(p, target, "maze cell %s" % str(c), 1.3 if c == maze.goal else 0.7, 8.0):
+			ok = false
+			break
+		if maze.dust_on and not dust_seen:
+			dust_seen = true
+			await shot("maze_dust")
+	check(ok and maze.cell_at(p.global_position) == maze.goal, "walked the way through, turn by turn, to the far end")
+	check(dust_seen, "hay dust blows over the middle as you pass")
+	await look_at_point(p, chest_at + Vector3.UP * 0.4)
+	await wait(0.2)
+	await tap(KEY_E)
+	await wait(0.8)
+	check(maze.chest_open and boot.world.find_child("MazeCoolant", true, false) != null and boot.story.flags.has("maze_done"), "the feed chest: a jug of coolant and a crate")
+	await shot("maze_chest")
+	for nm in ["MazeCoolant", "MazeCrate"]:
+		var it: Node = boot.world.find_child(nm, true, false)
+		if it != null:
+			it.queue_free()
+
+
+## W4, the binocular relay at the Pine Ridge lookout: two boards out across
+## the valley show the code in pictures (binoculars from the deck); P2 at the
+## supply box turns the dials to match (pad X); it opens, a full can inside.
+func t_relay() -> void:
+	var b: LevelBuilder = boot.builder
+	var relay := get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
+	check(relay != null and relay.boards.size() == 2 and relay.code.size() == 4, "the lookout has a picture-lock supply box and two code boards")
+	if relay == null:
+		return
+	relay.from_dict({"dials": [(relay.code[0] + 3) % 6, (relay.code[1] + 2) % 6, (relay.code[2] + 4) % 6, (relay.code[3] + 1) % 6], "opened": false})
+	boot._on_joy_changed(0, true)      # P2 on a pad
+	await wait(0.3)
+	var p := p1()
+	var q := p2()
+	p.has_binoculars = true
+	await place_player(p, b.poi["lookout_deck"] + Vector3(0, 0.3, 0), 0.0)
+	var names := []
+	for k in 2:
+		var board: Vector3 = b.poi["relay_board_%d" % (k + 1)]
+		log_line("board %d: %.0f m from the deck" % [k + 1, board.distance_to(b.poi["lookout_deck"])])
+		await look_at_point(p, board)
+		await wait(0.3)
+		await shot("relay_board%d_eye" % (k + 1))
+		await mouse_button(MOUSE_BUTTON_RIGHT, true)
+		await wait(0.6)
+		await shot("relay_board%d_zoom" % (k + 1))
+		await mouse_button(MOUSE_BUTTON_RIGHT, false)
+		await wait(0.3)
+		# can the deck see the board? a ray from the eye to the board's middle
+		var eye := p.global_position + Vector3.UP * 1.56
+		var hit: Dictionary = p.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(eye, board, 1 | 8))   # ground, and trees and buildings
+		log_line("board %d in sight: %s" % [k + 1, str(hit.is_empty())])
+		check(hit.is_empty(), "board %d can be seen from the deck (nothing in the way)" % (k + 1))
+	for c in relay.code:
+		names.append(LookoutRelay.SHAPES[c])
+	log_line("the code: %s" % str(names))
+	# P2 at the box turns each dial until it shows what was called down
+	await place_player(q, b.poi["relay_box"] + Vector3(0, 0.4, 0), 0.0)
+	var boxn := relay.find_child("SupplyBox", true, false) as Node3D
+	var front := boxn.global_transform * Vector3(0, 0, -1.4)
+	await place_player(q, front + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.5)          # land first, then aim
+	var presses := 0
+	for k in 4:
+		var dial := relay.find_child("Dial%d" % k, true, false) as Node3D
+		await look_at_point(q, dial.global_position)
+		await wait(0.2)
+		log_line("dial %d: '%s', ray hits %s" % [k, q.prompt_text, q.ray.get_collider().name if q.ray.is_colliding() else "nothing"])
+		var guard := 0
+		while relay.dials[k] != relay.code[k] and guard < 8:
+			pad_button(JOY_BUTTON_X, true)
+			await wait(0.08)
+			pad_button(JOY_BUTTON_X, false)
+			await wait(0.12)
+			presses += 1
+			guard += 1
+	await wait(0.8)
+	log_line("dials %s, code %s, %d presses" % [str(relay.dials), str(relay.code), presses])
+	check(relay.opened and boot.world.find_child("RelayFuel", true, false) != null and boot.story.flags.has("relay_done"), "the dials match: the box opens, a full can inside")
+	await shot("relay_open")
+	var can: Node = boot.world.find_child("RelayFuel", true, false)
+	if can != null:
+		can.queue_free()
 
 
 ## Stealth gym: the cardboard box ("that box moved"), peeking from cover, and

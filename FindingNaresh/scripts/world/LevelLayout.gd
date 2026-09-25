@@ -123,6 +123,7 @@ const TOWN_FUEL := Vector3(-1250, 0, 1598)     ## forecourt meets the lane verge
 const WINDMILL := Vector3(-640, 0, 990)
 const LOOKOUT := Vector3(-340, 0, 665)
 const BARN := Vector3(-500, 0, 205)
+const BARN_YARD := Vector3(-510, 0, 210)    ## between the barn and the maze on its west side
 const GAS_STATION := Vector3(130, 0, 470)   ## Last Fuel, at J2
 const FACILITY := Vector3(405, 0, -150)     ## pump house yard, on the west bank
 const COAST_TOWER := Vector3(1395, 0, -85)
@@ -137,7 +138,7 @@ const PADS := [
 	{"pos": FACILITY, "radius": 22.0, "blend": 14.0},
 	{"pos": GAS_STATION, "radius": 14.0, "blend": 10.0},
 	{"pos": HOMESTEAD, "radius": 20.0, "blend": 12.0},
-	{"pos": BARN, "radius": 14.0, "blend": 10.0},
+	{"pos": BARN_YARD, "radius": 30.0, "blend": 10.0},   # the barn and its maze (W2), one level
 	{"pos": P2_HOME, "radius": 16.0, "blend": 10.0, "height_offset": 10.2, "driveway": true},
 	{"pos": TOWN_FUEL, "radius": 14.0, "blend": 10.0},
 	{"pos": NARESH_HOME, "radius": 18.0, "blend": 10.0},
@@ -149,7 +150,7 @@ const PADS := [
 const CLEARINGS := [
 	[Vector2(1720, 640), 70.0], [Vector2(405, -150), 34.0], [Vector2(130, 470), 26.0],
 	[Vector2(-1590, 1475), 75.0], [Vector2(-640, 990), 30.0], [Vector2(-340, 665), 30.0],
-	[Vector2(-600, -1300), 24.0], [Vector2(-500, 205), 32.0], [Vector2(-490, 1590), 30.0],
+	[Vector2(-600, -1300), 24.0], [Vector2(-500, 205), 32.0], [Vector2(-519, 215), 20.0], [Vector2(-490, 1590), 30.0],
 	[Vector2(-1250, 1600), 150.0], [Vector2(1395, -85), 40.0], [Vector2(1715, -620), 60.0],
 	[Vector2(1690, -1120), 60.0], [Vector2(-1605, -950), 36.0], [Vector2(-1300, 900), 36.0],
 ]
@@ -218,12 +219,31 @@ func _near_pond_shore(x: float, z: float) -> bool:
 	return false
 
 
-## Keep landmark footprints clear of scattered trees.
+## Keep landmark footprints clear of scattered trees, and the lines of sight
+## from the Pine Ridge lookout to the relay boards (W4).
 func _in_clearing(x: float, z: float) -> bool:
 	for cl in CLEARINGS:
 		if (Vector2(x, z) - (cl[0] as Vector2)).length() < float(cl[1]):
 			return true
+	var p := Vector2(x, z)
+	var deck := relay_deck()
+	for bp in relay_boards():
+		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, deck, bp)) < 7.0:
+			return true
 	return false
+
+
+## W4: the lookout deck (flat) and where its two code boards stand, out
+## across the valley in the direction the deck looks.
+static func relay_deck() -> Vector2:
+	var f := Vector2(ROSE_CENTRE.x - LOOKOUT.x, ROSE_CENTRE.z - LOOKOUT.z).normalized()
+	return Vector2(LOOKOUT.x, LOOKOUT.z) + f * 0.5
+
+
+static func relay_boards() -> Array[Vector2]:
+	var f := Vector2(ROSE_CENTRE.x - LOOKOUT.x, ROSE_CENTRE.z - LOOKOUT.z).normalized()
+	var deck := relay_deck()
+	return [deck + f.rotated(deg_to_rad(-24.0)) * 150.0, deck + f.rotated(deg_to_rad(20.0)) * 140.0]
 
 
 func _xf(pos: Vector3, yaw: float, scale: Vector3) -> Transform3D:

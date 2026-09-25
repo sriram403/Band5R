@@ -14,8 +14,9 @@ being built and tested), so this always shows where the work is right now.
   D7 the windmill brake puzzle done (Quick: 0 failures).
   D8 the power line done (Quick: 0 failures).
   D9 the lift bridge and D10 the ghat done (Quick: 414 checks, 0 failures).
-  D11 the coast watchtower done. Now: [~] D12 the optional puzzles
-  (`puzzles/BarnMaze.gd`, `puzzles/LookoutRelay.gd` written, not yet in the world).
+  D11 the watchtower and D12 the optional puzzles done (Quick: 436 checks, 0
+  failures). Now: [~] D13 the full run J1 -> coast watchtower on both routes
+  (`t_way_out`), then Full and the hand-over.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -579,7 +580,32 @@ test was fixed and now restores its starting layout before the pad test.
         made tight: the lure (measured to the crate, which rolls; now to the
         spot it heard) and the binocular pickup (read the prompt before the
         gym had settled; now waits for it)
-- [ ] D12. Optional puzzles: barn maze (W2), lookout binocular relay (W4)
+- [x] D12. Optional puzzles: barn maze (W2), lookout binocular relay (W4)
+  - [x] W2 `puzzles/BarnMaze.gd`: a 6 x 6 hedge maze (3 m cells, 2.6 m
+        walls, the same maze every time, 33 cells from the way in to the
+        chest) on the barn's west side; one flat pad now covers barn and maze.
+        A ladder up the gable to a loft balcony (5 m) overlooking it. Things
+        to describe inside (a red gate, a scarecrow, a blue drum, a cart).
+        Hay dust blows over the middle cells the first time someone walks in
+        there (25 s). The feed chest at the far end: coolant jug and a crate
+  - [x] W4 `puzzles/LookoutRelay.gd`: a supply box at the foot of the Pine
+        Ridge lookout with four picture dials (E / pad X turns one); two
+        boards, 1 and 2, 150 and 140 m out across the valley, each with two
+        white pictures on black (circle, square, triangle, cross, ring,
+        diamond). By eye they're pale dots; through the binoculars you can
+        read them. Tree-free sightlines to both boards
+        (`LevelLayout.relay_boards`). Inside: a full can of fuel
+  - [x] Both saved (`save` checks them)
+  - [x] `t_maze` (8 checks: up the loft ladder, the hedges stop you walking
+        straight through, walked 33 cells, the dust, the chest) and `t_relay`
+        (6 checks: both boards in sight, P2 turns the dials with pad X, it
+        opens)
+  - [x] Found on the way, from the shots: trees hid the first boards from
+        the deck (the check's ray passed between trunks: canopies have no
+        collision); at 280 m the pictures were a few pixels even zoomed
+        (now 150 m, 1.6 m pictures, all one colour so only the shape tells);
+        the dials read right to left from the front (now 1-4, left to right)
+  - [x] Quick: 12 segments, 436 checks, 0 failures
 - [ ] D13. Full run J1 -> Bessi on both routes; hand-over
 
 ## Milestone E: Bessi beach and Naresh

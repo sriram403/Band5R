@@ -245,8 +245,34 @@ func _barn(at: Vector3) -> void:
 	# hay bales out front
 	for hb in 4:
 		root.add_child(Build.solid_cyl(0.8, 1.2, ToonMat.make(Color(0.86, 0.74, 0.40)), Vector3(-5.0 + hb * 1.9, 0.8, 9.0), Vector3(0, 0, 90), "Hay"))
+	# W2: the loft door on the west gable, a balcony in front of it, a ladder
+	# up to it, and the hay maze below it
+	const LOFT_Y := 5.0
+	var wood := ToonMat.make(C_WOOD, 0.012)
+	var lbody := StaticBody3D.new()
+	lbody.name = "LoftBody"
+	root.add_child(lbody)
+	root.add_child(Build.box(Vector3(0.1, 2.2, 2.4), ToonMat.make(Color(0.20, 0.14, 0.10)), Vector3(-8.03, LOFT_Y + 1.1, 0), Vector3.ZERO, "LoftDoor"))
+	root.add_child(Build.box(Vector3(2.0, 0.15, 3.0), wood, Vector3(-9.0, LOFT_Y, 0), Vector3.ZERO, "Balcony"))
+	lbody.add_child(_box_shape(Vector3(2.0, 0.15, 3.0), Transform3D(Basis(), Vector3(-9.0, LOFT_Y, 0))))
+	for spec in [[Vector3(0.06, 1.0, 3.0), Vector3(-10.0, LOFT_Y + 0.55, 0)], [Vector3(2.0, 1.0, 0.06), Vector3(-9.0, LOFT_Y + 0.55, 1.5)],
+			[Vector3(1.2, 1.0, 0.06), Vector3(-9.4, LOFT_Y + 0.55, -1.5)]]:
+		var sz: Vector3 = spec[0]
+		root.add_child(Build.box(Vector3(sz.x, 0.06, sz.z), wood, spec[1] + Vector3(0, 0.45, 0), Vector3.ZERO, "LoftRail"))
+		lbody.add_child(_box_shape(sz, Transform3D(Basis(), spec[1])))
+	for s in [Vector3(-9.9, 0, 1.4), Vector3(-9.9, 0, -1.4)]:
+		root.add_child(Build.cyl(0.1, LOFT_Y, wood, s + Vector3(0, LOFT_Y * 0.5, 0), Vector3.ZERO, 6, "LoftPost"))
+	# the ladder comes up at the balcony's open corner (-Z side, by the wall)
+	Ladder.make(root, Vector3(-8.5, 0, -1.9), LOFT_Y + 0.08, Vector3(0, 0, 1), Vector3(-8.5, LOFT_Y + 0.1, -1.0), "LoftLadder")
+	var maze := BarnMaze.new()
+	maze.name = "BarnMaze"
+	root.add_child(maze)
+	maze.setup(Transform3D(Basis(), Vector3(-22.0, 0.0, 0.0)))
 	world.add_child(root)
 	poi["barn"] = pos
+	poi["loft"] = root.transform * Vector3(-9.0, LOFT_Y + 0.1, 0.3)
+	poi["loft_ladder"] = root.transform * Vector3(-8.5, 0, -2.6)
+	poi["maze"] = root.transform * Vector3(-22.0, 0, 0)
 
 
 ## Timber lookout tower on the crest of Pine Ridge: a deck 6 m up, reached by
@@ -339,6 +365,17 @@ func _lookout(at: Vector3, DECK_H := 6.0, nm := "Lookout", label := "PINE RIDGE\
 	poi[key] = pos
 	poi[key + "_deck"] = root.transform * Vector3(0, DECK_H + 0.2, -0.5)
 	poi[key + "_ramp_foot"] = root.transform * Vector3(0, 0, 2.6 + run + 1.5)
+	if key == "lookout":
+		# W4: the supply box by the ramp's foot, its code out across the valley
+		var box_at := root.transform * Vector3(-2.6, 0, 2.6 + run + 1.0)
+		box_at.y = _h(box_at.x, box_at.z)
+		var relay := LookoutRelay.new()
+		relay.name = "LookoutRelay"
+		world.add_child(relay)
+		relay.setup(poi[key + "_deck"], relay_boards(), box_at, _h)
+		poi["relay_box"] = box_at
+		for k in relay.boards.size():
+			poi["relay_board_%d" % (k + 1)] = relay.boards[k].position + Vector3.UP * 5.6
 
 
 ## A rusted car on its roof beside the ridge track: the track is not kind.

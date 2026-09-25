@@ -11,7 +11,7 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, Milestone D: D1-D11 done (tagging, binoculars, stealth, creatures, traffic, mood, windmill, power line, lift bridge, ghat, coast watchtower); next D12 the optional puzzles.
+Last updated: 2026-09-25, Milestone D: D1-D12 done (gyms, traffic, mood, windmill, power line, lift bridge, ghat, coast watchtower, barn maze, lookout relay); next D13 the full run and hand-over.
 Milestones A, B and C are done. A ChatGPT session built the opening; a Claude
 session reviewed it, fixed what it and the user's test found (see TODO.md,
 "Review fixes" and "P2's side fixed") and added `opening_full` and
@@ -153,8 +153,9 @@ they/them.
   D8 the power line (`puzzles/PowerLine.gd`, bridge hut, `t_power`) done.
   D9 the lift bridge (`puzzles/LiftBridge.gd`, `t_bridge`) and D10 the ghat
   (`world/Ghat.gd`: fog, pace notes, glimpse, first attack; `t_ghat`) done.
-  D11 the coast watchtower (`world/CoastWatch.gd`, `t_tower`) done. Next: D12
-  (barn maze, lookout relay), then the full run D13 and the hand-over.
+  D11 the coast watchtower (`world/CoastWatch.gd`, `t_tower`) and D12
+  (`puzzles/BarnMaze.gd`, `puzzles/LookoutRelay.gd`, `t_maze`, `t_relay`)
+  done. Next: D13 `t_way_out` (Full only), then Full and the hand-over.
   The tarp and the cardboard box are block-outs awaiting the user's look
   approval.
 
@@ -363,7 +364,7 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
    `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
    2026-09-25** with every recommended answer (their "Decisions" sections).
    D1-D10 are done (the four gyms, traffic, mood, windmill, power line, lift
-   bridge, ghat, coast watchtower). Next: D12 ( lift bridge, ghat fog and the first attack,
+   bridge, ghat, coast watchtower, optional puzzles). Next: D13 ( lift bridge, ghat fog and the first attack,
    coast watchtower, optional puzzles), then the full run D13.
 2. Then Milestones E-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
