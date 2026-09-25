@@ -12,7 +12,7 @@ being built and tested), so this always shows where the work is right now.
   eleven problems (see "Review fixes" under Milestone C) and added
   `opening_full`, the whole opening played through with the real controls:
   27 checks, 0 failures, about 3.3 min with no hesitation. Quick after all
-  fixes: 238 checks, 0 failures, no script errors.
+  fixes: 238 checks, 0 failures, no script errors. After the P2 fixes: 8 segments, 262 checks, 0 failures; opening_full 27/27.
 - `design/PUZZLES.md` and the D/E/F, creature and Naresh pages are proposals
   kept for future discussion. Their merge did not approve their puzzle choices.
 
@@ -282,6 +282,20 @@ test was fixed and now restores its starting layout before the pad test.
         (one stopped nose to nose with it and jammed the road)
   - [x] Test helper `hold_physics` sent a fresh key press every tick (read as
         60 taps a second); it now only re-sends a dropped press
+- [x] P2's side fixed after your first test (2026-09-25): a new `opening_p2`
+      walks P2's whole part with real movement (no teleports), in Quick
+  - [x] Stairs rebuilt: their foot was 0.25 m from the front wall, so you
+        could only scramble up the side. Now along the right wall with 1.6 m
+        clear at the foot, a 1.2 m landing at the top, railings round the
+        stairwell and the space under the stairs closed in
+  - [x] Front and shed doors open from inside (their use zone was only on
+        the outside face)
+  - [x] A 0.2 m lip at the top of the drive stopped you walking out of the
+        front door; the slab is flush now, and the drive's cutting is wide
+        enough that the grass no longer humps through the concrete
+  - [x] Batteries sit in the pulled-out drawer (they fell at your feet) and
+        holding them says "[F] Fit the batteries in your torch"; the drawer's
+        spent "Drawer is open" zone no longer covers them
 - [x] Opening play-test (`opening_full`, in `full`): the whole opening with the
       real controls, P2's house jobs, the drive to Town Fuel, filling and
       pouring, the roadworks puncture and full wheel swap, the turn up P2's

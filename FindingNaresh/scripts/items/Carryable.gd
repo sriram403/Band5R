@@ -80,6 +80,8 @@ func grab(p) -> void:
 		return
 	if stowed_in != null:
 		unstow()
+	elif freeze:
+		freeze = false    # set out in place (e.g. in a drawer) until picked up
 	holders.append(p)
 	add_collision_exception_with(p)
 	sleeping = false

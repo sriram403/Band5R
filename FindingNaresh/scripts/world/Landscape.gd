@@ -445,14 +445,16 @@ static func _solve_grid() -> void:
 			for drive in driveways:
 				var a: Vector2 = drive["a"]
 				var b: Vector2 = drive["b"]
-				if x < minf(a.x, b.x) - 6.0 or x > maxf(a.x, b.x) + 6.0 or z < minf(a.y, b.y) - 6.0 or z > maxf(a.y, b.y) + 6.0:
+				if x < minf(a.x, b.x) - 10.0 or x > maxf(a.x, b.x) + 10.0 or z < minf(a.y, b.y) - 10.0 or z > maxf(a.y, b.y) + 10.0:
 					continue
 				var ab := b - a
 				var u := clampf((Vector2(x, z) - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
 				var across := (Vector2(x, z) - (a + ab * u)).length()
-				if across < 5.5:
-					var target_h := lerpf(float(drive["y0"]), float(drive["y1"]), u) - 0.05
-					h = lerpf(target_h, h, smoothstep(2.2, 5.5, across))
+				# Flat out to one grid step (5 m) either side: narrower, and the
+				# triangles spanning the 4.6 m slab rose through it as a grass hump.
+				if across < 9.0:
+					var target_h := lerpf(float(drive["y0"]), float(drive["y1"]), u) - 0.08
+					h = lerpf(target_h, h, smoothstep(5.0, 9.0, across))
 			grid_h[k] = h
 
 

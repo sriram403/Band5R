@@ -39,8 +39,10 @@ func _p2_home() -> void:
 	poi["p2_window"] = h.position + h.basis * Vector3(-2.5, 4.65, 4.0)
 	# A constructed, drivable approach climbs roughly one metre in five from
 	# the lane to the front door. It also gives the handbrake a clear job here.
-	var road_end := near + Vector3.UP * 0.1
-	var home_end := h.position + h.basis * Vector3(0, 0.1, 4.8)
+	# the slab's top face (0.125 above its centre line) sits flush with the road
+	# and with the ground at the front door, so there is no lip to walk into
+	var road_end := near + Vector3.UP * -0.1
+	var home_end := h.position + h.basis * Vector3(0, -0.1, 4.8)
 	var climb := home_end - road_end
 	var run := Vector2(climb.x, climb.z).length()
 	var slope := atan2(climb.y, run)

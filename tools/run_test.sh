@@ -24,6 +24,7 @@ if [ -n "$SHOW" ]; then
 	if [ -z "$GYM" ] && { [ -z "$1" ] || [ "$1" = quick ] || [ "$1" = full ]; }; then
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=opening $ARGS --show || exit $?
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=opening_save $ARGS --show || exit $?
+		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=opening_p2 $ARGS --show || exit $?
 		if [ "$1" = full ]; then
 			"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=opening_full $ARGS --show || exit $?
 		fi
@@ -39,6 +40,8 @@ FG=$(powershell.exe -NoProfile -NonInteractive -Command "Add-Type -Name F -Names
 if [ -z "$GYM" ] && { [ -z "$1" ] || [ "$1" = quick ] || [ "$1" = full ]; }; then
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=opening $ARGS "--refocus=${FG:-0}" || exit $?
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=opening_save $ARGS "--refocus=${FG:-0}" || exit $?
+	# P2's part of the opening on foot, every step walked (~35 s)
+	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=opening_p2 $ARGS "--refocus=${FG:-0}" || exit $?
 	if [ "$1" = full ]; then
 		# the whole opening played through and timed (~3.5 min)
 		"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=opening_full $ARGS "--refocus=${FG:-0}" || exit $?

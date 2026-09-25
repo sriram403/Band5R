@@ -2113,7 +2113,7 @@ func t_house() -> void:
 			p.drop_held()
 	await shot("house_shed")
 	# Walk up the real colliding steps from the downstairs kitchen.
-	await place_player(p, house.to_global(Vector3(3.4, 0.8, 3.1)), 0.0)
+	await place_player(p, house.to_global(Vector3(3.9, 0.2, 3.1)), 0.0)
 	log_line("stairs start: %s floor=%s" % [p.global_position, p.is_on_floor()])
 	key(KEY_W, true)
 	for step in 240:
@@ -2469,6 +2469,153 @@ func t_opening_save_verify() -> void:
 	check(p2().global_position.distance_to(PlayTest.expect["p2"]) < 0.5 and
 		absf(p2().flashlight_seconds - 123.0) < 2.0 and p2().flashlight.visible,
 		"loading returns P2 to the house with the torch battery state")
+
+
+## Walk a player to `target` for real: turn to face it and hold W, one physics
+## tick at a time. Returns false (and logs where) if they get stuck.
+func walk_to(p: PlayerRig, target: Vector3, what: String, arrive := 0.5, max_s := 25.0) -> bool:
+	var t := 0.0
+	var mark := p.global_position
+	var mark_t := 0.0
+	key(KEY_W, true)
+	while t < max_s:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		var d := target - p.global_position
+		d.y = 0.0
+		if d.length() < arrive:
+			key(KEY_W, false)
+			return true
+		p.yaw = atan2(-d.x, -d.z)
+		p.rotation.y = p.yaw
+		if not Input.is_physical_key_pressed(KEY_W):
+			key(KEY_W, true)
+		if t - mark_t > 1.5:
+			if p.global_position.distance_to(mark) < 0.3:
+				break
+			mark = p.global_position
+			mark_t = t
+	key(KEY_W, false)
+	var house := boot.world.get_node_or_null("P2Home") as Node3D
+	var local := house.to_local(p.global_position) if house else p.global_position
+	log_line("WALK STUCK going to %s: at %s (house local %s), %.1f m short" % [what, p.global_position, local,
+		Vector2(target.x - p.global_position.x, target.z - p.global_position.z).length()])
+	await shot("walk_stuck_" + what.replace(" ", "_"))
+	return false
+
+
+## Look at a point from where the player stands (no moving).
+func look_at_point(p: PlayerRig, target: Vector3) -> void:
+	var d := target - p.global_position
+	p.yaw = atan2(-d.x, -d.z)
+	p.rotation.y = p.yaw
+	var eye := p.global_position + Vector3.UP * (PlayerRig.STAND_HEIGHT - 0.16)
+	p.pitch = atan2(target.y - eye.y, Vector2(target.x - eye.x, target.z - eye.z).length())
+	await physics_frames(4)
+
+
+## P2's whole part of the opening on foot, walking every step with the real
+## controls: kitchen drawer and torch, out of the front door, the shed can and
+## drum, back in and up to the window, then down and out to the drive.
+## `tools/run_test.sh opening_p2`
+func t_opening_p2() -> void:
+	var st: Story = boot.story
+	var house := boot.world.get_node_or_null("P2Home") as HouseInterior
+	check(st.opening_mode and house != null, "a new game begins the two-player opening")
+	if house == null:
+		return
+	var p := p2()
+	var H := func(v: Vector3) -> Vector3: return house.to_global(v)
+	await tap(KEY_TAB, 0.2)
+	check(boot.kbm_owner == 1, "TAB gives the keyboard to P2")
+	await shot("p2_start")
+	await tap(KEY_P, 0.2)
+	await wait(1.0)
+	await tap(KEY_P, 0.2)
+	# the dead torch
+	await tap(KEY_F)
+	check(not p.flashlight.visible, "P2's torch starts dead")
+	# kitchen drawer
+	var ok: bool = await walk_to(p, H.call(Vector3(-3.0, 0, -1.1)), "kitchen drawer")
+	check(ok, "P2 walks from the spawn to the kitchen drawer")
+	await look_at_point(p, H.call(Vector3(-3.0, 0.85, -1.92)))
+	log_line("at the drawer: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("drawer"), "the drawer offers to be opened")
+	await tap(KEY_E)
+	await wait(0.6)
+	check(house.drawer_open and house.battery_pack != null, "E opens the drawer and shows the batteries")
+	await shot("p2_drawer_open")
+	if house.battery_pack == null:
+		return
+	log_line("batteries at %s (house local %s)" % [house.battery_pack.global_position, house.to_local(house.battery_pack.global_position)])
+	await look_at_point(p, house.battery_pack.global_position + Vector3.UP * 0.1)
+	log_line("looking at the batteries: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	check(p.held is BatteryPack, "P2 picks the batteries up")
+	await wait(0.3)
+	log_line("holding the batteries: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains(p.dev.glyph("flashlight")), "the prompt says which key fits the batteries")
+	await tap(KEY_F)
+	check(p.flashlight.visible and p.held == null, "F fits the batteries and the torch comes on")
+	await shot("p2_torch_on")
+	# out of the front door
+	ok = await walk_to(p, H.call(Vector3(0, 0, 2.9)), "inside the front door")
+	check(ok, "P2 walks from the kitchen to the front door")
+	await look_at_point(p, H.call(Vector3(0, 1.3, 4.12)))
+	log_line("inside the front door: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	check(house.front_open, "the front door opens from inside")
+	ok = await walk_to(p, H.call(Vector3(0, 0, 6.5)), "outside the front door")
+	check(ok, "P2 walks out of the house")
+	await shot("p2_outside")
+	# the shed
+	ok = await walk_to(p, H.call(Vector3(8.5, 0, 5.0)), "shed door")
+	check(ok, "P2 walks round to the shed door")
+	await look_at_point(p, H.call(Vector3(8.5, 1.3, 3.1)))
+	log_line("at the shed door: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	check(house.shed_open, "the shed door opens")
+	ok = await walk_to(p, H.call(Vector3(7.5, 0, 1.4)), "in the shed")
+	check(ok, "P2 walks into the shed")
+	await look_at_point(p, house.fuel_can.global_position + Vector3.UP * 0.2)
+	log_line("at the shed can: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	check(p.held == house.fuel_can, "P2 picks up the empty can")
+	ok = await walk_to(p, H.call(Vector3(8.5, 0, -0.3)), "the drum")
+	await look_at_point(p, H.call(Vector3(8.5, 0.85, -0.95)))
+	log_line("at the drum: '%s'" % p.prompt_text)
+	await hold_physics(KEY_E, 5.0)
+	check(house.fuel_can.litres > 19.0, "holding E fills the can at the drum")
+	await shot("p2_shed")
+	# carry it out to where the van will park, then back in and upstairs
+	ok = await walk_to(p, H.call(Vector3(7.5, 0, 5.0)), "out of the shed with the can")
+	check(ok, "P2 carries the full can out of the shed")
+	ok = await walk_to(p, H.call(Vector3(2.2, 0, 7.0)), "the top of the drive with the can")
+	check(ok, "P2 carries the can to the top of the drive")
+	await tap(KEY_E)  # set it down
+	check(p.held == null, "P2 puts the can down by the drive")
+	await tap(KEY_M, 0.2)
+	await wait(0.3)
+	var j1: Vector3 = boot.builder.poi["j1"]
+	boot.map_state.add_stamp("unexplored", Vector2(j1.x, j1.z))
+	await tap(KEY_M, 0.2)
+	check(st.opening_steps[1] == 4, "P2's jobs are done: watch for the van")
+	ok = await walk_to(p, H.call(Vector3(0, 0, 2.5)), "back in the door")
+	ok = ok and await walk_to(p, H.call(Vector3(3.9, 0, 3.1)), "the foot of the stairs")
+	ok = ok and await walk_to(p, H.call(Vector3(3.9, 0, -3.2)), "up the stairs", 0.6)
+	check(ok and p.global_position.y > house.global_position.y + 3.0, "P2 climbs the stairs")
+	ok = await walk_to(p, H.call(Vector3(1.5, 0, -3.2)), "off the landing")
+	ok = ok and await walk_to(p, H.call(Vector3(-2.5, 0, 2.9)), "the upstairs window")
+	check(ok and p.global_position.y > house.global_position.y + 3.0, "P2 walks from the landing to the window, upstairs")
+	await look_at_point(p, H.call(Vector3(-2.5, 3.9, 10.0)))
+	await shot("p2_window")
+	# and back down and out to the drive
+	ok = await walk_to(p, H.call(Vector3(1.5, 0, -3.2)), "back to the landing")
+	ok = ok and await walk_to(p, H.call(Vector3(3.9, 0, -3.2)), "the top of the stairs")
+	ok = ok and await walk_to(p, H.call(Vector3(3.9, 0, 3.1)), "down the stairs", 0.6)
+	ok = ok and await walk_to(p, H.call(Vector3(0, 0, 2.5)), "the door again")
+	ok = ok and await walk_to(p, H.call(Vector3(0, 0, 9.0)), "down to the drive")
+	check(ok and p.global_position.y < house.global_position.y + 0.5, "P2 walks back down and out to the drive")
 
 
 ## Metres each player would have walked between the spots the full opening

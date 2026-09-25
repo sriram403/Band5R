@@ -462,6 +462,13 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   90-degree corner onto the bank. Feed it a turning arc (9 m tangents) and a
   short look-ahead; check the van is on the slab (across < 1.4 m), not just
   near the house.
+- **Walk, don't teleport, to find layout bugs:** `walk_to` turns the player
+  and holds W tick by tick, logging and screenshotting where they get stuck.
+  Teleport-based checks (`go_to`, `face_point`) passed while P2 could not get
+  out of the house or onto the stairs. Every walkable space gets a walk test.
+- **Terrain under narrow features:** the terrain grid is 5 m, so anything
+  narrower (the 4.6 m drive) needs the terrain lowered at least one grid step
+  either side, or the triangles between vertices poke through it.
 - **Town traffic clearance:** the van is 2.24 m wide; cars sit 2.4 m off the
   centre and look ahead with a 1.8 m box, so a van down the middle passes.
 - **Split HUD:** the top-left objective and top-centre fading controls

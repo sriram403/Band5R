@@ -463,7 +463,7 @@ func toggle_flashlight() -> void:
 		message.emit("Fresh batteries. The torch is working.", 3.0)
 		return
 	if flashlight_seconds <= 0.0:
-		message.emit("The torch batteries are dead.", 2.5)
+		message.emit("Your torch is dead. It needs new batteries.", 2.5)
 		return
 	flashlight.visible = not flashlight.visible
 	beam.visible = flashlight.visible
@@ -594,6 +594,8 @@ func _scan_holding() -> void:
 		text = "[%s]  %s" % [dev.glyph("interact"), ctx_text]
 	else:
 		text = "%s     [%s]  Drop     [%s]  Throw" % [held.label().capitalize(), dev.glyph("interact"), dev.glyph("throw")]
+		if held is BatteryPack:
+			text = "[%s]  Fit the batteries in your torch     [%s]  Drop" % [dev.glyph("flashlight"), dev.glyph("interact")]
 	if text != prompt_text:
 		prompt_text = text
 		prompt_changed.emit(text)
