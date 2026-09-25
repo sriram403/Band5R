@@ -10,8 +10,9 @@ being built and tested), so this always shows where the work is right now.
   creature page with every recommended answer (see "Decisions" at the end of
   `design/WAY_OUT.md` and `design/CREATURES.md`).
 - D1 tagging and D2 binoculars done (Quick: 0 failures). D3/D4 stealth and
-  creatures: (a) senses and chase and (b) being taken done. Next: (c) the
-  cardboard box, peeking from cover, thrown lures.
+  creatures: (a) senses and chase, (b) being taken and (c) box, peeking and
+  lures done (stealth gym: 3 tests, 0 failures). Next: (d) the van attack and
+  the tarp.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -386,8 +387,23 @@ test was fixed and now restores its starting layout before the pad test.
   - [x] Bugs found on the way: a running take teleported P1 in the middle of
         later checks (takes can now be cancelled; tests cancel them); the
         trail's stop timer outlived a cancelled take (now a tween on the trail)
-  - [ ] (c) The cardboard box ("that box moved"), peeking from cover, thrown
-        lures
+  - [x] (c) Hiding. `items/CardboardBox.gd`: E while holding it puts it over
+        you (crouched, no jumping, a slit view `ui/BoxView.gd`; your partner
+        sees a box); E lifts it off again. Still in it you are seen only
+        within 3 m, moving 6 m; a box that moves in its view within 35 m makes
+        it curious: it walks up to 4.5 m, stares, and loses interest if you
+        keep still. Peeking: crouched with cover within 1.3 m in front, hold
+        RMB / LT and your head rises over it (low cover) or leans 0.6 m past
+        its end (tall cover); a creature then sees you as if standing; no
+        binoculars while peeking. Lures: a thrown thing landing within 15 m
+        makes it curious and it walks to the spot (a bouncing crate counts
+        once). Crouch and peek added to the on-foot hints. Stealth gym: a box
+        and two crates by the start. `t_hiding`: 22 checks pass (box at 10 m
+        not noticed; that box moved: stared from 4.4 m, then gave up; moving
+        in the box right in front of it: seen; peek over the rock and past
+        the wall's end both seen; lure landed 6.4 m away, it walked there)
+  - [x] Bugs found on the way: a crate's bounces counted as three sounds and
+        sent it searching (one throw = one sound now)
   - [ ] (d) The van attack (leak, engine failing, puncture) and the tarp
 - [ ] D5. Traffic system: table-driven counts per road, keep left, stop for the
       van, the one lorry; thinning out to none after J2

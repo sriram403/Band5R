@@ -10,6 +10,7 @@ var camper: Camper
 var _crosshair: Control
 var _arrows: Control
 var binoculars: BinocularView
+var box_view: BoxView
 var _white: ColorRect
 ## tag owner index -> where its edge arrow was last drawn (tests read this)
 var tag_arrow_at := {}
@@ -46,6 +47,8 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	# the view through binoculars, under everything else on the HUD
 	binoculars = BinocularView.new()
 	add_child(binoculars)
+	box_view = BoxView.new()
+	add_child(box_view)
 
 	# arrows at the screen edge towards tags that are out of view
 	_arrows = Control.new()
@@ -251,6 +254,7 @@ func _process(delta: float) -> void:
 	_white.color.a = player.whiteout
 	_white.visible = player.whiteout > 0.001
 	binoculars.amount = clampf(player.zoom - 1.0, 0.0, 1.0)
+	box_view.amount = move_toward(box_view.amount, 1.0 if player.in_box else 0.0, get_process_delta_time() * 4.0)
 	var seated := player.seat != null
 	_update_hint(delta, seated)
 	_gauges.visible = seated
@@ -334,12 +338,12 @@ func _update_hint(delta: float, seated: bool) -> void:
 	if _hint_age[ctx] < HINT_SECONDS and d != null:
 		if d.kind == InputDevice.Kind.PAD:
 			match ctx:
-				"foot": text = "Stick move · Right stick look · L3 sprint · A jump · Y flashlight · X use · RB throw · RT tag · D-Down map"
+				"foot": text = "Stick move · Right stick look · L3 sprint · A jump · B crouch (+LT peek) · Y flashlight · X use · RB throw · RT tag · D-Down map"
 				"driver": text = "RT go · LT brake/reverse · Stick steer · B handbrake · D-Up engine · D-Left lights · A swing the nav"
 				_: text = "Right stick look around · RT tag · A swing the nav to you · D-Left lights · LB swap seats when stopped"
 		else:
 			match ctx:
-				"foot": text = "WASD move · Mouse look · Shift sprint · Space jump · F flashlight · E use · LMB throw · T tag · M map"
+				"foot": text = "WASD move · Mouse look · Shift sprint · Space jump · Ctrl crouch (+RMB peek) · F flashlight · E use · LMB throw · T tag · M map"
 				"driver": text = "W go · S brake/reverse · A/D steer · Space handbrake · X engine · L lights · N swing the nav"
 				_: text = "Mouse look around · T tag · N swing the nav to you · L lights · C swap seats when stopped"
 	if text != "" and player.has_binoculars and ctx != "driver":

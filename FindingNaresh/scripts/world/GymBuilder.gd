@@ -304,6 +304,17 @@ func _stealth_gym() -> void:
 	for k in range(1, 9):
 		var z := STEALTH_EYE.z + k * 5.0
 		world.add_child(Build.label3d("%d m" % (k * 5), Vector3(STEALTH_EYE.x - 4.0, 0.05, z), Vector3(-90, 0, 0), 0.8, Color(1, 0.9, 0.6)))
+	# a cardboard box and two crates to throw, by the players' start
+	var box := CardboardBox.new()
+	box.name = "GymBox"
+	world.add_child(box)
+	box.position = STEALTH_EYE + Vector3(4, 0.1, 36)
+	poi["stealth_box"] = box.position
+	for k in 2:
+		var cr := Crate.new()
+		cr.name = "LureCrate%d" % (k + 1)
+		world.add_child(cr)
+		cr.position = STEALTH_EYE + Vector3(-4 - k * 1.2, 0.1, 36)
 	var c := Creature.new()
 	c.name = "GymCreature"
 	world.add_child(c)

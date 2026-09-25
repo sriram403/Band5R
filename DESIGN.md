@@ -117,6 +117,9 @@ minutes (up to ~3 hours is fine); pacing and fun matter, not length.
 | Creature | sight, day (stand / sprint / crouch) | 35 / 45 / 17.5 m, 110 deg, blocked by walls, rocks, crates, trunks, the van | stealth |
 | Creature | hearing | crouch-walk 2, walk 8, sprint 18, landing 10, thrown item 15 m | stealth |
 | Creature | from seen to taken | ~2.3 s standing in the open at 9 m; gives up 10 s after losing sight | stealth |
+| Cardboard box | seen from | still 3 m, moving 6 m; a box moving in view within 35 m: it walks to 4.5 m and stares (curious only) | stealth |
+| Peeking | head offset | up 0.72 m over low cover or 0.6 m out past its end; cover must be within 1.3 m; seen as if standing | stealth |
+| Lure | thrown item | heard 15 m; makes it curious (one throw = one sound) and it walks to the spot | stealth |
 | Puzzle rule | a code meant for binoculars only | letters between distance / 450 and distance / 250 (readable zoomed in split view, never by eye) | binoculars |
 
 ## 7. Decisions (2026-09-24)

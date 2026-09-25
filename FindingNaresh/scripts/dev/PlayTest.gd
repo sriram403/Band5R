@@ -19,7 +19,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
-const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken"]}
+const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
 const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "driveway", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
 
@@ -2650,6 +2650,150 @@ func t_taken() -> void:
 	c.fuel_leak = 0.0
 	for pl in boot.players:
 		pl.taken_grace = 0.0
+
+
+## Stealth gym: the cardboard box ("that box moved"), peeking from cover, and
+## a thrown crate luring a creature to where it lands.
+func t_hiding() -> void:
+	var b := boot.builder as GymBuilder
+	var cr := boot.world.get_node_or_null("GymCreature") as Creature
+	var bx := boot.world.get_node_or_null("GymBox") as CardboardBox
+	check(cr != null and bx != null, "the stealth gym has a cardboard box")
+	if cr == null or bx == null:
+		return
+	var eye := GymBuilder.STEALTH_EYE
+	var p := p1()
+	await place_player(p2(), eye + Vector3(-20, 0.25, 60), 0.0)   # out of the way
+	await calm_creature(cr, eye)
+	# pick the box up and get under it, with the real keys
+	await place_player(p, bx.global_position + Vector3(0, 0.15, 1.6), 0.0)
+	await look_at_point(p, bx.global_position + Vector3.UP * 0.5)
+	await tap(KEY_E)
+	check(p.held == bx, "E picks the box up")
+	await tap(KEY_E)
+	await wait(0.5)
+	var hud = boot.huds[0]
+	check(p.in_box and p.held == null and bx.wearer == p and p.crouching and hud.box_view.amount > 0.9,
+		"E again: you are under it, crouched, looking out through a slit")
+	await shot("box_inside")
+	# still, in the open, 12 m in front of it: just a box
+	await calm_creature(cr, eye)
+	var top := await exposed(p, eye + Vector3(-5, 0.25, 9), 3.0, false, cr)
+	check(top < 0.05, "still in the box 10 m in front of it, in the open: not noticed (%.2f)" % top)
+	await shot("box_outside")
+	# shuffle sideways while it watches: that box moved
+	var watched := false
+	key(KEY_D, true)
+	for _i in 15:
+		await wait(0.1)
+		watched = watched or cr.box_moved
+	key(KEY_D, false)
+	var box_at := p.global_position
+	log_line("box moved: suspicion %.2f, %s" % [cr.suspicion, Creature.State.keys()[cr.state]])
+	check(watched and cr.state == Creature.State.CURIOUS, "move while it watches and it comes to look at the box")
+	var nearest := 99.0
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 16000:
+		await wait(0.2)
+		nearest = minf(nearest, cr._flat_dist(box_at))
+		if nearest < 7.0 and cr.state == Creature.State.WANDER:
+			break
+	log_line("it stared from %.1f m, then %s" % [nearest, Creature.State.keys()[cr.state]])
+	await shot("box_stared")
+	check(nearest < 7.0 and nearest > 3.2 and cr.state == Creature.State.WANDER and boot.world.get_node_or_null("Taken1") == null,
+		"it stares at the box from a few metres; you keep still and it loses interest")
+	# but move right under its eyes and it is you
+	var seen := false
+	key(KEY_A, true)
+	for _i in 12:
+		await wait(0.1)
+		if cr.seen_now.has(p):
+			seen = true
+			break
+	key(KEY_A, false)
+	check(seen, "move in the box right in front of it and it sees you")
+	await calm_creature(cr, eye)
+	await tap(KEY_E)
+	check(not p.in_box and p.held == bx and bx.wearer == null, "E lifts the box off; you hold it again")
+	await tap(KEY_G)       # toss it aside (E would put it back on)
+	await wait(0.3)
+	# peeking: crouched behind the rock, hold RMB and your head comes up over it
+	await calm_creature(cr, eye)
+	key(KEY_CTRL, true)
+	await physics_frames(20)
+	await place_player(p, b.poi["cover_rock"] + Vector3(0, 0.25, 1.4), 0.0)
+	await wait(0.5)
+	cr.suspicion = 0.0
+	cr._noticed_t = 99.0
+	cr._heard_id = Hearing.last_id()
+	await wait(1.0)
+	check(cr.suspicion < 0.05 and not p.peeking, "crouched behind the rock: hidden (%.2f)" % cr.suspicion)
+	var cam_y := p.cam.global_position.y
+	mouse_button(MOUSE_BUTTON_RIGHT, true)
+	await wait(0.4)
+	check(p.peeking and p.peek_offset.y > 0.5 and p.cam.global_position.y > cam_y + 0.5 and p.zoom == 1.0,
+		"RMB behind the rock: your head comes up over it (no binoculars)")
+	await shot("peek_rock")
+	var seen_peek := false
+	for _i in 15:
+		if cr.seen_now.has(p):
+			seen_peek = true
+			break
+		await wait(0.1)
+	check(seen_peek, "peeking, it can see your head")
+	mouse_button(MOUSE_BUTTON_RIGHT, false)
+	await wait(0.6)
+	check(not p.peeking and p.peek_offset.length() < 0.05, "let go and you are back down")
+	# a wall too tall to see over: lean out past its end
+	await calm_creature(cr, b.poi["cover_wall"] + Vector3(-3, 0, -12))
+	await place_player(p, b.poi["cover_wall"] + Vector3(-1.7, 0.25, 1.2), 0.0)
+	cr.suspicion = 0.0
+	cr._noticed_t = 99.0
+	await wait(1.0)
+	check(cr.suspicion < 0.05, "crouched by the end of the wall: hidden")
+	mouse_button(MOUSE_BUTTON_RIGHT, true)
+	await wait(0.5)
+	log_line("wall peek offset %s" % p.peek_offset)
+	check(p.peeking and p.peek_offset.x < -0.4 and absf(p.peek_offset.y) < 0.05, "at the tall wall you lean out past its end instead")
+	await shot("peek_wall")
+	seen_peek = false
+	for _i in 15:
+		if cr.seen_now.has(p):
+			seen_peek = true
+			break
+		await wait(0.1)
+	check(seen_peek, "and it sees your head there")
+	mouse_button(MOUSE_BUTTON_RIGHT, false)
+	key(KEY_CTRL, false)
+	await wait(0.4)
+	# a lure: behind it, throw a crate off to the side and it goes to look
+	await calm_creature(cr, eye)
+	var crate := boot.world.get_node_or_null("LureCrate1") as Crate
+	await place_player(p, eye + Vector3(4, 0.25, -8), 0.0)
+	await look_at_point(p, eye + Vector3(-6, 3.0, -8))
+	crate.global_position = p.hold_point(crate)
+	crate.linear_velocity = Vector3.ZERO
+	crate.reset_physics_interpolation()
+	await physics_frames(2)
+	p.pick_up(crate)
+	await wait(0.4)
+	cr._heard_id = Hearing.last_id()
+	cr.suspicion = 0.0
+	await tap(KEY_G)
+	# the thrower slips away; this checks where the creature goes
+	await wait(0.8)
+	await place_player(p, eye + Vector3(30, 0.25, -30), 0.0)
+	await wait(1.0)
+	var land := crate.global_position
+	log_line("lure: crate landed %.1f m from it; suspicion %.2f, %s" % [cr._flat_dist(land), cr.suspicion, Creature.State.keys()[cr.state]])
+	check(cr.state == Creature.State.CURIOUS and cr.last_noticed.distance_to(land) < 3.0, "it hears the crate land and wants to look")
+	var reached := 99.0
+	t0 = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 12000 and reached > 2.5:
+		await wait(0.2)
+		reached = cr._flat_dist(crate.global_position)
+	await shot("lure")
+	check(reached <= 2.5 and cr.state != Creature.State.TAKE, "it walks over to where the crate landed (%.1f m)" % reached)
 
 
 func t_traffic() -> void:

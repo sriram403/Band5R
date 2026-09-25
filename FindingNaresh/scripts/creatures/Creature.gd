@@ -21,6 +21,10 @@ const RISE_NEAR := 1.0 / 1.5      ## suspicion per second when seen at 10 m
 const RISE_EDGE := 1.0 / 4.0      ## ... at the edge of sight
 const FALL := 0.07                ## per second when nothing is noticed
 const SOUND_STEP := 0.25          ## a sound raises it a step, never past SOUND_CAP
+const LURE_STEP := 0.35           ## a loud one (a thrown thing landing) is enough to go and look
+const BOX_RISE := 1.0 / 1.5       ## per second while it watches a box move
+const BOX_CAP := 0.65             ## a moving box makes it curious, never more
+const BOX_STARE := 4.5            ## m; it walks up to a box that moved this close, and stares
 const SOUND_CAP := 0.9            ## sounds alone make it search, only sight makes it take
 const GIVE_UP := 10.0             ## s after losing sight of the one it chases
 const ATTEND := 2.5               ## s it stops and stares towards anything it noticed
@@ -35,6 +39,10 @@ var state := State.WANDER
 var last_noticed := Vector3.ZERO
 var target: PlayerRig = null         ## the player it is after
 var seen_now: Array = []             ## players it can see right now (tests read this)
+var box_moved := false               ## it is watching a box move right now (tests read this)
+var _box_notice := false             ## what it last noticed was a box
+var _item_ms := -99999               ## when and where the last item it heard landed
+var _item_at := Vector3.ZERO
 var _pi := 0
 var _sight_t := 0.0
 var _noticed_t := 99.0               ## s since it last noticed anything
@@ -123,7 +131,7 @@ func _physics_process(delta: float) -> void:
 		_look(_sight_t)
 		_sight_t = 0.0
 	_listen()
-	if _noticed_t > 1.0 and state != State.TAKE:
+	if _noticed_t > 1.0 and state != State.TAKE and not _going_to_look():
 		suspicion = maxf(0.0, suspicion - FALL * delta)
 	if state == State.TAKE:
 		if target == null or not is_instance_valid(target) or not _can_take(target):
@@ -141,6 +149,7 @@ func _physics_process(delta: float) -> void:
 
 func _look(dt: float) -> void:
 	seen_now.clear()
+	box_moved = false
 	var eye := global_position + Vector3.UP * (HEIGHT - 0.27)
 	var fwd := -global_transform.basis.z
 	var space := get_world_3d().direct_space_state
@@ -151,15 +160,28 @@ func _look(dt: float) -> void:
 		var to := p.global_position - global_position
 		var d := to.length()
 		var reach: float = p.sight_range(light)
-		if d > maxf(reach, CLOSE_SENSE):
+		# a box is a box, but a box that moves gets looked at from as far as
+		# it would see you standing ("that box moved")
+		var box_reach := 0.0
+		if p.in_box and Vector2(p.velocity.x, p.velocity.z).length() >= 0.3:
+			box_reach = float(PlayerRig.SIGHT_STAND[clampi(light, 0, 2)])
+		if d > maxf(maxf(reach, box_reach), CLOSE_SENSE):
 			continue
 		if d > CLOSE_SENSE:
 			var flat := Vector3(to.x, 0, to.z).normalized()
 			if rad_to_deg(fwd.angle_to(flat)) > FOV_DEG * 0.5:
 				continue
-			if not _line_clear(space, eye, p, p.global_position + Vector3.UP * (p.eye_height + 0.1)) \
+			# the head ray follows the head: peeking puts it out past the cover
+			if not _line_clear(space, eye, p, p.head.global_position + Vector3.UP * 0.1) \
 					and not _line_clear(space, eye, p, p.global_position + Vector3.UP * (p.eye_height * 0.55)):
 				continue
+		if d > maxf(reach, CLOSE_SENSE):
+			box_moved = true
+			if suspicion < BOX_CAP:
+				suspicion = minf(BOX_CAP, suspicion + BOX_RISE * dt)
+			_notice(p.global_position)
+			_box_notice = true
+			continue
 		seen_now.append(p)
 		var near := clampf((d - 10.0) / maxf(reach - 10.0, 1.0), 0.0, 1.0)
 		suspicion = minf(1.0, suspicion + lerpf(RISE_NEAR, RISE_EDGE, near) * dt)
@@ -183,8 +205,14 @@ func _listen() -> void:
 		_heard_id = maxi(_heard_id, int(s["id"]))
 		var pos: Vector3 = s["pos"]
 		if pos.distance_to(global_position) <= float(s["radius"]):
-			if suspicion < SOUND_CAP:
-				suspicion = minf(SOUND_CAP, suspicion + SOUND_STEP)
+			# a thrown thing bouncing is one sound, not three
+			var bounce: bool = s["what"] == "item" and int(s["t"]) - _item_ms < 1500 				and pos.distance_to(_item_at) < 4.0
+			if s["what"] == "item":
+				_item_ms = int(s["t"])
+				_item_at = pos
+			if suspicion < SOUND_CAP and not bounce:
+				var step := LURE_STEP if float(s["radius"]) >= Hearing.ITEM_LANDS else SOUND_STEP
+				suspicion = minf(SOUND_CAP, suspicion + step)
 			_notice(pos)
 
 
@@ -192,6 +220,13 @@ func _notice(pos: Vector3) -> void:
 	last_noticed = pos
 	_noticed_t = 0.0
 	_search_t = 0.0
+	_box_notice = false
+
+
+## Curious and not there yet: it keeps its interest until it has had a look.
+func _going_to_look() -> bool:
+	return state == State.CURIOUS and _noticed_t < 20.0 \
+		and _flat_dist(last_noticed) > (BOX_STARE if _box_notice else 1.5) + 0.5
 
 
 func _can_take(p: PlayerRig) -> bool:
@@ -252,7 +287,7 @@ func _move(delta: float) -> void:
 	var to := goal - global_position
 	to.y = 0.0
 	var v := Vector3.ZERO
-	var stop := 0.3 if state != State.CURIOUS else 1.5
+	var stop := 0.3 if state != State.CURIOUS else (BOX_STARE if _box_notice else 1.5)
 	if to.length() > stop:
 		v = to.normalized() * float(SPEED[state])
 		var want := atan2(-to.x, -to.z)

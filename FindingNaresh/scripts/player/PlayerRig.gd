@@ -81,7 +81,11 @@ var taken_grace := 0.0                 ## s left in which no creature can take y
 var taken_hold := 0.0                  ## s left frozen while being taken (Taken.gd)
 var whiteout := 0.0                    ## 0..1 white over this player's view
 var in_box := false                    ## hiding under the cardboard box
+var box: CardboardBox = null           ## the box you are in
 var peeking := false                   ## leaning out from cover
+var peek_offset := Vector3.ZERO        ## head offset while peeking (body space)
+var _peek_side := Vector3.ZERO         ## the way you last leaned (kept while it works)
+var _box_slot: Node3D
 
 
 func _ready() -> void:
@@ -107,6 +111,10 @@ func _build() -> void:
 	head.name = "Head"
 	head.position = Vector3(0, STAND_HEIGHT - 0.16, 0)
 	add_child(head)
+
+	_box_slot = Node3D.new()
+	_box_slot.name = "BoxSlot"
+	add_child(_box_slot)
 
 	flashlight = SpotLight3D.new()
 	flashlight.name = "Flashlight"
@@ -289,7 +297,7 @@ func _process(delta: float) -> void:
 		var sx := seat.get_global_transform_interpolated()
 		xf = sx * Transform3D(Basis.from_euler(Vector3(pitch, _seat_yaw, 0)), Vector3(0, SEATED_EYE, 0))
 	else:
-		var origin := get_global_transform_interpolated().origin + Vector3(0, eye_height, 0) + bob_offset
+		var origin := get_global_transform_interpolated().origin + Basis(Vector3.UP, yaw) * (Vector3(0, eye_height, 0) + peek_offset) + bob_offset
 		xf = Transform3D(Basis.from_euler(Vector3(pitch, yaw, 0)), origin)
 	var b := xf.basis.rotated(xf.basis.z.normalized(), cam_roll)
 	cam.global_transform = Transform3D(b, xf.origin)
@@ -305,7 +313,7 @@ func _look(delta: float) -> void:
 
 
 func _walk(delta: float) -> void:
-	var want_crouch := dev.held("crouch")
+	var want_crouch := dev.held("crouch") or in_box
 	if want_crouch != crouching:
 		crouching = want_crouch
 		_capsule.height = CROUCH_HEIGHT if crouching else STAND_HEIGHT
@@ -314,11 +322,12 @@ func _walk(delta: float) -> void:
 
 	var target_eye: float = (CROUCH_HEIGHT if crouching else STAND_HEIGHT) - 0.16
 	eye_height = lerp(eye_height, target_eye, 1.0 - pow(0.001, delta))
-	head.position.y = eye_height
+	_update_peek(delta)
+	head.position = Vector3(peek_offset.x, eye_height + peek_offset.y, 0.0)
 
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
-	elif dev.just_pressed("jump") and not map_open:
+	elif dev.just_pressed("jump") and not map_open and not in_box:
 		velocity.y = JUMP_VELOCITY
 
 	var mv := dev.move()
@@ -402,6 +411,7 @@ func _seated(_delta: float) -> void:
 func knock(impulse: Vector3, van: PhysicsBody3D = null) -> void:
 	if seat != null or knocked_t > 0.0:
 		return
+	leave_box(false)
 	drop_held()
 	set_map_open(false)
 	journal_open = false
@@ -501,6 +511,9 @@ func toggle_flashlight() -> void:
 # --- interaction ---------------------------------------------------------------
 
 func _scan() -> void:
+	if in_box:
+		_scan_box()
+		return
 	if held != null:
 		_scan_holding()
 		return
@@ -551,6 +564,89 @@ func _scan() -> void:
 		(target.get_meta("hold_fn") as Callable).call(self, get_physics_process_delta_time())
 
 
+# --- hiding --------------------------------------------------------------------
+
+## Under the box you are crouched, can't jump, can't use or pick anything up.
+func enter_box() -> void:
+	var b := held as CardboardBox
+	if b == null or seat != null:
+		return
+	drop_held()
+	box = b
+	in_box = true
+	b.wear(self, _box_slot)
+	Sfx.play3d("drop", global_position + Vector3.UP * 0.5, -12.0)
+
+
+## Out of the box: lifted off and held again (`hold`), or left where you are
+## (being taken, knocked down).
+func leave_box(hold := true) -> void:
+	if box == null:
+		in_box = false
+		return
+	var b := box
+	box = null
+	in_box = false
+	b.take_off()
+	if hold:
+		pick_up(b)
+
+
+func _scan_box() -> void:
+	var text := "[%s]  Lift the box off" % dev.glyph("interact")
+	if text != prompt_text:
+		prompt_text = text
+		prompt_changed.emit(text)
+	current_target = null
+	if dev.just_pressed("interact"):
+		leave_box(true)
+
+
+## Peeking (CREATURES.md): crouched right behind cover, hold RMB / LT and your
+## head comes up over it or out past its side, wherever the view is clear.
+## While you peek a creature sees you as if you stood (your head is out).
+const PEEK_UP := 0.72        ## crouched eye up to standing eye
+const PEEK_SIDE := 0.6
+const PEEK_COVER := 1.3      ## m; cover must be this close in front of you
+
+func _update_peek(delta: float) -> void:
+	var want := Vector3.ZERO
+	peeking = false
+	if crouching and not in_box and held == null and not map_open and knocked_t <= 0.0 and dev.held("zoom"):
+		want = _peek_offset()
+		peeking = want != Vector3.ZERO
+	_peek_side = want
+	peek_offset = peek_offset.lerp(want, 1.0 - exp(-delta * 10.0))
+	if peek_offset.length() < 0.005:
+		peek_offset = Vector3.ZERO
+
+
+## Where the head goes to see past the cover in front, or zero if there is no
+## cover right in front or no clear way past it.
+func _peek_offset() -> Vector3:
+	var space := get_world_3d().direct_space_state
+	var b := Basis(Vector3.UP, yaw)
+	var fwd := b * Vector3.FORWARD
+	var eye := global_position + Vector3.UP * (CROUCH_HEIGHT - 0.16)
+	if not _blocked(space, eye, eye + fwd * PEEK_COVER):
+		return Vector3.ZERO
+	var tries: Array = [Vector3(0, PEEK_UP, 0), Vector3(-PEEK_SIDE, 0, 0), Vector3(PEEK_SIDE, 0, 0)]
+	if _peek_side != Vector3.ZERO:
+		tries.push_front(_peek_side)
+	for t in tries:
+		var at: Vector3 = eye + b * (t as Vector3)
+		if _blocked(space, eye, at):
+			continue           # never lean through the thing you hide behind
+		if not _blocked(space, at, at + fwd * (PEEK_COVER + 0.8)):
+			return t
+	return Vector3.ZERO
+
+
+func _blocked(space: PhysicsDirectSpaceState3D, a: Vector3, b: Vector3) -> bool:
+	var q := PhysicsRayQueryParameters3D.create(a, b, 1 | 8 | Carryable.LAYER, [get_rid()])
+	return not space.intersect_ray(q).is_empty()
+
+
 # --- being seen ----------------------------------------------------------------
 
 ## How far away a creature can see you, by what you are doing (CREATURES.md,
@@ -581,7 +677,7 @@ func sight_range(light: int) -> float:
 ## Hands free, on foot or as the passenger, nothing else open.
 func can_zoom() -> bool:
 	return has_binoculars and held == null and not map_open and not journal_open and not phone_open \
-		and knocked_t <= 0.0 and seat_role != "driver"
+		and knocked_t <= 0.0 and seat_role != "driver" and not peeking and not in_box
 
 
 # --- tagging -------------------------------------------------------------------
@@ -693,6 +789,8 @@ func _scan_holding() -> void:
 		text = "[%s]  %s" % [dev.glyph("interact"), ctx_text]
 	else:
 		text = "%s     [%s]  Drop     [%s]  Throw" % [held.label().capitalize(), dev.glyph("interact"), dev.glyph("throw")]
+		if held is CardboardBox:
+			text = "Cardboard box     [%s]  Get under it     [%s]  Throw" % [dev.glyph("interact"), dev.glyph("throw")]
 		if held is BatteryPack:
 			text = "[%s]  Fit the batteries in your torch     [%s]  Drop" % [dev.glyph("flashlight"), dev.glyph("interact")]
 	if text != prompt_text:
@@ -707,6 +805,8 @@ func _scan_holding() -> void:
 		if ctx != null:
 			_using = ctx
 			(ctx.get_meta("held_action") as Callable).call(self, held, get_physics_process_delta_time(), true)
+		elif held is CardboardBox:
+			enter_box()
 		else:
 			drop_held()
 		return
