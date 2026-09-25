@@ -114,6 +114,9 @@ minutes (up to ~3 hours is fine); pacing and fun matter, not length.
 | Binoculars | readable letters, full screen | height >= distance / 650 (0.15 m at 100 m, 0.3 m at 200 m, 0.6 m at 400 m) | binoculars |
 | Naked eye | readable letters, full screen | height >= distance / 170 (0.6 m at 100 m) | binoculars |
 | Split screen | text size | ~1.35x larger than full screen for the same read | binoculars |
+| Creature | sight, day (stand / sprint / crouch) | 35 / 45 / 17.5 m, 110 deg, blocked by walls, rocks, crates, trunks, the van | stealth |
+| Creature | hearing | crouch-walk 2, walk 8, sprint 18, landing 10, thrown item 15 m | stealth |
+| Creature | from seen to taken | ~2.3 s standing in the open at 9 m; gives up 10 s after losing sight | stealth |
 | Puzzle rule | a code meant for binoculars only | letters between distance / 450 and distance / 250 (readable zoomed in split view, never by eye) | binoculars |
 
 ## 7. Decisions (2026-09-24)

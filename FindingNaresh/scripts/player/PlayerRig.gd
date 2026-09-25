@@ -77,6 +77,9 @@ var _pose_stand := {}                  ## avatar part name -> standing transform
 var has_binoculars := false
 var zoom := 1.0                        ## current magnification (eases to BINOCULAR_ZOOM)
 var base_fov := 78.0                   ## the layout's field of view, set by Boot
+var taken_grace := 0.0                 ## s left in which no creature can take you
+var in_box := false                    ## hiding under the cardboard box
+var peeking := false                   ## leaning out from cover
 
 
 func _ready() -> void:
@@ -224,6 +227,7 @@ func _physics_process(delta: float) -> void:
 			flashlight.light_energy = 1.5 if flicker else 5.5
 		else:
 			flashlight.light_energy = 5.5
+	taken_grace = maxf(0.0, taken_grace - delta)
 	if force_exit:
 		force_exit = false
 		exit_vehicle()
@@ -350,11 +354,18 @@ func _walk(delta: float) -> void:
 	if is_on_floor():
 		if not _was_on_floor:
 			Sfx.play3d(_surface_step(), global_position, -2.0)
+			Hearing.emit(global_position, Hearing.LANDING, "landing")
 		elif planar > 0.8:
 			_step_phase += delta * planar * 0.55
 			if _step_phase >= 1.0:
 				_step_phase -= 1.0
 				Sfx.play3d(_surface_step(), global_position, -10.0 + minf(planar, 7.0))
+				var loud := Hearing.WALK_STEP
+				if crouching:
+					loud = Hearing.CROUCH_STEP
+				elif planar > WALK + 0.5:
+					loud = Hearing.SPRINT_STEP
+				Hearing.emit(global_position, loud, "step")
 	_was_on_floor = is_on_floor()
 
 	# head bob keyed to actual ground speed
@@ -531,6 +542,31 @@ func _scan() -> void:
 	# things you hold E on (pump handles, cranks) get called every tick
 	if target != null and target.has_meta("hold_fn") and dev.held("interact"):
 		(target.get_meta("hold_fn") as Callable).call(self, get_physics_process_delta_time())
+
+
+# --- being seen ----------------------------------------------------------------
+
+## How far away a creature can see you, by what you are doing (CREATURES.md,
+## "Sight"). `light`: 0 day, 1 dusk, 2 night. Walls are the creature's job.
+const SIGHT_STAND := [35.0, 25.0, 15.0]
+const SIGHT_SPRINT := [45.0, 35.0, 20.0]
+const SIGHT_TORCH := 40.0
+
+func sight_range(light: int) -> float:
+	if seat != null:
+		return 0.0
+	light = clampi(light, 0, 2)
+	var planar := Vector2(velocity.x, velocity.z).length()
+	var r: float = SIGHT_STAND[light]
+	if in_box:
+		r = 3.0 if planar < 0.3 else 6.0
+	elif crouching and not peeking:
+		r *= 0.5
+	elif planar > WALK + 0.5:
+		r = SIGHT_SPRINT[light]
+	if flashlight.visible and light >= 2:
+		r = maxf(r, SIGHT_TORCH)
+	return r
 
 
 # --- binoculars ----------------------------------------------------------------

@@ -163,6 +163,9 @@ func _on_hit(_body: Node) -> void:
 		"fuel_can": key = "hit_metal_heavy" if mass > 10.0 else "hit_metal"
 		"crate": key = "hit_wood"
 	Sfx.play3d(key, global_position, clampf(-18.0 + v * 3.0, -18.0, 0.0))
+	if holders.is_empty():
+		# a thrown thing lands loudly: throw one to pull a creature away
+		Hearing.emit(global_position, Hearing.ITEM_LANDS if v > 4.0 else Hearing.LANDING, "item")
 
 
 ## Physics must never lose an item for good. Remember where it last sat still;

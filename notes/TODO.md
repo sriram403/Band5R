@@ -9,8 +9,9 @@ being built and tested), so this always shows where the work is right now.
 - Milestone D started (2026-09-25). You approved the way-out plan and the
   creature page with every recommended answer (see "Decisions" at the end of
   `design/WAY_OUT.md` and `design/CREATURES.md`).
-- D1 tagging done (Quick: 0 failures). D2 binoculars built, 18 checks pass;
-  Quick suite running. Next: D3 stealth gym.
+- D1 tagging and D2 binoculars done (Quick: 0 failures). D3/D4 stealth and
+  creatures: step (a) senses and chase done, 17 checks pass. Next: (b) being
+  taken.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -344,7 +345,7 @@ test was fixed and now restores its starting layout before the pad test.
         both views, follow, arrows, driver/passenger, fade), 8.6 s
   - [x] Quick suite with the tagging gym added: 9 segments, 0 failures, no
         script errors
-- [~] D2. Binoculars gym (`--gym=binoculars`)
+- [x] D2. Binoculars gym (`--gym=binoculars`)
   - [x] `items/BinocularPickup.gd`: take them (E) and keep them; saved per player
   - [x] Hold RMB / pad LT: eases to 4x in ~0.25 s, look speed / 4, a round
         two-eyepiece view (`ui/BinocularView.gd`); hands free, not the driver
@@ -354,10 +355,32 @@ test was fixed and now restores its starting layout before the pad test.
         split screen needs ~1.35x. Written into DESIGN.md 6.1
   - [x] `t_binoculars`: 18 checks pass first time, 14.3 s
   - [x] Split view clipped the eyepieces at the sides; they now fit
-  - [~] Quick suite with the binocular gym added
-- [ ] D3. Stealth gym: crouch, cover, peek, the cardboard box, thrown lures
-- [ ] D4. Creature gym: sight, hearing, suspicion, taken = white smoke to a drop
-      point, partner's trail, grace; the van attack (leak, engine, puncture), tarp
+  - [x] Quick suite with the binocular gym added: 10 segments, 0 failures
+- [~] D3/D4. Stealth and creature gym (`--gym=stealth`), in four steps
+  - [x] (a) Senses and the chase. `creatures/Hearing.gd`: every sound
+        (footsteps by speed, landings, thrown items) reaches creatures within
+        its radius, walls or not. `creatures/Creature.gd`: sight (110 deg, rays
+        to head and chest past walls, rocks, crates, the van), suspicion 0-1
+        (wander / curious / search / take), turns to stare at a sound, chases at
+        7 m/s only towards where it last saw you, gives up 10 s after losing
+        you. `PlayerRig.sight_range()` by stance and light. Eyes and a hum
+        rise with suspicion (glow halo added: at 40 m in full sun the eyes were
+        invisible; still faint in daylight, re-check at dusk)
+  - [x] Stealth gym: a creature on a patrol, a wall, rock, crate stack and a
+        tree trunk, stakes every 5 m. `t_stealth`: 17 checks pass (30 m seen,
+        40 m not; crouched 25 m not, 14 m seen; behind wall / rock hidden,
+        standing up behind the rock seen; out of its view; sprint 14 m heard,
+        walk 12 m not, walk 6 m heard, crouch-walk 4 m not; turns to a sound;
+        taken 2.3 s after standing in view at 9 m; gives up after 10.1 s)
+  - [x] Bugs found on the way: class name `Noise` clashes with Godot's own
+        (renamed `Hearing`); the chase homed in on your live position unseen;
+        heard sounds didn't turn its head
+  - [ ] (b) Taken: white smoke, screen to white, a drop point near a landmark,
+        the partner's faint smoke trail, phone texts, 2 min grace; both taken
+        = both at the van with a new leak
+  - [ ] (c) The cardboard box ("that box moved"), peeking from cover, thrown
+        lures
+  - [ ] (d) The van attack (leak, engine failing, puncture) and the tarp
 - [ ] D5. Traffic system: table-driven counts per road, keep left, stop for the
       van, the one lorry; thinning out to none after J2
 - [ ] D6. Mood curve: one dial for sky, fog, sun, birds and traffic

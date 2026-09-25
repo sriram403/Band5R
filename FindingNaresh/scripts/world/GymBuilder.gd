@@ -12,7 +12,10 @@ extends LevelBuilder
 ## More gyms (tagging, hiding, creatures, Naresh, storm) are added as those
 ## mechanics are built; each one starts as a copy of `base`.
 
-const GYMS := ["base", "tyre", "house", "traffic", "tagging", "binoculars"]
+const GYMS := ["base", "tyre", "house", "traffic", "tagging", "binoculars", "stealth"]
+## Stealth gym: a creature at STEALTH_EYE facing the players' side (+Z), cover
+## pieces between, the players' lane 30 m out.
+const STEALTH_EYE := Vector3(60, 0, -30)
 ## Tagging gym: [distance m, bearing degrees right of straight ahead] for each
 ## board, fanned out so no board hides another. The last one is past
 ## TagMarker.RANGE and must not take a tag.
@@ -90,6 +93,8 @@ func build() -> Node3D:
 		_tagging_gym()
 	if gym == "binoculars":
 		_binocular_gym()
+	if gym == "stealth":
+		_stealth_gym()
 	_world_edge()
 	_gym_spawns()
 	return world
@@ -270,6 +275,44 @@ func _binocular_gym() -> void:
 	poi["gym_binoculars"] = pick.position
 
 
+func _stealth_gym() -> void:
+	var stone := ToonMat.make(C_STONE)
+	var bark := ToonMat.make(Color(0.36, 0.27, 0.2))
+	var body := StaticBody3D.new()
+	body.name = "Cover"
+	# [name, size, centre]: a wall that hides a standing player, a rock and a
+	# crate stack that hide a crouched one, a tree trunk
+	var pieces := [["Wall", Vector3(4, 2.4, 0.4), Vector3(50, 1.2, -18)],
+		["Rock", Vector3(1.8, 1.2, 1.4), Vector3(60, 0.6, -18)],
+		["Crates", Vector3(1.2, 1.1, 1.2), Vector3(68, 0.55, -18)]]
+	for spec in pieces:
+		var mesh := Build.box(spec[1], stone if spec[0] != "Crates" else ToonMat.make(C_WOOD), spec[2], Vector3.ZERO, spec[0])
+		body.add_child(mesh)
+		body.add_child(_box_shape(spec[1], Transform3D(Basis(), spec[2])))
+		poi["cover_" + String(spec[0]).to_lower()] = Vector3(spec[2].x, 0, spec[2].z)
+	body.add_child(Build.cyl(0.45, 6.0, bark, Vector3(76, 3.0, -18), Vector3.ZERO, 10, "Trunk"))
+	var trunk := CollisionShape3D.new()
+	var cyl := CylinderShape3D.new()
+	cyl.radius = 0.45
+	cyl.height = 6.0
+	trunk.shape = cyl
+	trunk.position = Vector3(76, 3.0, -18)
+	body.add_child(trunk)
+	poi["cover_trunk"] = Vector3(76, 0, -18)
+	world.add_child(body)
+	# distance stakes out from the creature, every 5 m
+	for k in range(1, 9):
+		var z := STEALTH_EYE.z + k * 5.0
+		world.add_child(Build.label3d("%d m" % (k * 5), Vector3(STEALTH_EYE.x - 4.0, 0.05, z), Vector3(-90, 0, 0), 0.8, Color(1, 0.9, 0.6)))
+	var c := Creature.new()
+	c.name = "GymCreature"
+	world.add_child(c)
+	c.position = STEALTH_EYE
+	c.rotation.y = PI       # facing +Z, the players' side
+	c.patrol = PackedVector3Array([STEALTH_EYE + Vector3(-15, 0, 0), STEALTH_EYE + Vector3(15, 0, 0)])
+	poi["creature"] = STEALTH_EYE
+
+
 func _gym_spawns() -> void:
 	camper_spawn = Transform3D(Basis(), Vector3(0, 0.8, 30))
 	if gym == "tyre":
@@ -280,6 +323,8 @@ func _gym_spawns() -> void:
 		var pos := Vector3(-6.0 - k * 2.0, 0.25, 40.0)
 		if gym == "house" and k == 1:
 			pos = poi["house_kitchen"]
+		if gym == "stealth":
+			pos = STEALTH_EYE + Vector3(-1.0 + k * 2.0, 0.25, 40.0)
 		if gym == "tagging" or gym == "binoculars":
 			pos = TAG_LANE + Vector3(-1.0 + k * 2.0, 0.25, 0)
 		player_spawns.append(Transform3D(Basis.looking_at(Vector3(0, 0, -1), Vector3.UP), pos))

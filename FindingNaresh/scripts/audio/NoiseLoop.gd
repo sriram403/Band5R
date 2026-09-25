@@ -6,7 +6,7 @@ extends Node3D
 ## water (a babbling river or lapping lake shore).
 ## Set `target` 0..1 to fade it in and out; nothing is played while silent.
 
-enum Kind { POUR, STEAM, WIND, WATER }
+enum Kind { POUR, STEAM, WIND, WATER, HUM }
 
 const MIX_RATE := 22050.0
 
@@ -14,6 +14,7 @@ var kind := Kind.STEAM
 var target := 0.0                  ## desired loudness 0..1
 var positional := true
 var volume_db := -6.0
+var pitch := 1.0                   ## HUM: 1 = the low hum, higher = the rising whine
 
 var _player: Node
 var _playback: AudioStreamGeneratorPlayback
@@ -85,5 +86,14 @@ func _process(delta: float) -> void:
 				if _rng.randf() < 0.0012:
 					_gurgle = _rng.randf_range(0.3, 0.9)
 				v = (_lp - _lp2) * (0.7 + 0.3 * sin(_phase * 5.3) * sin(_phase * 1.7) + _gurgle) * 1.4
+			Kind.HUM:
+				# a creature: a low beating hum, and a thin whine that climbs with pitch
+				_phase += 1.0 / MIX_RATE
+				_lp = lerpf(_lp, n, 0.01)
+				var hum := sin(TAU * 55.0 * _phase) * (0.6 + 0.4 * sin(TAU * 0.7 * _phase))
+				var whine := sin(TAU * 420.0 * pitch * _phase + sin(TAU * 5.0 * _phase) * 2.0)
+				v = hum * 0.35 + whine * 0.12 * clampf(pitch - 1.0, 0.0, 1.0) + _lp * 0.8
+				if _phase > 1000.0:
+					_phase -= 1000.0
 		var s := clampf(v * _gain, -1.0, 1.0)
 		_playback.push_frame(Vector2(s, s))

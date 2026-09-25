@@ -19,7 +19,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
-const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"], "binoculars": ["binoculars"]}
+const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
 const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "driveway", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
 
@@ -2427,6 +2427,143 @@ func t_binoculars() -> void:
 	await wait(0.2)
 	q.force_exit = true
 	await physics_frames(3)
+
+
+## Hold the creature still, facing +Z, calm, forgetting everything.
+func calm_creature(cr: Creature, at: Vector3, facing := PI) -> void:
+	cr.patrol = PackedVector3Array()
+	cr.global_position = at
+	cr.rotation.y = facing
+	cr.velocity = Vector3.ZERO
+	cr.suspicion = 0.0
+	cr.state = Creature.State.WANDER
+	cr.target = null
+	cr.last_noticed = at
+	cr._heard_id = Hearing.last_id()
+	cr.reset_physics_interpolation()
+	await physics_frames(2)
+
+
+## Put a player somewhere and keep them still for a while; the most the
+## creature's suspicion reached.
+func exposed(p: PlayerRig, at: Vector3, seconds: float, crouch := false, cr: Creature = null) -> float:
+	if crouch:
+		key(KEY_CTRL, true)
+		await physics_frames(20)     # already down when you arrive
+	await place_player(p, at, 0.0)
+	if cr != null:
+		# whatever it glimpsed while you were being moved does not count
+		cr.suspicion = 0.0
+		cr._noticed_t = 99.0
+		cr._heard_id = Hearing.last_id()
+	var top := 0.0
+	for _i in int(seconds * 10.0):
+		await wait(0.1)
+		if cr != null:
+			top = maxf(top, cr.suspicion)
+	if crouch:
+		key(KEY_CTRL, false)
+		await physics_frames(3)
+	return top
+
+
+## Stealth gym: what a creature sees and hears, the chase and giving up.
+func t_stealth() -> void:
+	var b := boot.builder as GymBuilder
+	var cr := boot.world.get_node_or_null("GymCreature") as Creature
+	check(b != null and cr != null and boot.gym == "stealth", "the stealth gym has a creature and cover")
+	if cr == null:
+		return
+	var eye := GymBuilder.STEALTH_EYE
+	var took := []
+	cr.took.connect(func(pl): took.append(pl))
+	await wait(3.0)
+	check(cr.global_position.distance_to(eye) > 2.0, "left alone it wanders its patrol")
+	await shot("stealth_creature")
+	var p := p1()
+	await place_player(p2(), eye + Vector3(-20, 0.25, 60), 0.0)   # out of the way
+	# sight by distance, standing and crouched, in the open, day
+	var cases := [[30.0, false, true], [40.0, false, false], [25.0, true, false], [14.0, true, true]]
+	for c in cases:
+		await calm_creature(cr, eye)
+		var top := await exposed(p, eye + Vector3(-4, 0.25, float(c[0])), 3.0, bool(c[1]), cr)
+		log_line("%s at %d m in the open: suspicion reached %.2f" % ["crouched" if c[1] else "standing", int(c[0]), top])
+		check((top > 0.3) == bool(c[2]), "%s at %d m in the open is %s" % ["crouched" if c[1] else "standing", int(c[0]), "seen" if c[2] else "not seen"])
+	# behind cover
+	await calm_creature(cr, eye)
+	var top_w := await exposed(p, b.poi["cover_wall"] + Vector3(0, 0.25, 1.2), 3.0, false, cr)
+	check(top_w < 0.05, "standing behind the wall at 13 m: not seen (%.2f)" % top_w)
+	await calm_creature(cr, eye)
+	var top_r := await exposed(p, b.poi["cover_rock"] + Vector3(0, 0.25, 1.4), 3.0, true, cr)
+	check(top_r < 0.05, "crouched behind the rock at 13 m: not seen (%.2f)" % top_r)
+	await calm_creature(cr, eye)
+	var top_r2 := await exposed(p, b.poi["cover_rock"] + Vector3(0, 0.25, 1.4), 2.0, false, cr)
+	check(top_r2 > 0.3, "standing up behind the rock: seen (%.2f)" % top_r2)
+	# out of its field of view, and close behind it
+	await calm_creature(cr, eye)
+	var top_side := await exposed(p, eye + Vector3(12, 0.25, -2), 2.0, false, cr)
+	check(top_side < 0.05, "standing 12 m off to its side: not seen (%.2f)" % top_side)
+	await calm_creature(cr, eye)
+	var top_close := await exposed(p, eye + Vector3(0.5, 0.25, -2.5), 1.5, false, cr)
+	check(top_close > 0.1, "right behind it, it notices you (%.2f)" % top_close)
+	# hearing, from behind (out of sight): sprint 18 m, walk 8 m, crouch 2 m
+	var sounds := [["sprinting", 14.0, true], ["walking", 12.0, false], ["walking", 6.0, true], ["crouch-walking", 4.0, false]]
+	for s in sounds:
+		await calm_creature(cr, eye)
+		var start := eye + Vector3(-6, 0.25, -float(s[1]))
+		await place_player(p, start, -PI * 0.5)       # facing +X, walking across behind it
+		if s[0] == "crouch-walking":
+			key(KEY_CTRL, true)
+		if s[0] == "sprinting":
+			key(KEY_SHIFT, true)
+		key(KEY_W, true)
+		var heard := 0.0
+		for _i in 20:
+			await wait(0.1)
+			heard = maxf(heard, cr.suspicion)
+		release_all()
+		await physics_frames(3)
+		log_line("%s %d m behind it: suspicion %.2f" % [s[0], int(s[1]), heard])
+		check((heard >= Creature.SOUND_STEP - 0.01) == bool(s[2]), "%s %d m behind it is %s" % [s[0], int(s[1]), "heard" if s[2] else "not heard"])
+	# a heard sound turns it to look
+	await calm_creature(cr, eye)
+	Hearing.emit(eye + Vector3(10, 0, 0), 15.0, "test")
+	await wait(1.5)
+	var f := -cr.global_transform.basis.z
+	log_line("a sound 10 m to its right: facing %s, moved %.1f m" % [f, cr.global_position.distance_to(eye)])
+	check(f.dot(Vector3(1, 0, 0)) > 0.7, "it turns to look at a sound it heard")
+	# the chase: seen in the open, it comes for you and takes you
+	await calm_creature(cr, eye)
+	took.clear()
+	await place_player(p, eye + Vector3(-5, 0.25, 8), 0.0)
+	var t0 := Time.get_ticks_msec()
+	while took.is_empty() and Time.get_ticks_msec() - t0 < 8000:
+		await wait(0.1)
+	log_line("standing still in view at 9 m: taken after %.1f s" % ((Time.get_ticks_msec() - t0) / 1000.0))
+	check(took.size() == 1 and took[0] == p, "stand in the open and it takes you")
+	await shot("stealth_taken")
+	# break line of sight during the chase: it gives up after 10 s
+	await calm_creature(cr, eye)
+	took.clear()
+	await place_player(p, eye + Vector3(-5, 0.25, 8), 0.0)
+	t0 = Time.get_ticks_msec()
+	while cr.state != Creature.State.TAKE and Time.get_ticks_msec() - t0 < 6000:
+		await wait(0.1)
+	check(cr.state == Creature.State.TAKE, "it comes for you once it is sure")
+	# slip away out of its sight and stay crouched
+	await place_player(p, eye + Vector3(-10, 0.25, 70), 0.0)
+	key(KEY_CTRL, true)
+	var gave_up := false
+	t0 = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 13000 and took.is_empty():
+		await wait(0.2)
+		if cr.state != Creature.State.TAKE:
+			gave_up = true
+			break
+	key(KEY_CTRL, false)
+	log_line("out of sight: gave up after %.1f s, taken %s" % [(Time.get_ticks_msec() - t0) / 1000.0, not took.is_empty()])
+	check(gave_up and took.is_empty(), "out of sight and quiet, it gives up the chase")
+	await calm_creature(cr, eye)
 
 
 func t_traffic() -> void:
