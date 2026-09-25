@@ -8,6 +8,9 @@ var player: PlayerRig
 var camper: Camper
 
 var _crosshair: Control
+var _arrows: Control
+## tag owner index -> where its edge arrow was last drawn (tests read this)
+var tag_arrow_at := {}
 var _prompt: Label
 var _who: Label
 var _role: Label
@@ -37,6 +40,13 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	camper = van
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# arrows at the screen edge towards tags that are out of view
+	_arrows = Control.new()
+	_arrows.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_arrows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_arrows.draw.connect(_draw_tag_arrows)
+	add_child(_arrows)
 
 	_crosshair = Control.new()
 	_crosshair.set_anchors_preset(Control.PRESET_CENTER)
@@ -223,6 +233,7 @@ func _process(delta: float) -> void:
 			_objective_hint.text = st.hint_text(player.index)
 		else:
 			_objective_hint.text = "(hold %s for a hint)" % (d.glyph("hint") if d else "H")
+	_arrows.queue_redraw()
 	var seated := player.seat != null
 	_update_hint(delta, seated)
 	_gauges.visible = seated
@@ -254,6 +265,48 @@ func _process(delta: float) -> void:
 		_role.text = "on foot" + ("  ·  sprinting" if player.dev and player.dev.held("sprint") else "")
 
 
+## A tag that is off screen (or behind you) gets an arrow at the edge of
+## the view, in its owner's colour, pointing the way to turn.
+func _draw_tag_arrows() -> void:
+	tag_arrow_at.clear()
+	var cam := player.cam
+	if cam == null or player.map_open:
+		return
+	var size := _arrows.size
+	var centre := size * 0.5
+	var screen := Rect2(Vector2.ZERO, size).grow(-24.0)
+	for i in 2:
+		var m := TagMarker.of(i)
+		if m == null:
+			continue
+		var pos := m.global_position
+		var behind := cam.is_position_behind(pos)
+		var sp := cam.unproject_position(pos)
+		if not behind and screen.has_point(sp):
+			continue
+		var dir := sp - centre
+		if behind:
+			dir = -dir
+		if dir.length() < 1.0:
+			dir = Vector2(0, 1)
+		var half := centre - Vector2(44, 44)
+		var k := INF
+		if absf(dir.x) > 0.001:
+			k = half.x / absf(dir.x)
+		if absf(dir.y) > 0.001:
+			k = minf(k, half.y / absf(dir.y))
+		var at := centre + dir * k
+		var f := dir.normalized()
+		var side := Vector2(-f.y, f.x)
+		var col := m.color
+		col.a = clampf(m.time_left() / TagMarker.FADE, 0.0, 1.0)
+		var tri := PackedVector2Array([at + f * 18.0, at - f * 12.0 + side * 14.0, at - f * 12.0 - side * 14.0])
+		_arrows.draw_colored_polygon(tri, Color(0, 0, 0, col.a * 0.6))
+		var inner := PackedVector2Array([at + f * 13.0, at - f * 9.0 + side * 10.0, at - f * 9.0 - side * 10.0])
+		_arrows.draw_colored_polygon(inner, col)
+		tag_arrow_at[i] = at
+
+
 func _update_hint(delta: float, seated: bool) -> void:
 	var ctx := "foot"
 	if seated:
@@ -264,14 +317,14 @@ func _update_hint(delta: float, seated: bool) -> void:
 	if _hint_age[ctx] < HINT_SECONDS and d != null:
 		if d.kind == InputDevice.Kind.PAD:
 			match ctx:
-				"foot": text = "Stick move · Right stick look · L3 sprint · A jump · Y flashlight · X use · RB throw · D-Down map"
+				"foot": text = "Stick move · Right stick look · L3 sprint · A jump · Y flashlight · X use · RB throw · RT tag · D-Down map"
 				"driver": text = "RT go · LT brake/reverse · Stick steer · B handbrake · D-Up engine · D-Left lights · A swing the nav"
-				_: text = "Right stick look around · A swing the nav to you · D-Left lights · LB swap seats when stopped"
+				_: text = "Right stick look around · RT tag · A swing the nav to you · D-Left lights · LB swap seats when stopped"
 		else:
 			match ctx:
-				"foot": text = "WASD move · Mouse look · Shift sprint · Space jump · F flashlight · E use · LMB throw · M map"
+				"foot": text = "WASD move · Mouse look · Shift sprint · Space jump · F flashlight · E use · LMB throw · T tag · M map"
 				"driver": text = "W go · S brake/reverse · A/D steer · Space handbrake · X engine · L lights · N swing the nav"
-				_: text = "Mouse look around · N swing the nav to you · L lights · C swap seats when stopped"
+				_: text = "Mouse look around · T tag · N swing the nav to you · L lights · C swap seats when stopped"
 	_hint.text = text
 
 

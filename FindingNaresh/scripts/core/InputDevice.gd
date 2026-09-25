@@ -37,10 +37,13 @@ const KEYS := {
 	"journal": KEY_J, "menu_up": KEY_UP, "menu_down": KEY_DOWN, "menu_ok": KEY_ENTER,
 	# in the van: swing the nav screen between the middle and the passenger
 	"nav_swing": KEY_N,
+	# the way out: tag a spot for your partner; binocular zoom / peek (held)
+	"tag": KEY_T,
 }
 ## Mouse buttons that also trigger an action (checked alongside KEYS).
 const MOUSE := {"throw": MOUSE_BUTTON_LEFT, "map_place": MOUSE_BUTTON_LEFT, "map_remove": MOUSE_BUTTON_RIGHT,
-	"map_zoom_in": MOUSE_BUTTON_WHEEL_UP, "map_zoom_out": MOUSE_BUTTON_WHEEL_DOWN}
+	"map_zoom_in": MOUSE_BUTTON_WHEEL_UP, "map_zoom_out": MOUSE_BUTTON_WHEEL_DOWN,
+	"tag": MOUSE_BUTTON_MIDDLE, "zoom": MOUSE_BUTTON_RIGHT}
 
 # --- Controller bindings (Xbox layout) -----------------------------------------
 const BUTTONS := {
@@ -59,11 +62,15 @@ const BUTTONS := {
 	"menu_ok": JOY_BUTTON_A, "menu_back": JOY_BUTTON_B,
 	"nav_swing": JOY_BUTTON_A,
 }
+## Triggers read as buttons (pressed past halfway). On foot RT and LT have no
+## other job; in the driver's seat they are throttle and brake, so the actions
+## below are only read by the player on foot or in the passenger seat.
+const TRIGGERS := {"tag": JOY_AXIS_TRIGGER_RIGHT, "zoom": JOY_AXIS_TRIGGER_LEFT}
 
 ## Every action any binding table knows about.
 static func all_actions() -> Array:
 	var out := KEYS.keys()
-	for a in MOUSE.keys() + BUTTONS.keys():
+	for a in MOUSE.keys() + BUTTONS.keys() + TRIGGERS.keys():
 		if not a in out:
 			out.append(a)
 	return out
@@ -110,6 +117,8 @@ func glyph(action: String) -> String:
 			"nav_swing": return "A"
 			"menu_ok": return "A"
 			"menu_back": return "B"
+			"tag": return "RT"
+			"zoom": return "LT"
 			_: return "?"
 	match action:
 		"interact": return "E"
@@ -130,6 +139,8 @@ func glyph(action: String) -> String:
 		"menu_ok": return "Enter"
 		"menu_back": return "J"
 		"throw": return "LMB"
+		"tag": return "T"
+		"zoom": return "RMB"
 		_: return "?"
 
 
@@ -269,6 +280,8 @@ func steer() -> float:
 
 func _raw_held(action: String) -> bool:
 	if kind == Kind.PAD:
+		if TRIGGERS.has(action):
+			return Input.get_joy_axis(pad, TRIGGERS[action]) > 0.5
 		if not BUTTONS.has(action):
 			return false
 		return Input.is_joy_button_pressed(pad, BUTTONS[action])

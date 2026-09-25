@@ -18,6 +18,8 @@ var headless := DisplayServer.get_name() == "headless"
 
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
+## Gyms with their own scenarios (the base gym runs QUICK_GYM).
+const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
 const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "driveway", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
 
@@ -233,21 +235,17 @@ func _run() -> void:
 		return
 	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
-		all = ["tyre"] if boot.gym == "tyre" else (["house"] if boot.gym == "house" else (["traffic"] if boot.gym == "traffic" else ["gym"]))
+		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
 	if selection == "quick" or selection == "gym_quick":
-		if boot.gym == "tyre":
-			all = ["tyre"]
-		elif boot.gym == "house":
-			all = ["house"]
-		elif boot.gym == "traffic":
-			all = ["traffic"]
+		if GYM_SCENARIOS.has(boot.gym):
+			all = GYM_SCENARIOS[boot.gym].duplicate()
 		else:
 			all = QUICK_GYM.duplicate() if boot.gym != "" else QUICK_WORLD.duplicate()
 		selection = ""
 	elif selection == "full":
 		if boot.gym != "":
-			all = ["tyre"] if boot.gym == "tyre" else (["house"] if boot.gym == "house" else (["traffic"] if boot.gym == "traffic" else QUICK_GYM.duplicate()))
+			all = GYM_SCENARIOS.get(boot.gym, QUICK_GYM).duplicate()
 		else:
 			all.insert(all.find("save"), "routes")
 		selection = ""
@@ -2191,6 +2189,127 @@ func t_house_world() -> void:
 		check(can.litres > 19.0, "Town Fuel fills an empty can")
 		p1().drop_held()
 	reset_can("station_can_empty", 0.0)
+
+
+func mouse_button(b: MouseButton, down: bool) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = b
+	e.pressed = down
+	Input.parse_input_event(e)
+
+
+## Tagging gym: every way to tag, what both players see, reach, fade, follow.
+func t_tagging() -> void:
+	var b := boot.builder as GymBuilder
+	check(b != null and boot.gym == "tagging" and boot.world.get_node_or_null("TagBoard150") != null,
+		"the tagging gym has boards out to 150 m and one past the reach")
+	if b == null:
+		return
+	# P2 on a controller, split screen side by side: tags must show on both halves
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	boot._set_layout(Boot.Layout.SIDE_BY_SIDE)
+	var lane := GymBuilder.TAG_LANE
+	await place_player(p2(), lane + Vector3(3, 0.25, 0), 0.0)
+	# P1 tags each board with T from the lane
+	for spec in GymBuilder.TAG_BOARDS:
+		var d := int(spec[0])
+		var board: Vector3 = b.poi["tag_board_%d" % d]
+		var a := deg_to_rad(float(spec[1]))
+		await face_point(p1(), board, float(d), Vector3(-sin(a), 0, cos(a)))
+		var before := TagMarker.of(0)
+		await tap(KEY_T)
+		await physics_frames(2)
+		var m := TagMarker.of(0)
+		if d > TagMarker.RANGE:
+			check(m == before, "a board at %d m is out of reach: no tag" % d)
+			continue
+		var ok := m != null and m.global_position.distance_to(board) < 1.2 and m.thing == "board %d m" % d
+		log_line("tag at %d m: %s" % [d, ("%s at %.2f m from the board centre" % [m.thing, m.global_position.distance_to(board)]) if m != null else "none"])
+		check(ok, "T tags the board at %d m and names it" % d)
+		if d == 25 or d == 150:
+			await wait(0.4)
+			await shot("tag_%dm" % d)
+	check(boot.world.find_children("Tag1", "", true, false).size() == 1, "one tag per player: a new tag replaces the old")
+	# middle mouse works too
+	var board10: Vector3 = b.poi["tag_board_10"]
+	await face_point(p1(), board10, 10.0, Vector3(sin(deg_to_rad(30.0)), 0, cos(deg_to_rad(30.0))))
+	mouse_button(MOUSE_BUTTON_MIDDLE, true)
+	await wait(0.07)
+	mouse_button(MOUSE_BUTTON_MIDDLE, false)
+	await physics_frames(3)
+	var m1 := TagMarker.of(0)
+	check(m1 != null and m1.thing == "board 10 m", "the middle mouse button tags")
+	if m1 != null:
+		# what each viewer reads: the same name, their own distance
+		await wait(0.1)
+		var l1 := m1.get_node("Label1") as Label3D
+		var l2 := m1.get_node("Label2") as Label3D
+		log_line("P1 reads '%s', P2 reads '%s'" % [l1.text, l2.text])
+		check(l1.text.begins_with("P1: board 10 m") and l2.text.begins_with("P1: board 10 m") and l1.text != l2.text,
+			"both players read the tag, each with their own distance")
+		check(l1.layers & boot.viewports[0].get_camera_3d().cull_mask != 0 and l1.layers & boot.viewports[1].get_camera_3d().cull_mask == 0,
+			"P1's distance label is drawn only in P1's view")
+	# P2 tags the crate with the pad's right trigger; the tag follows it
+	var crate := boot.world.get_node("TagCrate") as RigidBody3D
+	await face_point(p2(), crate.global_position + Vector3.UP * 0.2, 5.0, Vector3(1, 0, 0.2))
+	pad_axis(JOY_AXIS_TRIGGER_RIGHT, 1.0)
+	await physics_frames(3)
+	pad_axis(JOY_AXIS_TRIGGER_RIGHT, 0.0)
+	await physics_frames(2)
+	var m2 := TagMarker.of(1)
+	log_line("P2's tag: %s" % (m2.thing if m2 != null else "none"))
+	check(m2 != null and m2.target == crate, "P2's right trigger tags the crate")
+	if m2 != null:
+		var off := m2.global_position - crate.global_position
+		crate.global_position += Vector3(0, 0, -3)
+		crate.reset_physics_interpolation()
+		await physics_frames(3)
+		check((m2.global_position - crate.global_position).distance_to(off) < 0.3, "a tag follows the thing it is on")
+	await wait(0.2)
+	await shot("tag_split")
+	# P2 turns away from P1's tag: an arrow at the edge of P2's view points back
+	var hud2: PlayerHUD = boot.huds[1]
+	await place_player(p2(), lane + Vector3(3, 0.25, 0), PI)   # facing +Z, the boards behind
+	await wait(0.2)
+	check(hud2.tag_arrow_at.has(0), "a tag behind you gets an arrow at the edge of the view")
+	await shot("tag_arrow")
+	var seen := TagMarker.of(0).global_position - (lane + Vector3(3, 0, 0))
+	await place_player(p2(), lane + Vector3(3, 0.25, 0), atan2(-seen.x, -seen.z))
+	await wait(0.2)
+	check(not hud2.tag_arrow_at.has(0), "no arrow while the tag is in view")
+	# the driver cannot tag (the pad's RT is the throttle); the passenger can
+	var c := camper()
+	c.parking_brake = true
+	c.global_transform = Transform3D(Basis(), lane + Vector3(-6, 0.8, -4))
+	c.reset_physics_interpolation()
+	await wait(1.0)
+	p1().enter_seat(c, c.seat_nodes["driver"], "driver")
+	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await wait(0.3)
+	var before_drv := TagMarker.of(0)
+	await tap(KEY_T)
+	check(TagMarker.of(0) == before_drv, "the driver's T does not tag")
+	pad_axis(JOY_AXIS_TRIGGER_RIGHT, 1.0)
+	await physics_frames(3)
+	pad_axis(JOY_AXIS_TRIGGER_RIGHT, 0.0)
+	await physics_frames(2)
+	var mp := TagMarker.of(1)
+	log_line("passenger's tag: %s, %.1f m from the van" % [mp.thing, mp.global_position.distance_to(c.global_position)] if mp != null else "passenger's tag: none")
+	check(mp != null and mp != m2 and mp.thing != "that" and mp.global_position.distance_to(c.global_position) > 4.0,
+		"the passenger tags from the seat, past the van itself")
+	p1().force_exit = true
+	p2().force_exit = true
+	await physics_frames(3)
+	# fading: tags last TagMarker.LIFE seconds
+	var mf := TagMarker.of(0)
+	check(mf != null, "P1's tag is still there")
+	if mf != null:
+		mf.age = TagMarker.LIFE - TagMarker.FADE * 0.5
+		await wait(0.1)
+		check((mf.get_node("Icon") as Sprite3D).modulate.a < 0.7, "a tag fades out at the end of its life")
+		await wait(TagMarker.FADE)
+		check(TagMarker.of(0) == null, "and is gone after %d s" % int(TagMarker.LIFE))
 
 
 func t_traffic() -> void:

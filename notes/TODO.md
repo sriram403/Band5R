@@ -9,7 +9,8 @@ being built and tested), so this always shows where the work is right now.
 - Milestone D started (2026-09-25). You approved the way-out plan and the
   creature page with every recommended answer (see "Decisions" at the end of
   `design/WAY_OUT.md` and `design/CREATURES.md`).
-- Working on: D1, the tagging gym.
+- Working on: D1, the tagging gym. Built and its 21 checks pass; the Quick
+  suite is running to check nothing else broke. Next: D2 binoculars.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -323,14 +324,25 @@ test was fixed and now restores its starting layout before the pad test.
       at the ridge lookout and Last Fuel; one brief lorry; first ghat attack always,
       once; white smoke when taken; a faint trail for the partner; the box is in;
       controls tag T / MMB / pad RT, zoom and peek RMB / pad LT
-- [~] D1. Tagging gym (`--gym=tagging`)
-  - [ ] `tag` action: T, middle mouse, pad RT (trigger read as a button)
-  - [ ] Tag marker in the world, seen on both screens (player colour, name,
-        fades after 20 s, one per player, follows moving things)
-  - [ ] Names for tagged things ("lever", "fuel can", "the van", "there")
-  - [ ] Edge arrow on the partner's screen when the tag is off screen
-  - [ ] Gym: targets at 10, 25, 50, 100 m; fix the reach and the marker size
-  - [ ] Test scenario `t_tagging` (key, mouse and pad; both screens; fade; reach)
+- [~] D1. Tagging gym (`--gym=tagging`, `GYM=tagging tools/run_test.sh tagging`)
+  - [x] `tag` action: T, middle mouse, pad RT (triggers read as buttons past
+        halfway, `InputDevice.TRIGGERS`); on foot and from the passenger seat,
+        never the driver (the pad's RT is the throttle)
+  - [x] Tag marker (`player/TagMarker.gd`): a pin in the tagger's colour, seen
+        through walls on both screens, "P1: board 25 m  24 m" with each
+        viewer's own distance (one label per viewer on the private layers);
+        fades after 20 s; one per player; follows moving things
+  - [x] Names: a `tag_name` meta wins, items name themselves, "the van",
+        "P2", "that" (a handle), "there" (ground); from a seat the van itself
+        and its handles are skipped
+  - [x] Edge arrow in the view when a tag is off screen or behind you
+  - [x] Gym: boards fanned out at 10, 25, 50, 100, 150 m and one at 220 m;
+        reach fixed at 200 m. First screenshots: marker and text far too small
+        (text unreadable) and the diamond hid a 150 m board; now a pin above
+        the spot with ~17 px text, checked at 10, 25 and 150 m in split view
+  - [x] `t_tagging`: 21 checks pass (key, mouse, pad, reach, one per player,
+        both views, follow, arrows, driver/passenger, fade), 8.6 s
+  - [~] Quick suite with the tagging gym added (running)
 - [ ] D2. Binoculars gym (`--gym=binoculars`): pick-up, hold to zoom 4x, signs
       at known distances, smallest readable text; tagging while zoomed
 - [ ] D3. Stealth gym: crouch, cover, peek, the cardboard box, thrown lures

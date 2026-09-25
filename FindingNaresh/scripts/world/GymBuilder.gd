@@ -12,7 +12,12 @@ extends LevelBuilder
 ## More gyms (tagging, hiding, creatures, Naresh, storm) are added as those
 ## mechanics are built; each one starts as a copy of `base`.
 
-const GYMS := ["base", "tyre", "house", "traffic"]
+const GYMS := ["base", "tyre", "house", "traffic", "tagging"]
+## Tagging gym: [distance m, bearing degrees right of straight ahead] for each
+## board, fanned out so no board hides another. The last one is past
+## TagMarker.RANGE and must not take a tag.
+const TAG_BOARDS := [[10, -30.0], [25, -14.0], [50, 0.0], [100, 7.0], [150, 12.0], [220, 16.0]]
+const TAG_LANE := Vector3(20, 0, 40)      ## where the players stand, looking -Z
 const GRID_HALF := 120.0           ## measuring grid covers +-120 m around the centre
 ## Test slopes: [x centre, grade]. Each is a 20 m wide hump across the road loop's
 ## east side, rising for 50 m, so the van can be parked mid-slope.
@@ -76,6 +81,8 @@ func build() -> Node3D:
 		_house_gym()
 	if gym == "traffic":
 		_traffic_gym()
+	if gym == "tagging":
+		_tagging_gym()
 	_world_edge()
 	_gym_spawns()
 	return world
@@ -185,6 +192,34 @@ func _traffic_gym() -> void:
 	poi["traffic_block"] = road.point(145) - road.right(145) * TrafficCar.LANE_OFFSET
 
 
+func _tagging_gym() -> void:
+	var mat := ToonMat.make(Color(0.92, 0.9, 0.82))
+	var post := ToonMat.make(C_WOOD)
+	for spec in TAG_BOARDS:
+		var d := int(spec[0])
+		var a := deg_to_rad(float(spec[1]))
+		var at := TAG_LANE + Vector3(sin(a), 0, -cos(a)) * float(d)
+		at.y = _h(at.x, at.z)
+		var body := StaticBody3D.new()
+		body.name = "TagBoard%d" % d
+		body.set_meta("tag_name", "board %d m" % d)
+		body.add_child(Build.box(Vector3(2.0, 2.0, 0.12), mat, Vector3(0, 2.0, 0), Vector3.ZERO, "Board"))
+		body.add_child(_box_shape(Vector3(2.0, 2.0, 0.12), Transform3D(Basis(), Vector3(0, 2.0, 0))))
+		for sx in [-0.8, 0.8]:
+			body.add_child(Build.box(Vector3(0.12, 1.0, 0.12), post, Vector3(sx, 0.5, 0), Vector3.ZERO, "Post"))
+		body.add_child(Build.label3d("%d m" % d, Vector3(0, 2.3, 0.07), Vector3.ZERO, 0.8, Color(0.15, 0.15, 0.15)))
+		body.position = at
+		body.rotation.y = -a      # face the lane
+		world.add_child(body)
+		poi["tag_board_%d" % d] = at + Vector3(0, 2.0, 0)
+	# something that moves, to check a tag follows it
+	var crate := Crate.new()
+	crate.name = "TagCrate"
+	world.add_child(crate)
+	crate.position = TAG_LANE + Vector3(-9, 0.3, -4)
+	poi["tag_crate"] = crate.position
+
+
 func _gym_spawns() -> void:
 	camper_spawn = Transform3D(Basis(), Vector3(0, 0.8, 30))
 	if gym == "tyre":
@@ -195,4 +230,6 @@ func _gym_spawns() -> void:
 		var pos := Vector3(-6.0 - k * 2.0, 0.25, 40.0)
 		if gym == "house" and k == 1:
 			pos = poi["house_kitchen"]
+		if gym == "tagging":
+			pos = TAG_LANE + Vector3(-1.0 + k * 2.0, 0.25, 0)
 		player_spawns.append(Transform3D(Basis.looking_at(Vector3(0, 0, -1), Vector3.UP), pos))

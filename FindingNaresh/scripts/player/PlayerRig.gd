@@ -247,6 +247,8 @@ func _physics_process(delta: float) -> void:
 		_map_controls()
 	else:
 		_scan()
+		if dev.just_pressed("tag") and can_tag():
+			tag_look()
 	if seat != null and not map_open and dev.just_pressed("journal") and _van_parked():
 		_open_journal()
 
@@ -520,6 +522,43 @@ func _scan() -> void:
 	# things you hold E on (pump handles, cranks) get called every tick
 	if target != null and target.has_meta("hold_fn") and dev.held("interact"):
 		(target.get_meta("hold_fn") as Callable).call(self, get_physics_process_delta_time())
+
+
+# --- tagging -------------------------------------------------------------------
+
+## On foot or from the passenger seat. The driver's RT is the throttle.
+func can_tag() -> bool:
+	return not phone_open and not journal_open and knocked_t <= 0.0 and seat_role != "driver"
+
+
+## Tags what you are looking at, up to TagMarker.RANGE away. Solid things and
+## the small interactable areas (levers, handles) both count; big invisible
+## trigger volumes do not. Returns the marker, or null if nothing was in reach.
+func tag_look() -> TagMarker:
+	var xf := head.global_transform
+	var from := xf.origin
+	var to := from - xf.basis.z * TagMarker.RANGE
+	var space := get_world_3d().direct_space_state
+	var ex: Array[RID] = [get_rid()]
+	if held != null:
+		ex.append(held.get_rid())
+	if vehicle != null:
+		# from a seat, look past the van itself: its body and its handles
+		ex.append(vehicle.get_rid())
+		for a in vehicle.find_children("*", "CollisionObject3D", true, false):
+			ex.append((a as CollisionObject3D).get_rid())
+	var q := PhysicsRayQueryParameters3D.create(from, to, TagMarker.MASK & ~4, ex)
+	var hit := space.intersect_ray(q)
+	var qa := PhysicsRayQueryParameters3D.create(from, to, 4, ex)
+	qa.collide_with_areas = true
+	qa.collide_with_bodies = false
+	var hit_a := space.intersect_ray(qa)
+	if not hit_a.is_empty() and (hit.is_empty() or from.distance_to(hit_a.position) < from.distance_to(hit.position)):
+		hit = hit_a
+	if hit.is_empty():
+		Sfx.play_ui("ui_error", -12.0)
+		return null
+	return TagMarker.place(self, hit.position, hit.collider)
 
 
 # --- paper map -----------------------------------------------------------------
