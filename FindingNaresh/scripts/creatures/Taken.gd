@@ -159,6 +159,7 @@ func _move_player() -> void:
 			partner.reset_physics_interpolation()
 			partner.say("Everything goes white... You are back at the van. Something has been at it: it smells of fuel.", 6.0)
 			camper.fuel_leak = maxf(camper.fuel_leak, Camper.CREATURE_LEAK)
+			camper.attack.leak_left = VanAttack.TAKEN_LEAK_S
 
 
 func _texts() -> void:

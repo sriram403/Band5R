@@ -39,6 +39,8 @@ const KEYS := {
 	"nav_swing": KEY_N,
 	# the way out: tag a spot for your partner; binocular zoom / peek (held)
 	"tag": KEY_T,
+	# the driver's horn (heard 150 m away, by everything)
+	"horn": KEY_Q,
 }
 ## Mouse buttons that also trigger an action (checked alongside KEYS).
 const MOUSE := {"throw": MOUSE_BUTTON_LEFT, "map_place": MOUSE_BUTTON_LEFT, "map_remove": MOUSE_BUTTON_RIGHT,
@@ -52,7 +54,7 @@ const BUTTONS := {
 	"map": JOY_BUTTON_DPAD_DOWN, "throw": JOY_BUTTON_RIGHT_SHOULDER, "swap_seat": JOY_BUTTON_LEFT_SHOULDER,
 	"handbrake": JOY_BUTTON_B, "ignition": JOY_BUTTON_DPAD_UP,
 	"headlights": JOY_BUTTON_DPAD_LEFT, "hint": JOY_BUTTON_RIGHT_STICK,
-	"recover": JOY_BUTTON_BACK,
+	"recover": JOY_BUTTON_BACK, "horn": JOY_BUTTON_LEFT_STICK,
 	"map_place": JOY_BUTTON_A, "map_remove": JOY_BUTTON_X,
 	"map_next": JOY_BUTTON_RIGHT_SHOULDER, "map_prev": JOY_BUTTON_LEFT_SHOULDER,
 	"map_zoom_in": JOY_BUTTON_Y, "map_zoom_out": JOY_BUTTON_B,
@@ -119,6 +121,7 @@ func glyph(action: String) -> String:
 			"menu_back": return "B"
 			"tag": return "RT"
 			"zoom": return "LT"
+			"horn": return "L3"
 			_: return "?"
 	match action:
 		"interact": return "E"
@@ -141,6 +144,7 @@ func glyph(action: String) -> String:
 		"throw": return "LMB"
 		"tag": return "T"
 		"zoom": return "RMB"
+		"horn": return "Q"
 		_: return "?"
 
 

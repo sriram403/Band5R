@@ -12,7 +12,7 @@ extends LevelBuilder
 ## More gyms (tagging, hiding, creatures, Naresh, storm) are added as those
 ## mechanics are built; each one starts as a copy of `base`.
 
-const GYMS := ["base", "tyre", "house", "traffic", "tagging", "binoculars", "stealth"]
+const GYMS := ["base", "tyre", "house", "traffic", "tagging", "binoculars", "stealth", "creature"]
 ## Stealth gym: a creature at STEALTH_EYE facing the players' side (+Z), cover
 ## pieces between, the players' lane 30 m out.
 const STEALTH_EYE := Vector3(60, 0, -30)
@@ -95,6 +95,8 @@ func build() -> Node3D:
 		_binocular_gym()
 	if gym == "stealth":
 		_stealth_gym()
+	if gym == "creature":
+		_creature_gym()
 	_world_edge()
 	_gym_spawns()
 	return world
@@ -324,6 +326,29 @@ func _stealth_gym() -> void:
 	poi["creature"] = STEALTH_EYE
 	# drop points 150-400 m away, each by a marked post
 	for spec in [[Vector3(60, 0, 190), "the south post"], [Vector3(-200, 0, -60), "the west post"], [Vector3(60, 0, -560), "the far north post"]]:
+		var at: Vector3 = spec[0]
+		at.y = _h(at.x, at.z)
+		world.add_child(Build.box(Vector3(0.3, 4.0, 0.3), ToonMat.make(Color(0.9, 0.3, 0.25)), at + Vector3(2, 2, 0), Vector3.ZERO, "DropPost"))
+		world.add_child(Build.label3d(spec[1], at + Vector3(2, 4.6, 0), Vector3.ZERO, 0.8, Color(1, 0.95, 0.8)))
+		drop_points.append({"pos": at, "near": spec[1]})
+
+
+## The van parked with a creature on a patrol 45 m in front of it, stakes every
+## 10 m in between, and two drop posts. Tunes the attack and the tarp.
+const CREATURE_EYE := Vector3(0, 0, -15)
+
+func _creature_gym() -> void:
+	for k in range(1, 5):
+		var z := 30.0 - 3.0 - k * 10.0
+		world.add_child(Build.label3d("%d m" % (k * 10), Vector3(-4.0, 0.05, z), Vector3(-90, 0, 0), 0.8, Color(1, 0.9, 0.6)))
+	var c := Creature.new()
+	c.name = "GymCreature"
+	world.add_child(c)
+	c.position = CREATURE_EYE
+	c.rotation.y = PI
+	c.patrol = PackedVector3Array([CREATURE_EYE + Vector3(-10, 0, 0), CREATURE_EYE + Vector3(10, 0, 0)])
+	poi["creature"] = CREATURE_EYE
+	for spec in [[Vector3(0, 0, 230), "the south post"], [Vector3(-220, 0, 30), "the west post"]]:
 		var at: Vector3 = spec[0]
 		at.y = _h(at.x, at.z)
 		world.add_child(Build.box(Vector3(0.3, 4.0, 0.3), ToonMat.make(Color(0.9, 0.3, 0.25)), at + Vector3(2, 2, 0), Vector3.ZERO, "DropPost"))

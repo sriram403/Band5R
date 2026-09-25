@@ -120,6 +120,11 @@ minutes (up to ~3 hours is fine); pacing and fun matter, not length.
 | Cardboard box | seen from | still 3 m, moving 6 m; a box moving in view within 35 m: it walks to 4.5 m and stares (curious only) | stealth |
 | Peeking | head offset | up 0.72 m over low cover or 0.6 m out past its end; cover must be within 1.3 m; seen as if standing | stealth |
 | Lure | thrown item | heard 15 m; makes it curious (one throw = one sound) and it walks to the spot | stealth |
+| Van noises | heard from | engine idle 40, driving 60, revving 90; doors and the tarp 20; horn 150 m | creature |
+| Van noticed | seen from | headlights 40 m day / 80 m dusk and night; driving 45 m; any van within 15 m | creature |
+| Van attack | while one stays within 15 m | leak 1 L/min after 2 s; engine 60% power and coughing after 30 s; puncture after 60 s; stops 5 s after it leaves | creature |
+| Van interest | how long it stays | 20-40 s (per creature) after it last noticed the van; circles at 7 m | creature |
+| Tarp | pull on / off | hold E 4 s / 2 s at the back; everyone out, engine and lights off | creature |
 | Puzzle rule | a code meant for binoculars only | letters between distance / 450 and distance / 250 (readable zoomed in split view, never by eye) | binoculars |
 
 ## 7. Decisions (2026-09-24)

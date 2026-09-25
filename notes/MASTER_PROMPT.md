@@ -11,7 +11,7 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, Milestone D started (plan approved, tagging gym).
+Last updated: 2026-09-25, Milestone D: gyms D1-D4 done (tagging, binoculars, stealth, creatures); next D5 traffic.
 Milestones A, B and C are done. A ChatGPT session built the opening; a Claude
 session reviewed it, fixed what it and the user's test found (see TODO.md,
 "Review fixes" and "P2's side fixed") and added `opening_full` and
@@ -140,6 +140,16 @@ they/them.
   then found P2's house unusable (stairs, doors, drive lip) and the nails
   gated behind the refuel; fixed, `opening_p2` added to Quick (P2 walked for
   real), and Milestone C was approved and pushed.
+- **Milestone D (the way out) in progress, local commits only (not pushed):**
+  the way-out and creature pages were approved with every recommended answer.
+  Gyms done, each with its own test, all in Quick: `tagging` (T / MMB / RT,
+  a pin both players see, 200 m, 20 s), `binoculars` (pick-up, RMB / LT 4x),
+  `stealth` (creature sight, hearing, suspicion, chase; being taken to a drop
+  point; the cardboard box, peeking, thrown lures) and `creature` (the van:
+  engine/door/horn noises, the staged attack, the tarp). Metrics are in
+  `DESIGN.md` 6.1. Next: D5 traffic, then D6 mood and the places (D7-D12).
+  The tarp and the cardboard box are block-outs awaiting the user's look
+  approval.
 
 ---
 
@@ -225,7 +235,14 @@ MPG/
       core/SaveGame.gd          journal save slots (JSON in user://saves); collect/apply
       core/ToonMat.gd, Build.gd materials; primitive builders; interact_area()
       player/PlayerRig.gd       first person, carrying, map, journal, seats, footsteps
-      items/Carryable.gd        physics items (+ FuelCan, CoolantJug, Crate, MemoryFragment)
+      items/Carryable.gd        physics items (+ FuelCan, CoolantJug, Crate, MemoryFragment,
+                                CardboardBox (worn over you), BinocularPickup)
+      player/TagMarker.gd       the tag pin both players see (one per player, 20 s)
+      creatures/Hearing.gd      sound registry: emit(pos, radius, what); creatures poll since(id)
+      creatures/Creature.gd     sight, hearing, suspicion, states WANDER/CURIOUS/SEARCH/TAKE/VAN
+      creatures/Taken.gd        caught = whiteout, wake at a drop point (builder.drop_points)
+      vehicle/VanAttack.gd      the van's noises, the creature attack stages, the tarp, the horn
+      ui/BinocularView.gd, BoxView.gd   eyepiece and box-slit overlays (shaders)
       vehicle/Camper.gd         VehicleBody3D van: driving, fuel/temp/coolant/battery,
                                 dashboard, nav screen, filler, radiator, rear rack, seats
       vehicle/EngineAudio.gd    CC0 engine loop pitched by a virtual gearbox, starter chug,
@@ -336,8 +353,8 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 1. Milestone D, the way out (`notes/TODO.md` D1-D13, `DESIGN.md`,
    `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
    2026-09-25** with every recommended answer (their "Decisions" sections).
-   Gyms first (tagging, binoculars, stealth, creatures), then traffic, mood
-   and the places.
+   The gyms D1-D4 are done (tagging, binoculars, stealth, creature). Next:
+   D5 traffic, D6 mood, then the places D7-D12 and the full run D13.
 2. Then Milestones E-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
    gym first. The merged `design/PUZZLES.md`, `design/WAY_OUT.md`,
@@ -478,6 +495,25 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 - **Split HUD:** the top-left objective and top-centre fading controls
   overlapped in 800 px views. The controls now wrap at bottom right, clear of
   the gauges. Checked on foot and from both seats.
+- **Class names must not clash with Godot's:** `class_name Noise` hid Godot's
+  own `Noise`, every script using it failed to parse and the game hung on
+  the parse error. It is `Hearing` now. Run tests under `timeout 300-400` and
+  `taskkill //F //IM "Godot*"` afterwards, so a parse error can't hang a run.
+- **Patch files, not heredocs:** bash heredocs mangled `·` and quotes in
+  GDScript. Write a small Python patch script with the Write tool, read with
+  `newline=''` and normalise CRLF (PlayerHUD.gd once had mixed endings).
+  Never edit game scripts while a test run is going; new files are safe.
+- **Long sequences in tests must be cancellable:** a running `Taken` sequence
+  teleported P1 in the middle of later checks. `Taken.cancel()` and the
+  "taken" group; `calm_creature()` cancels them and clears the creature's
+  van interest. Timers that outlive a node: use a tween owned by the node,
+  not `create_timer(...).connect(lambda)` (freed-lambda errors).
+- **Creature tests:** place players off the cover pieces (a placement on the
+  rock looked like "can't move"), flatten direction vectors before scaling
+  them into distances, and remember a van settling on its springs at the
+  start has a vertical speed (only horizontal speed counts as driving).
+- **E while holding the box means "get under it":** toss it with G/LMB to
+  put it down.
 
 ---
 

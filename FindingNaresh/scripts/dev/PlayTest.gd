@@ -19,7 +19,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
-const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"]}
+const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
 const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "driveway", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
 
@@ -2439,6 +2439,7 @@ func calm_creature(cr: Creature, at: Vector3, facing := PI) -> void:
 	cr.state = Creature.State.WANDER
 	cr.target = null
 	cr.last_noticed = at
+	cr.van_interest = 0.0
 	cr._heard_id = Hearing.last_id()
 	cr.reset_physics_interpolation()
 	for tk in get_tree().get_nodes_in_group("taken"):
@@ -2717,6 +2718,11 @@ func t_hiding() -> void:
 	check(not p.in_box and p.held == bx and bx.wearer == null, "E lifts the box off; you hold it again")
 	await tap(KEY_G)       # toss it aside (E would put it back on)
 	await wait(0.3)
+	# wherever it landed, put it back by the start: a box between you and it
+	# blocks its view as well as any cover
+	bx.global_position = GymBuilder.STEALTH_EYE + Vector3(4, 0.3, 36)
+	bx.linear_velocity = Vector3.ZERO
+	bx.reset_physics_interpolation()
 	# peeking: crouched behind the rock, hold RMB and your head comes up over it
 	await calm_creature(cr, eye)
 	key(KEY_CTRL, true)
@@ -2794,6 +2800,125 @@ func t_hiding() -> void:
 		reached = cr._flat_dist(crate.global_position)
 	await shot("lure")
 	check(reached <= 2.5 and cr.state != Creature.State.TAKE, "it walks over to where the crate landed (%.1f m)" % reached)
+
+
+## Creature gym: the van. It hears the engine and comes; while it stays within
+## 15 m the van leaks, then fails, then punctures; driving off stops it all.
+## The tarp (engine and lights off, everyone out, hold E at the back) hides
+## the van. The horn carries 150 m.
+func t_van() -> void:
+	var cr := boot.world.get_node_or_null("GymCreature") as Creature
+	var c := camper()
+	check(cr != null and c != null and c.attack != null and boot.gym == "creature", "the creature gym has a creature and the van")
+	if cr == null or c == null:
+		return
+	var p := p1()
+	await place_player(p2(), Vector3(-60, 0.25, 110), 0.0)     # out of the way
+	c.parking_brake = true
+	c.fuel = 60.0
+	var behind := c.global_transform * Vector3(0, 0, 1)
+	behind -= c.global_position
+	behind.y = 0.0
+	behind = behind.normalized()                                # the van's back is this way (flat)
+	# parked, engine off, 45 m behind it: nothing to notice
+	await calm_creature(cr, c.global_position + behind * 45.0, atan2(behind.x, behind.z))
+	await place_player(p, c.global_position + Vector3(-3, 0, 0), 0.0)
+	p.enter_seat(c, c.seat_nodes["driver"], "driver")
+	await wait(0.3)
+	var door := Hearing.since(0).filter(func(s): return s["what"] == "door").size() > 0
+	check(door, "getting in makes a door sound (heard 20 m)")
+	await tap(KEY_X)
+	await wait(2.5)
+	check(c.engine_on and cr.state == Creature.State.WANDER and cr.van_interest == 0.0,
+		"the engine idling 45 m away: not heard (idle carries 40 m)")
+	# 35 m: it hears the engine and comes to the van
+	await calm_creature(cr, c.global_position + behind * 35.0, atan2(behind.x, behind.z))
+	await wait(1.5)
+	check(cr.state == Creature.State.VAN, "the engine idling 35 m away: it hears it and heads for the van")
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 25000 and cr._flat_dist(c.global_position) > VanAttack.NEAR:
+		await wait(0.2)
+	log_line("it reached the van in %.1f s" % ((Time.get_ticks_msec() - t0) / 1000.0))
+	await wait(VanAttack.LEAK_AFTER + 1.0)
+	var f0 := c.fuel
+	await wait(3.0)
+	log_line("at the van: stage %d, leak %.1f L/min, fuel %.2f -> %.2f" % [c.attack.stage(), c.attack.leak_rate(), f0, c.fuel])
+	check(c.attack.stage() == 1 and c.attack.leak_rate() > 0.0 and c.fuel < f0 - 0.03, "while it stays, the van leaks fuel")
+	await shot("van_attack")
+	c.attack.attacked_t = VanAttack.ENGINE_AFTER - 0.5       # skip ahead: 30 s at the van
+	await wait(1.2)
+	check(c.attack.stage() == 2 and c.attack.power() <= VanAttack.SICK_POWER, "after 30 s the engine fails (power down 40%)")
+	c.attack.attacked_t = VanAttack.PUNCTURE_AFTER - 0.5     # 60 s
+	await wait(1.2)
+	check(c.tyre_flat, "after 60 s a tyre goes")
+	# drive off: once it is left behind it all stops (the flat stays flat)
+	key(KEY_W, true)
+	await wait(8.0)
+	key(KEY_W, false)
+	await tap(KEY_SPACE)            # handbrake
+	await wait(3.0)
+	var gap := cr._flat_dist(c.global_position)
+	log_line("drove off: %.0f m from it; stage %d, leak %.1f, power %.2f" % [gap, c.attack.stage(), c.attack.leak_rate(), c.attack.power()])
+	check(gap > VanAttack.NEAR and c.attack.stage() == 0 and c.attack.leak_rate() == 0.0 and c.tyre_flat,
+		"drive away and the leak and the failing engine stop; the flat stays")
+	c.tyre_flat = false
+	c.tyre_stage = 0
+	c.refresh_tyre_visuals()
+	# the tarp: everyone out, engine and lights off, hold E at the back for 4 s
+	await calm_creature(cr, c.global_position + behind * 120.0, atan2(behind.x, behind.z))
+	c.parking_brake = true
+	await wait(1.0)
+	await tap(KEY_E)                # out of the van
+	await wait(0.4)
+	var back := c._body_root.global_transform * Vector3(0, 0, 5.2)
+	var handle := c._body_root.global_transform * Vector3(0, 2.75, 3.75)
+	await place_player(p, Vector3(back.x, c.global_position.y - 0.3, back.z), 0.0)
+	await look_at_point(p, handle)
+	await wait(0.3)
+	log_line("at the back, engine on: '%s'" % p.prompt_text)
+	check(p.seat == null and p.prompt_text.contains("Engine and lights off"), "with the engine running the tarp won't go on (it says why)")
+	c.toggle_engine()
+	await wait(0.3)
+	log_line("engine off: '%s'" % p.prompt_text)
+	key(KEY_E, true)
+	await wait(VanAttack.TARP_ON_S + 0.5)
+	key(KEY_E, false)
+	check(c.attack.tarped and c.attack._tarp.visible, "hold E for 4 s: the van is under the tarp")
+	var seat_block: String = (c._body_root.get_node("SeatPrompt_driver").get_meta("blocked_fn") as Callable).call()
+	check(seat_block.contains("tarp"), "nobody gets in while it's under the tarp")
+	await place_player(p, c.global_position + Vector3(-7, 0.25, 7), 0.0)
+	await look_at_point(p, c.global_position)
+	await shot("tarp")
+	await place_player(p, c.global_position + Vector3(0, 0.25, -90), 0.0)
+	# a creature at the tarped van: no harm, and its interest runs out
+	await calm_creature(cr, c.global_position + behind * 8.0, atan2(-behind.x, -behind.z))
+	cr.van_interest = 30.0
+	await wait(3.0)
+	log_line("tarped: stage %d, interest left %.1f s" % [c.attack.stage(), cr.van_interest])
+	check(c.attack.attacked_t == 0.0 and c.attack.leak_rate() == 0.0 and cr.van_interest < 27.5,
+		"at the tarped van it does nothing and loses interest (not refreshed)")
+	# off again: 2 s
+	await calm_creature(cr, c.global_position + behind * 120.0, atan2(behind.x, behind.z))
+	await place_player(p, Vector3(back.x, c.global_position.y - 0.3, back.z), 0.0)
+	await look_at_point(p, handle)
+	key(KEY_E, true)
+	await wait(VanAttack.TARP_OFF_S + 0.5)
+	key(KEY_E, false)
+	check(not c.attack.tarped and not c.attack._tarp.visible, "hold E for 2 s: the tarp comes off")
+	# the horn: heard 150 m off
+	await calm_creature(cr, c.global_position + behind * 120.0, atan2(behind.x, behind.z))
+	p.enter_seat(c, c.seat_nodes["driver"], "driver")
+	await wait(0.3)
+	cr._heard_id = Hearing.last_id()
+	key(KEY_Q, true)
+	await wait(0.8)
+	var honking: bool = c.attack._horn.target > 0.5
+	key(KEY_Q, false)
+	await wait(0.5)
+	check(honking and cr.van_interest > 0.0 and cr.state != Creature.State.WANDER, "the horn: it hears it from 120 m and turns up")
+	p.force_exit = true
+	await physics_frames(3)
+	await calm_creature(cr, GymBuilder.CREATURE_EYE)
 
 
 func t_traffic() -> void:

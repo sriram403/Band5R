@@ -10,9 +10,8 @@ being built and tested), so this always shows where the work is right now.
   creature page with every recommended answer (see "Decisions" at the end of
   `design/WAY_OUT.md` and `design/CREATURES.md`).
 - D1 tagging and D2 binoculars done (Quick: 0 failures). D3/D4 stealth and
-  creatures: (a) senses and chase, (b) being taken and (c) box, peeking and
-  lures done (stealth gym: 3 tests, 0 failures). Next: (d) the van attack and
-  the tarp.
+  creatures: all four steps done (stealth gym: 3 tests; creature gym: the
+  van test; 0 failures). Next: D5 the traffic system.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -357,7 +356,7 @@ test was fixed and now restores its starting layout before the pad test.
   - [x] `t_binoculars`: 18 checks pass first time, 14.3 s
   - [x] Split view clipped the eyepieces at the sides; they now fit
   - [x] Quick suite with the binocular gym added: 10 segments, 0 failures
-- [~] D3/D4. Stealth and creature gym (`--gym=stealth`), in four steps
+- [x] D3/D4. Stealth and creature gyms (`--gym=stealth`, `--gym=creature`), in four steps
   - [x] (a) Senses and the chase. `creatures/Hearing.gd`: every sound
         (footsteps by speed, landings, thrown items) reaches creatures within
         its radius, walls or not. `creatures/Creature.gd`: sight (110 deg, rays
@@ -404,7 +403,29 @@ test was fixed and now restores its starting layout before the pad test.
         the wall's end both seen; lure landed 6.4 m away, it walked there)
   - [x] Bugs found on the way: a crate's bounces counted as three sounds and
         sent it searching (one throw = one sound now)
-  - [ ] (d) The van attack (leak, engine failing, puncture) and the tarp
+  - [x] (d) The van (`vehicle/VanAttack.gd`, a child of the Camper). Noises
+        they hear: engine idle 40 m / driving 60 m / revving 90 m (every
+        0.5 s), doors 20 m, the tarp being pulled 20 m, and a new **horn**
+        (Q / L3, driver only, 150 m, a two-note synth `NoiseLoop.Kind.HORN`).
+        A creature that notices the van (its engine, headlights 40 m by day /
+        80 m at dusk, driving past within 45 m, or just being within 15 m)
+        circles it at 7 m for 20-40 s after it last noticed it. While one is
+        within 15 m: a fuel leak (1 L/min, dripping ticks on its side) after
+        2 s, the engine failing after 30 s (60% power, coughs), a puncture
+        after 60 s; 5 s with nothing near and it all stops (the flat stays).
+        The tarp: hold E at the roll above the spare wheel, 4 s on / 2 s off,
+        only with everyone out and the engine and lights off; under it the van
+        is not noticed and nobody can get in. The leak left when both players
+        are taken now lasts 90 s. Creature gym: the van, a creature on a
+        patrol 45 m away, two drop posts. `t_van`: 15 checks pass (idle not
+        heard at 45 m, heard at 35 m; reached the van in 11.5 s; leak; engine
+        failing; puncture; drove 26 m off and it all stopped; tarp refused
+        with the engine on, then on, blocks the seats, no harm under it,
+        interest runs out; tarp off; horn heard at 120 m)
+  - [x] Bugs found on the way: the van settling on its springs at the start
+        counted as "moving" and drew the creature from 45 m (now only
+        horizontal speed over 1.5 m/s); horn and door sounds would have sent
+        it pushing into the van's middle (it goes to the van's side now)
 - [ ] D5. Traffic system: table-driven counts per road, keep left, stop for the
       van, the one lorry; thinning out to none after J2
 - [ ] D6. Mood curve: one dial for sky, fog, sun, birds and traffic

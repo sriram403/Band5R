@@ -98,6 +98,7 @@ var coolant_leak := false
 ## litres a minute dripping out of the tank (a creature has been at it)
 var fuel_leak := 0.0
 const CREATURE_LEAK := 1.0
+var attack: VanAttack                ## creatures: their noises, their attack, the tarp
 var heat_lockout := false          ## cut out from overheating; no restart until cool
 var start_fail := ""               ## why the last start attempt failed, for the HUD
 var start_fail_t := 0.0
@@ -137,6 +138,8 @@ func _ready() -> void:
 	_build_seats()
 	_build_service()
 	_build_mirrors()
+	attack = VanAttack.new(self)
+	add_child(attack)
 	_audio = EngineAudio.new()
 	add_child(_audio)
 
@@ -416,6 +419,8 @@ func _build_seats() -> void:
 			func(p: PlayerRig): _try_seat(p, role),
 			"SeatPrompt_" + role)
 		area.set_meta("blocked_fn", func() -> String:
+			if attack != null and attack.tarped:
+				return "It's under the tarp - pull it off at the back first"
 			var taken: PlayerRig = driver if role == "driver" else passenger
 			return "" if taken == null else "Seat taken - P%d is in it" % (taken.index + 1))
 		_body_root.add_child(area)
@@ -712,6 +717,7 @@ func on_seat_entered(p: PlayerRig, role: String) -> void:
 		driver = p
 	else:
 		passenger = p
+	Hearing.emit(global_position, Hearing.DOOR, "door")
 	# The hull and the door prompt volumes must not block the seated player's
 	# view ray, or they permanently show "sit in the seat you are already in".
 	p.ray.add_exception(self)
@@ -725,6 +731,7 @@ func on_seat_exited(p: PlayerRig, role: String) -> void:
 		driver = null
 	else:
 		passenger = null
+	Hearing.emit(global_position, Hearing.DOOR, "door")
 	p.ray.remove_exception(self)
 	for c in _body_root.get_children():
 		if c is Area3D:
@@ -765,8 +772,9 @@ func swap_roles() -> void:
 # --- driving -------------------------------------------------------------------
 
 func _physics_process(delta: float) -> void:
-	if fuel_leak > 0.0:
-		fuel = maxf(0.0, fuel - fuel_leak / 60.0 * delta)
+	var leak := attack.leak_rate() if attack != null else fuel_leak
+	if leak > 0.0:
+		fuel = maxf(0.0, fuel - leak / 60.0 * delta)
 	var speed := linear_velocity.length()
 	var fwd_speed := -global_transform.basis.z.dot(linear_velocity)
 
@@ -823,6 +831,8 @@ func _physics_process(delta: float) -> void:
 	# nose is -Z, so drive forces are negated here rather than flipping the mesh.
 	if tyre_flat:
 		out *= 0.52
+	if attack != null:
+		out *= attack.power()
 	engine_force = -out
 
 	var b := 0.0
@@ -846,6 +856,8 @@ func _physics_process(delta: float) -> void:
 	_update_condition(delta, speed, throttle_in)
 	_update_visuals(delta, speed, fwd_speed)
 	_check_pedestrians(speed)
+	if attack != null:
+		attack.tick(delta, speed, throttle_in)
 
 
 func _update_condition(delta: float, speed: float, throttle_in: float) -> void:

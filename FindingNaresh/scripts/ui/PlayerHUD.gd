@@ -339,12 +339,12 @@ func _update_hint(delta: float, seated: bool) -> void:
 		if d.kind == InputDevice.Kind.PAD:
 			match ctx:
 				"foot": text = "Stick move · Right stick look · L3 sprint · A jump · B crouch (+LT peek) · Y flashlight · X use · RB throw · RT tag · D-Down map"
-				"driver": text = "RT go · LT brake/reverse · Stick steer · B handbrake · D-Up engine · D-Left lights · A swing the nav"
+				"driver": text = "RT go · LT brake/reverse · Stick steer · B handbrake · D-Up engine · D-Left lights · A swing the nav · L3 horn"
 				_: text = "Right stick look around · RT tag · A swing the nav to you · D-Left lights · LB swap seats when stopped"
 		else:
 			match ctx:
 				"foot": text = "WASD move · Mouse look · Shift sprint · Space jump · Ctrl crouch (+RMB peek) · F flashlight · E use · LMB throw · T tag · M map"
-				"driver": text = "W go · S brake/reverse · A/D steer · Space handbrake · X engine · L lights · N swing the nav"
+				"driver": text = "W go · S brake/reverse · A/D steer · Space handbrake · X engine · L lights · N swing the nav · Q horn"
 				_: text = "Mouse look around · T tag · N swing the nav to you · L lights · C swap seats when stopped"
 	if text != "" and player.has_binoculars and ctx != "driver":
 		text += " · %s binoculars" % d.glyph("zoom")

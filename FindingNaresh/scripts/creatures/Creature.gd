@@ -8,15 +8,18 @@ extends CharacterBody3D
 ##   0-0.3 wander its patrol, 0.3-0.7 curious (walks to what it noticed),
 ##   0.7-1 searching (faster, around that spot), 1 takes: straight for you.
 ## It gives up a chase 10 s after losing sight of you.
+## The van draws it (its engine, its lights, seeing it move): it circles it
+## within 15 m and does it harm while it stays (VanAttack), until the van
+## drives off or goes under the tarp.
 
 signal took(player: PlayerRig)
 
-enum State { WANDER, CURIOUS, SEARCH, TAKE }
+enum State { WANDER, CURIOUS, SEARCH, TAKE, VAN }
 
 const FOV_DEG := 110.0
 const CLOSE_SENSE := 3.0          ## m; nearer than this it notices you whatever you do
 const CATCH := 1.5
-const SPEED := {State.WANDER: 1.3, State.CURIOUS: 1.9, State.SEARCH: 3.2, State.TAKE: 7.0}
+const SPEED := {State.WANDER: 1.3, State.CURIOUS: 1.9, State.SEARCH: 3.2, State.TAKE: 7.0, State.VAN: 1.6}
 const RISE_NEAR := 1.0 / 1.5      ## suspicion per second when seen at 10 m
 const RISE_EDGE := 1.0 / 4.0      ## ... at the edge of sight
 const FALL := 0.07                ## per second when nothing is noticed
@@ -29,6 +32,10 @@ const SOUND_CAP := 0.9            ## sounds alone make it search, only sight mak
 const GIVE_UP := 10.0             ## s after losing sight of the one it chases
 const ATTEND := 2.5               ## s it stops and stares towards anything it noticed
 const SIGHT_HZ := 10.0
+const VAN_ORBIT := 7.0            ## m from the van's middle while it circles it
+const VAN_LIT := [40.0, 80.0, 80.0]   ## m it notices headlights from (day / dusk / night)
+const VAN_MOVING := 45.0          ## m it notices the van moving from
+const VAN_MEMORY := Vector2(20.0, 40.0)   ## s of interest after it last noticed the van
 const HEIGHT := 2.6
 const GRAVITY := 22.0
 
@@ -42,6 +49,8 @@ var seen_now: Array = []             ## players it can see right now (tests read
 var box_moved := false               ## it is watching a box move right now (tests read this)
 var _box_notice := false             ## what it last noticed was a box
 var _item_ms := -99999               ## when and where the last item it heard landed
+var van_interest := 0.0              ## s left of wanting to be at the van
+var _van_memory := randf_range(VAN_MEMORY.x, VAN_MEMORY.y)   ## this one's patience with the van
 var _item_at := Vector3.ZERO
 var _pi := 0
 var _sight_t := 0.0
@@ -127,6 +136,7 @@ func _build() -> void:
 func _physics_process(delta: float) -> void:
 	_noticed_t += delta
 	_sight_t += delta
+	van_interest = maxf(0.0, van_interest - delta)
 	if _sight_t >= 1.0 / SIGHT_HZ:
 		_look(_sight_t)
 		_sight_t = 0.0
@@ -143,6 +153,9 @@ func _physics_process(delta: float) -> void:
 	_update_state()
 	_move(delta)
 	_show(delta)
+	var v := _van()
+	if state == State.VAN and v != null and _flat_dist(v.global_position) <= VanAttack.NEAR:
+		v.attack.creature_near(self, delta)
 
 
 # --- senses --------------------------------------------------------------------
@@ -190,6 +203,39 @@ func _look(dt: float) -> void:
 			target = p
 	if target != null and seen_now.has(target):
 		_lost_t = 0.0
+	_look_van(space, eye, fwd)
+
+
+## The van, unless it is under the tarp: from close by it is simply there;
+## further off it takes lights or movement to catch its eye.
+func _look_van(space: PhysicsDirectSpaceState3D, eye: Vector3, fwd: Vector3) -> void:
+	var v := _van()
+	if v == null or v.attack.tarped:
+		return
+	var d := _flat_dist(v.global_position)
+	var reach := VanAttack.NEAR
+	if v.headlights_on:
+		reach = maxf(reach, VAN_LIT[clampi(light, 0, 2)])
+	if Vector2(v.linear_velocity.x, v.linear_velocity.z).length() > 1.5:    # driving, not settling on its springs
+		reach = maxf(reach, VAN_MOVING)
+	if d > reach:
+		return
+	if d > VanAttack.NEAR:
+		var to := v.global_position - global_position
+		if rad_to_deg(fwd.angle_to(Vector3(to.x, 0, to.z).normalized())) > FOV_DEG * 0.5:
+			return
+		var q := PhysicsRayQueryParameters3D.create(eye, v.global_position + Vector3.UP * 0.5, 1 | 8, [get_rid(), v.get_rid()])
+		if not space.intersect_ray(q).is_empty():
+			return
+	_want_van()
+
+
+func _want_van() -> void:
+	van_interest = maxf(van_interest, _van_memory)
+
+
+func _van() -> Camper:
+	return get_tree().get_first_node_in_group("camper") as Camper
 
 
 func _line_clear(space: PhysicsDirectSpaceState3D, from: Vector3, p: PlayerRig, to: Vector3) -> bool:
@@ -205,6 +251,19 @@ func _listen() -> void:
 		_heard_id = maxi(_heard_id, int(s["id"]))
 		var pos: Vector3 = s["pos"]
 		if pos.distance_to(global_position) <= float(s["radius"]):
+			# the engine running only draws it to the van; the horn does both
+			if s["what"] == "engine":
+				_want_van()
+				continue
+			if s["what"] == "horn":
+				_want_van()
+				continue
+			# a door or the tarp: it looks at the van's side, not into its middle
+			if s["what"] == "door" or s["what"] == "tarp":
+				var out := global_position - pos
+				out.y = 0.0
+				if out.length() > 4.0:
+					pos += out.normalized() * 4.0
 			# a thrown thing bouncing is one sound, not three
 			var bounce: bool = s["what"] == "item" and int(s["t"]) - _item_ms < 1500 				and pos.distance_to(_item_at) < 4.0
 			if s["what"] == "item":
@@ -246,6 +305,9 @@ func _update_state() -> void:
 		state = State.SEARCH
 	elif suspicion >= 0.3:
 		state = State.CURIOUS
+	elif van_interest > 0.0 and _van() != null:
+		state = State.VAN
+		target = null
 	else:
 		state = State.WANDER
 		target = null
@@ -269,6 +331,16 @@ func _move(delta: float) -> void:
 					_pi = (_pi + 1) % patrol.size()
 		State.CURIOUS:
 			goal = last_noticed
+		State.VAN:
+			# walk in, then round and round it
+			var c := _van().global_position
+			var off := global_position - c
+			off.y = 0.0
+			if off.length() > VanAttack.NEAR:
+				goal = c + off.normalized() * VAN_ORBIT
+			else:
+				var a := atan2(off.z, off.x) + 0.35
+				goal = c + Vector3(cos(a), 0, sin(a)) * VAN_ORBIT
 		State.SEARCH:
 			# circle the spot it last noticed something
 			_search_t += delta
