@@ -10,7 +10,8 @@ being built and tested), so this always shows where the work is right now.
   physical spare-wheel swap passed 17 checks in 33.5 s, 0 failures or script
   errors. Default Quick including the tyre gym passed with 0 failures and no
   script errors. The fixed world nails past Town Fuel passed a three-check
-  story-gated teleport test. House and traffic gyms follow.
+  story-gated teleport test. The house gym's 15 interaction and stair/window
+  checks and its seven world placement/pump checks pass. Traffic gym follows.
   The three test levels are complete: Quick 265 s of scenarios, Full 2010 s
   with all eight road legs, Road check 2 s; all pass. The split-screen HUD
   reminder overlap was fixed and checked on foot and in both seats.
@@ -247,20 +248,25 @@ test was fixed and now restores its starting layout before the pad test.
         without it; both checks pass
   - [x] Place the fixed puncture on the opening lane after Town Fuel: a warning
         sign and nails; three-check story-gated world test passed, 0 failures
-- [ ] House gym: two rooms, upstairs window, stairs, drawers, shed, doors;
-      battery search and fuel-drum interaction tested on its own map
+- [x] House gym: downstairs kitchen, upstairs room/window, walkable stairs,
+      drawer, enclosed shed, operable doors, dead torch and carryable cells,
+      half coolant jug, drum filling an empty can. Fifteen checks pass with
+      real input; the upstairs window was checked by ray and screenshot.
 - [ ] Traffic gym: town cars on a loop, keep left, slow or stop behind the van,
       bump without damage; automated obstruction test
 - [ ] Phone and objectives: read-only texts (P / D-pad right), mother's message
       starts the story, per-player opening objectives, shared line after pick-up
 - [ ] Split start: P1 at the homestead, P2 inside their house; preserve correct
       positions and opening state through save/load
-- [ ] Torch batteries: dead initially for P2, drawer pickup, drain and dim
-      flicker, replacement, save/load; test in the house gym
-- [ ] Fuel drum and Town Fuel pump fill cans by holding E, with the can's
-      visible amount and weight changing; test in the house gym and world
-- [ ] Greybox placement: enterable P2 house + shed, upstairs view, 20% drive,
-      town cars, Town Fuel, warning sign and nails at fixed puncture spot
+- [~] Torch batteries: dead initially for P2 in the house gym; drawer pickup,
+      10-minute drain, dim flicker and replacement built; save/load and opening
+      world state still to check
+- [~] Fuel drum and Town Fuel pump fill cans by holding E, with the can's
+      amount and weight changing. House gym and seven-check world teleport
+      both pass; opening story integration and save/load remain
+- [~] Greybox placement: enterable P2 house + shed and upstairs road view,
+      Town Fuel pump and fixed warning sign/nails tested; 20% drive and
+      town cars remain
 - [ ] Opening play-test: timed P1 drive and P2 preparation, pick-up and rack
       loading, objective merge; Quick teleport checks and Full route check
 - [ ] Milestone C hand-over after my play-test; push only after your approval

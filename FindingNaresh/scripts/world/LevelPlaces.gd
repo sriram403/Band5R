@@ -28,10 +28,15 @@ func _house(at: Vector3, face: Vector3, size: Vector3, wall_col: Color, roof_col
 func _p2_home() -> void:
 	var lane := network.road("home_lane")
 	var near := _snap(lane, Vector2(P2_HOME.x, P2_HOME.z))
-	var h := _house(P2_HOME, near, Vector3(10, 6, 8), Color(0.80, 0.86, 0.92), Color(0.32, 0.36, 0.44), "P2Home")
-	h.add_child(Build.solid_box(Vector3(5, 3, 6), ToonMat.make(Color(0.70, 0.66, 0.60)), Vector3(8.5, 1.5, 0), Vector3.ZERO, "Shed"))
-	h.add_child(Build.box(Vector3(1.6, 1.2, 0.2), ToonMat.make(Color(0.36, 0.52, 0.68)), Vector3(-2.5, 4.2, 4.05), Vector3.ZERO, "UpstairsWindow"))
+	var h := HouseInterior.new()
+	h.name = "P2Home"
+	h.position = Vector3(P2_HOME.x, _h(P2_HOME.x, P2_HOME.z), P2_HOME.z)
+	var to := near - h.position
+	to.y = 0.0
+	h.basis = Basis.looking_at(-to, Vector3.UP)
+	world.add_child(h)
 	poi["p2_home"] = h.position
+	poi["p2_window"] = h.position + h.basis * Vector3(-2.5, 4.65, 4.0)
 
 
 ## A few houses along the lane and the town fuel station.
@@ -61,9 +66,16 @@ func _town() -> void:
 	fuel.add_child(Build.box(Vector3(16, 0.15, 12), ToonMat.make(Color(0.40, 0.40, 0.42)), Vector3(0, 0.08, 0), Vector3.ZERO, "Forecourt"))
 	fuel.add_child(Build.box(Vector3(12, 0.5, 7), white, Vector3(0, 4.6, 0), Vector3.ZERO, "Canopy"))
 	fuel.add_child(Build.box(Vector3(12.2, 0.3, 7.2), green, Vector3(0, 4.25, 0), Vector3.ZERO, "Stripe"))
-	for px in [-2.0, 2.0]:
+	for px in [2.0]:
 		fuel.add_child(Build.box(Vector3(0.8, 1.6, 0.5), green, Vector3(px, 0.95, 0), Vector3.ZERO, "Pump"))
 		body.add_child(_box_shape(Vector3(0.8, 1.6, 0.5), Transform3D(Basis(), Vector3(px, 0.95, 0))))
+	var pump := FuelSource.new()
+	pump.name = "WorkingPump"
+	pump.source_name = "Town Fuel pump"
+	pump.pump_style = true
+	pump.litres = 1000.0
+	fuel.add_child(pump)
+	pump.position = Vector3(-2.0, 0, 0)
 	for cx in [-5.0, 5.0]:
 		fuel.add_child(Build.cyl(0.2, 4.4, white, Vector3(cx, 2.2, 0), Vector3.ZERO, 8, "Column"))
 		body.add_child(_cyl_shape(Vector3(cx, 2.2, 0), 0.2, 4.4))

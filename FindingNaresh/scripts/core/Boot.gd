@@ -91,6 +91,8 @@ func _ready() -> void:
 	_assign_devices()
 	_build_ui()
 	_spawn_players()
+	if gym == "house":
+		players[1].flashlight_seconds = 0.0
 	story = Story.new()
 	story.name = "Story"
 	story.add_to_group("story")

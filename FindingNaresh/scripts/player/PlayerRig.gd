@@ -34,6 +34,7 @@ var body_color := Color(0.90, 0.62, 0.24)
 
 var head: Node3D
 var flashlight: SpotLight3D
+var flashlight_seconds := 600.0       ## one set lasts about ten minutes of use
 var beam: MeshInstance3D
 var ray: RayCast3D
 var _capsule: CapsuleShape3D
@@ -201,6 +202,17 @@ func recolor(c: Color) -> void:
 func _physics_process(delta: float) -> void:
 	if dev == null:
 		return
+	if flashlight.visible:
+		flashlight_seconds = maxf(0.0, flashlight_seconds - delta)
+		if flashlight_seconds <= 0.0:
+			flashlight.visible = false
+			beam.visible = false
+		elif flashlight_seconds < 60.0:
+			# Short, increasingly frequent brownouts before the cells die.
+			var flicker := sin(Time.get_ticks_msec() * 0.027) > 0.94 - (60.0 - flashlight_seconds) * 0.004
+			flashlight.light_energy = 1.5 if flicker else 5.5
+		else:
+			flashlight.light_energy = 5.5
 	if force_exit:
 		force_exit = false
 		exit_vehicle()
@@ -432,6 +444,20 @@ static func _dust_puff(at: Vector3, strength: float) -> void:
 
 
 func toggle_flashlight() -> void:
+	if held is BatteryPack:
+		var pack := held
+		held = null
+		_using = null
+		ray.remove_exception(pack)
+		pack.queue_free()
+		flashlight_seconds = 600.0
+		flashlight.visible = true
+		beam.visible = true
+		message.emit("Fresh batteries. The torch is working.", 3.0)
+		return
+	if flashlight_seconds <= 0.0:
+		message.emit("The torch batteries are dead.", 2.5)
+		return
 	flashlight.visible = not flashlight.visible
 	beam.visible = flashlight.visible
 

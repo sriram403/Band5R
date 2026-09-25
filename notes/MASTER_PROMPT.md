@@ -11,11 +11,12 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-25, after the tyre gym and its Quick repeat. Milestone B
+Last updated: 2026-09-25, after the house gym and world placement. Milestone B
 and the opening design are approved; all six cloud PRs are merged. Quick,
 Road check and Full now work and have passed locally. Milestone C has begun
 with the tyre gym and physical wheel swap, which pass their automated checks.
-The world puncture passed its gated teleport check. House and traffic remain.
+The world puncture passed its gated teleport check. The house gym and its
+world placement pass; traffic and the rest of the opening remain.
 Start at section 6.
 
 ---
@@ -122,7 +123,11 @@ they/them.
   handling and a 20% handbrake slope. Its 17 checks pass in 33.5 s; the
   default Quick repeat including it finished with zero failures and script
   errors. The world puncture is after Town Fuel; its story-gated teleport
-  check passes (three checks). Build the house and traffic gyms next.
+  check passes (three checks). The house gym then passed 15 checks: battery
+  search and torch, doors, shed, full can, real stair walk and window sightline.
+  The same house now replaces P2's world block, and Town Fuel has a working
+  pump; seven world checks pass. Traffic gym is next. P2's 20% drive, phone,
+  objectives, split start, pickup and save/load integration remain.
 
 ---
 
@@ -323,8 +328,8 @@ C has begun with the tested tyre gym. Next, in this order:**
    starts the story, the parents' letter stays as an extra; torch batteries from
    the opening). Gyms first: tyre, house, traffic. Its "What is new to build" list
    is the work plan, now expanded in `notes/TODO.md`. Build and test the tyre
-   gym first (done), then the house and traffic gyms, then place them in the
-   world. The tyre puncture is already placed and tested on Homestead Lane.
+   gym first (tyre and house done), then the traffic gym, then complete world
+   placement. The tyre puncture and house are already placed and tested.
 2. Then hand over C (rule 2). Milestones D-G follow `notes/TODO.md` / `DESIGN.md`.
    New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
    gym first. The merged `design/PUZZLES.md`, `design/WAY_OUT.md`,

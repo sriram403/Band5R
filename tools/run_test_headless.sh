@@ -18,6 +18,7 @@ if [ -z "$GODOT" ]; then
 	exit 2
 fi
 if [ -z "$GYM" ] && { [ -z "$1" ] || [ "$1" = quick ] || [ "$1" = full ]; }; then
+	GYM=house "$0" house || exit $?
 	GYM=tyre "$0" tyre || exit $?
 	GYM=base "$0" gym_quick || exit $?
 fi

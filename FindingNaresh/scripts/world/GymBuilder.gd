@@ -12,7 +12,7 @@ extends LevelBuilder
 ## More gyms (tagging, hiding, creatures, Naresh, storm) are added as those
 ## mechanics are built; each one starts as a copy of `base`.
 
-const GYMS := ["base", "tyre"]
+const GYMS := ["base", "tyre", "house"]
 const GRID_HALF := 120.0           ## measuring grid covers +-120 m around the centre
 ## Test slopes: [x centre, grade]. Each is a 20 m wide hump across the road loop's
 ## east side, rising for 50 m, so the van can be parked mid-slope.
@@ -72,6 +72,8 @@ func build() -> Node3D:
 	_gym_props()
 	if gym == "tyre":
 		_tyre_trap()
+	if gym == "house":
+		_house_gym()
 	_world_edge()
 	_gym_spawns()
 	return world
@@ -163,6 +165,16 @@ func _tyre_trap() -> void:
 	poi["tyre_nails"] = trap.position
 
 
+func _house_gym() -> void:
+	var house := HouseInterior.new()
+	house.name = "OpeningHouse"
+	world.add_child(house)
+	house.position = Vector3(0, _h(0, -55), -55)
+	poi["house_kitchen"] = house.position + Vector3(-2.5, 0.2, -0.5)
+	poi["house_upstairs"] = house.position + Vector3(-2.5, 3.5, 1.0)
+	poi["house_shed"] = house.position + Vector3(8.5, 0.2, 0)
+
+
 func _gym_spawns() -> void:
 	camper_spawn = Transform3D(Basis(), Vector3(0, 0.8, 30))
 	if gym == "tyre":
@@ -171,4 +183,6 @@ func _gym_spawns() -> void:
 	poi["homestead"] = Vector3(0, 0, 40)
 	for k in 2:
 		var pos := Vector3(-6.0 - k * 2.0, 0.25, 40.0)
+		if gym == "house" and k == 1:
+			pos = poi["house_kitchen"]
 		player_spawns.append(Transform3D(Basis.looking_at(Vector3(0, 0, -1), Vector3.UP), pos))

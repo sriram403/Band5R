@@ -19,7 +19,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
 
 
 func _ready() -> void:
@@ -221,17 +221,19 @@ func _run() -> void:
 		return
 	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
-		all = ["tyre"] if boot.gym == "tyre" else ["gym"]
+		all = ["tyre"] if boot.gym == "tyre" else (["house"] if boot.gym == "house" else ["gym"])
 	var selection := only
 	if selection == "quick" or selection == "gym_quick":
 		if boot.gym == "tyre":
 			all = ["tyre"]
+		elif boot.gym == "house":
+			all = ["house"]
 		else:
 			all = QUICK_GYM.duplicate() if boot.gym != "" else QUICK_WORLD.duplicate()
 		selection = ""
 	elif selection == "full":
 		if boot.gym != "":
-			all = ["tyre"] if boot.gym == "tyre" else QUICK_GYM.duplicate()
+			all = ["tyre"] if boot.gym == "tyre" else (["house"] if boot.gym == "house" else QUICK_GYM.duplicate())
 		else:
 			all.insert(all.find("save"), "routes")
 		selection = ""
@@ -2034,6 +2036,123 @@ func t_roadworks() -> void:
 	c.tyre_flat = false
 	c.tyre_stage = 0
 	c.refresh_tyre_visuals()
+
+
+func t_house() -> void:
+	var house := boot.world.get_node_or_null("OpeningHouse") as HouseInterior
+	check(house != null and boot.gym == "house", "the enterable P2 house loads in its own gym")
+	if house == null:
+		return
+	var p := p1()
+	p.flashlight_seconds = 0.0
+	await tap(KEY_F)
+	check(not p.flashlight.visible, "the empty torch will not turn on")
+	var drawer_pos := house.to_global(Vector3(-3.0, 0.85, -1.92))
+	await face_point(p, drawer_pos, 1.5, Vector3(0, 0, 1))
+	check(p.prompt_text.contains("drawer"), "the kitchen drawer can be searched")
+	await tap(KEY_E)
+	check(house.drawer_open and house.battery_pack != null, "opening the drawer reveals a physical battery pack")
+	if house.battery_pack == null:
+		return
+	await face_point(p, house.battery_pack.global_position + Vector3.UP * 0.2, 1.3, Vector3(0, 0, 1))
+	await tap(KEY_E)
+	check(p.held is BatteryPack, "the batteries can be carried")
+	await tap(KEY_F)
+	check(p.held == null and p.flashlight.visible and p.flashlight_seconds > 590.0,
+		"F fits the cells and lights the torch for ten minutes")
+	var front := house.to_global(Vector3(0, 1.3, 4.48))
+	await face_point(p, front, 1.5, Vector3(0, 0, 1))
+	await tap(KEY_E)
+	check(house.front_open, "E opens the house's front door")
+	var shed := house.to_global(Vector3(8.5, 1.3, 3.46))
+	await face_point(p, shed, 1.5, Vector3(0, 0, 1))
+	await tap(KEY_E)
+	check(house.shed_open, "E opens the enclosed shed")
+	check(house.coolant_jug != null and absf(house.coolant_jug.litres - CoolantJug.CAPACITY * 0.5) < 0.01,
+		"a half-full coolant jug waits in the shed")
+	var can := house.fuel_can
+	check(can != null and can.litres <= 0.01, "the shed can starts empty")
+	if can != null:
+		await face_point(p, can.global_position + Vector3.UP * 0.2, 1.4, Vector3(0, 0, 1))
+		await tap(KEY_E)
+		check(p.held == can, "the empty can can be carried to the drum")
+		if p.held == can:
+			var initial_mass := can.mass
+			var spout := house.drum.to_global(Vector3(0, 0.85, 0.75))
+			await face_point(p, spout, 1.25, Vector3(0, 0, 1))
+			check(p.prompt_text.contains("fill can"), "the drum offers a hold-to-fill action")
+			key(KEY_E, true)
+			await wait(4.3)
+			key(KEY_E, false)
+			check(can.litres > 19.0 and can.mass > initial_mass + 14.0,
+				"holding E fills the can and increases its weight")
+			p.drop_held()
+	await shot("house_shed")
+	# Walk up the real colliding steps from the downstairs kitchen.
+	await place_player(p, house.to_global(Vector3(3.4, 0.8, 3.1)), 0.0)
+	log_line("stairs start: %s floor=%s" % [p.global_position, p.is_on_floor()])
+	key(KEY_W, true)
+	for step in 240:
+		await get_tree().physics_frame
+		key(KEY_W, true)
+		if step % 60 == 59:
+			log_line("stairs %d: %s floor=%s" % [step + 1, p.global_position, p.is_on_floor()])
+	key(KEY_W, false)
+	log_line("stairs end: %s" % p.global_position)
+	check(p.global_position.y > house.global_position.y + 2.7,
+		"P2 can climb the stairwell to the upstairs window")
+	await place_player(p, house.to_global(Vector3(-2.5, 3.35, 2.4)), PI)
+	p.pitch = 0.0
+	await physics_frames(3)
+	var eye := p.global_position + Vector3.UP * 1.5
+	var q := PhysicsRayQueryParameters3D.create(eye, eye + Vector3(0, 0, 10), 1)
+	var hit := p.get_world_3d().direct_space_state.intersect_ray(q)
+	check(hit.is_empty(), "the upstairs window has a clear view toward the lane")
+	await shot("house_upstairs")
+
+
+func t_house_world() -> void:
+	var house := boot.world.get_node_or_null("P2Home") as HouseInterior
+	var pump := boot.world.get_node_or_null("TownFuel/WorkingPump") as FuelSource
+	check(house != null and pump != null, "P2's enterable house and working Town Fuel pump are on the world map")
+	if house == null or pump == null:
+		return
+	var lane: Route = boot.builder.network.road("home_lane")
+	var near: Dictionary = lane.nearest(house.global_position.x, house.global_position.z)
+	var approach := lane.point(int(near["index"]))
+	log_line("P2 drive: road %s, house %s, run %.1f m, rise %.1f m" % [approach, house.global_position,
+		Vector2(approach.x - house.global_position.x, approach.z - house.global_position.z).length(),
+		house.global_position.y - approach.y])
+	check(house.fuel_can != null and house.coolant_jug != null and house.drum != null,
+		"P2's shed has its empty can, half-full coolant and fuel drum")
+	var out := house.global_basis * Vector3(0, 0, 1)
+	await place_player(p1(), house.to_global(Vector3(-2.5, 3.35, 2.4)), atan2(-out.x, -out.z))
+	await physics_frames(3)
+	var eye := p1().global_position + Vector3.UP * 1.5
+	var rayq := PhysicsRayQueryParameters3D.create(eye, eye + house.basis * Vector3(0, 0, 15), 1)
+	check(p1().get_world_3d().direct_space_state.intersect_ray(rayq).is_empty(),
+		"P2 can look out from the upstairs room toward the road")
+	await shot("p2_home_window")
+	var can := find_can("station_can_empty")
+	check(can != null, "an empty test can is available for Town Fuel")
+	if can == null:
+		return
+	can.global_position = pump.to_global(Vector3(0, 0.25, 2.1))
+	can.linear_velocity = Vector3.ZERO
+	can.reset_physics_interpolation()
+	await face_point(p1(), can.global_position + Vector3.UP * 0.2, 1.35, pump.global_basis.z)
+	await tap(KEY_E)
+	check(p1().held == can, "the can can be carried to the working pump")
+	if p1().held == can:
+		var spout := pump.to_global(Vector3(0, 0.85, 0.75))
+		await face_point(p1(), spout, 1.3, pump.global_basis.z)
+		check(p1().prompt_text.contains("fill can"), "Town Fuel offers hold-to-fill")
+		key(KEY_E, true)
+		await wait(4.3)
+		key(KEY_E, false)
+		check(can.litres > 19.0, "Town Fuel fills an empty can")
+		p1().drop_held()
+	reset_can("station_can_empty", 0.0)
 
 
 ## Door and rear-view mirrors; the nav screen swung over to the passenger.
