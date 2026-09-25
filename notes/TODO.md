@@ -11,7 +11,9 @@ being built and tested), so this always shows where the work is right now.
   errors. Default Quick including the tyre gym passed with 0 failures and no
   script errors. The fixed world nails past Town Fuel passed a three-check
   story-gated teleport test. The house gym's 15 interaction and stair/window
-  checks and its seven world placement/pump checks pass. Traffic gym follows.
+  checks and its seven world placement/pump checks pass. Traffic gym passed its
+  obstruction test; four town cars and P2's 20.9% drive pass world checks.
+  Default Quick repeat is next, then phone and per-player opening objectives.
   The three test levels are complete: Quick 265 s of scenarios, Full 2010 s
   with all eight road legs, Road check 2 s; all pass. The split-screen HUD
   reminder overlap was fixed and checked on foot and in both seats.
@@ -252,8 +254,9 @@ test was fixed and now restores its starting layout before the pad test.
       drawer, enclosed shed, operable doors, dead torch and carryable cells,
       half coolant jug, drum filling an empty can. Fifteen checks pass with
       real input; the upstairs window was checked by ray and screenshot.
-- [ ] Traffic gym: town cars on a loop, keep left, slow or stop behind the van,
-      bump without damage; automated obstruction test
+- [x] Traffic gym: a car loops, keeps left, stops behind a parked van and
+      continues after it clears; three checks pass. Four town cars are placed
+      and six world checks pass. Bumps have no damage system yet.
 - [ ] Phone and objectives: read-only texts (P / D-pad right), mother's message
       starts the story, per-player opening objectives, shared line after pick-up
 - [ ] Split start: P1 at the homestead, P2 inside their house; preserve correct
@@ -264,9 +267,10 @@ test was fixed and now restores its starting layout before the pad test.
 - [~] Fuel drum and Town Fuel pump fill cans by holding E, with the can's
       amount and weight changing. House gym and seven-check world teleport
       both pass; opening story integration and save/load remain
-- [~] Greybox placement: enterable P2 house + shed and upstairs road view,
-      Town Fuel pump and fixed warning sign/nails tested; 20% drive and
-      town cars remain
+- [x] Greybox placement: enterable P2 house + shed and upstairs road view,
+      Town Fuel pump, fixed warning sign/nails, four town cars and 20.9% P2
+      drive. The handbrake holds there; without it the van rolls. Terrain
+      supports the slab and the rendered approach was inspected.
 - [ ] Opening play-test: timed P1 drive and P2 preparation, pick-up and rack
       loading, objective merge; Quick teleport checks and Full route check
 - [ ] Milestone C hand-over after my play-test; push only after your approval

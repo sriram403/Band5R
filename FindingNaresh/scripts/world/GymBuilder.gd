@@ -12,7 +12,7 @@ extends LevelBuilder
 ## More gyms (tagging, hiding, creatures, Naresh, storm) are added as those
 ## mechanics are built; each one starts as a copy of `base`.
 
-const GYMS := ["base", "tyre", "house"]
+const GYMS := ["base", "tyre", "house", "traffic"]
 const GRID_HALF := 120.0           ## measuring grid covers +-120 m around the centre
 ## Test slopes: [x centre, grade]. Each is a 20 m wide hump across the road loop's
 ## east side, rising for 50 m, so the van can be parked mid-slope.
@@ -74,6 +74,8 @@ func build() -> Node3D:
 		_tyre_trap()
 	if gym == "house":
 		_house_gym()
+	if gym == "traffic":
+		_traffic_gym()
 	_world_edge()
 	_gym_spawns()
 	return world
@@ -173,6 +175,15 @@ func _house_gym() -> void:
 	poi["house_kitchen"] = house.position + Vector3(-2.5, 0.2, -0.5)
 	poi["house_upstairs"] = house.position + Vector3(-2.5, 3.5, 1.0)
 	poi["house_shed"] = house.position + Vector3(8.5, 0.2, 0)
+
+
+func _traffic_gym() -> void:
+	var road := network.road("gym_straight")
+	var car := TrafficCar.new()
+	car.name = "GymTrafficCar"
+	car.configure(road, 45, 210, 95, 1)
+	world.add_child(car)
+	poi["traffic_block"] = road.point(145) - road.right(145) * TrafficCar.LANE_OFFSET
 
 
 func _gym_spawns() -> void:

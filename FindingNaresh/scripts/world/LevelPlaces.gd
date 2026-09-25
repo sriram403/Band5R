@@ -37,6 +37,20 @@ func _p2_home() -> void:
 	world.add_child(h)
 	poi["p2_home"] = h.position
 	poi["p2_window"] = h.position + h.basis * Vector3(-2.5, 4.65, 4.0)
+	# A constructed, drivable approach climbs roughly one metre in five from
+	# the lane to the front door. It also gives the handbrake a clear job here.
+	var road_end := near + Vector3.UP * 0.1
+	var home_end := h.position + h.basis * Vector3(0, 0.1, 4.8)
+	var climb := home_end - road_end
+	var run := Vector2(climb.x, climb.z).length()
+	var slope := atan2(climb.y, run)
+	var along := Vector3(climb.x, 0, climb.z).normalized()
+	var slab := Build.solid_box(Vector3(4.6, 0.25, climb.length()), ToonMat.make(Color(0.41, 0.43, 0.43)),
+		Vector3.ZERO, Vector3.ZERO, "P2Driveway")
+	slab.transform = Transform3D(Basis.looking_at(along, Vector3.UP) * Basis(Vector3.RIGHT, slope),
+		(road_end + home_end) * 0.5)
+	world.add_child(slab)
+	poi["p2_drive_mid"] = slab.position
 
 
 ## A few houses along the lane and the town fuel station.
@@ -83,6 +97,13 @@ func _town() -> void:
 	fuel.add_child(Build.label3d("TOWN FUEL  -  OPEN", Vector3(0, 4.6, 3.55), Vector3.ZERO, 0.5, Color(0.15, 0.40, 0.25)))
 	world.add_child(fuel)
 	poi["town_fuel"] = pos
+	# Four ordinary cars patrol the busy part of Homestead Lane. Their left
+	# lanes are relative to their travel direction; they yield to a blocked van.
+	for car_idx in 4:
+		var car := TrafficCar.new()
+		car.name = "TownCar%d" % car_idx
+		car.configure(lane, 170, 470, 190 + car_idx * 75, 1 if car_idx % 2 == 0 else -1)
+		world.add_child(car)
 
 
 ## Fixed opening puncture, after Town Fuel and before P2's turning. The story

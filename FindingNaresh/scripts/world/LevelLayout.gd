@@ -127,7 +127,7 @@ const PADS := [
 	{"pos": GAS_STATION, "radius": 14.0, "blend": 10.0},
 	{"pos": HOMESTEAD, "radius": 20.0, "blend": 12.0},
 	{"pos": BARN, "radius": 14.0, "blend": 10.0},
-	{"pos": P2_HOME, "radius": 16.0, "blend": 10.0},
+	{"pos": P2_HOME, "radius": 16.0, "blend": 10.0, "height_offset": 10.2, "driveway": true},
 	{"pos": TOWN_FUEL, "radius": 14.0, "blend": 10.0},
 	{"pos": NARESH_HOME, "radius": 18.0, "blend": 10.0},
 	{"pos": FISHING_VILLAGE, "radius": 30.0, "blend": 12.0},

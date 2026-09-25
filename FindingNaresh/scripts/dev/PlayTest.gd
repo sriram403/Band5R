@@ -19,7 +19,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "driveway", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
 
 
 func _ready() -> void:
@@ -221,19 +221,21 @@ func _run() -> void:
 		return
 	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "waterworks", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
-		all = ["tyre"] if boot.gym == "tyre" else (["house"] if boot.gym == "house" else ["gym"])
+		all = ["tyre"] if boot.gym == "tyre" else (["house"] if boot.gym == "house" else (["traffic"] if boot.gym == "traffic" else ["gym"]))
 	var selection := only
 	if selection == "quick" or selection == "gym_quick":
 		if boot.gym == "tyre":
 			all = ["tyre"]
 		elif boot.gym == "house":
 			all = ["house"]
+		elif boot.gym == "traffic":
+			all = ["traffic"]
 		else:
 			all = QUICK_GYM.duplicate() if boot.gym != "" else QUICK_WORLD.duplicate()
 		selection = ""
 	elif selection == "full":
 		if boot.gym != "":
-			all = ["tyre"] if boot.gym == "tyre" else (["house"] if boot.gym == "house" else QUICK_GYM.duplicate())
+			all = ["tyre"] if boot.gym == "tyre" else (["house"] if boot.gym == "house" else (["traffic"] if boot.gym == "traffic" else QUICK_GYM.duplicate()))
 		else:
 			all.insert(all.find("save"), "routes")
 		selection = ""
@@ -2153,6 +2155,91 @@ func t_house_world() -> void:
 		check(can.litres > 19.0, "Town Fuel fills an empty can")
 		p1().drop_held()
 	reset_can("station_can_empty", 0.0)
+
+
+func t_traffic() -> void:
+	var car := boot.world.get_node_or_null("GymTrafficCar") as TrafficCar
+	check(car != null and boot.gym == "traffic", "a town car loops on the traffic gym straight")
+	if car == null:
+		return
+	var road: Route = boot.builder.network.road("gym_straight")
+	var i := 145
+	var f := road.forward(i)
+	var left := -road.right(i)
+	var c := camper()
+	c.parking_brake = true
+	c.linear_velocity = Vector3.ZERO
+	c.angular_velocity = Vector3.ZERO
+	c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP),
+		road.point(i) + left * TrafficCar.LANE_OFFSET + Vector3.UP * 0.8)
+	c.reset_physics_interpolation()
+	await wait(14.0)
+	log_line("traffic blocked: index %.1f speed %.1f m/s, separation %.1f m" % [car.progress, car.speed, car.global_position.distance_to(c.global_position)])
+	check(car.waiting and car.speed < 1.0 and car.global_position.distance_to(c.global_position) > 3.0,
+		"the car keeps left and stops behind a parked van")
+	var stopped := car.progress
+	c.global_position = Vector3(0, 0.8, 30)
+	c.reset_physics_interpolation()
+	await wait(4.0)
+	check(car.progress > stopped + 3.0 and car.speed > 5.0,
+		"the car continues when the van clears the lane")
+	await shot("traffic_gym")
+
+
+func t_traffic_world() -> void:
+	var lane: Route = boot.builder.network.road("home_lane")
+	var cars: Array[TrafficCar] = []
+	for k in 4:
+		var car := boot.world.get_node_or_null("TownCar%d" % k) as TrafficCar
+		if car != null:
+			cars.append(car)
+	check(cars.size() == 4, "four cars patrol the town part of Homestead Lane")
+	if cars.size() < 4:
+		return
+	for car in cars:
+		var i := int(car.progress)
+		var offset := car.global_position - lane.point(i)
+		check(offset.dot(lane.right(i)) * float(car.direction) < -1.0,
+			"%s keeps to its left lane" % car.name)
+	var start := cars[0].global_position
+	await wait(3.0)
+	log_line("town traffic: %s speed %.1f waiting=%s progress %.1f" % [cars[0].global_position, cars[0].speed, cars[0].waiting, cars[0].progress])
+	check(cars[0].global_position.distance_to(start) > 5.0,
+		"the town cars move along the lane")
+
+
+func t_driveway() -> void:
+	var slab := boot.world.get_node_or_null("P2Driveway") as StaticBody3D
+	var house := boot.world.get_node_or_null("P2Home") as HouseInterior
+	check(slab != null and house != null, "P2's steep drive joins the lane to the house")
+	if slab == null or house == null:
+		return
+	var lane: Route = boot.builder.network.road("home_lane")
+	var nearest := lane.nearest(house.position.x, house.position.z)
+	var road := lane.point(int(nearest["index"]))
+	var front := house.position + house.basis * Vector3(0, 0, 4.8)
+	var grade := (front.y - road.y) / Vector2(front.x - road.x, front.z - road.z).length()
+	log_line("P2 driveway: grade %.1f%%, slab mid %.1f m, terrain mid %.1f m" % [grade * 100.0,
+		slab.global_position.y, Landscape.ground(slab.global_position.x, slab.global_position.z)])
+	check(grade > 0.18 and grade < 0.23, "P2's drive has about a 20% grade")
+	var c := camper()
+	c.parking_brake = true
+	c.linear_velocity = Vector3.ZERO
+	c.angular_velocity = Vector3.ZERO
+	c.global_transform = Transform3D(slab.global_basis, slab.global_position + Vector3.UP * 1.4)
+	c.reset_physics_interpolation()
+	await wait(2.5)
+	var parked := c.global_position
+	await wait(2.0)
+	check(c.global_position.distance_to(parked) < 0.15,
+		"the handbrake holds the van on P2's drive")
+	await face_point(p1(), slab.global_position + Vector3.UP * 1.0, 19.0, road - house.position)
+	await shot("p2_driveway")
+	c.set_parking_brake(false)
+	await wait(2.5)
+	check(c.global_position.distance_to(parked) > 1.5,
+		"the van rolls down P2's drive without the handbrake")
+	c.set_parking_brake(true)
 
 
 ## Door and rear-view mirrors; the nav screen swung over to the passenger.

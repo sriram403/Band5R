@@ -38,6 +38,7 @@ static var mounds: Array = []
 ## Level building pads: {pos: Vector3, radius, blend}. Buildings sit on them
 ## so yards are flat and props neither float nor sink.
 static var pads: Array = []
+static var driveways: Array = []
 ## Gyms replace the natural ground with their own shape (flat + test slopes).
 static var height_fn: Callable = Callable()
 ## The coastline as (x, z) points, south-going; the sea lies east of it. Empty
@@ -284,6 +285,7 @@ static func _grid_origin() -> float:
 ## road flush rather than fighting its cutting.
 static func set_pads(list: Array) -> void:
 	pads = []
+	driveways = []
 	for p in list:
 		var c: Vector3 = p["pos"]
 		var d := (p as Dictionary).duplicate()
@@ -292,7 +294,16 @@ static func set_pads(list: Array) -> void:
 			var near := network.nearest(c.x, c.z)
 			if float(near["dist"]) < float(p["radius"]) + float(p["blend"]) + 8.0:
 				d["height"] = float(near["height"])
+		d["height"] += float(p.get("height_offset", 0.0))
 		pads.append(d)
+		if bool(p.get("driveway", false)) and network != null:
+			var road := network.road("home_lane")
+			var nearest := road.nearest(c.x, c.z)
+			var a := road.point(int(nearest["index"]))
+			var toward := Vector2(a.x - c.x, a.z - c.z).normalized()
+			driveways.append({"a": Vector2(a.x, a.z),
+				"b": Vector2(c.x, c.z) + toward * 4.8,
+				"y0": a.y, "y1": float(d["height"])})
 
 
 static func _solve_grid() -> void:
@@ -431,6 +442,17 @@ static func _solve_grid() -> void:
 				var pr: float = pad["radius"]
 				if pd < pr + float(pad["blend"]):
 					h = lerpf(float(pad["height"]), h, smoothstep(pr, pr + float(pad["blend"]), pd))
+			for drive in driveways:
+				var a: Vector2 = drive["a"]
+				var b: Vector2 = drive["b"]
+				if x < minf(a.x, b.x) - 6.0 or x > maxf(a.x, b.x) + 6.0 or z < minf(a.y, b.y) - 6.0 or z > maxf(a.y, b.y) + 6.0:
+					continue
+				var ab := b - a
+				var u := clampf((Vector2(x, z) - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+				var across := (Vector2(x, z) - (a + ab * u)).length()
+				if across < 5.5:
+					var target_h := lerpf(float(drive["y0"]), float(drive["y1"]), u) - 0.05
+					h = lerpf(target_h, h, smoothstep(2.2, 5.5, across))
 			grid_h[k] = h
 
 
