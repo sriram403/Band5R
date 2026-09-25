@@ -178,6 +178,7 @@ func _spawn_players() -> void:
 		var cam := Camera3D.new()
 		cam.name = "Cam%d" % (i + 1)
 		cam.fov = FOV_SIDE_BY_SIDE
+		p.base_fov = FOV_SIDE_BY_SIDE
 		cam.near = 0.06
 		cam.far = 5000.0      # across the 4 km map to the backdrop ridges and the sea horizon
 		cam.cull_mask = PlayerRig.cull_mask_for(i)
@@ -650,6 +651,7 @@ func _set_layout(l: int) -> void:
 	elif l == Layout.SOLO:
 		f = FOV_SOLO
 	for p in players:
+		p.base_fov = f        # the rig sets cam.fov every frame (binocular zoom)
 		if p.cam:
 			p.cam.fov = f
 

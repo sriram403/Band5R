@@ -9,8 +9,8 @@ being built and tested), so this always shows where the work is right now.
 - Milestone D started (2026-09-25). You approved the way-out plan and the
   creature page with every recommended answer (see "Decisions" at the end of
   `design/WAY_OUT.md` and `design/CREATURES.md`).
-- Working on: D1, the tagging gym. Built and its 21 checks pass; the Quick
-  suite is running to check nothing else broke. Next: D2 binoculars.
+- D1 tagging done (Quick: 0 failures). D2 binoculars built, 18 checks pass;
+  Quick suite running. Next: D3 stealth gym.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -324,7 +324,7 @@ test was fixed and now restores its starting layout before the pad test.
       at the ridge lookout and Last Fuel; one brief lorry; first ghat attack always,
       once; white smoke when taken; a faint trail for the partner; the box is in;
       controls tag T / MMB / pad RT, zoom and peek RMB / pad LT
-- [~] D1. Tagging gym (`--gym=tagging`, `GYM=tagging tools/run_test.sh tagging`)
+- [x] D1. Tagging gym (`--gym=tagging`, `GYM=tagging tools/run_test.sh tagging`)
   - [x] `tag` action: T, middle mouse, pad RT (triggers read as buttons past
         halfway, `InputDevice.TRIGGERS`); on foot and from the passenger seat,
         never the driver (the pad's RT is the throttle)
@@ -342,9 +342,19 @@ test was fixed and now restores its starting layout before the pad test.
         the spot with ~17 px text, checked at 10, 25 and 150 m in split view
   - [x] `t_tagging`: 21 checks pass (key, mouse, pad, reach, one per player,
         both views, follow, arrows, driver/passenger, fade), 8.6 s
-  - [~] Quick suite with the tagging gym added (running)
-- [ ] D2. Binoculars gym (`--gym=binoculars`): pick-up, hold to zoom 4x, signs
-      at known distances, smallest readable text; tagging while zoomed
+  - [x] Quick suite with the tagging gym added: 9 segments, 0 failures, no
+        script errors
+- [~] D2. Binoculars gym (`--gym=binoculars`)
+  - [x] `items/BinocularPickup.gd`: take them (E) and keep them; saved per player
+  - [x] Hold RMB / pad LT: eases to 4x in ~0.25 s, look speed / 4, a round
+        two-eyepiece view (`ui/BinocularView.gd`); hands free, not the driver
+  - [x] Tag reach 400 m while zoomed (200 m by eye)
+  - [x] Gym: signs at 50-400 m, each with 0.6 / 0.3 / 0.15 m codes. From the
+        shots: zoomed, letters of distance / 650 read; by eye distance / 170;
+        split screen needs ~1.35x. Written into DESIGN.md 6.1
+  - [x] `t_binoculars`: 18 checks pass first time, 14.3 s
+  - [x] Split view clipped the eyepieces at the sides; they now fit
+  - [~] Quick suite with the binocular gym added
 - [ ] D3. Stealth gym: crouch, cover, peek, the cardboard box, thrown lures
 - [ ] D4. Creature gym: sight, hearing, suspicion, taken = white smoke to a drop
       point, partner's trail, grace; the van attack (leak, engine, puncture), tarp

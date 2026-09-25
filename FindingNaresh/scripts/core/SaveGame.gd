@@ -60,7 +60,7 @@ static func collect(boot: Node) -> Dictionary:
 	var players := []
 	for p in boot.players:
 		players.append({"pos": _v(p.global_position), "yaw": p.yaw, "pitch": p.pitch,
-			"torch_seconds": p.flashlight_seconds, "torch_on": p.flashlight.visible,
+			"torch_seconds": p.flashlight_seconds, "torch_on": p.flashlight.visible, "binoculars": p.has_binoculars,
 			"seat": p.seat_role if p.seat != null else ""})
 	var stowed := {}
 	for i in c.storage_slots.size():
@@ -216,6 +216,7 @@ static func apply(boot: Node, d: Dictionary) -> void:
 		p.yaw = float(e.get("yaw", 0.0))
 		p.pitch = float(e.get("pitch", 0.0))
 		p.flashlight_seconds = float(e.get("torch_seconds", p.flashlight_seconds))
+		p.has_binoculars = bool(e.get("binoculars", p.has_binoculars))
 		p.flashlight.visible = bool(e.get("torch_on", false)) and p.flashlight_seconds > 0.0
 		p.beam.visible = p.flashlight.visible
 		p.velocity = Vector3.ZERO

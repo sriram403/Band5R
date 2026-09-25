@@ -27,6 +27,7 @@ const PITCH_LIMIT := deg_to_rad(85.0)
 const SEATED_EYE := 0.62
 const SEATED_PITCH := deg_to_rad(-5.0)   ## settle slightly down the road, not at the roof
 const EXIT_MAX_SPEED := 2.5              ## m/s; the doors stay shut above a crawl
+const BINOCULAR_ZOOM := 4.0              ## magnification while zoom is held
 
 var index := 0
 var dev: InputDevice
@@ -73,6 +74,9 @@ var knocked_t := 0.0                   ## > 0 while tumbling after being hit by 
 var _tumble_spin := 0.0
 var _knock_van: PhysicsBody3D = null   ## no collision with it until we are clear of it
 var _pose_stand := {}                  ## avatar part name -> standing transform
+var has_binoculars := false
+var zoom := 1.0                        ## current magnification (eases to BINOCULAR_ZOOM)
+var base_fov := 78.0                   ## the layout's field of view, set by Boot
 
 
 func _ready() -> void:
@@ -258,12 +262,17 @@ func _physics_process(delta: float) -> void:
 ## interpolated transforms, so movement and driving are smooth too.
 func _process(delta: float) -> void:
 	if dev != null and not get_tree().paused:
+		var want := BINOCULAR_ZOOM if can_zoom() and dev.held("zoom") else 1.0
+		zoom = lerpf(zoom, want, 1.0 - exp(-delta * 14.0))
+		if absf(zoom - want) < 0.01:
+			zoom = want
 		if map_open and paper_map != null:
 			paper_map.move_cursor(dev.cursor_delta(delta))
 		else:
 			_look(delta)
 	if cam == null:
 		return
+	cam.fov = rad_to_deg(2.0 * atan(tan(deg_to_rad(base_fov) * 0.5) / zoom))
 	var xf: Transform3D
 	if seat != null:
 		var sx := seat.get_global_transform_interpolated()
@@ -276,7 +285,7 @@ func _process(delta: float) -> void:
 
 
 func _look(delta: float) -> void:
-	var d := dev.look(delta)
+	var d := dev.look(delta) / zoom      # the view moves as far on screen, zoomed or not
 	if seat != null:
 		_seat_yaw = clampf(_seat_yaw - d.x, -SEAT_YAW_LIMIT, SEAT_YAW_LIMIT)
 	else:
@@ -524,6 +533,14 @@ func _scan() -> void:
 		(target.get_meta("hold_fn") as Callable).call(self, get_physics_process_delta_time())
 
 
+# --- binoculars ----------------------------------------------------------------
+
+## Hands free, on foot or as the passenger, nothing else open.
+func can_zoom() -> bool:
+	return has_binoculars and held == null and not map_open and not journal_open and not phone_open \
+		and knocked_t <= 0.0 and seat_role != "driver"
+
+
 # --- tagging -------------------------------------------------------------------
 
 ## On foot or from the passenger seat. The driver's RT is the throttle.
@@ -537,7 +554,7 @@ func can_tag() -> bool:
 func tag_look() -> TagMarker:
 	var xf := head.global_transform
 	var from := xf.origin
-	var to := from - xf.basis.z * TagMarker.RANGE
+	var to := from - xf.basis.z * (TagMarker.RANGE_ZOOMED if zoom > 2.0 else TagMarker.RANGE)
 	var space := get_world_3d().direct_space_state
 	var ex: Array[RID] = [get_rid()]
 	if held != null:

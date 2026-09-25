@@ -12,12 +12,17 @@ extends LevelBuilder
 ## More gyms (tagging, hiding, creatures, Naresh, storm) are added as those
 ## mechanics are built; each one starts as a copy of `base`.
 
-const GYMS := ["base", "tyre", "house", "traffic", "tagging"]
+const GYMS := ["base", "tyre", "house", "traffic", "tagging", "binoculars"]
 ## Tagging gym: [distance m, bearing degrees right of straight ahead] for each
 ## board, fanned out so no board hides another. The last one is past
 ## TagMarker.RANGE and must not take a tag.
 const TAG_BOARDS := [[10, -30.0], [25, -14.0], [50, 0.0], [100, 7.0], [150, 12.0], [220, 16.0]]
 const TAG_LANE := Vector3(20, 0, 40)      ## where the players stand, looking -Z
+## Binocular gym: [distance m, bearing degrees] for each reading sign. Every
+## sign carries three codes with letters 0.6, 0.3 and 0.15 m tall, so the
+## screenshots show the smallest text that can be read at each distance.
+const BINO_SIGNS := [[50, -12.0], [100, -4.0], [200, 3.0], [300, 8.0], [400, 12.0]]
+const BINO_TEXT := [0.6, 0.3, 0.15]
 const GRID_HALF := 120.0           ## measuring grid covers +-120 m around the centre
 ## Test slopes: [x centre, grade]. Each is a 20 m wide hump across the road loop's
 ## east side, rising for 50 m, so the van can be parked mid-slope.
@@ -83,6 +88,8 @@ func build() -> Node3D:
 		_traffic_gym()
 	if gym == "tagging":
 		_tagging_gym()
+	if gym == "binoculars":
+		_binocular_gym()
 	_world_edge()
 	_gym_spawns()
 	return world
@@ -220,6 +227,49 @@ func _tagging_gym() -> void:
 	poi["tag_crate"] = crate.position
 
 
+func _binocular_gym() -> void:
+	var board := ToonMat.make(Color(0.95, 0.94, 0.88))
+	var post := ToonMat.make(C_WOOD)
+	for spec in BINO_SIGNS:
+		var d := int(spec[0])
+		var a := deg_to_rad(float(spec[1]))
+		var at := TAG_LANE + Vector3(sin(a), 0, -cos(a)) * float(d)
+		at.y = _h(at.x, at.z)
+		var body := StaticBody3D.new()
+		body.name = "BinoSign%d" % d
+		body.set_meta("tag_name", "sign %d m" % d)
+		body.add_child(Build.box(Vector3(5.0, 3.2, 0.15), board, Vector3(0, 3.0, 0), Vector3.ZERO, "Board"))
+		body.add_child(_box_shape(Vector3(5.0, 3.2, 0.15), Transform3D(Basis(), Vector3(0, 3.0, 0))))
+		for sx in [-2.2, 2.2]:
+			body.add_child(Build.box(Vector3(0.15, 1.5, 0.15), post, Vector3(sx, 0.75, 0), Vector3.ZERO, "Post"))
+		var y := 4.1
+		for k in BINO_TEXT.size():
+			var h := float(BINO_TEXT[k])
+			# a 4-digit code per line, fixed per sign so screenshots can be read back
+			var code := "%04d" % ((d * 37 + k * 1013) % 10000)
+			var lab := Build.label3d(code, Vector3(0, y - h * 0.5, 0.09), Vector3.ZERO, h * 1.35, Color(0.08, 0.08, 0.1))
+			lab.name = "Code%d" % k
+			body.add_child(lab)
+			y -= h * 1.35 + 0.25
+		body.position = at
+		body.rotation.y = -a
+		world.add_child(body)
+		poi["bino_sign_%d" % d] = at + Vector3(0, 3.0, 0)
+	var pick := BinocularPickup.new()
+	pick.name = "GymBinoculars"
+	pick.tag = "gym_binoculars"
+	world.add_child(pick)
+	pick.position = TAG_LANE + Vector3(-2.5, 0.0, -1.5)
+	pick.position.y = _h(pick.position.x, pick.position.z) + 0.9
+	var table := StaticBody3D.new()
+	table.name = "BinoTable"
+	table.add_child(Build.box(Vector3(0.9, 0.9, 0.6), ToonMat.make(C_WOOD), Vector3(0, 0.45, 0), Vector3.ZERO, "Table"))
+	table.add_child(_box_shape(Vector3(0.9, 0.9, 0.6), Transform3D(Basis(), Vector3(0, 0.45, 0))))
+	table.position = pick.position - Vector3(0, 0.9, 0)
+	world.add_child(table)
+	poi["gym_binoculars"] = pick.position
+
+
 func _gym_spawns() -> void:
 	camper_spawn = Transform3D(Basis(), Vector3(0, 0.8, 30))
 	if gym == "tyre":
@@ -230,6 +280,6 @@ func _gym_spawns() -> void:
 		var pos := Vector3(-6.0 - k * 2.0, 0.25, 40.0)
 		if gym == "house" and k == 1:
 			pos = poi["house_kitchen"]
-		if gym == "tagging":
+		if gym == "tagging" or gym == "binoculars":
 			pos = TAG_LANE + Vector3(-1.0 + k * 2.0, 0.25, 0)
 		player_spawns.append(Transform3D(Basis.looking_at(Vector3(0, 0, -1), Vector3.UP), pos))

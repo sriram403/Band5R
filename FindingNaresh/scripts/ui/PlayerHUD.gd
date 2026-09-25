@@ -9,6 +9,7 @@ var camper: Camper
 
 var _crosshair: Control
 var _arrows: Control
+var binoculars: BinocularView
 ## tag owner index -> where its edge arrow was last drawn (tests read this)
 var tag_arrow_at := {}
 var _prompt: Label
@@ -40,6 +41,10 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	camper = van
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# the view through binoculars, under everything else on the HUD
+	binoculars = BinocularView.new()
+	add_child(binoculars)
 
 	# arrows at the screen edge towards tags that are out of view
 	_arrows = Control.new()
@@ -234,6 +239,7 @@ func _process(delta: float) -> void:
 		else:
 			_objective_hint.text = "(hold %s for a hint)" % (d.glyph("hint") if d else "H")
 	_arrows.queue_redraw()
+	binoculars.amount = clampf(player.zoom - 1.0, 0.0, 1.0)
 	var seated := player.seat != null
 	_update_hint(delta, seated)
 	_gauges.visible = seated
@@ -325,6 +331,8 @@ func _update_hint(delta: float, seated: bool) -> void:
 				"foot": text = "WASD move · Mouse look · Shift sprint · Space jump · F flashlight · E use · LMB throw · T tag · M map"
 				"driver": text = "W go · S brake/reverse · A/D steer · Space handbrake · X engine · L lights · N swing the nav"
 				_: text = "Mouse look around · T tag · N swing the nav to you · L lights · C swap seats when stopped"
+	if text != "" and player.has_binoculars and ctx != "driver":
+		text += " · %s binoculars" % d.glyph("zoom")
 	_hint.text = text
 
 

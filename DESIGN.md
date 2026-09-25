@@ -102,6 +102,20 @@ minutes (up to ~3 hours is fine); pacing and fun matter, not length.
 7. **Art at the end** (polish stage in `FUTURE.md`); layout, scale and sightlines are
    what must be right during greybox.
 
+### 6.1 Metrics fixed in gyms
+
+| Mechanic | Metric | Value | Gym |
+|---|---|---|---|
+| Tagging | reach (naked eye) | 200 m | tagging |
+| Tagging | life / fade | 20 s, last 3 s fading; one tag per player | tagging |
+| Tagging | marker size | pin ~36 px, text ~17 px at 1080p, whatever the distance | tagging |
+| Tagging | reach through binoculars | 400 m | binoculars |
+| Binoculars | zoom | 4x (hold RMB / LT; look speed / 4); hands free, not the driver | binoculars |
+| Binoculars | readable letters, full screen | height >= distance / 650 (0.15 m at 100 m, 0.3 m at 200 m, 0.6 m at 400 m) | binoculars |
+| Naked eye | readable letters, full screen | height >= distance / 170 (0.6 m at 100 m) | binoculars |
+| Split screen | text size | ~1.35x larger than full screen for the same read | binoculars |
+| Puzzle rule | a code meant for binoculars only | letters between distance / 450 and distance / 250 (readable zoomed in split view, never by eye) | binoculars |
+
 ## 7. Decisions (2026-09-24)
 
 - **Map:** about 4 x 4 km, terrain split into chunks.

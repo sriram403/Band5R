@@ -19,7 +19,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
-const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"]}
+const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic"], "tagging": ["tagging"], "binoculars": ["binoculars"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
 const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "driveway", "audio", "dev", "mirrors", "map", "story", "waterworks", "climb", "carry", "look", "pad", "perf", "save"]
 
@@ -2310,6 +2310,123 @@ func t_tagging() -> void:
 		check((mf.get_node("Icon") as Sprite3D).modulate.a < 0.7, "a tag fades out at the end of its life")
 		await wait(TagMarker.FADE)
 		check(TagMarker.of(0) == null, "and is gone after %d s" % int(TagMarker.LIFE))
+
+
+## The tan-ratio between a zoomed and an unzoomed vertical field of view.
+func fov_ratio(zoomed_deg: float, base_deg: float) -> float:
+	return tan(deg_to_rad(base_deg) * 0.5) / tan(deg_to_rad(zoomed_deg) * 0.5)
+
+
+## Binocular gym: take them, zoom 4x, read signs, tag through them.
+func t_binoculars() -> void:
+	var b := boot.builder as GymBuilder
+	check(b != null and boot.gym == "binoculars" and boot.world.get_node_or_null("BinoSign400") != null,
+		"the binocular gym has reading signs out to 400 m")
+	if b == null:
+		return
+	var p := p1()
+	check(not p.has_binoculars, "nobody starts with binoculars")
+	# without binoculars the right mouse button does nothing
+	mouse_button(MOUSE_BUTTON_RIGHT, true)
+	await wait(0.4)
+	check(p.zoom == 1.0, "no binoculars, no zoom")
+	mouse_button(MOUSE_BUTTON_RIGHT, false)
+	# take them off the table
+	await face_point(p, b.poi["gym_binoculars"], 1.4, Vector3(0.3, 0, 1))
+	await wait(0.1)
+	log_line("prompt at the table: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await physics_frames(3)
+	check(p.has_binoculars and boot.world.get_node_or_null("GymBinoculars") == null, "E takes the binoculars off the table")
+	# read each sign, without and with the zoom
+	var lane := GymBuilder.TAG_LANE
+	for spec in GymBuilder.BINO_SIGNS:
+		var d := int(spec[0])
+		var sign_at: Vector3 = b.poi["bino_sign_%d" % d]
+		var a := deg_to_rad(float(spec[1]))
+		await face_point(p, sign_at, float(d), Vector3(-sin(a), 0, cos(a)))
+		await wait(0.3)
+		if d == 100 or d == 300:
+			await shot("bino_%dm_eye" % d)
+		mouse_button(MOUSE_BUTTON_RIGHT, true)
+		await wait(0.6)
+		if d == 50:
+			log_line("zoomed: fov %.1f (base %.1f), zoom %.2f" % [p.cam.fov, p.base_fov, p.zoom])
+			check(absf(fov_ratio(p.cam.fov, p.base_fov) - PlayerRig.BINOCULAR_ZOOM) < 0.05, "holding the right mouse button zooms 4x")
+			check((boot.huds[0] as PlayerHUD).binoculars.visible, "the view goes round, like binoculars")
+		await shot("bino_%dm_zoom" % d)
+		# tag through them: 300 m and 400 m are past the naked-eye reach
+		if d >= 300:
+			await tap(KEY_T)
+			await physics_frames(2)
+			var m := TagMarker.of(0)
+			check(m != null and m.thing == "sign %d m" % d, "tagging through the binoculars reaches %d m" % d)
+		mouse_button(MOUSE_BUTTON_RIGHT, false)
+		await wait(0.5)
+	check(p.zoom == 1.0 and absf(p.cam.fov - p.base_fov) < 0.1, "letting go lowers them")
+	# naked eye at 300 m: out of reach
+	var s300: Vector3 = b.poi["bino_sign_300"]
+	await face_point(p, s300, 300.0, Vector3(-sin(deg_to_rad(8.0)), 0, cos(deg_to_rad(8.0))))
+	TagMarker.of(0).queue_free()
+	await physics_frames(2)
+	await tap(KEY_T)
+	await physics_frames(2)
+	check(TagMarker.of(0) == null, "without the zoom a 300 m sign is out of tag reach")
+	# looking around zoomed is 4x finer, so the view moves the same on screen
+	await place_player(p, lane + Vector3(-1, 0.25, 0), 0.0)
+	var y0 := p.yaw
+	mouse(Vector2(200, 0))
+	await wait(0.2)
+	var free_turn := absf(wrapf(p.yaw - y0, -PI, PI))
+	mouse_button(MOUSE_BUTTON_RIGHT, true)
+	await wait(0.6)
+	y0 = p.yaw
+	mouse(Vector2(200, 0))
+	await wait(0.2)
+	var zoom_turn := absf(wrapf(p.yaw - y0, -PI, PI))
+	mouse_button(MOUSE_BUTTON_RIGHT, false)
+	await wait(0.5)
+	log_line("200 px of mouse: %.2f deg free, %.2f deg zoomed" % [rad_to_deg(free_turn), rad_to_deg(zoom_turn)])
+	check(zoom_turn > 0.0 and absf(free_turn / zoom_turn - PlayerRig.BINOCULAR_ZOOM) < 0.3, "zoomed look is 4x finer")
+	# hands full: no binoculars
+	var crate := Crate.new()
+	crate.name = "BinoCrate"
+	boot.world.add_child(crate)
+	crate.global_position = p.global_position + Vector3(0, 1.0, -1.2)
+	await physics_frames(2)
+	p.pick_up(crate)
+	mouse_button(MOUSE_BUTTON_RIGHT, true)
+	await wait(0.4)
+	check(p.zoom == 1.0, "not with your hands full")
+	mouse_button(MOUSE_BUTTON_RIGHT, false)
+	p.drop_held()
+	# P2 on the pad: LT zooms once they have a pair; the driver cannot
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	var q := p2()
+	q.has_binoculars = true
+	await place_player(q, lane + Vector3(1, 0.25, 0), 0.0)
+	pad_axis(JOY_AXIS_TRIGGER_LEFT, 1.0)
+	await wait(0.6)
+	check(absf(q.zoom - PlayerRig.BINOCULAR_ZOOM) < 0.05, "P2's left trigger zooms")
+	check(p.zoom == 1.0, "and only P2's view")
+	await shot("bino_split")
+	pad_axis(JOY_AXIS_TRIGGER_LEFT, 0.0)
+	await wait(0.5)
+	var c := camper()
+	c.parking_brake = true
+	c.global_transform = Transform3D(Basis(), lane + Vector3(-6, 0.8, -4))
+	c.reset_physics_interpolation()
+	await wait(1.0)
+	q.enter_seat(c, c.seat_nodes["driver"], "driver")
+	await wait(0.2)
+	pad_axis(JOY_AXIS_TRIGGER_LEFT, 1.0)
+	await wait(0.5)
+	check(q.zoom == 1.0, "the driver's LT is the brake, not the binoculars")
+	pad_axis(JOY_AXIS_TRIGGER_LEFT, 0.0)
+	await wait(0.2)
+	q.force_exit = true
+	await physics_frames(3)
 
 
 func t_traffic() -> void:

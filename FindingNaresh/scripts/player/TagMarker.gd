@@ -12,6 +12,7 @@ const FADE := 3.0
 ## How far a tag reaches. Fixed in the tagging gym: the 150 m board is still a
 ## clear target at 1080p and the binoculars (4x) make 200 m useful.
 const RANGE := 200.0
+const RANGE_ZOOMED := 400.0       ## through the binoculars
 const MASK := 1 | 2 | 4 | 8 | Carryable.LAYER    ## world, players, interactables, van, items
 
 ## player index -> its live marker

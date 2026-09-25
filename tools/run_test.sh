@@ -29,6 +29,7 @@ if [ -n "$SHOW" ]; then
 			"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=opening_full $ARGS --show || exit $?
 		fi
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=tagging --gym=tagging $ARGS --show || exit $?
+		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=binoculars --gym=binoculars $ARGS --show || exit $?
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=traffic --gym=traffic $ARGS --show || exit $?
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=house --gym=house $ARGS --show || exit $?
 		"$DIR/run_game.sh" --resolution 1600x900 -- --playtest=tyre --gym=tyre $ARGS --show || exit $?
@@ -48,6 +49,7 @@ if [ -z "$GYM" ] && { [ -z "$1" ] || [ "$1" = quick ] || [ "$1" = full ]; }; the
 		"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=opening_full $ARGS "--refocus=${FG:-0}" || exit $?
 	fi
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=tagging --gym=tagging $ARGS "--refocus=${FG:-0}" || exit $?
+	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=binoculars --gym=binoculars $ARGS "--refocus=${FG:-0}" || exit $?
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=traffic --gym=traffic $ARGS "--refocus=${FG:-0}" || exit $?
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=house --gym=house $ARGS "--refocus=${FG:-0}" || exit $?
 	"$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- --playtest=tyre --gym=tyre $ARGS "--refocus=${FG:-0}" || exit $?
