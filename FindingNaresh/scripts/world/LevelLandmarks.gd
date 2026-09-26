@@ -378,7 +378,9 @@ func _lookout(at: Vector3, DECK_H := 6.0, nm := "Lookout", label := "PINE RIDGE\
 	poi[key + "_ramp_foot"] = root.transform * Vector3(0, 0, 2.6 + run + 1.5)
 	if key == "lookout":
 		# W4: the supply box by the ramp's foot, its code out across the valley
-		var box_at := root.transform * Vector3(-2.6, 0, 2.6 + run + 1.0)
+		# out in the open past the ramp's foot (beside it, its railing got in
+		# the way of the first dial), facing the tower
+		var box_at := root.transform * Vector3(0.0, 0, 2.6 + run + 5.5)
 		box_at.y = _h(box_at.x, box_at.z)
 		var relay := LookoutRelay.new()
 		relay.name = "LookoutRelay"

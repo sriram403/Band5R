@@ -21,7 +21,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
 const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "maze", "relay", "climb", "carry", "look", "pad", "teleports", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "maze", "relay", "relay_kb", "climb", "carry", "look", "pad", "teleports", "perf", "save"]
 
 
 func _ready() -> void:
@@ -233,7 +233,7 @@ func _run() -> void:
 		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
 		_finish()
 		return
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "maze", "relay", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -3455,6 +3455,31 @@ func t_relay() -> void:
 	var can: Node = boot.world.find_child("RelayFuel", true, false)
 	if can != null:
 		can.queue_free()
+
+
+## W4 as a player does it alone on the keyboard: a fresh box, E on each dial.
+func t_relay_kb() -> void:
+	var b: LevelBuilder = boot.builder
+	var relay := get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
+	var p := p1()
+	var boxn := relay.find_child("SupplyBox", true, false) as Node3D
+	var front := boxn.global_transform * Vector3(0, 0, -1.4)
+	await place_player(p, front + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.6)
+	log_line("fresh dials %s, code %s" % [str(relay.dials), str(relay.code)])
+	for k in 4:
+		var dial := relay.find_child("Dial%d" % k, true, false) as Node3D
+		await look_at_point(p, dial.global_position)
+		await wait(0.2)
+		var guard := 0
+		while relay.dials[k] != relay.code[k] and guard < 8:
+			log_line("dial %d: '%s' target %s" % [k, p.prompt_text, p.current_target.name if p.current_target else "none"])
+			await tap(KEY_E)
+			await wait(0.15)
+			guard += 1
+	await wait(0.5)
+	log_line("dials %s code %s opened %s equal %s" % [str(relay.dials), str(relay.code), relay.opened, relay.dials == relay.code])
+	check(relay.opened, "turned on the keyboard from fresh, the box opens")
 
 
 ## Stealth gym: the cardboard box ("that box moved"), peeking from cover, and

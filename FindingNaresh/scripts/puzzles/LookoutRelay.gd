@@ -128,6 +128,8 @@ func turn(k: int) -> void:
 	dials[k] = (dials[k] + 1) % SHAPES.size()
 	_show_dial(k)
 	Sfx.play3d("click", _dial_faces[k].global_position, -6.0)
+	# in the game's log (appdata/.../logs), to check a report against
+	print("[relay] dial %d -> %s; dials %s, code %s" % [k + 1, SHAPES[dials[k]], str(dials), str(code)])
 	if dials == code:
 		_open()
 

@@ -13,6 +13,12 @@ being built and tested), so this always shows where the work is right now.
   Now on the deck's bench and on a counter under the Last Fuel kiosk window,
   remembered in saves once taken; `t_relay` takes them with E. climb, tower,
   relay, teleports: 0 failures (Quick before the next push).
+- Your report: the lookout box didn't open with all four pictures right
+  (diamond, ring, circle, cross). Not reproduced: from a fresh game on the
+  keyboard it opens (new `t_relay_kb`). Found on the way: the box stood by
+  the ramp's foot and its railing blocked aiming at dial 1; moved 5 m out.
+  Each dial turn now goes to the game's log (`[relay]` lines in
+  appdata/FindingNaresh/logs) in case it happens again.
 - Barn maze: works; agreed for later (P1 in `notes/POLISH.md`): give the
   guide a job in the dust (a hay blower to stop + a plan of the maze).
 - Fixed from your report: the F1 menu rebuilt, safe teleports (Quick run
