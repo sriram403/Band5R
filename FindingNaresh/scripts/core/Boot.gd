@@ -106,10 +106,16 @@ func _ready() -> void:
 	add_child(story)
 	story.setup(self)
 	_set_layout(Layout.SOLO if devices[1].kind == InputDevice.Kind.KBM else Layout.SIDE_BY_SIDE)
+	# on its own layer above the players' HUDs, so nothing draws over it
+	var dev_layer := CanvasLayer.new()
+	dev_layer.name = "DevLayer"
+	dev_layer.layer = 100
+	dev_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(dev_layer)
 	dev_menu = DevMenu.new()
 	dev_menu.name = "DevMenu"
 	dev_menu.boot = self
-	add_child(dev_menu)
+	dev_layer.add_child(dev_menu)
 	if gym != "":
 		# straight in: no title menu in a gym
 		started = true

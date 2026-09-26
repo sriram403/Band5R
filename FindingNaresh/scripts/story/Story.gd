@@ -166,6 +166,18 @@ func skip() -> void:
 	objective_changed.emit()
 
 
+## Developer menu: straight to objective `i` (ends the opening if it's on).
+## Earlier objectives' flags are not faked: things they'd have set up (a
+## solved puzzle) stay as they are in the world.
+func jump_to(i: int) -> void:
+	if opening_mode:
+		opening_steps = [P1_OPENING.size(), P2_OPENING.size()]
+		flags["opening_skipped"] = true
+		_opening_update()
+	index = clampi(i, 0, objectives.size() - 1)
+	objective_changed.emit()
+
+
 func begin_opening() -> void:
 	opening_mode = true
 	opening_steps = [0, 0]

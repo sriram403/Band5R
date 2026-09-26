@@ -21,7 +21,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
 const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "maze", "relay", "climb", "carry", "look", "pad", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "maze", "relay", "climb", "carry", "look", "pad", "teleports", "perf", "save"]
 
 
 func _ready() -> void:
@@ -249,6 +249,7 @@ func _run() -> void:
 		else:
 			all.insert(all.find("save"), "routes")
 			all.insert(all.find("save"), "way_out")
+			all.insert(all.find("save"), "teleports")
 		selection = ""
 	# Scenarios outside a preset can still run by name.
 	if selection != "":
@@ -1890,55 +1891,113 @@ func t_fixes() -> void:
 	check(victim.eye_height > 1.3, "back on their feet, eyes at standing height")
 
 
-## The developer menu in the game world: F1, teleport by name, close.
+## The developer menu in the game world: F1 opens it (and pauses), the tabs
+## and keys, teleport by name, bring the van, skip in the opening, close.
 func t_dev() -> void:
 	var dm: DevMenu = boot.dev_menu
 	await tap(KEY_F1)
 	await physics_frames(2)
-	check(dm.open, "F1 opens the developer menu")
+	check(dm.open and get_tree().paused, "F1 opens the developer menu and pauses the game")
 	await shot("dev_menu")
-	dm._sel = 0
-	dm._place = dm.places().find("dock")
+	await tap(KEY_RIGHT)
+	check(dm.tab == DevMenu.TABS.find("Story"), "Right goes to the next tab")
+	await tap(KEY_LEFT)
+	check(dm.tab == DevMenu.TABS.find("Travel"), "Left goes back")
+	await tap(KEY_B)
+	var row: Dictionary = dm._rows[dm._sel[dm.tab]]
+	log_line("B jumps to: '%s'" % row["text"])
+	check(String(row["text"]).to_lower().begins_with("b"), "a letter jumps to the next place starting with it")
+	dm.select_place("dock")
 	await tap(KEY_ENTER)
 	await physics_frames(5)
 	var dock: Vector3 = boot.builder.poi["dock"]
 	var d := Vector2(p1().global_position.x - dock.x, p1().global_position.z - dock.z).length()
 	log_line("teleported to the dock: %.1f m away" % d)
-	check(d < 6.0, "the menu teleports both players to a named place")
+	check(d < 12.0 and p1().is_on_floor(), "the menu teleports both players to a named place (next to it, on their feet)")
 	# save slots are labelled by the nearest place, the new map's included
 	var here := SaveGame.nearest_place(boot, p1().global_position)
 	var p2h := SaveGame.nearest_place(boot, boot.builder.poi["p2_home"])
 	var nowhere := SaveGame.nearest_place(boot, Vector3(-1900, 0, -1900))
 	log_line("save labels: dock '%s', P2's home '%s', far corner '%s'" % [here, p2h, nowhere])
 	check(here == "Mirror Lake" and p2h == "P2's house" and nowhere == "on the road", "save slots name the place you saved at")
-	await tap(KEY_DOWN)
+	dm.set_tab(DevMenu.TABS.find("Van"))
+	dm.select_action("van_here")
 	await tap(KEY_ENTER)
 	await physics_frames(10)
 	var vd := camper().global_position.distance_to(p1().global_position)
 	log_line("van brought: %.1f m from P1" % vd)
-	check(vd < 12.0 and camper().parking_brake, "the menu brings the van, handbrake on")
+	check(vd < 16.0 and camper().parking_brake, "the menu brings the van, handbrake on")
 	# skip: during the opening it skips the rest of the opening (it used to
 	# only move the chain on underneath, so the opening's step never changed)
 	var st: Story = boot.story
 	var story_was := st.to_dict()
 	var map_was: Dictionary = boot.map_state.to_dict()
 	st.begin_opening()
+	dm.set_tab(DevMenu.TABS.find("Story"))
 	await physics_frames(2)
 	log_line("in the opening: '%s'" % st.objective_text(0))
-	dm._sel = dm.items().map(func(it): return it[1]).find("skip")
+	dm.select_action("skip")
 	await tap(KEY_ENTER)
 	await physics_frames(3)
 	log_line("after skip: '%s' (opening %s)" % [st.objective_text(0), st.opening_mode])
 	check(not st.opening_mode and st.current()["id"] == "to_windmill", "skip during the opening ends it: next, drive to the windmill")
+	dm.select_action("skip")
 	await tap(KEY_ENTER)
 	await physics_frames(3)
 	check(st.current()["id"] == "windmill" and st.objective_text(0).contains("jammed"), "skip again: the windmill is jammed")
+	# jump straight to an objective from the list
+	for i in dm._rows.size():
+		if dm._rows[i]["action"] == "jump" and dm._rows[i]["arg"] == st.index_of("to_bridge"):
+			dm._select(i, true)
+	await tap(KEY_ENTER)
+	await physics_frames(3)
+	check(st.current()["id"] == "to_bridge", "pick any objective in the Story tab and jump to it")
 	st.from_dict(story_was)
 	boot.map_state.from_dict(map_was)
 	await tap(KEY_F1)
 	await physics_frames(2)
-	check(not dm.open, "F1 closes it again")
+	check(not dm.open and not get_tree().paused, "F1 closes it again and the game carries on")
 	await place_player(p1(), boot.builder.player_spawns[0].origin, 0.0)
+
+
+## Every place in the developer menu's Travel list: both players land standing
+## on something (a floor, a deck, the ground), not inside a building or under
+## the map. (The barn used to drop you under the map.)
+func t_teleports() -> void:
+	var dm: DevMenu = boot.dev_menu
+	var st: Story = boot.story
+	var story_was := st.to_dict()
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	var mood_was := mood.value
+	var keys: Array = []
+	for sec in DevMenu.PLACES:
+		for e in sec[1]:
+			if boot.builder.poi.has(e[0]):
+				keys.append(e[0])
+	var bad: Array = []
+	for key in keys:
+		dm.teleport_to(key)
+		await wait(0.7)
+		var at: Vector3 = boot.builder.poi[key]
+		for p in boot.players:
+			var pp: Vector3 = (p as Node3D).global_position
+			var ok: bool = (p as PlayerRig).is_on_floor() and pp.y > Landscape.ground(pp.x, pp.z) - 0.5 and Vector2(pp.x - at.x, pp.z - at.z).length() < 35.0
+			if not ok:
+				log_line("  %s: search %s" % [key, str(dm.last_search)])
+				bad.append("%s (P%d at %s, ground %.1f)" % [key, (p as PlayerRig).index + 1, pp, Landscape.ground(pp.x, pp.z)])
+	log_line("teleported to %d places; bad: %s" % [keys.size(), str(bad)])
+	check(bad.is_empty(), "every Travel place puts both players on their feet (%d places)" % keys.size())
+	# leave the session as it was: the story, the mood, the watchtower's creature
+	st.from_dict(story_was)
+	mood.set_now(mood_was)
+	var cw := get_tree().get_first_node_in_group("coast_watch") as CoastWatch
+	if cw != null and cw.creature != null:
+		cw.creature.queue_free()
+		cw.creature = null
+	for tk in get_tree().get_nodes_in_group("taken"):
+		(tk as Taken).cancel()
+	await place_player(p1(), boot.builder.player_spawns[0].origin, 0.0)
+	await place_player(p2(), boot.builder.player_spawns[0].origin + Vector3(2, 0, 0), 0.0)
 
 
 ## The base gym: flat measured ground, test slopes, props, the dev menu.

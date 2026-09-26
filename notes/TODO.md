@@ -6,16 +6,10 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Milestone D built, tested (Full 525 checks, 1 fixed; Quick 436, 0
-  failures) and **pushed at your request (2026-09-26, main `43df9fa`)**. Your
-  own test is still to come: you checked the windmill ("like it"); the rest
-  of `notes/TEST_MILESTONE_D.md` is open.
-- Working mode while you're away (your instruction, 2026-09-26): build the
-  milestones one after another, test each fully, write
-  `notes/TEST_MILESTONE_<X>.md`, push, move on. If you message in between,
-  back to one milestone at a time with your approval.
-- Next: [ ] Milestone E (Bessi beach and Naresh), plan below. Start with the
-  Naresh gym.
+- You're testing Milestone D one puzzle at a time (you're back, so one step
+  at a time again). Windmill: liked, no changes. Next: the barn maze.
+- Fixed from your report: the F1 menu rebuilt, safe teleports (Quick run
+  Quick 443 checks, 0 failures; not pushed yet).
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -629,6 +623,19 @@ test was fixed and now restores its starting layout before the pad test.
         chain underneath; the opening's own steps never changed). Now it skips
         the whole opening to "drive to the windmill" (`Story.skip()`); `dev`
         checks it; dev/map/story/windmill rerun 0 failures
+  - [x] Your report: teleporting to the barn dropped you under the map (the
+        teleport landed you inside the barn's walls: it used the place's
+        centre). The F1 menu is rebuilt: a centred window on its own layer,
+        tabs (Travel / Story / Van / Spawn / World / Gyms), mouse and keys,
+        a details panel, the places named and in journey order, jump to any
+        objective, the game paused while it's open. Teleports look outwards
+        for somewhere to stand (floor, deck or ground with room above; not
+        the sea) and face you to the place. New `teleports` test: all 42
+        places put both players on their feet. (First try found the barn,
+        the homestead and the far bank: inland ground is below sea level
+        there and the sea check threw every spot out; now it's the sea side
+        of the coast only)
+  - [x] Quick: 443 checks, 0 failures
   - [ ] Your test and approval, then push
 
 ## Milestone E: Bessi beach and Naresh
