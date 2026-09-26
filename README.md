@@ -203,10 +203,11 @@ every fix. What it found and what changed:
 Run the windowed play-test behind your other windows:
 
 ```
-tools/run_test.sh                  (Quick: opening, P2 walked on foot, the gyms + world checks, ~7 min)
+tools/run_test.sh                  (Smoke: base gym controls + one short world check per system, ~2.5 min)
+tools/run_test.sh ghat,ghat_menu   (just these scenarios: after a fix, the ones for the change)
+tools/run_test.sh set:puzzles      (one area: set:opening / gyms / puzzles / creatures / driving / world)
+tools/run_test.sh full             (Full: everything, before a push or a hand-over; GitHub runs it on every push)
 python tools/gen/layout_check.py  (Road check when roads or hills change, ~2 s)
-tools/run_test.sh full             (Full: all checks, the whole opening played through, long drives, ~40 min)
-tools/run_test.sh drive,map        (selected world scenarios)
 SHOW=1 tools/run_test.sh drive     (on screen, with sound, to watch it)
 ```
 
@@ -215,10 +216,11 @@ windows and hands focus back to whatever you were using (about 3 seconds). It is
 muted and never grabs the mouse. Click it or its taskbar button to watch (sound comes
 on while it has focus); click anything else and it goes back behind. Keys you press
 while it has focus reach the game and can fail a check; that scenario is just re-run. It prints `PASS`/`FAIL`
-lines, per-scenario times, and `_shots/test_*.png`. Quick runs the existing
-mechanic checks on the base gym, then teleports around the real world to check
-its map, story, water works, visuals, controller and save/load. Full retains the
-older broad checks and drives every route.
+lines, per-scenario times, and `_shots/test_*.png`. The plans (which game
+process runs which scenarios) are in `tools/test_plan.sh`, shared with the
+headless runner: while working, run the scenarios for the change, then smoke;
+the long playthroughs (the opening, the puzzles, the drives) are in the sets and
+in full.
 
 ## What is in this build
 
@@ -336,8 +338,8 @@ run gives the same result on any machine. It needs the Linux build of Godot 4.7.
 (`tools/godot/Godot_v4.7.1-stable_linux.x86_64`, or set `GODOT=`):
 
 ```
-tools/run_test_headless.sh                 Quick gym + world checks
-tools/run_test_headless.sh full            Full suite
+tools/run_test_headless.sh                 smoke
+tools/run_test_headless.sh full            everything (what GitHub runs)
 tools/run_test_headless.sh waterworks      one scenario
 GYM=base tools/run_test_headless.sh        the base gym
 ```

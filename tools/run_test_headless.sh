@@ -3,8 +3,8 @@
 # CI). Same scenarios as tools/run_test.sh, but screenshots are skipped and
 # frame rates are only logged, so this checks logic and physics, not looks.
 # Simulated time is fixed at 60 fps, so a run is repeatable on any machine.
-#   tools/run_test_headless.sh               quick gym + world checks
-#   tools/run_test_headless.sh full          full suite including long drives
+#   tools/run_test_headless.sh               smoke (base gym + short world checks)
+#   tools/run_test_headless.sh full          everything (the plans: tools/test_plan.sh)
 #   tools/run_test_headless.sh drive,brake   some scenarios
 #   GYM=base tools/run_test_headless.sh      in a gym instead of the world
 # Godot: $GODOT, else tools/godot/Godot_v4.7.1-stable_linux.x86_64, else
@@ -17,15 +17,20 @@ if [ -z "$GODOT" ]; then
 	echo "No Linux Godot 4.7.1 found: set GODOT=/path/to/godot" >&2
 	exit 2
 fi
-if [ -z "$GYM" ] && { [ -z "$1" ] || [ "$1" = quick ] || [ "$1" = full ]; }; then
-	"$0" opening || exit $?
-	"$0" opening_save || exit $?
-	"$0" opening_p2 || exit $?
-	if [ "$1" = full ]; then "$0" opening_full || exit $?; fi
-	GYM=traffic "$0" traffic || exit $?
-	GYM=house "$0" house || exit $?
-	GYM=tyre "$0" tyre || exit $?
-	GYM=base "$0" gym_quick || exit $?
+# A plan (smoke, set:..., full; tools/test_plan.sh) is one game process per
+# line: run each as a segment of its own.
+if [ -z "$SEGMENT" ]; then
+	. "$MPG/tools/test_plan.sh"
+	NL='
+'
+	OLD_IFS=$IFS
+	IFS=$NL
+	for line in $(test_plan "$1"); do
+		IFS=$OLD_IFS
+		SEGMENT=1 GYM="${line%%|*}" "$0" "${line#*|}" || exit $?
+		IFS=$NL
+	done
+	exit 0
 fi
 DATA="$MPG/tools/_headless_data"
 export XDG_DATA_HOME="$DATA/data" XDG_CONFIG_HOME="$DATA/config" XDG_CACHE_HOME="$DATA/cache"
@@ -34,9 +39,7 @@ mkdir -p "$DATA"
 if [ ! -d "$MPG/FindingNaresh/.godot" ]; then
 	"$GODOT" --headless --path "$MPG/FindingNaresh" --import >/dev/null 2>&1
 fi
-ARG="--playtest"
-[ -n "$1" ] && ARG="--playtest=$1"
-if [ -z "$1" ]; then ARG="--playtest=quick"; fi
+ARG="--playtest=${1:-quick}"
 EXTRA=""
 [ -n "$GYM" ] && EXTRA="--gym=$GYM"
 LOG="${LOG:-$MPG/tools/_last_playtest.log}"

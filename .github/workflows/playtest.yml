@@ -19,7 +19,7 @@ env:
 jobs:
   playtest:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
 
@@ -49,12 +49,9 @@ jobs:
         run: |
           ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 --headless --path FindingNaresh --import 2>&1 | tail -3
 
-      - name: Play-test, the world (all default scenarios)
-        run: GODOT=~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 tools/run_test_headless.sh
-
-      - name: Play-test, the base gym
-        if: always()
-        run: LOG=tools/_gym_playtest.log GYM=base GODOT=~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 tools/run_test_headless.sh
+      # the full regression suite runs here, so it never holds up work on the PC
+      - name: Play-test, everything (tools/test_plan.sh "full")
+        run: TIMEOUT=3600 GODOT=~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 tools/run_test_headless.sh full
 
       - name: Keep the log
         if: always()
@@ -63,4 +60,3 @@ jobs:
           name: playtest-logs
           path: |
             tools/_last_playtest.log
-            tools/_gym_playtest.log

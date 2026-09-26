@@ -20,6 +20,11 @@ var headless := DisplayServer.get_name() == "headless"
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
 const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
+## Smoke (tools/run_test.sh with no arguments, ~3 min): the controls in the
+## base gym and one short world check per system. The long playthroughs are
+## in the sets and in full (tools/test_plan.sh).
+const SMOKE_GYM := ["mouse", "taps", "enter", "cockpit", "exit", "swap"]
+const SMOKE_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "audio", "dev", "mirrors", "map", "story", "power", "relay_kb", "climb", "look", "pad", "perf", "save"]
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
 const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "climb", "carry", "look", "pad", "teleports", "perf", "save"]
 
@@ -237,7 +242,10 @@ func _run() -> void:
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
-	if selection == "quick" or selection == "gym_quick":
+	if selection == "smoke":
+		all = SMOKE_GYM.duplicate() if boot.gym != "" else SMOKE_WORLD.duplicate()
+		selection = ""
+	elif selection == "quick" or selection == "gym_quick":
 		if GYM_SCENARIOS.has(boot.gym):
 			all = GYM_SCENARIOS[boot.gym].duplicate()
 		else:
@@ -248,6 +256,10 @@ func _run() -> void:
 			all = GYM_SCENARIOS.get(boot.gym, QUICK_GYM).duplicate()
 		else:
 			all.insert(all.find("save"), "routes")
+			# the world checks that were only in the old Quick list
+			for extra in ["roadworks", "house_world", "traffic_world", "mood", "driveway"]:
+				if not extra in all:
+					all.insert(all.find("save"), extra)
 			all.insert(all.find("save"), "way_out")
 			all.insert(all.find("save"), "teleports")
 		selection = ""
@@ -667,6 +679,7 @@ func pad_tap(b: JoyButton) -> void:
 
 
 func t_pad() -> void:
+	camper().repair_all()         # a healthy van, whatever the scenarios before did to it
 	for pl in boot.players:
 		if pl.seat != null:
 			pl.force_exit = true
@@ -726,6 +739,8 @@ func t_pad() -> void:
 	if c.engine_on:
 		c.toggle_engine()
 	await pad_tap(JOY_BUTTON_DPAD_UP)
+	if not c.engine_on:
+		log_line("engine didn't start: battery %.2f fuel %.1f lockout %s tarp %s; note '%s'" % [c.battery, c.fuel, c.heat_lockout, c.attack.tarped, boot.huds[1]._note_text.text if boot.huds.size() > 1 else ""])
 	check(c.engine_on, "D-pad up starts the engine")
 	pad_axis(JOY_AXIS_TRIGGER_RIGHT, 1.0)
 	await wait(3.0)
@@ -1144,6 +1159,7 @@ func t_story() -> void:
 	if p.seat != null:
 		p.force_exit = true
 		await physics_frames(3)
+	camper().fuel = 26.0          # as a new game: low, so the spare can matters (the dev menu's fix fills it)
 	await wait(0.5)
 	log_line("objective at start: '%s'" % st.objective_text())
 	check(st.current()["id"] == "read_letter", "the first objective is to read the letter")
@@ -5425,6 +5441,7 @@ func t_swap() -> void:
 
 
 func t_perf() -> void:
+	camper().repair_all()
 	await reset_camper(6)
 	await seat_p1_driver()
 	var c := camper()

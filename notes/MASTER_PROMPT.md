@@ -321,8 +321,17 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 5. The automated play-test (your main tool)
 
-- Run: `tools/run_test.sh` (Quick, ~4.5 min), `tools/run_test.sh full`
-  (~33.5 min), or `tools/run_test.sh name1,name2` (selected world scenarios). The window
+- **Test levels (user, 2026-09-26), like a professional team:** while fixing,
+  run only the scenarios for the change (`tools/run_test.sh a,b`, seconds to
+  a minute or two); then **smoke** (`tools/run_test.sh`, ~2.5 min: base gym
+  controls + one short world check per system); an **area set** when a whole
+  area changed (`set:opening / gyms / puzzles / creatures / driving / world`,
+  3-6 min each); **full** (`tools/run_test.sh full`) before a push or a
+  hand-over, and GitHub runs full on every push. Don't rerun the opening or
+  the long playthroughs for an unrelated fix. The plans live in
+  `tools/test_plan.sh` (shared with the headless runner); `SMOKE_GYM` /
+  `SMOKE_WORLD` in `PlayTest.gd`. Scenarios named on the command line run in
+  the `all` list's order, not the order typed; the window
   starts at the screen edge, then PlayTest moves it BEHIND all windows and hands focus
   back (run_test.sh passes the user's window as --refocus); muted unless focused, no
   mouse grab. The user asked for this: runs must not cover what they are doing, but
@@ -340,7 +349,7 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 - Every scenario starts via `fresh_hands()` (empty hands, map/journal closed). Order
   matters: `map` runs early because others reveal the map. The `save` scenario reloads
   the scene; the test resumes in `t_save_verify` through static `PlayTest.resume`.
-- **Three test levels (done 2026-09-25):** Quick (default, ~4.5 min): basic
+- **(Superseded 2026-09-26 by the levels above.)** Three test levels (2026-09-25): Quick (default, ~4.5 min): basic
   input/vehicle checks in the base gym, then world map, story, water works,
   carrying, controller, performance and save/load by teleport. Road check:
   `python tools/gen/layout_check.py`, ~2 s, when roads or hills change. Full:
@@ -591,6 +600,14 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 - **Tests must find things the way a player does:** `t_relay` set
   `has_binoculars = true`, so nobody noticed the binoculars were never placed
   in the world. Pick items up with the real keys where the test can.
+- **Tests set up their own state:** the smoke order runs tests in a new
+  sequence and exposed ones that leaned on what came before (the story's spare
+  can skipped once the dev menu's fix filled the tank; the pad test couldn't
+  start an engine an earlier drive had overheated). Each scenario sets what
+  it needs (`camper().repair_all()`, the fuel, the story index).
+- **A real controller plugged in changes the tests:** P2 goes onto it and TAB
+  leaves the keyboard with P1. The opening scenarios put P2 on the keyboard
+  first (`_p2_on_keyboard`); check `pads=` on the first log line.
 - **A failing gym segment stops the Quick run** (`|| exit`), so later
   segments don't run at all: read which segment failed, fix, and rerun Quick.
 
