@@ -6,12 +6,16 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Milestone D is built and tested: D1-D13 all done (Full: 525 checks, the one
-  failure fixed and rerun; Quick: 436 checks, 0 failures). **Waiting for your
-  test and approval**, then push. Local commits only, not pushed.
-- Look approvals still open: the tarp, the cardboard box, and the new
-  block-outs (windmill platform, power poles, bridge hut and machinery house,
-  lift leaf, safety mirror, watchtower cover, hay maze, relay boards).
+- Milestone D built, tested (Full 525 checks, 1 fixed; Quick 436, 0
+  failures) and **pushed at your request (2026-09-26, main `43df9fa`)**. Your
+  own test is still to come: you checked the windmill ("like it"); the rest
+  of `notes/TEST_MILESTONE_D.md` is open.
+- Working mode while you're away (your instruction, 2026-09-26): build the
+  milestones one after another, test each fully, write
+  `notes/TEST_MILESTONE_<X>.md`, push, move on. If you message in between,
+  back to one milestone at a time with your approval.
+- Next: [ ] Milestone E (Bessi beach and Naresh), plan below. Start with the
+  Naresh gym.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -628,12 +632,32 @@ test was fixed and now restores its starting layout before the pad test.
   - [ ] Your test and approval, then push
 
 ## Milestone E: Bessi beach and Naresh
-- [ ] Beach greybox: sand, sea, promenade, empty lit stalls, boats, casuarinas, memorial
-- [ ] Photo clue: find the spot the photo was taken from
-- [ ] Supernatural smoke; the Five Roses rise from the sand; Naresh in the fifth
-- [ ] Evidence there was never a friend
-- [ ] Naresh gym: commands (carry, store, refuel, hold, wait, follow) and random acts
-- [ ] 1-2 fun puzzles showing what Naresh can do; then the weather turns
+Design: `design/BESSI.md`, `design/NARESH.md` (proposals; their open questions
+get the provisional answers in MASTER_PROMPT section 6, listed for your review
+in `notes/TEST_MILESTONE_E.md`).
+- [ ] E1. Naresh gym (`--gym=naresh`): Naresh as a character (follows,
+      walks, climbs into the van's back seat), the command wheel (NOT Q:
+      Q / L3 is the horn since D4; pick a free key and pad button), commands
+      carry / store / refuel / hold / wait / follow / work it, the state
+      machine, random acts (every 3-6 min), taken when alone (creatures
+      follow him); `t_naresh`
+- [ ] E2. Bessi beach greybox (the existing `_beach` / roses plaza): sand,
+      sea, promenade, empty lit stalls with a radio, boats, casuarinas, the
+      memorial, the lighthouse; the nav loses signal; mood to dusk
+- [ ] E3. The photo (W8): the phone photo held by one player (P2), the
+      alignment spot (lighthouse behind the memorial spire, a mast on a
+      stall roof), binoculars + tags; `t_photo`
+- [ ] E4. The smoke and the Five Roses rising; the roses open in travel order
+      (windmill, water drop, bridge, wave, star); wrong order resets;
+      Naresh in the fifth; `t_roses`
+- [ ] E5. The evidence (one set of footprints, the unrolled second sleeping
+      bag with its tag, the timer camera, the notebook "we"/"I")
+- [ ] E6. N1 the stall shutter (hold; the scripted early let-go) and N2 push
+      the boat (work it; he pushes the wrong way first); rewards: torch
+      batteries, a fuel drum
+- [ ] E7. The storm starts, the roses sink; "my friend says we should go
+      north"; save/load of all of it; the full run pass-to-storm
+- [ ] E8. Full suite, `notes/TEST_MILESTONE_E.md`, push
 
 ## Milestone F: The return and the ending
 - [ ] Storm gym: gusts that can throw the van; driving carefully gets through

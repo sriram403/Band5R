@@ -11,11 +11,10 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-26, Milestone D: D1-D13 done and tested; handed over for the user's test (not pushed).
-Milestones A, B and C are done. A ChatGPT session built the opening; a Claude
-session reviewed it, fixed what it and the user's test found (see TODO.md,
-"Review fixes" and "P2's side fixed") and added `opening_full` and
-`opening_p2`. Next is Milestone D.
+Last updated: 2026-09-26, Milestone D done, tested and pushed (user's own test pending); next Milestone E.
+Milestones A-D are done and pushed (D's own user test is pending: see
+`notes/TEST_MILESTONE_D.md`). The user is away and asked for the milestones
+to be built one after another (rule 14). Next is Milestone E.
 Start at section 6.
 
 ---
@@ -140,7 +139,7 @@ they/them.
   then found P2's house unusable (stairs, doors, drive lip) and the nails
   gated behind the refuel; fixed, `opening_p2` added to Quick (P2 walked for
   real), and Milestone C was approved and pushed.
-- **Milestone D (the way out) in progress, local commits only (not pushed):**
+- **Milestone D (the way out) done:**
   the way-out and creature pages were approved with every recommended answer.
   Gyms done, each with its own test, all in Quick: `tagging` (T / MMB / RT,
   a pin both players see, 200 m, 20 s), `binoculars` (pick-up, RMB / LT 4x),
@@ -157,7 +156,9 @@ they/them.
   (`puzzles/BarnMaze.gd`, `puzzles/LookoutRelay.gd`, `t_maze`, `t_relay`)
   done. D13 `t_way_out` (Full only) drives J1 -> the watchtower on both
   routes. Full: 525 checks (1 fixed and rerun); Quick 436, 0 failures.
-  **Handed over 2026-09-26 for the user's test; push only after approval.**
+  **Pushed 2026-09-26 at the user's request (main `43df9fa`)**; the user's own
+  test (`notes/TEST_MILESTONE_D.md`) is pending: the windmill was checked
+  ("like it"), the rest not yet.
   The tarp and the cardboard box are block-outs awaiting the user's look
   approval.
 
@@ -214,6 +215,16 @@ they/them.
     `tools/run_test.sh` (window behind all others, focus handed back, muted).
 13. **Professional process** (`DESIGN.md` section 6): design first, a gym (test map)
     per mechanic, then greybox in the world, automated tests, dev menu, 144 fps budget.
+14. **Working mode while the user is away (user, 2026-09-26):** build the
+    milestones one after another. For each: build, play-test until clean
+    (Quick after each part, Full at the end), write
+    `notes/TEST_MILESTONE_<X>.md` (a step-by-step checklist for the user,
+    like `TEST_MILESTONE_D.md`: what to do, what should happen, what to
+    report, plus "Decisions to confirm"), **push** (allowed in this mode),
+    then start the next milestone. Open design questions: use the
+    provisional answers in section 6 and list them for review. **If the
+    user sends a message, go back to rule 2** (one milestone at a time, their
+    approval before pushing). Their reports on earlier milestones come first.
 
 ---
 
@@ -362,9 +373,21 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 **Milestone C is approved and pushed. Next, in this order:**
 
-0. **Milestone D is handed over.** Wait for the user's test; fix what they
-   find; push after approval. Then Milestone E (Bessi beach and Naresh):
-   discuss `design/BESSI.md` and `design/NARESH.md` open questions first.
+0. **Milestone E next** (`notes/TODO.md` E1-E8), in the working mode of
+   rule 14. Start with E1, the Naresh gym. Provisional answers to the open
+   questions (the user is away; list each in `notes/TEST_MILESTONE_E.md`
+   under "Decisions to confirm" so they can be changed):
+   - BESSI 1: yes, the roses open in travel order. 2: keep the evidence,
+     but found and shown, never spelled out. 3: the photo goes to P2 (the
+     navigator), so both have a role.
+   - NARESH 1: the command key can't be Q (the horn since D4): pick a free
+     key and pad button (check `InputDevice.KEYS/BUTTONS`). 2: random acts
+     every 4-6 min. 3: the friend is never seen, except the proposal's one
+     frame in the van mirror (a shape on the empty bench).
+   - Milestone F later (RETURN): 1: the storm road is a real but brutal dead
+     end (the swing bridge opens) that sends you back; 2: the three finale
+     landmarks as proposed; 3: the sister's look only, no words.
+   Also: any user reports on Milestone D come first when they arrive.
 1. (done) Milestone D, the way out (`notes/TODO.md` D1-D13, `DESIGN.md`,
    `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
    2026-09-25** with every recommended answer (their "Decisions" sections).
