@@ -46,6 +46,11 @@ being built and tested), so this always shows where the work is right now.
         it unfrozen a second (`Camper.snap_visuals`)
   - [x] "Bring the van here" also fixes it; "Fix the van: everything" now
         does everything (tyre, creature damage, leaks, tarp, upright)
+  - [x] Your next report: under the tarp you couldn't see the door mirrors
+        (the canvas was one closed shell). It's now tucked below and above
+        the front doors' side windows, so from a seat you look out of your
+        side window at the mirror (screenshot checked). One player can do
+        the whole tarp alone, or share it (as you asked: never needs both)
   - [x] New `t_ghat_menu`: the ghat set up through F1 as you did it, alone;
         `t_ghat` hides for real (P1 starts the tarp, P2 finishes, both hide
         inside); `t_van` updated to the new tarp rules. ghat + ghat_menu: 0

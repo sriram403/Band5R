@@ -3261,6 +3261,11 @@ func t_ghat() -> void:
 			if sv.render_target_update_mode != SubViewport.UPDATE_DISABLED:
 				mirrors_on = true
 	check(mirrors_on, "from inside, the door mirrors still show what's out there")
+	# the driver turns to the side window: the door mirror, past the canvas
+	mouse(Vector2(-520, 60))
+	await wait(0.5)
+	await shot("ghat_hidden_mirror")
+	mouse(Vector2(520, -60))
 	# it comes down the road on its round (sped up: from 35 m up the road)
 	var up_road := c.global_position - (-c.global_transform.basis.z) * -35.0
 	var ni := int(g.road.nearest(up_road.x, up_road.z)["index"])

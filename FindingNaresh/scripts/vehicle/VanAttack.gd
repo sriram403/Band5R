@@ -251,7 +251,17 @@ func _build_tarp() -> void:
 	_tarp.name = "Tarp"
 	_tarp.visible = false
 	van._body_root.add_child(_tarp)
-	_tarp.add_child(Build.box(Vector3(2.56, 2.25, 7.0), canvas, Vector3(0, 1.72, -0.25), Vector3.ZERO, "Sheet"))
+	# the canvas covers everything but the front doors' side windows: there it
+	# is tucked below and above them, so from a seat you can still see out of
+	# your side window to the door mirror (the only way to watch from inside)
+	const GAP_Z := Vector2(-3.75, -1.1)      # front of the van to behind the front seats
+	const GAP_Y := Vector2(1.52, 2.2)        # the window band
+	var front_len := GAP_Z.y - GAP_Z.x
+	var front_z := (GAP_Z.x + GAP_Z.y) * 0.5
+	_tarp.add_child(Build.box(Vector3(2.56, 2.25, 3.25 - GAP_Z.y), canvas, Vector3(0, 1.72, (3.25 + GAP_Z.y) * 0.5), Vector3.ZERO, "Sheet"))
+	_tarp.add_child(Build.box(Vector3(2.56, GAP_Y.x - 0.6, front_len), canvas, Vector3(0, (0.6 + GAP_Y.x) * 0.5, front_z), Vector3.ZERO, "SheetLow"))
+	_tarp.add_child(Build.box(Vector3(2.56, 2.85 - GAP_Y.y, front_len), canvas, Vector3(0, (GAP_Y.y + 2.85) * 0.5, front_z), Vector3.ZERO, "SheetHigh"))
+	_tarp.add_child(Build.box(Vector3(2.56, GAP_Y.y - GAP_Y.x, 0.06), canvas, Vector3(0, (GAP_Y.x + GAP_Y.y) * 0.5, GAP_Z.x + 0.03), Vector3.ZERO, "SheetFront"))
 	_tarp.add_child(Build.box(Vector3(2.2, 0.62, 5.6), canvas, Vector3(0, 3.1, 0.0), Vector3.ZERO, "OverRack"))
 	for z in [-2.2, 0.0, 2.2]:
 		_tarp.add_child(Build.box(Vector3(2.62, 0.08, 0.1), fold, Vector3(0, 2.2, z), Vector3.ZERO, "Fold"))
