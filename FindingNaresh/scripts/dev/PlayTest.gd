@@ -3461,12 +3461,21 @@ func t_relay() -> void:
 func t_relay_kb() -> void:
 	var b: LevelBuilder = boot.builder
 	var relay := get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
+	# as in a new game, whatever ran before
+	relay.from_dict({"dials": [(relay.code[0] + 3) % 6, (relay.code[1] + 2) % 6, (relay.code[2] + 4) % 6, (relay.code[3] + 1) % 6], "opened": false})
+	var old_can: Node = boot.world.find_child("RelayFuel", true, false)
+	if old_can != null:
+		old_can.queue_free()
 	var p := p1()
 	var boxn := relay.find_child("SupplyBox", true, false) as Node3D
 	var front := boxn.global_transform * Vector3(0, 0, -1.4)
+	await place_player(p2(), boxn.global_transform * Vector3(6, 0.6, 0), 0.0)     # out of the way
 	await place_player(p, front + Vector3(0, 0.4, 0), 0.0)
 	await wait(0.6)
 	log_line("fresh dials %s, code %s" % [str(relay.dials), str(relay.code)])
+	await look_at_point(p, boxn.global_transform * Vector3(0, 0.4, -0.4))
+	await wait(0.3)
+	await shot("relay_dials_fresh")
 	for k in 4:
 		var dial := relay.find_child("Dial%d" % k, true, false) as Node3D
 		await look_at_point(p, dial.global_position)

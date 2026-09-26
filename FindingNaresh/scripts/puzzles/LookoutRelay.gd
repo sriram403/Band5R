@@ -79,7 +79,22 @@ static func shape_node(kind: String, size: float) -> Node3D:
 		"square":
 			n.add_child(Build.box(Vector3(size * 0.85, size * 0.85, 0.04), mat, Vector3.ZERO, Vector3.ZERO, "Square"))
 		"triangle":
-			n.add_child(Build.cyl(r * 1.1, 0.04, mat, Vector3(0, -r * 0.1, 0), Vector3(90, 0, 0), 3, "Tri"))
+			# a flat triangle, point up (a 3-sided cylinder looked like a tilted
+			# square from the front, so the triangle was mistaken for the diamond)
+			# drawn from its three corners, point up, both sides (a 3-sided
+			# cylinder looked like a tilted square, so it was mistaken for the
+			# diamond; a PrismMesh came out lopsided)
+			var h := size * 0.85
+			var w := size * 0.95
+			var top := Vector3(0, h * 0.55, 0.02)
+			var bl := Vector3(-w * 0.5, -h * 0.45, 0.02)
+			var br := Vector3(w * 0.5, -h * 0.45, 0.02)
+			var st := SurfaceTool.new()
+			st.begin(Mesh.PRIMITIVE_TRIANGLES)
+			for v in [top, br, bl, top, bl, br]:
+				st.set_normal(Vector3.BACK)
+				st.add_vertex(v)
+			n.add_child(Build.node(st.commit(), mat, Transform3D.IDENTITY, "Tri"))
 		"cross":
 			n.add_child(Build.box(Vector3(size, size * 0.28, 0.04), mat, Vector3.ZERO, Vector3.ZERO, "Bar"))
 			n.add_child(Build.box(Vector3(size * 0.28, size, 0.04), mat, Vector3.ZERO, Vector3.ZERO, "Bar"))

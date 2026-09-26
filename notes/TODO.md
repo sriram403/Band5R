@@ -19,6 +19,11 @@ being built and tested), so this always shows where the work is right now.
   the ramp's foot and its railing blocked aiming at dial 1; moved 5 m out.
   Each dial turn now goes to the game's log (`[relay]` lines in
   appdata/FindingNaresh/logs) in case it happens again.
+  Then it did happen again, and the log showed why: dial 1 was never turned;
+  it still showed its start picture, the **triangle**, which was drawn from a
+  3-sided cylinder and looked like a tilted square, i.e. like the diamond.
+  The triangle is now drawn from its corners (point up), on the dials and
+  the boards. relay, relay_kb: 0 failures.
 - Barn maze: works; agreed for later (P1 in `notes/POLISH.md`): give the
   guide a job in the dust (a hay blower to stop + a plan of the maze).
 - Fixed from your report: the F1 menu rebuilt, safe teleports (Quick run
