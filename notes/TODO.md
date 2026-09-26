@@ -8,6 +8,8 @@ being built and tested), so this always shows where the work is right now.
 ## Right now
 - You're testing Milestone D one puzzle at a time (you're back, so one step
   at a time again). Windmill: liked, no changes. Next: the barn maze.
+- Barn maze: works; agreed for later (P1 in `notes/POLISH.md`): give the
+  guide a job in the dust (a hay blower to stop + a plan of the maze).
 - Fixed from your report: the F1 menu rebuilt, safe teleports (Quick run
   Quick 443 checks, 0 failures; not pushed yet).
 
@@ -677,6 +679,7 @@ in `notes/TEST_MILESTONE_E.md`).
 - [ ] Phone notification: Naresh heading to LiveStander; end screen
 
 ## Milestone G: Finish
+- [ ] The polish list (`notes/POLISH.md`): remind the user, agree the order, build it
 - [ ] Full audio pass, music and ambience
 - [ ] Settings menu (sensitivity, volumes, text speed)
 - [ ] Windows `.exe` export

@@ -226,6 +226,12 @@ they/them.
     user sends a message, go back to rule 2** (one milestone at a time, their
     approval before pushing). Their reports on earlier milestones come first.
 
+15. **The polish list, `notes/POLISH.md`** (user, 2026-09-26): changes the
+    user has agreed but wants left until every milestone is built. Don't
+    build them during the milestones; add to the list whenever the user
+    agrees something "for later"; **remind the user of it when all the
+    milestones are done, or whenever they ask.**
+
 ---
 
 ## 4. How the project is built (architecture)
