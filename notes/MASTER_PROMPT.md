@@ -4,6 +4,8 @@ You are taking over an in-progress Godot 4.7 game project from a previous sessio
 Read this whole file (`notes/MASTER_PROMPT.md`) first, then `DESIGN.md` (the agreed story arc, world, creatures and
 the professional build process with gyms; it supersedes the original spec's plan),
 `notes/TODO.md` (live progress; its "Right now" line says exactly where work stopped),
+`notes/LESSONS.md` (what to do and not to do: read it, and add to it as you learn),
+`notes/POLISH.md` (agreed changes for after the milestones),
 `README.md`, `FUTURE.md`, `CREDITS.md`, `design/map_plan_v1.png`, and only then the
 original spec `Finding_Naresh_Game_Demo_Build_Prompt.md`, all in
 `D:\mine\Agentics\T3_Code_Works\MPG`. Then continue from section 6. Everything below
@@ -231,6 +233,18 @@ they/them.
     build them during the milestones; add to the list whenever the user
     agrees something "for later"; **remind the user of it when all the
     milestones are done, or whenever they ask.**
+16. **Lessons, written as you learn them (user, 2026-09-27):** every big
+    lesson (a bug's real cause, a testing mistake, a design insight from the
+    user's play, a Godot trap) goes into `notes/LESSONS.md` **at once**, not
+    at the end of a milestone or a full test run: a thread can be compacted or
+    stop at any moment. Before leaving a milestone or a thread, go through
+    the work and add what's missing.
+17. **At the end of each milestone, stop and ask (user, 2026-09-27):**
+    "continue in this thread, or shall I prepare the hand-over notes for a
+    new one?" Don't start the next milestone unasked. In the polishing stage,
+    when the user gives a task, first give a quick recommendation (from how
+    much of this thread's context is used and how big the task is) on
+    whether to do it here or in a new thread, to save their tokens.
 
 ---
 
