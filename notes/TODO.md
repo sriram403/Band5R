@@ -8,6 +8,11 @@ being built and tested), so this always shows where the work is right now.
 ## Right now
 - You're testing Milestone D one puzzle at a time (you're back, so one step
   at a time again). Windmill: liked, no changes. Next: the barn maze.
+- Your report: no binoculars on the lookout deck. They were never put in the
+  world (only in the binocular gym); `t_relay` hid it by handing them over.
+  Now on the deck's bench and on a counter under the Last Fuel kiosk window,
+  remembered in saves once taken; `t_relay` takes them with E. climb, tower,
+  relay, teleports: 0 failures (Quick before the next push).
 - Barn maze: works; agreed for later (P1 in `notes/POLISH.md`): give the
   guide a job in the dust (a hay blower to stop + a plan of the maze).
 - Fixed from your report: the F1 menu rebuilt, safe teleports (Quick run

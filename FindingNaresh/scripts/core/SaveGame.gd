@@ -186,6 +186,9 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	var line := boot.get_tree().get_first_node_in_group("power_line") as PowerLine
 	if line:
 		line.sync()
+	for bp in boot.get_tree().get_nodes_in_group("binocular_pickup"):
+		if boot.story.flags.has("taken_" + (bp as BinocularPickup).tag):
+			bp.queue_free()
 	var windmill := boot.get_tree().get_first_node_in_group("windmill_brake") as WindmillBrake
 	if windmill and d.has("windmill"):
 		windmill.from_dict(d["windmill"])

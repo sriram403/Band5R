@@ -342,6 +342,15 @@ func _lookout(at: Vector3, DECK_H := 6.0, nm := "Lookout", label := "PINE RIDGE\
 	for px in [-3.2, -1.1, 1.1, 3.2]:
 		root.add_child(Build.box(Vector3(0.08, 1.0, 0.08), wood, Vector3(px, DECK_H + 0.55, -2.6), Vector3.ZERO, "RailPost"))
 	root.add_child(Build.box(Vector3(2.2, 0.12, 0.5), wood, Vector3(-1.6, DECK_H + 0.5, 1.6), Vector3.ZERO, "Bench"))
+	body.add_child(_box_shape(Vector3(2.2, 0.12, 0.5), Transform3D(Basis(), Vector3(-1.6, DECK_H + 0.5, 1.6))))
+	if key == "lookout":
+		# the binoculars (D2): on the bench, ridge route; Last Fuel has the backstop pair
+		var bino := BinocularPickup.new()
+		bino.name = "LookoutBinoculars"
+		bino.tag = "lookout_binoculars"
+		bino.position = Vector3(-1.3, DECK_H + 0.56, 1.6)
+		bino.rotation.y = 0.4
+		root.add_child(bino)
 	root.add_child(Build.cyl(0.08, 1.2, ToonMat.make(C_STEEL), Vector3(1.8, DECK_H + 0.7, -1.9), Vector3.ZERO, 6, "ScopePost"))
 	root.add_child(Build.cyl(0.14, 0.55, ToonMat.make(Color(0.30, 0.50, 0.40)), Vector3(1.8, DECK_H + 1.35, -2.05), Vector3(-80, 0, 0), 8, "Scope"))
 	# pitched roof
@@ -364,6 +373,8 @@ func _lookout(at: Vector3, DECK_H := 6.0, nm := "Lookout", label := "PINE RIDGE\
 	world.add_child(root)
 	poi[key] = pos
 	poi[key + "_deck"] = root.transform * Vector3(0, DECK_H + 0.2, -0.5)
+	if key == "lookout":
+		poi["lookout_binoculars"] = root.transform * Vector3(-1.3, DECK_H + 0.56, 1.6)
 	poi[key + "_ramp_foot"] = root.transform * Vector3(0, 0, 2.6 + run + 1.5)
 	if key == "lookout":
 		# W4: the supply box by the ramp's foot, its code out across the valley
@@ -427,6 +438,15 @@ func _gas_station(at: Vector3) -> void:
 		body.add_child(_box_shape(Vector3(0.8, 1.6, 0.5), Transform3D(Basis(), Vector3(px, 0.95, 0))))
 	root.add_child(Build.solid_box(Vector3(6.0, 3.2, 4.5), white, Vector3(0, 1.6, -8.0), Vector3.ZERO, "Kiosk"))
 	root.add_child(Build.box(Vector3(2.4, 1.2, 0.05), ToonMat.make(Color(0.32, 0.46, 0.56)), Vector3(-1.2, 1.7, -5.73), Vector3.ZERO, "KioskWindow"))
+	# a counter shelf under the window, and the binoculars on it (the backstop
+	# pair for whoever came by the valley road)
+	root.add_child(Build.box(Vector3(2.4, 0.08, 0.45), ToonMat.make(C_WOOD), Vector3(-1.2, 1.06, -5.52), Vector3.ZERO, "KioskCounter"))
+	body.add_child(_box_shape(Vector3(2.4, 0.08, 0.45), Transform3D(Basis(), Vector3(-1.2, 1.06, -5.52))))
+	var bino := BinocularPickup.new()
+	bino.name = "KioskBinoculars"
+	bino.tag = "kiosk_binoculars"
+	bino.position = Vector3(-1.4, 1.1, -5.5)
+	root.add_child(bino)
 	# a note taped to the kiosk door: why the pumps are dead (D8)
 	root.add_child(Build.box(Vector3(0.3, 0.4, 0.02), ToonMat.make(Color(0.95, 0.93, 0.85)), Vector3(1.4, 1.5, -5.74), Vector3.ZERO, "KioskNote"))
 	root.add_child(Build.interact_area(Vector3(0.8, 0.9, 0.8), Vector3(1.4, 1.5, -5.4), "Read the note on the door", func(p):
@@ -444,6 +464,7 @@ Power's been off since the turbine at the water works stopped. No power, no pump
 	root.add_child(sign_n)
 	world.add_child(root)
 	poi["gas_station"] = pos
+	poi["kiosk_binoculars"] = root.transform * Vector3(-1.4, 1.1, -5.5)
 
 
 ## The Bessi water works: pump house, tanks and pipes down to the river. The

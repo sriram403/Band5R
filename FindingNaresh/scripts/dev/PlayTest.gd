@@ -3393,7 +3393,20 @@ func t_relay() -> void:
 	await wait(0.3)
 	var p := p1()
 	var q := p2()
-	p.has_binoculars = true
+	check(boot.world.find_child("KioskBinoculars", true, false) != null, "a backstop pair of binoculars waits on the Last Fuel kiosk counter")
+	# up on the deck, take the binoculars off the bench (they're found here, not given)
+	p.has_binoculars = false
+	await place_player(p, b.poi["lookout_deck"] + Vector3(0, 0.3, 0), 0.0)
+	await wait(0.4)
+	await look_at_point(p, b.poi["lookout_binoculars"] + Vector3(0, 0.05, 0))
+	var t_wait := Time.get_ticks_msec()
+	while p.prompt_text == "" and Time.get_ticks_msec() - t_wait < 2000:
+		await physics_frames(2)
+	log_line("at the bench: '%s'" % p.prompt_text)
+	await shot("relay_bench")
+	await tap(KEY_E)
+	await physics_frames(3)
+	check(p.has_binoculars and boot.world.find_child("LookoutBinoculars", true, false) == null, "the binoculars are on the lookout deck's bench: E takes them")
 	await place_player(p, b.poi["lookout_deck"] + Vector3(0, 0.3, 0), 0.0)
 	var names := []
 	for k in 2:

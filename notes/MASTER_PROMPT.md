@@ -588,6 +588,9 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 - **Pretend pads leak between scenarios:** tests that call
   `boot._on_joy_changed(0, true)` leave P2 on a pad; `_run` now calls
   `_unplug_test_pad()` after each scenario (skipped when a real pad is in).
+- **Tests must find things the way a player does:** `t_relay` set
+  `has_binoculars = true`, so nobody noticed the binoculars were never placed
+  in the world. Pick items up with the real keys where the test can.
 - **A failing gym segment stops the Quick run** (`|| exit`), so later
   segments don't run at all: read which segment failed, fix, and rerun Quick.
 

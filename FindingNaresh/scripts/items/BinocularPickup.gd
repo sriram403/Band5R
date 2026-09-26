@@ -9,6 +9,7 @@ var tag := ""                      ## save/test id, e.g. "gym_binoculars"
 
 
 func _ready() -> void:
+	add_to_group("binocular_pickup")
 	set_meta("tag_name", "binoculars")
 	var body := ToonMat.make(Color(0.16, 0.17, 0.16), 0.02)
 	var glass := ToonMat.make(Color(0.35, 0.55, 0.65))
@@ -28,4 +29,7 @@ func _take(pl: PlayerRig) -> void:
 	pl.has_binoculars = true
 	Sfx.play3d("pickup", global_position, -4.0)
 	pl.say("Binoculars. Hold %s to look through them; you can tag through them too." % pl.dev.glyph("zoom"), 5.0)
+	var st = get_tree().current_scene.get("story")
+	if st != null and tag != "":
+		st.flags["taken_" + tag] = true      # saved with the story: gone after a load too
 	queue_free()
