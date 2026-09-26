@@ -72,3 +72,15 @@ memorial.
 2. The evidence scene: is the list above too much (it spells it out), or right?
 3. Which player gets the photo: whoever looks at the phone first, or always P2
    (the navigator)?
+
+## Decisions (user, 2026-09-26)
+
+1. The roses open in the order you travelled (windmill, water drop, bridge,
+   wave, star): **yes**.
+2. The evidence is **found and shown, never spelled out** (one set of
+   footprints, the second sleeping bag still with its shop tag, the camera on
+   a timer, the notebook's "we"/"I"): **yes**.
+3. The photo goes to **P2** (the navigator).
+4. The friend: **there never was one**. Naresh imagined someone called, and
+   went; what the players find at the end is that nobody else was ever there.
+   The friend is never shown, in any form.

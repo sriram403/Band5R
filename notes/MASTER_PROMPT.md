@@ -388,21 +388,15 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 **Milestone C is approved and pushed. Next, in this order:**
 
-0. **Milestone E next** (`notes/TODO.md` E1-E8), in the working mode of
-   rule 14. Start with E1, the Naresh gym. Provisional answers to the open
-   questions (the user is away; list each in `notes/TEST_MILESTONE_E.md`
-   under "Decisions to confirm" so they can be changed):
-   - BESSI 1: yes, the roses open in travel order. 2: keep the evidence,
-     but found and shown, never spelled out. 3: the photo goes to P2 (the
-     navigator), so both have a role.
-   - NARESH 1: the command key can't be Q (the horn since D4): pick a free
-     key and pad button (check `InputDevice.KEYS/BUTTONS`). 2: random acts
-     every 4-6 min. 3: the friend is never seen, except the proposal's one
-     frame in the van mirror (a shape on the empty bench).
-   - Milestone F later (RETURN): 1: the storm road is a real but brutal dead
-     end (the swing bridge opens) that sends you back; 2: the three finale
-     landmarks as proposed; 3: the sister's look only, no words.
-   Also: any user reports on Milestone D come first when they arrive.
+0. **Milestone E next** (`notes/TODO.md` E1-E8), one part at a time with the
+   user (they're testing step by step; rule 2). Start with E1, the Naresh
+   gym. The open questions are **answered** (user, 2026-09-26; the
+   "Decisions" at the end of `design/BESSI.md` and `design/NARESH.md`): roses
+   in travel order; evidence shown, not spelled out; the photo to P2; Naresh
+   commands on foot, in the van only from the passenger seat, on a key free
+   in both (not Q/G/LB: show the user); random acts every 3-6 min; **there was
+   never a friend** and the friend is never shown in any form.
+   Milestone F's questions (RETURN) are still open: ask before building F.
 1. (done) Milestone D, the way out (`notes/TODO.md` D1-D13, `DESIGN.md`,
    `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
    2026-09-25** with every recommended answer (their "Decisions" sections).

@@ -6,59 +6,10 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- You're testing Milestone D one puzzle at a time (you're back, so one step
-  at a time again). Windmill: liked, no changes. Next: the barn maze.
-- Your report: no binoculars on the lookout deck. They were never put in the
-  world (only in the binocular gym); `t_relay` hid it by handing them over.
-  Now on the deck's bench and on a counter under the Last Fuel kiosk window,
-  remembered in saves once taken; `t_relay` takes them with E. climb, tower,
-  relay, teleports: 0 failures (Quick before the next push).
-- Your report: the lookout box didn't open with all four pictures right
-  (diamond, ring, circle, cross). Not reproduced: from a fresh game on the
-  keyboard it opens (new `t_relay_kb`). Found on the way: the box stood by
-  the ramp's foot and its railing blocked aiming at dial 1; moved 5 m out.
-  Each dial turn now goes to the game's log (`[relay]` lines in
-  appdata/FindingNaresh/logs) in case it happens again.
-  Then it did happen again, and the log showed why: dial 1 was never turned;
-  it still showed its start picture, the **triangle**, which was drawn from a
-  3-sided cylinder and looked like a tilted square, i.e. like the diamond.
-  The triangle is now drawn from its corners (point up), on the dials and
-  the boards. relay, relay_kb: 0 failures.
-- Your ghat report (2026-09-26), all fixed:
-  - [x] The creature came on too fast to hide: it now shows up ~105 m ahead
-        (measured along the road, only after the second hairpin: straight
-        line fired on the hairpins, before the glimpse) and walks down the
-        road's edge past wherever the van is, then back up. A text says
-        what to do. Tarped, it walks right by (7 m in the test) and goes;
-        after that it walks off over the pass for good (passive)
-  - [x] The tarp: handles at both back corners at waist height (the only
-        one was 2.75 m up the back); only needs the van stopped and the
-        engine off (lights go off with it); the pulling is kept, so one
-        starts and the other finishes (shown as %); you can get in and hide
-        in a tarped van, seeing out only through the door mirrors; the
-        engine won't start under it
-  - [x] Pace notes after the Story jump: they did show, on the passenger's
-        side; in the solo view you only had the driver's view, where it's
-        hidden by design. In the solo view the driver now sees it too
-  - [x] A brought van with no tyres: a parked van is frozen and asleep and
-        its wheels are then never moved, so they stayed where it had been
-        (400 m away in the test). Teleports and loads now wake it and keep
-        it unfrozen a second (`Camper.snap_visuals`)
-  - [x] "Bring the van here" also fixes it; "Fix the van: everything" now
-        does everything (tyre, creature damage, leaks, tarp, upright)
-  - [x] Your next report: under the tarp you couldn't see the door mirrors
-        (the canvas was one closed shell). It's now tucked below and above
-        the front doors' side windows, so from a seat you look out of your
-        side window at the mirror (screenshot checked). One player can do
-        the whole tarp alone, or share it (as you asked: never needs both)
-  - [x] New `t_ghat_menu`: the ghat set up through F1 as you did it, alone;
-        `t_ghat` hides for real (P1 starts the tarp, P2 finishes, both hide
-        inside); `t_van` updated to the new tarp rules. ghat + ghat_menu: 0
-        failures; Quick run going
-- Barn maze: works; agreed for later (P1 in `notes/POLISH.md`): give the
-  guide a job in the dust (a hay blower to stop + a plan of the maze).
-- Fixed from your report: the F1 menu rebuilt, safe teleports (Quick run
-  Quick 443 checks, 0 failures; not pushed yet).
+- Milestone D: your test is done ("good to go"; the save check skipped: the
+  automated `save` covers it). Full suite running, then the push.
+- Milestone E: your answers are in (`design/BESSI.md`, `design/NARESH.md`,
+  "Decisions"). Next: [~] E1, the Naresh gym.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -685,7 +636,9 @@ test was fixed and now restores its starting layout before the pad test.
         there and the sea check threw every spot out; now it's the sea side
         of the coast only)
   - [x] Quick: 443 checks, 0 failures
-  - [ ] Your test and approval, then push
+  - [x] Your test and approval (2026-09-26: windmill, maze, lookout, water
+        works, bridge, ghat, watchtower; fixes above)
+  - [~] Full suite, then push
 
 ## Milestone E: Bessi beach and Naresh
 Design: `design/BESSI.md`, `design/NARESH.md` (proposals; their open questions

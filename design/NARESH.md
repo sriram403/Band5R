@@ -111,3 +111,14 @@ to a drop point; the scripted refuel mistake reproduces.
    more laughs, more stress)?
 3. Should the players ever be able to *see* the friend? (Proposal: never directly;
    once, in the van mirror, a shape on the empty bench for one frame.)
+
+## Decisions (user, 2026-09-26)
+
+1. Commands: **on foot**. In the van, **only the passenger** can give them,
+   never the driver. The key is to be chosen from what's free in both places
+   (not Q: the horn since D4; not G or LB: throw, swap seats); show the user.
+2. Random acts: a **random gap of 3 to 6 minutes** for now (to be tuned
+   together later).
+3. The friend is **never seen**, not even the mirror moment: there was no
+   friend. Naresh imagined the call. His lines about "my friend" stay (text
+   only); the players' discovery is that nobody else was ever there.
