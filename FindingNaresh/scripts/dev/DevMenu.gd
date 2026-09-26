@@ -358,8 +358,8 @@ func _rows_for(t: int) -> Array:
 		"Van":
 			var c: Camper = boot.camper
 			return [
-				_row("Bring the van here", "van_here", null, "[b]Bring the van[/b]\n\nParks it on clear ground just in front of P1, handbrake on."),
-				_row("Fix the van: full tank, cool engine, no leaks, battery", "van_fix", null, "[b]Fix everything[/b]\n\nFull tank, normal temperature, coolant, no leaks, a charged battery."),
+				_row("Bring the van here (fixed)", "van_here", null, "[b]Bring the van[/b]\n\nParks it on clear ground just in front of P1, handbrake on, and fixes everything (as below)."),
+				_row("Fix the van: everything", "van_fix", null, "[b]Fix everything[/b]\n\nFull tank, normal temperature, coolant, no leaks, a charged battery, the flat tyre, whatever a creature did, the tarp off, and back on its wheels."),
 				_row("Both in: P1 drives, P2 alongside", "van_seat", null, "[b]Both in[/b]\n\nPuts P1 in the driver's seat and P2 in the passenger seat."),
 				_row("Both out", "van_out", null, "[b]Both out[/b]"),
 				_row("Tarp: %s" % ("on (take it off)" if c.attack.tarped else "off (put it on)"), "van_tarp", null, "[b]The tarp[/b]\n\nWhat hides the van from creatures."),
@@ -509,16 +509,11 @@ func run(action: String, arg = null) -> void:
 			fwd.y = 0.0
 			var at := van_spot(p1.global_position + fwd.normalized() * 8.0)
 			van_to(at, p1.yaw)
-			_note = "The van is in front of P1, handbrake on."
+			c.repair_all()
+			_note = "The van is in front of P1, fixed, handbrake on."
 		"van_fix":
-			c.fuel = Camper.FUEL_CAPACITY
-			c.temp = Camper.TEMP_NORMAL
-			c.coolant = 1.0
-			c.coolant_leak = false
-			c.heat_lockout = false
-			c.fuel_leak = 0.0
-			c.battery = 1.0
-			_note = "Van topped up and fixed."
+			c.repair_all()
+			_note = "The van is fixed: fuel, heat, coolant, leaks, battery, tyres, creature damage."
 		"van_seat":
 			var q: PlayerRig = boot.players[1]
 			if p1.seat == null:
@@ -713,4 +708,5 @@ func van_to(at: Vector3, yaw: float) -> void:
 	c.angular_velocity = Vector3.ZERO
 	c.parking_brake = true
 	c.global_transform = Transform3D(Basis(Vector3.UP, yaw), Vector3(at.x, Landscape.ground(at.x, at.z) + 0.9, at.z))
-	c.reset_physics_interpolation()
+	c.snap_visuals()
+	c.set_deferred("freeze", false)

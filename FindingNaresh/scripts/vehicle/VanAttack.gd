@@ -8,8 +8,12 @@ extends Node
 ##   engine failing (power down 40%, coughing) after 30 s, a puncture after
 ##   60 s. Nothing is permanent: once nothing has been near for a few seconds
 ##   it all stops (a flat tyre stays flat).
-## - The tarp on the rear rack: hold E for 4 s with the engine and the lights
-##   off and the van becomes a lump under canvas that they do not notice.
+## - The tarp, rolled up on the back: stop, engine off, and hold E at either
+##   back corner (or the roll) for 4 s; the lights go off with it and the van
+##   becomes a lump under canvas that they do not notice. The pulling is
+##   kept, so one player can start it and the other finish. You can sit
+##   inside a tarped van and hide; only the door mirrors poke out past the
+##   canvas, so they are how you watch. The engine won't start under it.
 
 const NEAR := 15.0
 const LEAK_AFTER := 2.0
@@ -117,9 +121,7 @@ func tick(delta: float, speed: float, throttle: float) -> void:
 		leak_left -= delta
 		if leak_left <= 0.0:
 			van.fuel_leak = 0.0
-	_pull_idle += delta
-	if _pull_idle > 0.3:
-		tarp_work = 0.0
+	# the pulling is kept when you let go: the other player can finish it
 
 
 ## What they hear of the van, re-sent twice a second while it lasts.
@@ -182,17 +184,29 @@ func _side_point(h: float) -> Vector3:
 func tarp_blocked() -> String:
 	if tarped:
 		return ""
-	if van.driver != null or van.passenger != null:
-		return "Everyone out first, then pull the tarp over"
-	if van.engine_on or van.headlights_on:
-		return "Engine and lights off first, then the tarp can go over"
+	if van.linear_velocity.length() > 0.5:
+		return "Stop the van first"
+	if van.engine_on:
+		return "Engine off first (%s), then the tarp can go over" % _key_hint()
 	return ""
 
 
+func _key_hint() -> String:
+	for n in van.get_tree().get_nodes_in_group("player"):
+		var p := n as PlayerRig
+		if p.seat != null:
+			return p.dev.glyph("ignition")
+	return "X"
+
+
+## How far along the pulling is, 0..1 (on, or off when it's on).
+func tarp_progress() -> float:
+	return clampf(tarp_work / (TARP_OFF_S if tarped else TARP_ON_S), 0.0, 1.0)
+
+
 func _pull(p: PlayerRig, dt: float) -> void:
-	if tarp_blocked() != "" or van.linear_velocity.length() > 0.5:
+	if tarp_blocked() != "":
 		return
-	_pull_idle = 0.0
 	# pulling a big sheet of canvas is not quiet
 	if fmod(tarp_work, 1.5) < dt:
 		Hearing.emit(van.global_position, Hearing.DOOR, "tarp")
@@ -201,16 +215,29 @@ func _pull(p: PlayerRig, dt: float) -> void:
 	if tarp_work >= (TARP_OFF_S if tarped else TARP_ON_S):
 		tarp_work = 0.0
 		set_tarp(not tarped)
-		p.say("The van is a lump under the canvas now. Keep still and quiet." if tarped else "The tarp is off and rolled up on the back.", 5.0)
+		p.say("The van is a lump under the canvas now. Keep still and quiet - you can hide inside it. Only the door mirrors show what's out there." if tarped else "The tarp is off and rolled up on the back.", 6.0)
 
 
 func set_tarp(on: bool) -> void:
 	tarped = on
 	_tarp.visible = on
 	_roll.visible = not on
+	tarp_work = 0.0
 	if on:
 		attacked_t = 0.0
 		attacker = null
+		if van.headlights_on:
+			van.set_headlights(false)
+
+
+## Everything a creature did to the van, undone (the developer menu's fix).
+func reset() -> void:
+	attacked_t = 0.0
+	attacker = null
+	coughing = 0.0
+	leak_left = 0.0
+	_stage = 0
+	_away_t = 0.0
 
 
 func _build_tarp() -> void:
@@ -228,12 +255,19 @@ func _build_tarp() -> void:
 	_tarp.add_child(Build.box(Vector3(2.2, 0.62, 5.6), canvas, Vector3(0, 3.1, 0.0), Vector3.ZERO, "OverRack"))
 	for z in [-2.2, 0.0, 2.2]:
 		_tarp.add_child(Build.box(Vector3(2.62, 0.08, 0.1), fold, Vector3(0, 2.2, z), Vector3.ZERO, "Fold"))
-	var area := Build.interact_area(Vector3(1.6, 0.5, 0.5), Vector3(0, 2.75, 3.75), "", func(_p): pass, "TarpHandle")
-	area.set_meta("prompt_fn", func(_p) -> String:
-		if tarped:
-			return "Hold to pull the tarp off"
-		return "Hold to pull the tarp over the van" if tarp_blocked() == "" else "")
-	area.set_meta("blocked_fn", func() -> String:
-		return tarp_blocked())
-	area.set_meta("hold_fn", func(p, dt: float): _pull(p, dt))
-	van._body_root.add_child(area)
+	# handles: the roll up top, and both back corners at waist height (clear
+	# of the fuel filler, the rack and the spare wheel)
+	for spec in [[Vector3(1.6, 0.5, 0.5), Vector3(0, 2.75, 3.75), "TarpHandle"],
+			[Vector3(0.6, 1.8, 0.8), Vector3(-1.3, 1.3, 2.85), "TarpCornerL"],
+			[Vector3(0.6, 1.8, 0.8), Vector3(1.3, 1.3, 2.85), "TarpCornerR"]]:
+		var area := Build.interact_area(spec[0], spec[1], "", func(_p): pass, spec[2])
+		area.set_meta("tag_name", "the tarp")
+		area.set_meta("prompt_fn", func(_p) -> String:
+			var pct := "" if tarp_work <= 0.0 else "  (%d%%)" % roundi(tarp_progress() * 100.0)
+			if tarped:
+				return "Hold to pull the tarp off" + pct
+			return ("Hold to pull the tarp over the van" + pct) if tarp_blocked() == "" else "")
+		area.set_meta("blocked_fn", func() -> String:
+			return tarp_blocked())
+		area.set_meta("hold_fn", func(p, dt: float): _pull(p, dt))
+		van._body_root.add_child(area)

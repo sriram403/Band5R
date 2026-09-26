@@ -85,6 +85,7 @@ var seat_nodes := {}               ## role -> Node3D
 var _steer := 0.0
 var _wheels: Array[VehicleWheel3D] = []
 var _wheel_meshes: Array[Node3D] = []
+var _teleport_hold := 0.0            ## s after a teleport before it may freeze again
 var _wheel_spin := 0.0
 var _needles := {}
 var _steering_wheel: Node3D
@@ -420,8 +421,7 @@ func _build_seats() -> void:
 			func(p: PlayerRig): _try_seat(p, role),
 			"SeatPrompt_" + role)
 		area.set_meta("blocked_fn", func() -> String:
-			if attack != null and attack.tarped:
-				return "It's under the tarp - pull it off at the back first"
+			# under the tarp you can still get in and hide
 			var taken: PlayerRig = driver if role == "driver" else passenger
 			return "" if taken == null else "Seat taken - P%d is in it" % (taken.index + 1))
 		_body_root.add_child(area)
@@ -1021,6 +1021,17 @@ func _set_lamp(key: String, on: bool) -> void:
 ## it has stopped on the handbrake with its wheels down, freeze it in place;
 ## letting the handbrake off releases it on the same tick.
 func _update_parked(delta: float, speed: float) -> void:
+	if _teleport_hold > 0.0:
+		_teleport_hold -= delta
+		if freeze:
+			freeze = false
+		# the wheels are put in place by the physics over the first ticks; draw
+		# them where they are each tick, not smoothed from where the van had been
+		for w in _wheels:
+			w.reset_physics_interpolation()
+			for n in w.find_children("*", "Node3D", true, false):
+				(n as Node3D).reset_physics_interpolation()
+		return
 	var grounded := true
 	for w in _wheels:
 		if not w.is_in_contact():
@@ -1032,6 +1043,27 @@ func _update_parked(delta: float, speed: float) -> void:
 	var want := _parked_t > 0.6
 	if want != freeze:
 		freeze = want
+
+
+## The developer menu's "fix everything": fuel, heat, coolant, leaks, the
+## battery, a flat tyre, whatever a creature did, and back on its wheels.
+func repair_all() -> void:
+	fuel = FUEL_CAPACITY
+	temp = TEMP_NORMAL
+	coolant = 1.0
+	coolant_leak = false
+	heat_lockout = false
+	fuel_leak = 0.0
+	battery = 1.0
+	tyre_flat = false
+	tyre_stage = 0
+	spare_available = true
+	refresh_tyre_visuals()
+	if attack != null:
+		attack.reset()
+		attack.set_tarp(false)
+	if global_transform.basis.y.y < 0.9:
+		recover()
 
 
 ## On its side or roof and not going anywhere.
@@ -1053,7 +1085,23 @@ func recover() -> void:
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
 	global_transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), global_position + Vector3.UP * 1.6)
+	snap_visuals()
+
+
+## After the van is moved by hand (a teleport, righting it): draw it and every
+## part of it where it is now. Resetting only the body left the wheels drawn
+## back where the van had been (a van with no tyres) until it moved again.
+func snap_visuals() -> void:
+	# a parked van is frozen and asleep, and then its wheels are never moved:
+	# after a teleport they stayed where the van had been. Wake it and keep it
+	# unfrozen a moment so the wheels settle here.
+	freeze = false
+	sleeping = false
+	_parked_t = 0.0
+	_teleport_hold = 1.0
 	reset_physics_interpolation()
+	for n in find_children("*", "Node3D", true, false):
+		(n as Node3D).reset_physics_interpolation()
 
 
 # --- mirrors and the nav screen ---------------------------------------------------
@@ -1149,9 +1197,13 @@ func _update_nav_screen(delta: float) -> void:
 	var k := smoothstep(0.0, 1.0, _nav_t)
 	_nav.position = (NAV_MIDDLE[0] as Vector3).lerp(NAV_ASIDE[0], k)
 	_nav.rotation_degrees = (NAV_MIDDLE[1] as Vector3).lerp(NAV_ASIDE[1], k)
-	# aside: draw the display only for eyes other than the driver's
+	# aside: draw the display only for eyes other than the driver's - when
+	# there are two screens. In the solo view one person plays (or tests)
+	# both, so hiding it from the only view would just hide it.
 	var layer := 1
-	if nav_aside and driver != null:
+	var boot = get_tree().current_scene
+	var solo: bool = boot != null and boot.get("layout") == Boot.Layout.SOLO
+	if nav_aside and driver != null and not solo:
 		layer = 1 << (1 + driver.index)
 	for n in _nav.get_children():
 		if n is Label3D and (n as Label3D).layers != layer:
@@ -1213,6 +1265,9 @@ func toggle_engine() -> void:
 		return
 	if heat_lockout:
 		_fail_start("Too hot to start - %d C. Needs to cool below %d." % [int(temp), int(RESTART_BELOW)])
+		return
+	if attack != null and attack.tarped:
+		_fail_start("It's under the tarp. Get out and pull it off first (hold E at a back corner).")
 		return
 	engine_on = true
 	temp = maxf(temp, TEMP_AMBIENT + 1.0)

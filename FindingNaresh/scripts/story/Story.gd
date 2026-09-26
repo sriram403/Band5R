@@ -92,7 +92,7 @@ func setup(b: Node) -> void:
 			"hint": "Passenger: swing the nav to your side (N / pad A) and it reads out pace notes for the bends ahead - call them to the driver, who can hardly see.",
 			"done": func(): return _van_near("ghat_pass", 50.0) or flags.has("first_attack")},
 		{"id": "hide_van", "text": "Something wants the van. Hide it, or get away",
-			"hint": "Pull over, engine off (X), lights off, both out, and hold E at the back of the van to pull the tarp over it. Keep out of its sight. Or just drive off.",
+			"hint": "Stop well back from it: handbrake, engine off (X). Hold E at a back corner of the van to pull the tarp over it - one of you can start it and the other finish. Then hide, inside the van if you like, and watch it in the door mirrors. Or just drive off past it.",
 			"done": func(): return flags.has("first_attack_over")},
 		{"id": "to_tower", "text": "Over the pass towards the sea: stop at the coast watchtower",
 			"hint": "Beach Road runs down from the pass. The watchtower stands off the road on the left, high on its legs. From up there you'd see the whole coast.",

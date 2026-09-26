@@ -172,7 +172,7 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	c.refresh_tyre_visuals()
 	c.set_headlights(bool(cd.get("headlights", false)))
 	c.attack.set_tarp(bool(cd.get("tarp", false)))
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	var mood := boot.get_tree().get_first_node_in_group("mood") as Mood
 	if mood != null:
 		mood.set_now(float(d.get("mood", 1.0)))

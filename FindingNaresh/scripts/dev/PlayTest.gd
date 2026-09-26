@@ -21,7 +21,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
 const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"]}
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "maze", "relay", "relay_kb", "climb", "carry", "look", "pad", "teleports", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "climb", "carry", "look", "pad", "teleports", "perf", "save"]
 
 
 func _ready() -> void:
@@ -233,7 +233,7 @@ func _run() -> void:
 		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
 		_finish()
 		return
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -263,6 +263,8 @@ func _run() -> void:
 		var started_at := Time.get_ticks_msec()
 		release_all()
 		await fresh_hands()
+		if s.begins_with("opening"):
+			await _p2_on_keyboard()
 		await call("t_" + s)
 		release_all()
 		await _unplug_test_pad()
@@ -270,6 +272,17 @@ func _run() -> void:
 		if PlayTest.resume != "":
 			return      # the scene is reloading; the new test node finishes up
 	_finish()
+
+
+## The opening's scenarios play P2 with the keyboard (TAB); with a real pad
+## plugged in, P2 would be on it and TAB leaves the keyboard with P1. Put P2
+## on the keyboard, solo view, as with no pad.
+func _p2_on_keyboard() -> void:
+	if boot.devices.size() < 2 or boot.devices[1].kind == InputDevice.Kind.KBM:
+		return
+	boot._set_p2_device(InputDevice.keyboard())
+	boot._set_layout(Boot.Layout.SOLO)
+	await physics_frames(3)
 
 
 ## Scenarios that plug in a pretend pad for P2 leave it plugged in; unplug it
@@ -523,7 +536,7 @@ func t_crash() -> void:
 	# deliberately roll it: hard turns at speed down a slope
 	c.freeze = false
 	c.global_transform = Transform3D(Basis(Vector3.FORWARD, PI) * c.global_transform.basis, c.global_position + Vector3.UP * 2.5)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	for k in 6:
 		await wait(0.5)
 		log_line("  t+%.1f s: up.y %.2f frozen=%s speed %.1f" % [0.5 * (k + 1), c.global_transform.basis.y.y, c.freeze, c.linear_velocity.length()])
@@ -1117,7 +1130,7 @@ func van_to(poi_pos: Vector3) -> void:
 	c.linear_velocity = Vector3.ZERO
 	c.angular_velocity = Vector3.ZERO
 	c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP), p + Vector3.UP * 0.9)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	c.parking_brake = true      # a parked van
 	await physics_frames(20)
 
@@ -2149,23 +2162,23 @@ func t_roadworks() -> void:
 	c.linear_velocity = Vector3.ZERO
 	c.angular_velocity = Vector3.ZERO
 	c.global_transform = Transform3D(basis, lane.point(520) + Vector3.UP * 0.8)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await physics_frames(8)
 	check(not c.tyre_flat, "unarmed roadworks leave an older route run alone")
 	# what the driver sees coming up to the spill
 	c.global_transform = Transform3D(basis, lane.point(505) + Vector3.UP * 0.8)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await seat_p1_driver()
 	await wait(0.6)
 	await shot("roadworks_approach")
 	p1().force_exit = true
 	await physics_frames(3)
 	c.global_transform = Transform3D(basis, lane.point(510) + Vector3.UP * 0.8)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await physics_frames(8)
 	flags["opening_puncture_armed"] = true
 	c.global_transform = Transform3D(basis, lane.point(520) + Vector3.UP * 0.8)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await physics_frames(8)
 	check(c.tyre_flat and flags.has("opening_puncture_done"),
 		"an armed opening punctures the van once at the fixed nails")
@@ -2176,10 +2189,10 @@ func t_roadworks() -> void:
 	c.refresh_tyre_visuals()
 	boot.story.opening_mode = true
 	c.global_transform = Transform3D(basis, lane.point(505) + Vector3.UP * 0.8)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await physics_frames(8)
 	c.global_transform = Transform3D(basis, lane.point(520) + Vector3.UP * 0.8)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await physics_frames(8)
 	boot.story.opening_mode = false
 	check(c.tyre_flat, "during the opening the nails puncture the van even before the refuel")
@@ -2398,7 +2411,7 @@ func t_tagging() -> void:
 	var c := camper()
 	c.parking_brake = true
 	c.global_transform = Transform3D(Basis(), lane + Vector3(-6, 0.8, -4))
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await wait(1.0)
 	p1().enter_seat(c, c.seat_nodes["driver"], "driver")
 	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
@@ -2535,7 +2548,7 @@ func t_binoculars() -> void:
 	var c := camper()
 	c.parking_brake = true
 	c.global_transform = Transform3D(Basis(), lane + Vector3(-6, 0.8, -4))
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await wait(1.0)
 	q.enter_seat(c, c.seat_nodes["driver"], "driver")
 	await wait(0.2)
@@ -3174,44 +3187,125 @@ func t_ghat() -> void:
 			await shot("ghat_glimpse")
 	log_line("notes read on the way up: %s" % str(notes_seen.keys()))
 	check(glimpsed and st.flags.has("ghat_glimpse"), "on the second hairpin a creature is glimpsed between the trees")
-	check(st.flags.has("first_attack") and g.attacker != null, "at the pass the first creature steps out (drove %.0f s)" % tt)
+	check(st.flags.has("first_attack") and g.attacker != null, "near the pass the first creature shows up (drove %.0f s)" % tt)
+	var cr := g.attacker
+	var spawn_d := cr.global_position.distance_to(c.global_position)
+	log_line("it showed up %.0f m ahead" % spawn_d)
+	check(spawn_d > 80.0, "it shows up far up the road, not on top of you (%.0f m)" % spawn_d)
+	# stop well back: brake, handbrake, engine off
 	ad.release()
 	key(KEY_S, true)
 	await wait(2.0)
 	key(KEY_S, false)
 	await tap(KEY_SPACE)
-	await wait(0.3)
-	await shot("ghat_attack")
-	t0 = Time.get_ticks_msec()
-	while c.attack.stage() < 1 and Time.get_ticks_msec() - t0 < 25000:
-		await wait(0.2)
-	await wait(2.5)
-	log_line("it reached the van in %.1f s: stage %d, leak %.1f L/min" % [(Time.get_ticks_msec() - t0) / 1000.0, c.attack.stage(), c.attack.leak_rate()])
-	check(c.attack.stage() >= 1 and c.attack.leak_rate() > 0.0, "it comes for the van and the fuel starts to leak")
-	check(st.current()["id"] == "hide_van", "the objective: hide the van, or get away")
-	# engine and lights off, both out and away up the road, the tarp on
 	await tap(KEY_X)
-	c.set_headlights(false)
+	await wait(0.5)
+	await shot("ghat_attack")
+	check(c.attack.stage() == 0 and not c.engine_on, "stopped well back, engine off: it hasn't come for the van")
+	check(st.current()["id"] == "hide_van", "the objective: hide the van, or get away")
+	# both out; P1 starts the tarp at one back corner, P2 finishes it at the other
+	await tap(KEY_E)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.6)
+	check(p1().seat == null and q.seat == null, "both out of the van")
+	await _to_tarp_corner(p1(), c, -1.0)
+	log_line("P1 at the back corner: '%s'" % p1().prompt_text)
+	key(KEY_E, true)
+	await wait(VanAttack.TARP_ON_S * 0.5)
+	key(KEY_E, false)
+	await wait(1.0)
+	var half := c.attack.tarp_progress()
+	log_line("P1 let go at %.0f%%: '%s'" % [half * 100.0, p1().prompt_text])
+	check(not c.attack.tarped and half > 0.35 and half < 0.65, "P1 pulls it half way; letting go keeps it (%.0f%%)" % (half * 100.0))
+	await _to_tarp_corner(q, c, 1.0)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(VanAttack.TARP_ON_S * 0.5 + 0.4)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.3)
+	check(c.attack.tarped and not c.headlights_on, "P2 finishes it at the other corner: the van is under the tarp")
+	await shot("ghat_tarped")
+	# in, to hide: the doors still work under the tarp, the engine doesn't
+	await _to_door(p1(), c, "driver")
+	await tap(KEY_E)
+	await _to_door(q, c, "passenger")
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.6)
+	check(p1().seat_role == "driver" and q.seat_role == "passenger", "both hide inside the tarped van")
+	await tap(KEY_X)
+	await wait(0.3)
+	check(not c.engine_on, "under the tarp the engine won't start (it says why)")
+	var mirrors_on := false
+	for _i in 10:
+		await physics_frames(1)
+		for sv in c._mirrors:
+			if sv.render_target_update_mode != SubViewport.UPDATE_DISABLED:
+				mirrors_on = true
+	check(mirrors_on, "from inside, the door mirrors still show what's out there")
+	# it comes down the road on its round (sped up: from 35 m up the road)
+	var up_road := c.global_position - (-c.global_transform.basis.z) * -35.0
+	var ni := int(g.road.nearest(up_road.x, up_road.z)["index"])
+	var near_pt := g.road.point(ni) + g.road.right(ni) * 3.5
+	cr.global_position = Vector3(near_pt.x, Landscape.ground(near_pt.x, near_pt.z), near_pt.z)
+	cr.reset_physics_interpolation()
+	var closest := 999.0
+	t0 = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 45000:
+		await wait(0.25)
+		closest = minf(closest, cr.global_position.distance_to(c.global_position))
+		if closest < 12.0 and cr.global_position.distance_to(c.global_position) > closest + 8.0:
+			break
+	log_line("it walked by: closest %.1f m, state %s, van stage %d, interest %.1f" % [closest, Creature.State.keys()[cr.state], c.attack.stage(), cr.van_interest])
+	await shot("ghat_passing")
+	check(closest < 15.0 and c.attack.stage() == 0 and c.attack.leak_rate() == 0.0, "it walks right by the tarped van and doesn't notice it (closest %.1f m)" % closest)
+	# and back up its road (sped up), then it's gone
+	var far_i := mini(g.road.point_count() - 1, int(g.road.nearest(c.global_position.x, c.global_position.z)["index"]) + 40)
+	var far_pt := g.road.point(far_i) + g.road.right(far_i) * 3.5
+	cr.global_position = Vector3(far_pt.x, Landscape.ground(far_pt.x, far_pt.z), far_pt.z)
+	cr.reset_physics_interpolation()
+	t0 = Time.get_ticks_msec()
+	while not st.flags.has("first_attack_over") and Time.get_ticks_msec() - t0 < 20000:
+		await wait(0.25)
+	check(st.flags.has("first_attack_over") and cr.passive, "back up the road it's gone for good")
+	await wait(0.6)
+	check(st.current()["id"] == "to_tower", "the objective moves on: to the coast watchtower")
+	# out, tarp off, on we go
 	p1().force_exit = true
 	q.force_exit = true
 	await physics_frames(4)
-	var back := g.road.point(maxi(0, g.road.point_count() - 60))
-	await place_player(p1(), back + Vector3(0, 0.5, 0), 0.0)
-	await place_player(q, back + Vector3(3, 0.5, 0), 0.0)
-	c.attack.set_tarp(true)
-	check(c.attack.tarped, "the van is under the tarp")
-	g.attacker.van_interest = minf(g.attacker.van_interest, 3.0)    # its 20-40 s of patience, shortened
-	t0 = Time.get_ticks_msec()
-	while not st.flags.has("first_attack_over") and Time.get_ticks_msec() - t0 < 40000:
-		await wait(0.25)
-	log_line("it gave up after %.1f s; leak %.2f, players taken: %s" % [(Time.get_ticks_msec() - t0) / 1000.0, c.attack.leak_rate(), str([p1().taken_grace > 0.0, q.taken_grace > 0.0])])
-	check(st.flags.has("first_attack_over") and c.attack.leak_rate() == 0.0, "under the tarp it loses interest and goes; the leak stops")
-	await wait(0.6)
-	check(st.current()["id"] == "to_tower", "the objective moves on: to the coast watchtower")
+	await _to_tarp_corner(p1(), c, -1.0)
+	key(KEY_E, true)
+	await wait(VanAttack.TARP_OFF_S + 0.5)
+	key(KEY_E, false)
+	check(not c.attack.tarped, "hold E at a corner: the tarp comes off")
 	c.attack.set_tarp(false)
 	mood.set_now(1.0)
 	if c.nav_aside:
 		c.swing_nav()
+
+
+## Stand by a back corner of the van (side -1 left, +1 right) looking at it.
+func _to_tarp_corner(pl: PlayerRig, c: Camper, side: float) -> void:
+	var stand := c._body_root.global_transform * Vector3(side * 2.3, 0, 3.4)
+	var look := c._body_root.global_transform * Vector3(side * 1.3, 1.3, 2.85)
+	await place_player(pl, Vector3(stand.x, Landscape.ground(stand.x, stand.z) + 0.3, stand.z), 0.0)
+	await wait(0.4)
+	await look_at_point(pl, look)
+	await physics_frames(3)
+
+
+## Stand outside a door of the van looking at it.
+func _to_door(pl: PlayerRig, c: Camper, role: String) -> void:
+	var sx := -1.0 if role == "driver" else 1.0
+	var stand := c._body_root.global_transform * Vector3(sx * 2.9, 0, -1.8)
+	var look := c._body_root.global_transform * Vector3(sx * 1.46, 1.4, -1.8)
+	await place_player(pl, Vector3(stand.x, Landscape.ground(stand.x, stand.z) + 0.3, stand.z), 0.0)
+	await wait(0.4)
+	await look_at_point(pl, look)
+	await physics_frames(3)
 
 
 ## D11, the coast watchtower: park, get out, and the creature at its base
@@ -3491,6 +3585,115 @@ func t_relay_kb() -> void:
 	check(relay.opened, "turned on the keyboard from fresh, the box opens")
 
 
+## The ghat as a person testing alone sets it up: F1, Story -> jump to "up
+## the ghat", Travel -> the foot of the ghat, Van -> bring it here, both in;
+## close. The van stands on its wheels; drive up, swing the nav (N) and the
+## pace notes show; then break the van and "fix everything" fixes it.
+func t_ghat_menu() -> void:
+	var b: LevelBuilder = boot.builder
+	var dm: DevMenu = boot.dev_menu
+	var st: Story = boot.story
+	var c := camper()
+	var g := get_tree().get_first_node_in_group("ghat") as Ghat
+	for f in ["ghat_glimpse", "first_attack", "first_attack_over"]:
+		st.flags.erase(f)
+	await tap(KEY_F1)
+	await physics_frames(2)
+	dm.set_tab(DevMenu.TABS.find("Story"))
+	for i in dm._rows.size():
+		if dm._rows[i]["action"] == "jump" and dm._rows[i]["arg"] == st.index_of("ghat"):
+			dm._select(i, true)
+	await tap(KEY_ENTER)
+	dm.select_place("j3")
+	await tap(KEY_ENTER)
+	dm.set_tab(DevMenu.TABS.find("Van"))
+	dm.select_action("van_here")
+	await tap(KEY_ENTER)
+	await wait(0.4)
+	await shot("menu_van_paused")          # the menu still open: the game is paused
+	await tap(KEY_F1)
+	await wait(1.5)
+	await look_at_point(p1(), c.global_position)
+	await wait(0.3)
+	await shot("menu_van_after")
+	var side_at := c.global_transform * Vector3(7.0, 0.0, 0.0)
+	await place_player(p1(), Vector3(side_at.x, Landscape.ground(side_at.x, side_at.z) + 0.3, side_at.z), 0.0)
+	await wait(0.4)
+	await look_at_point(p1(), c.global_position + Vector3.DOWN * 0.3)
+	await wait(0.3)
+	await shot("menu_van_side")
+	for w in c._wheels:
+		var wl := c.global_transform.affine_inverse() * (w as Node3D).global_position
+		log_line("wheel %s: van-local %s, contact %s, visible %s; mesh local %s visible %s" % [w.name, wl, (w as VehicleWheel3D).is_in_contact(), (w as Node3D).is_visible_in_tree(), c._wheel_meshes[c._wheels.find(w)].position, c._wheel_meshes[c._wheels.find(w)].visible])
+	log_line("van: freeze %s, y %.2f, ground %.2f, vel %s" % [c.freeze, c.global_position.y, Landscape.ground(c.global_position.x, c.global_position.z), c.linear_velocity])
+	await tap(KEY_F1)
+	dm.set_tab(DevMenu.TABS.find("Van"))
+	dm.select_action("van_seat")
+	await tap(KEY_ENTER)
+	await tap(KEY_F1)
+	await wait(2.0)
+	check(st.current()["id"] == "ghat", "the Story jump: up the ghat road")
+	var wheels_ok := true
+	for m in c._wheel_meshes:
+		var local := c.global_transform.affine_inverse() * (m as Node3D).global_position
+		if local.length() > 4.0 or local.y > 0.2:
+			wheels_ok = false
+			log_line("wheel %s at van-local %s" % [m.name, local])
+	check(wheels_ok and p1().seat_role == "driver" and q_seat(), "the brought van stands on its wheels, both of us in it")
+	await shot("menu_van_brought")
+	# drive up and swing the nav
+	if not c.engine_on:
+		await tap(KEY_X)
+	var i0 := int(g.road.nearest(c.global_position.x, c.global_position.z)["index"])
+	var path := Route.from_points(g.road.points.slice(i0), false)
+	var ad := AutoDriver.new(self, path, c)
+	var nav: Label3D = c._needles.get("nav_label")
+	var tt := 0.0
+	var swung := false
+	var notes := ""
+	while tt < 150.0 and g.fog < 0.95:
+		await get_tree().physics_frame
+		tt += 1.0 / 60.0
+		ad.step(22.0)
+		if tt > 2.0 and not swung:
+			swung = true
+			ad.release()
+			await tap(KEY_N)
+		if swung and nav.text.contains("LEFT") or nav.text.contains("RIGHT"):
+			notes = nav.text
+	ad.release()
+	key(KEY_S, true)
+	await wait(2.0)
+	key(KEY_S, false)
+	await tap(KEY_SPACE)
+	log_line("on the ghat %s, fog %.2f, nav: '%s'" % [g.on_ghat, g.fog, notes.replace("\n", " | ")])
+	check(c.nav_aside and notes != "", "N swings the nav and it reads the pace notes")
+	check(g.fog > 0.9, "the fog comes down")
+	# break the van, then fix everything from the menu
+	c.puncture()
+	c.attack.attacked_t = VanAttack.ENGINE_AFTER + 1.0
+	c.fuel = 3.0
+	c.coolant_leak = true
+	c.fuel_leak = 1.0 / 60.0
+	await tap(KEY_F1)
+	dm.set_tab(DevMenu.TABS.find("Van"))
+	dm.select_action("van_fix")
+	await tap(KEY_ENTER)
+	await tap(KEY_F1)
+	await physics_frames(3)
+	check(not c.tyre_flat and c.attack.stage() == 0 and c.fuel > 60.0 and not c.coolant_leak and c.fuel_leak == 0.0,
+		"'Fix the van: everything' fixes the tyre, the creature's damage, fuel and leaks")
+	if c.nav_aside:
+		c.swing_nav()
+	p1().force_exit = true
+	p2().force_exit = true
+	await physics_frames(3)
+
+
+func q_seat() -> bool:
+	return p2().seat_role == "passenger"
+
+
 ## Stealth gym: the cardboard box ("that box moved"), peeking from cover, and
 ## a thrown crate luring a creature to where it lands.
 func t_hiding() -> void:
@@ -3717,7 +3920,7 @@ func t_van() -> void:
 	await look_at_point(p, handle)
 	await wait(0.3)
 	log_line("at the back, engine on: '%s'" % p.prompt_text)
-	check(p.seat == null and p.prompt_text.contains("Engine and lights off"), "with the engine running the tarp won't go on (it says why)")
+	check(p.seat == null and p.prompt_text.contains("Engine off first"), "with the engine running the tarp won't go on (it says why)")
 	c.toggle_engine()
 	await wait(0.3)
 	log_line("engine off: '%s'" % p.prompt_text)
@@ -3726,7 +3929,9 @@ func t_van() -> void:
 	key(KEY_E, false)
 	check(c.attack.tarped and c.attack._tarp.visible, "hold E for 4 s: the van is under the tarp")
 	var seat_block: String = (c._body_root.get_node("SeatPrompt_driver").get_meta("blocked_fn") as Callable).call()
-	check(seat_block.contains("tarp"), "nobody gets in while it's under the tarp")
+	check(seat_block == "", "under the tarp you can still get in and hide")
+	c.toggle_engine()
+	check(not c.engine_on, "the engine won't start under the tarp")
 	await place_player(p, c.global_position + Vector3(-7, 0.25, 7), 0.0)
 	await look_at_point(p, c.global_position)
 	await shot("tarp")
@@ -3777,14 +3982,14 @@ func t_traffic() -> void:
 	c.angular_velocity = Vector3.ZERO
 	c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP),
 		road.point(i) + left * TrafficCar.LANE_OFFSET + Vector3.UP * 0.8)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await wait(14.0)
 	log_line("traffic blocked: index %.1f speed %.1f m/s, separation %.1f m" % [car.progress, car.speed, car.global_position.distance_to(c.global_position)])
 	check(car.waiting and car.speed < 1.0 and car.global_position.distance_to(c.global_position) > 3.0,
 		"the car keeps left and stops behind a parked van")
 	var stopped := car.progress
 	c.global_position = Vector3(0, 0.8, 30)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await wait(4.0)
 	check(car.progress > stopped + 3.0 and car.speed > 5.0,
 		"the car continues when the van clears the lane")
@@ -3917,7 +4122,7 @@ func t_lorry() -> void:
 	c.angular_velocity = Vector3.ZERO
 	c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP),
 		road.point(start) - road.right(start) * TrafficCar.LANE_OFFSET + Vector3.UP * 0.8)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	c.parking_brake = true
 	await wait(0.6)
 	await place_player(p, c.global_position + Vector3(-3, 0, 0), 0.0)
@@ -3993,7 +4198,7 @@ func t_driveway() -> void:
 	c.linear_velocity = Vector3.ZERO
 	c.angular_velocity = Vector3.ZERO
 	c.global_transform = Transform3D(slab.global_basis, slab.global_position + Vector3.UP * 1.4)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await wait(2.5)
 	var parked := c.global_position
 	await wait(2.0)
@@ -4072,7 +4277,7 @@ func t_opening() -> void:
 	var town := boot.world.get_node("TownFuel") as Node3D
 	c.global_position = town.to_global(Vector3(5.0, 0.85, 5.0))
 	c.linear_velocity = Vector3.ZERO
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await wait(0.4)
 	check(st.opening_steps[0] == 2, "reaching Town Fuel advances P1 to filling a can")
 	var pump := town.get_node("WorkingPump") as FuelSource
@@ -4101,11 +4306,11 @@ func t_opening() -> void:
 	c.set_parking_brake(false)
 	c.freeze = false
 	c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP), lane.point(510) + Vector3.UP * 0.8)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await wait(0.2)
 	c.global_transform = Transform3D(Basis.looking_at(Vector3(f.x, 0, f.z), Vector3.UP), lane.point(520) + Vector3.UP * 0.8)
 	c.sleeping = false
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	await wait(0.7)
 	log_line("opening nails: flat=%s armed=%s done=%s step=%d pos=%s" % [c.tyre_flat,
 		st.flags.has("opening_puncture_armed"), st.flags.has("opening_puncture_done"), st.opening_steps[0], c.global_position])
@@ -4123,7 +4328,7 @@ func t_opening() -> void:
 	var slab := boot.world.get_node("P2Driveway") as StaticBody3D
 	c.parking_brake = true
 	c.global_transform = Transform3D(slab.global_basis, slab.global_position + Vector3.UP * 1.2)
-	c.reset_physics_interpolation()
+	c.snap_visuals()
 	var out := house.global_basis * Vector3(0, 0, 1)
 	await place_player(p2(), house.to_global(Vector3(-2.5, 3.35, 2.4)), atan2(-out.x, -out.z))
 	await wait(0.4)

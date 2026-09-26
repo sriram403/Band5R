@@ -11,7 +11,7 @@ extends Node
 const FOG_EASE := 0.25           ## fog boost per second in and out
 const NOTES_AHEAD := 260.0       ## m of road the pace notes read ahead
 const TURN_MIN := 4.0            ## deg per 10 m that counts as a bend
-const ATTACK_AT := 45.0          ## m from the pass when it steps out
+const ATTACK_AT := 110.0         ## m from the pass when it shows up, far ahead
 const GLIMPSE_AT := 40.0         ## m from the second hairpin when it shows
 
 var road: Route
@@ -27,6 +27,8 @@ var _story
 var _check_t := 0.0
 var _glimpse_t := 0.0
 var _gone_t := 0.0
+var _came_close := false
+var _since_spawn := 0.0
 
 
 func setup(b) -> void:
@@ -170,11 +172,13 @@ func _events(van: Camper, _i: int) -> void:
 		if van.global_position.distance_to(hp) < GLIMPSE_AT and on_ghat:
 			flags["ghat_glimpse"] = true
 			_spawn_glimpse(hp)
-	if not flags.has("first_attack") and _both_in(van):
-		var pass_at: Vector3 = _builder.poi["ghat_pass"]
-		if Vector2(van.global_position.x - pass_at.x, van.global_position.z - pass_at.z).length() < ATTACK_AT:
-			flags["first_attack"] = true
-			_spawn_attacker(van, pass_at)
+	# measured along the road, and only past the second hairpin: the hairpins
+	# fold back close to the pass, so a straight-line distance fired on them
+	var after_hairpins := hairpins.size() < 2 or _i >= hairpins[1] + 8
+	var to_pass := float(road.point_count() - 1 - _i) * Route.SAMPLE_SPACING
+	if not flags.has("first_attack") and _both_in(van) and on_ghat and after_hairpins and to_pass < ATTACK_AT:
+		flags["first_attack"] = true
+		_spawn_attacker(van, _builder.poi["ghat_pass"], _i)
 
 
 func _both_in(van: Camper) -> bool:
@@ -201,38 +205,63 @@ func _spawn_glimpse(apex: Vector3) -> void:
 	_glimpse_t = 0.0
 
 
-## At the pass: it steps out at the roadside ahead and comes for the van.
-func _spawn_attacker(van: Camper, pass_at: Vector3) -> void:
-	var fwd := -van.global_transform.basis.z
-	fwd.y = 0.0
-	var side := fwd.normalized().cross(Vector3.UP)
-	var at := van.global_position + fwd.normalized() * 22.0 + side * 6.0
-	at.y = Landscape.ground(at.x, at.z)
+## By the pass, far up the road ahead: it walks down the road's edge towards
+## you on its own round, slowly, and back up again. It notices the van only
+## as creatures do (the engine, the lights, the van moving close, or just
+## being within 15 m of it), so there's time to stop well back, engine off,
+## and tarp the van; then it walks by and goes back up. Or drive past.
+func _spawn_attacker(van: Camper, pass_at: Vector3, van_i: int) -> void:
+	var last := road.point_count() - 1
+	var up := road.forward(last)                   # towards the pass
+	up.y = 0.0
+	up = up.normalized()
+	var side := up.cross(Vector3.UP)
+	var top := pass_at + side * 3.5
+	top.y = Landscape.ground(top.x, top.z)
+	# down the road to a little past where the van is now (it stops there, or
+	# drives on into it), then back up
+	var down_i := maxi(0, van_i - 12)
+	var low := road.point(down_i) + road.right(down_i) * 3.5
+	low.y = Landscape.ground(low.x, low.z)
 	attacker = Creature.new()
 	attacker.name = "FirstCreature"
 	get_tree().get_first_node_in_group("world_root").add_child(attacker)
-	attacker.global_position = at
-	attacker.look_at(Vector3(van.global_position.x, at.y, van.global_position.z), Vector3.UP)
-	attacker.van_interest = 30.0
+	attacker.global_position = top
+	attacker.patrol = PackedVector3Array([low, top])
+	attacker.look_at(Vector3(low.x, top.y, low.z), Vector3.UP)
 	_gone_t = 0.0
-	var away := pass_at + side * 60.0
-	away.y = Landscape.ground(away.x, away.z)
-	attacker.patrol = PackedVector3Array([away, away + fwd.normalized() * 20.0])
+	_came_close = false
+	_since_spawn = 0.0
+	var d := Vector2(van.global_position.x - top.x, van.global_position.z - top.z).length()
 	for p in get_tree().get_nodes_in_group("player"):
-		(p as PlayerRig).say("Something tall steps out at the side of the road ahead. Two eyes catch the light, then it starts towards the van.\n\nIt wants the van. Pull over, engine and lights off, get out, pull the tarp over it (hold E at the back) - and keep out of sight until it goes. Or drive away.", 12.0)
+		(p as PlayerRig).say("Far up the road, by the pass, something tall is walking down the edge of the road. It hasn't seen you yet (%d m).
+
+Stop well back: handbrake, engine off, get out and pull the tarp over the van (hold E at a back corner; one of you can start it and the other finish). Then hide - inside the van is fine - and watch it in the door mirrors. Or drive past it." % roundi(d), 14.0)
 
 
-## Over when it has lost interest and wandered off, or the van left it behind.
+## Over when it has been near and gone back up (or given up on the van), or
+## the van left it behind. After that it walks off over the pass for good.
 func _watch_attack(van: Camper, delta: float) -> void:
+	_since_spawn += delta
 	var d := Vector2(attacker.global_position.x - van.global_position.x, attacker.global_position.z - van.global_position.z).length()
-	if attacker.van_interest <= 0.0 and attacker.state == Creature.State.WANDER and d > 25.0 or d > 90.0:
+	if d < 40.0 or attacker.state == Creature.State.VAN:
+		_came_close = true
+	var calm := attacker.van_interest <= 0.0 and attacker.state == Creature.State.WANDER
+	if (_came_close and calm and d > 45.0) or d > 110.0 and _since_spawn > 5.0:
 		_gone_t += delta
 	else:
 		_gone_t = 0.0
 	if _gone_t > 2.0 and not _story.flags.has("first_attack_over"):
 		_story.flags["first_attack_over"] = true
+		# away over the pass, and it doesn't look back
+		var away := attacker.global_position + (attacker.global_position - van.global_position).normalized() * 150.0
+		away.y = Landscape.ground(away.x, away.z)
+		attacker.patrol = PackedVector3Array([away])
+		attacker.passive = true
 		for p in get_tree().get_nodes_in_group("player"):
-			(p as PlayerRig).say("It's gone, off into the trees. The dripping has stopped.\n\nSo that's what they do: they want the van. Hide it and they lose interest.", 8.0)
-	if _story.flags.has("first_attack_over") and d > 120.0:
+			(p as PlayerRig).say("It's gone, back up over the pass. The dripping has stopped.
+
+So that's what they do: they want the van. Hide it and they pass it by.", 8.0)
+	if _story.flags.has("first_attack_over") and d > 130.0:
 		attacker.queue_free()
 		attacker = null

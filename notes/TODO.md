@@ -24,6 +24,32 @@ being built and tested), so this always shows where the work is right now.
   3-sided cylinder and looked like a tilted square, i.e. like the diamond.
   The triangle is now drawn from its corners (point up), on the dials and
   the boards. relay, relay_kb: 0 failures.
+- Your ghat report (2026-09-26), all fixed:
+  - [x] The creature came on too fast to hide: it now shows up ~105 m ahead
+        (measured along the road, only after the second hairpin: straight
+        line fired on the hairpins, before the glimpse) and walks down the
+        road's edge past wherever the van is, then back up. A text says
+        what to do. Tarped, it walks right by (7 m in the test) and goes;
+        after that it walks off over the pass for good (passive)
+  - [x] The tarp: handles at both back corners at waist height (the only
+        one was 2.75 m up the back); only needs the van stopped and the
+        engine off (lights go off with it); the pulling is kept, so one
+        starts and the other finishes (shown as %); you can get in and hide
+        in a tarped van, seeing out only through the door mirrors; the
+        engine won't start under it
+  - [x] Pace notes after the Story jump: they did show, on the passenger's
+        side; in the solo view you only had the driver's view, where it's
+        hidden by design. In the solo view the driver now sees it too
+  - [x] A brought van with no tyres: a parked van is frozen and asleep and
+        its wheels are then never moved, so they stayed where it had been
+        (400 m away in the test). Teleports and loads now wake it and keep
+        it unfrozen a second (`Camper.snap_visuals`)
+  - [x] "Bring the van here" also fixes it; "Fix the van: everything" now
+        does everything (tyre, creature damage, leaks, tarp, upright)
+  - [x] New `t_ghat_menu`: the ghat set up through F1 as you did it, alone;
+        `t_ghat` hides for real (P1 starts the tarp, P2 finishes, both hide
+        inside); `t_van` updated to the new tarp rules. ghat + ghat_menu: 0
+        failures; Quick run going
 - Barn maze: works; agreed for later (P1 in `notes/POLISH.md`): give the
   guide a job in the dust (a hay blower to stop + a plan of the maze).
 - Fixed from your report: the F1 menu rebuilt, safe teleports (Quick run
