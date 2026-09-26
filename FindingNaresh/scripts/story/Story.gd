@@ -153,6 +153,19 @@ func _physics_process(delta: float) -> void:
 	_beats()
 
 
+## Developer menu "skip": during the two-player opening, skip the rest of
+## it (both players' steps, as if you'd met up at P2's house) and carry on at
+## "drive to the windmill"; after it, the next objective in the chain.
+func skip() -> void:
+	if opening_mode:
+		opening_steps = [P1_OPENING.size(), P2_OPENING.size()]
+		flags["opening_skipped"] = true
+		_opening_update()
+		return
+	index = mini(index + 1, objectives.size() - 1)
+	objective_changed.emit()
+
+
 func begin_opening() -> void:
 	opening_mode = true
 	opening_steps = [0, 0]

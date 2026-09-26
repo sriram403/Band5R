@@ -158,8 +158,7 @@ func run(action: String) -> void:
 			_note = "A crate in front of P1"
 		"skip":
 			var st: Story = boot.story
-			st.index = mini(st.index + 1, st.objectives.size() - 1)
-			st.objective_changed.emit()
+			st.skip()
 			_note = "Objective: " + st.objective_text()
 		"mood":
 			_note = "Left/Right changes the mood"

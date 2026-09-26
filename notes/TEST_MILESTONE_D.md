@@ -1,9 +1,12 @@
 # Milestone D: your test checklist
 
 Two players (P1 on keyboard + mouse, P2 on the controller), split screen.
-Start `Play.bat`, **New game**. Play the opening as before, or skip it: **F1**
-(developer menu) -> "skip objective" until the objective reads *"The windmill
-is jammed..."*, then F1 -> "bring the van" and teleport both to `windmill`.
+Start `Play.bat`, **New game**. Play the opening as before, or skip it:
+**F1** (developer menu) -> "Skip to the next objective" **once** (it skips the
+whole opening; the objective becomes *"Drive up the lane to the windmill"*),
+then "Teleport both players to: < windmill >" (left / right picks the place)
+and "Bring the van here". Press F1 to close. The objective changes to *"The
+windmill is jammed..."* once the van is there.
 
 For each step: **what to do**, then **what should happen**. Note anything that
 feels wrong, slow, confusing or ugly, with the step number.

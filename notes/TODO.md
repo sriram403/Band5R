@@ -621,6 +621,10 @@ test was fixed and now restores its starting layout before the pad test.
         after each scenario; that order rerun and a last Quick (436 checks,
         144 fps driving) both 0 failures. All eight roads 16.0 min; the way out
         valley 4.3 / ridge 3.2 min
+  - [x] Your report: F1 "skip" did nothing in the opening (it moved the
+        chain underneath; the opening's own steps never changed). Now it skips
+        the whole opening to "drive to the windmill" (`Story.skip()`); `dev`
+        checks it; dev/map/story/windmill rerun 0 failures
   - [ ] Your test and approval, then push
 
 ## Milestone E: Bessi beach and Naresh
