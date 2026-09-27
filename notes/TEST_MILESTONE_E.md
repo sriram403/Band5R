@@ -97,7 +97,7 @@ What you can look at, and the jobs:
   minutes for now; we'll tune that together, as agreed.)
 - Anything he should say differently.
 
-### Decisions to confirm (provisional, my choices)
+### Decisions to confirm (provisional, my choices): approved by you for now, 2026-09-27
 1. **A quick tap = the first job** on the wheel, so the everyday ones are
    one tap: "Follow me" / "Wait here" on him, "Go and wait there" on the
    ground, "Refuel" on a can with fuel.
