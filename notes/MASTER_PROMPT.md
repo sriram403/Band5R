@@ -408,7 +408,7 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 6. What to do next
 
-**Milestone C is approved and pushed. Next, in this order:**
+**Milestones A-D are approved and pushed. Next, in this order:**
 
 0. **Milestone E next** (`notes/TODO.md` E1-E8), one part at a time with the
    user (they're testing step by step; rule 2). Start with E1, the Naresh
