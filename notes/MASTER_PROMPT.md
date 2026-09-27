@@ -13,10 +13,11 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-27, Milestone D done, tested by the user, Full 0 failures, pushed; next Milestone E.
+Last updated: 2026-09-27, E1 (the Naresh gym) built and tested by me, handed
+over for the user's test (`notes/TEST_MILESTONE_E.md`, section E1); not pushed.
 Milestones A-D are done, approved by the user and pushed. The user is back:
-one milestone at a time, their test before each push (rule 2). Next is
-Milestone E, starting with E1 (the Naresh gym).
+one part at a time, their test before each push (rule 2). After their E1
+approval: push, then E2 (the Bessi beach greybox).
 Start at section 6.
 
 ---
@@ -163,6 +164,16 @@ they/them.
   ("like it"), the rest not yet.
   The tarp and the cardboard box are block-outs awaiting the user's look
   approval.
+- **Milestone E started (2026-09-27, new thread):** the command key chosen by
+  the user: **V / D-pad Up**. E1 built: `naresh/Naresh.gd` (follow, wait, go,
+  carry, store, refuel, hold, work, get in / out of the van's bench, the
+  scripted refuel mistake, nine random acts every 3-6 min announced 3 s
+  before and never in a `naresh_calm` zone, taken when alone by a creature
+  and left high up 200-400 m off, shouting until fetched, knocked by the van,
+  save / load), `world/Workable.gd` (hold / work things), the command wheel
+  (`PlayerRig`, `ui/CommandWheel.gd`), his subtitles (`PlayerHUD`), the
+  `naresh` gym, F1 rows, `t_naresh` (0 failures, ~5 min). set:gyms 21
+  scenarios 0 failures. Handed over for the user's test.
 
 ---
 
@@ -310,6 +321,10 @@ MPG/
       dev/PlayTest.gd           automated play-test (section 5)
                                Quick/Full presets and per-scenario elapsed time
       dev/DevMenu.gd            F1 developer menu (teleport, van, spawn, skip, gyms)
+      naresh/Naresh.gd          Naresh: state machine, jobs, grid pathing, random acts,
+                                taken / fetched, the van's bench (`Camper.bench`), save
+      world/Workable.gd         things held or worked (shutter, lever, crank) by players or Naresh
+      ui/CommandWheel.gd        the job wheel round the crosshair (PlayerRig.wheel_*)
       world/GymBuilder.gd       gyms: small flat test maps (extends LevelBuilder)
 ```
 
@@ -410,9 +425,11 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 **Milestones A-D are approved and pushed. Next, in this order:**
 
-0. **Milestone E next** (`notes/TODO.md` E1-E8), one part at a time with the
-   user (they're testing step by step; rule 2). Start with E1, the Naresh
-   gym. The open questions are **answered** (user, 2026-09-26; the
+0. **Milestone E** (`notes/TODO.md` E1-E8), one part at a time with the
+   user (they're testing step by step; rule 2). **E1 (the Naresh gym) is
+   built and handed over** (`notes/TEST_MILESTONE_E.md` E1, with its
+   "Decisions to confirm"); wait for their report, fix, push on approval,
+   then E2. The open questions are **answered** (user, 2026-09-26; the
    "Decisions" at the end of `design/BESSI.md` and `design/NARESH.md`): roses
    in travel order; evidence shown, not spelled out; the photo to P2; Naresh
    commands on foot, in the van only from the passenger seat, on a key free
@@ -626,6 +643,20 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   first (`_p2_on_keyboard`); check `pads=` on the first log line.
 - **A failing gym segment stops the Quick run** (`|| exit`), so later
   segments don't run at all: read which segment failed, fix, and rerun Quick.
+  (Superseded: since the resume work a failing segment no longer stops the run.)
+- **A freed object reads as null:** `job_target != null and not
+  is_instance_valid(job_target)` never fired once the target was freed
+  (Godot 4 compares a freed object equal to null). Keep a flag that there
+  was a target (`Naresh._has_target`).
+- **Stowing from someone's hands:** `Carryable.stow` lets go through each
+  holder's `drop_held()`; setting `held = null` first skipped the release and
+  the item kept its holder (nobody could pick it up again). Release, then
+  stow (`Naresh._stow`).
+- **Label3D `fixed_size`:** `pixel_size` then means screen size: 0.0006 at
+  font 48 gives ~17 px letters at any distance (0.0011 at 96 was ~60 px).
+  `offset` is in those pixels too; `visibility_range_begin` hides it close up.
+- **Naresh's debug lines:** `[naresh] <state> -> <state>`, job steps and job
+  ends are printed to the log; tests also log what he says.
 
 ---
 

@@ -9,8 +9,10 @@ being built and tested), so this always shows where the work is right now.
 - Milestone D: done, tested by you ("good to go"), Full suite 0 failures,
   pushed (2026-09-27).
 - Milestone E: your answers are in (`design/BESSI.md`, `design/NARESH.md`,
-  "Decisions"). [~] E1, the Naresh gym (new thread, 2026-09-27). Command key
-  chosen by you: **V** (keyboard) and **D-pad Up** (controller).
+  "Decisions"). E1, the Naresh gym, is built and tested by me: **waiting for
+  your test** (`notes/TEST_MILESTONE_E.md`, section E1: F1, Gyms, naresh).
+  Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
+  Not pushed yet (after your approval). Then E2, the Bessi beach greybox.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -651,7 +653,7 @@ test was fixed and now restores its starting layout before the pad test.
 Design: `design/BESSI.md`, `design/NARESH.md` (proposals; their open questions
 get the provisional answers in MASTER_PROMPT section 6, listed for your review
 in `notes/TEST_MILESTONE_E.md`).
-- [~] E1. Naresh gym (`--gym=naresh`): Naresh as a character (follows,
+- [x] E1. Naresh gym (`--gym=naresh`) (built and tested by me; your test pending): Naresh as a character (follows,
       walks, climbs into the van's back seat), the command wheel (NOT Q:
       Q / L3 is the horn since D4; pick a free key and pad button), commands
       carry / store / refuel / hold / wait / follow / work it, the state
@@ -671,7 +673,21 @@ in `notes/TEST_MILESTONE_E.md`).
         `ui/CommandWheel.gd`; his lines as subtitles (`PlayerHUD`)
   - [x] The gym (`GymBuilder._naresh_gym`), F1 rows (spawn, act now, arm the
         mistake), `t_naresh` written
-  - [~] Run `t_naresh`, fix, look at the screenshots
+  - [x] `t_naresh` (about 5 min): 0 failures after fixing: stowing on the
+        rack never let go (he stayed "holding" it: nobody could pick it up;
+        the scripted mistake hung), a deleted target read as null (no "It's
+        gone"), an announced act could stall, test slips (P1 grabbing from
+        7 m, checking a line the same step). Every job by the real V key and
+        mouse, D-Up on a pad, all nine random acts, the timed zone, taken
+        and fetched, never taken with a player beside him, knocked by the
+        van, save / load, 144 fps
+  - [x] Screenshots: the speech bubble was far too big from a distance:
+        now ~17 px, wrapped, above his head, hidden within 7 m (the
+        subtitle says it there)
+  - [x] set:gyms 21 scenarios, smoke 22, set:creatures 7: all 0 failures
+  - [x] Your test sheet: `notes/TEST_MILESTONE_E.md` section E1, with 8
+        "Decisions to confirm"
+  - [ ] Your test and approval, fixes, push
 - [ ] E2. Bessi beach greybox (the existing `_beach` / roses plaza): sand,
       sea, promenade, empty lit stalls with a radio, boats, casuarinas, the
       memorial, the lighthouse; the nav loses signal; mood to dusk

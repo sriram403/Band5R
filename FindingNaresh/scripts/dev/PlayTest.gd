@@ -6228,6 +6228,8 @@ func t_naresh() -> void:
 	check(boot.huds[0].speech_text.contains("Over here"), "he shouts, and P1 reads it %.0f m away" % p.global_position.distance_to(n.global_position))
 	await place_player(p, drop + Vector3(-2, -5, 30), 0.0)
 	await look_at_point(p, n.global_position + Vector3.UP * 1.5)
+	n.say("Over here! By the tall platform! My friend's with me, don't worry.", true)
+	await wait(0.2)
 	await shot("naresh_taken")
 	await place_player(p, drop + Vector3(-3.5, -4.75, 0), 0.0)
 	var fetched := await until(func() -> bool: return n.state == Naresh.State.FOLLOW, 3.0)

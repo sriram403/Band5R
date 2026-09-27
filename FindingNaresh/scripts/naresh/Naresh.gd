@@ -128,8 +128,14 @@ func _build() -> void:
 	_bubble = Build.label3d("", Vector3(0, 2.25, 0), Vector3.ZERO, 0.16, Color(1, 1, 0.92))
 	_bubble.name = "Speech"
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_bubble.fixed_size = true          # the same size on screen near or far
-	_bubble.pixel_size = 0.0011
+	_bubble.fixed_size = true          # the same size on screen near or far (~17 px letters)
+	_bubble.font_size = 48
+	_bubble.outline_size = 10
+	_bubble.pixel_size = 0.0006
+	_bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_bubble.width = 620.0
+	_bubble.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM   # grows upwards, clear of his head
+	_bubble.offset = Vector2(0, 40)
 	# close by the subtitle says it; the bubble shows who, from further off
 	_bubble.visibility_range_begin = 7.0
 	_bubble.visible = false
