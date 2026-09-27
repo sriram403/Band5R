@@ -6494,4 +6494,12 @@ func t_photo() -> void:
 	check(boot.huds[0]._note.visible and boot.huds[0]._note_text.text.contains("He stood exactly here"), "'He stood exactly here.'")
 	await look_at_point(p, (tip + poi["mast_top"]) * 0.5)
 	await shot("photo_found_view")
+	# a load: the story comes back as saved; the picture is taken again (it
+	# isn't in the save file), without sending the texts a second time
+	var texts: int = st.phone_threads[1].size()
+	st.from_dict(st.to_dict())
+	st.photo_texture = null
+	var again := await until(func() -> bool: return st.photo_texture != null, 3.0)
+	check((headless or again) and st.phone_threads[1].size() == texts and st.current()["id"] == "end_e3",
+		"after a load the photo is back on P2's phone, the texts not sent twice")
 	mood.set_now(0.62)

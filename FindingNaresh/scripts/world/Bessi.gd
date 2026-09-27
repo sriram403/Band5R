@@ -195,6 +195,7 @@ func _memorial(b, root: Node3D) -> Vector3:
 	var pale := ToonMat.make((b.C_STONE as Color).lightened(0.12))
 	var body := StaticBody3D.new()
 	body.name = "Memorial"
+	body.set_meta("tag_name", "the memorial")
 	root.add_child(body)
 	for spec in [[Vector3(7, 0.4, 7), 0.2], [Vector3(5, 0.4, 5), 0.6]]:
 		body.add_child(Build.box(spec[0], stone, mp + Vector3(0, spec[1], 0), Vector3.ZERO, "Step"))
@@ -226,6 +227,7 @@ func _lighthouse(b, root: Node3D, tip: Vector3) -> void:
 	root.add_child(node)
 	var body := StaticBody3D.new()
 	body.name = "LighthouseRock"
+	body.set_meta("tag_name", "the lighthouse")
 	node.add_child(body)
 	var rock := ToonMat.make(Color(0.36, 0.34, 0.33), 0.03)
 	var ground := minf(at.y, rock_top - 1.0)

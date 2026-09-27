@@ -14,6 +14,7 @@
 #   SHOW=1 tools/run_test.sh drive     on screen, with sound, to watch it
 #   GYM=base tools/run_test.sh         in a gym (test map) instead of the world
 #   ARGS="--extent=4000" tools/run_test.sh perf   extra game arguments
+#   NO_CHECK=1 tools/run_test.sh ...              skip the compile check first
 #   TIMEOUT=5400 tools/run_test.sh full           seconds before one game process is
 #                                                 killed as hung (default 3600)
 # The plans are in tools/test_plan.sh (shared with the headless runner).
@@ -42,6 +43,17 @@ else
 	PLAN="$1"
 	rm -f "$PROGRESS" "$RUNS/finished.txt" "$RUNS/summary.txt" "$RUNS"/seg_*.log
 	printf '%s\n%s\n' "$PLAN" "$GYM" > "$RUNS/plan.txt"
+fi
+# Compile first (~40 s): a script error would otherwise leave the game
+# hanging on its failed load until TIMEOUT (10-60 minutes of nothing).
+if [ -z "$NO_CHECK" ]; then
+	check_log="$RUNS/compile.log"
+	"$DIR/run_game.sh" --headless --import > "$check_log" 2>&1
+	if grep -q "SCRIPT ERROR" "$check_log"; then
+		echo "==== the scripts don't compile: nothing run ===="
+		grep -A2 "SCRIPT ERROR" "$check_log" | grep -v "depended scripts" | head -20
+		exit 1
+	fi
 fi
 FG=""
 if [ -z "$SHOW" ]; then
