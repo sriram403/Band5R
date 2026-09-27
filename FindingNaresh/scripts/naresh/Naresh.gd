@@ -65,6 +65,7 @@ var _act_data := {}
 var _last_good := false
 var taken_near := ""              ## where he was left, while TAKEN
 var knocked_t := 0.0
+var sitting := false              ## cross-legged in the fifth rose, waiting (E4)
 ## What he said and did, for tests: [{"t": msec, "text": ...}], [{"id", "good", "tele", "start"}]
 var lines: Array = []
 var acts_log: Array = []
@@ -343,6 +344,13 @@ var _last_state := -1
 var _last_step := -1
 
 func _physics_process(delta: float) -> void:
+	if sitting:
+		if _bubble_t > 0.0:
+			_bubble_t -= delta
+			if _bubble_t <= 0.0:
+				_bubble.visible = false
+		velocity = Vector3.ZERO
+		return
 	if state != _last_state:
 		print("[naresh] %s -> %s (job '%s' step %d)" % [State.keys()[_last_state] if _last_state >= 0 else "-", State.keys()[state], job, job_step])
 		_last_state = state
@@ -729,6 +737,47 @@ func _set_seated_pose(on: bool) -> void:
 			nd.transform = Transform3D(Basis.from_scale(Vector3(0.72, 0.72, 0.72)), Vector3(0, 0.73, 0.02))
 		elif _pose_stand.has(nd.name):
 			nd.transform = _pose_stand[nd.name]
+
+
+# --- in the fifth rose (E4) ---------------------------------------------------------
+
+## Sat still at `xf` (the rose's plinth), no collisions, no random acts,
+## until someone comes (Roses calls stand_from_seat).
+func sit_at(xf: Transform3D) -> void:
+	_cancel_act(false)
+	_end_job()
+	if van != null:
+		_get_out()
+	leader = null
+	state = State.IDLE
+	sitting = true
+	acts_on = false
+	global_transform = xf
+	yaw = xf.basis.get_euler().y
+	(get_node("Collider") as CollisionShape3D).disabled = true
+	_set_seated_pose(true)
+	reset_physics_interpolation()
+
+
+## Up and down off the plinth, beside `p`, following them.
+func stand_from_seat(p: PlayerRig) -> void:
+	if not sitting:
+		return
+	sitting = false
+	_set_seated_pose(false)
+	var dir := p.global_position - global_position
+	dir.y = 0.0
+	var at := global_position + dir.normalized() * minf(dir.length() - 1.5, 5.5)
+	var q := PhysicsRayQueryParameters3D.create(at + Vector3.UP * 4.0, at + Vector3.DOWN * 8.0, 1, [get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	at.y = (hit["position"] as Vector3).y + 0.1 if not hit.is_empty() else Landscape.ground(at.x, at.z) + 0.1
+	global_position = at
+	(get_node("Collider") as CollisionShape3D).disabled = false
+	reset_physics_interpolation()
+	leader = p
+	state = State.FOLLOW
+	acts_on = true
+	act_t = randf_range(act_gap.x, act_gap.y)
 
 
 # --- holding things (the Carryable interface, like a player's) --------------------
