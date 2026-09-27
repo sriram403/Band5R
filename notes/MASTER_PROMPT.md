@@ -5,6 +5,8 @@ Read this whole file (`notes/MASTER_PROMPT.md`) first, then `DESIGN.md` (the agr
 the professional build process with gyms; it supersedes the original spec's plan),
 `notes/TODO.md` (live progress; its "Right now" line says exactly where work stopped),
 `notes/LESSONS.md` (what to do and not to do: read it, and add to it as you learn),
+`notes/PRINCIPLES.md` (how the user wants the work done: first principles, never
+assume an untested limit, the algorithm; also in `CLAUDE.md`),
 `notes/POLISH.md` (agreed changes for after the milestones),
 `README.md`, `FUTURE.md`, `CREDITS.md`, `design/map_plan_v1.png`, and only then the
 original spec `Finding_Naresh_Game_Demo_Build_Prompt.md`, all in
@@ -251,6 +253,10 @@ they/them.
     at the end of a milestone or a full test run: a thread can be compacted or
     stop at any moment. Before leaving a milestone or a thread, go through
     the work and add what's missing.
+18. **Work from first principles (user, 2026-09-27):** `notes/PRINCIPLES.md`.
+    Break a problem down, test the assumption with the smallest experiment,
+    then decide; never assume a limit (speed, cost) you haven't measured.
+    Build in `../MPG_dev` (a git worktree) while long tests run in `MPG`.
 17. **At the end of each milestone, stop and ask (user, 2026-09-27):**
     "continue in this thread, or shall I prepare the hand-over notes for a
     new one?" Don't start the next milestone unasked. In the polishing stage,

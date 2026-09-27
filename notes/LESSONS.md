@@ -72,6 +72,20 @@ The engine-level details (exact Godot calls, numbers) are also in
 
 ## 3. Testing a game
 
+- **Don't assume a speed limit: test it** (user, 2026-09-27). We sat idle
+  through hour-long full runs because "only one game at a time". Broken
+  down and tried: two instances run fine on this PC (112 fps in one while
+  the other ran the full world test; 144 alone). Now long runs go in `MPG`
+  while the next part is built in `MPG_dev` (a git worktree). The way to
+  work is in `notes/PRINCIPLES.md` (first principles, the algorithm).
+- **Check which copy a file goes into:** two new E3 files were written into
+  `MPG` (main) instead of `MPG_dev`, so the dev copy couldn't find them.
+  With two copies, every path names its folder.
+- **A test fix can break the next test:** checking the nav at Last Fuel
+  drove the van there, which put Last Fuel on the paper map, and the map
+  test (next) expects it unknown. Fix a test by the smallest move that keeps
+  the world as the next test expects it (the nav is checked at J1 now).
+
 - **Levels, like a team** (user, 2026-09-26):
   1. while fixing: only the scenarios for the change (seconds to 2 min);
   2. smoke, `tools/run_test.sh` (~2.5 min): the controls + one short world
