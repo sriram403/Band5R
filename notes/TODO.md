@@ -10,7 +10,7 @@ being built and tested), so this always shows where the work is right now.
   pushed (2026-09-27).
 - Milestone E: your answers are in (`design/BESSI.md`, `design/NARESH.md`,
   "Decisions"). E1, the Naresh gym: **approved by you** ("liked it", the 8
-  decisions OK for now, 2026-09-27). [~] Full run, then push.
+  decisions OK for now, 2026-09-27), full run clean, **pushed**. [~] E2.
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -688,7 +688,14 @@ in `notes/TEST_MILESTONE_E.md`).
   - [x] Your test sheet: `notes/TEST_MILESTONE_E.md` section E1, with 8
         "Decisions to confirm"
   - [x] Your test and approval (the 8 decisions confirmed for now)
-  - [~] Full run, then push
+  - [x] Full run, then push: openings and every gym 0 failures (the honk
+        check once caught the van a step early: fixed); the world part
+        crashed once in the graphics driver (resumed as `set:world_full`),
+        then 48 scenarios with 2 test-order failures (the lorry already set
+        off, a can left on the rack after the long drives): `Lorry.reset()`,
+        `reset_can`; the road drive run first then met the town cars (it now
+        clears the traffic itself). Rechecked: routes + both, 0 failures.
+        Pushed (2026-09-27)
 - [ ] E2. Bessi beach greybox (the existing `_beach` / roses plaza): sand,
       sea, promenade, empty lit stalls with a radio, boats, casuarinas, the
       memorial, the lighthouse; the nav loses signal; mood to dusk

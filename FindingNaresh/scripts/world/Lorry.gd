@@ -19,12 +19,26 @@ var phase := Phase.PARKED
 var held_up_s := 0.0             ## s the van spent close behind it (tests, tuning)
 var _crawled := 0.0
 var _shift := 0.0
+var _start_progress := -1.0
 
 
 func _ready() -> void:
 	lane_offset = VERGE
 	body_half = SIZE.z * 0.5
 	super._ready()
+
+
+## Back in its lay-by, waiting (the dev menu, tests after a long drive set it off).
+func reset() -> void:
+	if _start_progress >= 0.0:
+		progress = _start_progress
+	phase = Phase.PARKED
+	lane_offset = VERGE
+	speed = 0.0
+	_crawled = 0.0
+	_shift = 0.0
+	held_up_s = 0.0
+	_position_on_road()
 
 
 func _build() -> void:
@@ -57,6 +71,8 @@ func _probe_width() -> float:
 func _physics_process(delta: float) -> void:
 	if route == null or not active:
 		return
+	if _start_progress < 0.0:
+		_start_progress = progress
 	match phase:
 		Phase.PARKED:
 			speed = 0.0

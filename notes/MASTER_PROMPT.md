@@ -13,11 +13,11 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-27, E1 (the Naresh gym) built and tested by me, handed
-over for the user's test (`notes/TEST_MILESTONE_E.md`, section E1); not pushed.
+Last updated: 2026-09-27, E1 (the Naresh gym) approved by the user (and its 8
+decisions, for now), full run clean, pushed; E2 (Bessi beach) in progress.
 Milestones A-D are done, approved by the user and pushed. The user is back:
-one part at a time, their test before each push (rule 2). After their E1
-approval: push, then E2 (the Bessi beach greybox).
+one part at a time, their test before each push (rule 2). Now: E2 (the
+Bessi beach greybox), then hand over for their test.
 Start at section 6.
 
 ---
@@ -173,7 +173,7 @@ they/them.
   save / load), `world/Workable.gd` (hold / work things), the command wheel
   (`PlayerRig`, `ui/CommandWheel.gd`), his subtitles (`PlayerHUD`), the
   `naresh` gym, F1 rows, `t_naresh` (0 failures, ~5 min). set:gyms 21
-  scenarios 0 failures. Handed over for the user's test.
+  scenarios 0 failures. **Approved by the user and pushed (2026-09-27).**
 
 ---
 
@@ -427,9 +427,9 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 0. **Milestone E** (`notes/TODO.md` E1-E8), one part at a time with the
    user (they're testing step by step; rule 2). **E1 (the Naresh gym) is
-   built and handed over** (`notes/TEST_MILESTONE_E.md` E1, with its
-   "Decisions to confirm"); wait for their report, fix, push on approval,
-   then E2. The open questions are **answered** (user, 2026-09-26; the
+   approved and pushed**. **E2 in progress** (`world/Bessi.gd`: promenade,
+   stall lights, the radio, the memorial moved onto the photo line, the
+   lighthouse, the nav's lost signal; `t_beach`), then hand over. The open questions are **answered** (user, 2026-09-26; the
    "Decisions" at the end of `design/BESSI.md` and `design/NARESH.md`): roses
    in travel order; evidence shown, not spelled out; the photo to P2; Naresh
    commands on foot, in the van only from the passenger seat, on a key free

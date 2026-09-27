@@ -104,6 +104,10 @@ The engine-level details (exact Godot calls, numbers) are also in
   late in the full run: after the long drives the day had moved on (the mood
   was already dusky), and the van ended far from where a test assumed. Each
   test sets the time of day and positions it needs.
+  It came back in E1's full run: after 16 minutes of driving, the one-time
+  lorry had already pulled out, and a test can was on the van's rack, where
+  moving it does nothing. One-time things need a `reset()`; items go back
+  with `reset_can` (it unstows), never by setting a position.
 - **Never edit game files while a test run is going:** later segments load
   the new files and the run is meaningless (one had to be thrown away).
 - **A parse error hangs the game** on its failed load: run tests with a

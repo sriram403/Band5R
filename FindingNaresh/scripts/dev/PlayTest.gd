@@ -2384,6 +2384,8 @@ func t_house_world() -> void:
 	check(can != null, "an empty test can is available for Town Fuel")
 	if can == null:
 		return
+	# after the long drives it may be on the van's rack: back to the ground first
+	can = await reset_can("station_can_empty", 0.0)
 	can.global_position = pump.to_global(Vector3(0, 0.25, 2.1))
 	can.linear_velocity = Vector3.ZERO
 	can.reset_physics_interpolation()
@@ -4141,6 +4143,10 @@ func t_traffic_world() -> void:
 	log_line("traffic per road (lane, valley, ridge, pump house, ghat): %s" % str(counts))
 	check(counts == [6, 2, 1, 0, 0], "traffic thins out after J1 and there is none after J2")
 	var lo := boot.world.get_node_or_null("Lorry") as Lorry
+	if lo != null and lo.phase != Lorry.Phase.PARKED:
+		log_line("the lorry was %s (an earlier drive set it off): back to its lay-by" % Lorry.Phase.keys()[lo.phase])
+		lo.reset()
+		await physics_frames(3)
 	check(lo != null and lo.phase == Lorry.Phase.PARKED and lo.global_position.distance_to(boot.builder.poi["p2_home"]) < 400.0,
 		"the lorry waits in its lay-by on the lane up from P2's home")
 	tr.density = 0.5
@@ -5095,6 +5101,12 @@ func t_journey() -> void:
 ## it is not in the default list: `tools/run_test.sh routes`.
 func t_routes() -> void:
 	var b: LevelBuilder = boot.builder
+	# the roads, not the traffic: the auto-driver doesn't dodge cars, and what
+	# ran before decides whether the town cars are out (mood 0.6: all gone)
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	var mood_was := mood.value if mood != null else 1.0
+	if mood != null:
+		mood.set_now(0.6)
 	var legs := [
 		["opening: homestead -> town -> P2 -> J1", [["home_lane"]], ""],
 		["valley road J1 -> J2", [["valley_road"]], ""],
@@ -5158,6 +5170,8 @@ func t_routes() -> void:
 		check(arrived and not flipped, "the auto-driver gets through: " + leg[0])
 		check(ad.max_off < 6.0, "stays on the road: " + leg[0])
 	log_line("ROUTE all roads driven in %.1f min" % (total / 60.0))
+	if mood != null:
+		mood.set_now(mood_was)
 
 
 ## D13: the whole way out in one drive, J1 -> the coast watchtower, on both
