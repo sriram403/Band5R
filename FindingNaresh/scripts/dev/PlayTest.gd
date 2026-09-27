@@ -6844,7 +6844,7 @@ func t_boat() -> void:
 	check(off and nz.said_since("THAT way", 0), "the right side now ('Oh! THAT way.'), three pushing: off it slides")
 	check(st.flags.has("drum_free") and not bt.drum.freeze, "the drum is free")
 	await wait(1.0)
-	check(st.current()["id"] == "end_e6", "and the story moves on")
+	check(st.current()["id"] == "storm", "and the story moves on (the storm next)")
 	await look_at_point(p, bt.drum.global_position + Vector3.UP * 0.4)
 	await shot("boat_off")
 	# two to carry it

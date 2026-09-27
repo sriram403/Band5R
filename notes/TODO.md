@@ -17,7 +17,8 @@ being built and tested), so this always shows where the work is right now.
   `../MPG_dev` and E4 (the roses) ahead of it. E3 **approved and pushed**.
   E4 (the roses) **approved and pushed**. E5 (the evidence) **approved and
   pushed**. E6 (the store and the boat) **approved and pushed**.
-  [~] E7, the storm (in `../MPG_dev`, branch `e7`).
+  E7, the storm: **in main, waiting for your test** (`notes/TEST_MILESTONE_E.md`,
+  E7). Then E8: the full suite, push, and the end of Milestone E.
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -783,8 +784,18 @@ in `notes/TEST_MILESTONE_E.md`).
         shutter poked through the roof (rolls up into the doorway now)
   - [x] Merged into main; set:bessi 8 + smoke 23 + the Naresh gym: 0 failures
   - [x] Your test: approved with its decisions (2026-09-27); pushed
-- [ ] E7. The storm starts, the roses sink; "my friend says we should go
+- [~] E7. The storm starts, the roses sink; "my friend says we should go
       north"; save/load of all of it; the full run pass-to-storm
+  - [x] `world/StormFront.gd` (the bank over the Beach Road, rain curtains,
+        lightning, thunder `tools/gen/thunder.py`, mood 0.3), the roses sink,
+        his line; story storm / end_e (north on the coast road with him in
+        the back); `t_storm`
+  - [x] Save / load of Bessi: `t_bessi_save` (its own process). Found: the
+        F1 jump to the storm step didn't start the storm (off by one step)
+  - [x] `t_bessi_run` (Full only): from the ghat pass to north in the storm
+  - [x] Merged into main: set:bessi 9 + bessi_save + smoke 23 + the Naresh
+        gym: 0 failures (one stale check in t_boat fixed)
+  - [ ] Your test (E7 in `notes/TEST_MILESTONE_E.md`), then E8
 - [ ] E8. Full suite, `notes/TEST_MILESTONE_E.md`, push
 
 ## Milestone F: The return and the ending

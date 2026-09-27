@@ -355,3 +355,47 @@ In the normal `MPG` folder (`Play.bat`). Carry on from E5, or **F1** →
    off in one go** (people pushing a hull that slides away kept losing
    their grip).
 4. **Both slips happen once each** (the design's "scripted this once").
+
+---
+
+## E7. The storm starts (the end of Bessi)
+
+In the normal `MPG` folder (`Play.bat`). Carry on from E6 (the drum just
+freed), or **F1** → **Story** → jump to **"Fuel for the coast road"** and free
+the drum (or jump straight to **"The storm is coming"** to see it at once).
+
+1. With the batteries and the drum both done, about 6 s later: **"Back the
+   way you came the sky has gone black. Lightning over the ghat, a wall of
+   rain on the road. Behind you the roses are sinking into the sand."** and
+   Naresh: **"My friend says we should go north."**
+2. Look west, back up the Beach Road. **Expect:** a black bank of cloud
+   over the road towards the ghat, grey rain under it, lightning flashing in
+   it every few seconds and distant thunder a moment later. The light goes
+   darker.
+3. On the dune: **the roses sink** back into the sand (a rumble). The plaza
+   and his camp stay.
+4. Objective: **"The storm is coming. Everyone in the van, north on the
+   coast road"**. Have Naresh follow you: when you get in, he climbs into the
+   back. Drive north on the coast road (it leaves the loop going north,
+   past the lighthouse). **Expect:** a few hundred metres up it, the
+   objective becomes "North on the coast road (Milestone F comes next)".
+   *(Without Naresh in the back, it doesn't count.)*
+5. **Save and load** (if you have a Memory Rose to spend in the journal): in
+   the parked van write the journal (J / RB), then load it (ESC → Load).
+   **Expect:** everything as it was: the roses (up, open or gone), the
+   storm, Naresh (in the back, following, or sitting in the rose), the drum
+   and the box, the photo on P2's phone.
+
+*Tell me:*
+- Does the storm feel like it's time to go? Too subtle, too much?
+- The thunder: I made it myself (like the radio); how does it sound?
+- Is it clear that north (the coast road) is the way?
+
+### Decisions to confirm (provisional, my choices)
+1. **The storm comes 6 s after both jobs**, whichever you do last.
+2. **The storm is a scene over the Beach Road, not weather yet**: the cloud,
+   the rain curtains and the lightning stand there; driving into it (the
+   storm that can throw the van) is Milestone F.
+3. **Bessi ends when the van is on the coast road north of the beach with
+   Naresh in the back** (someone in the front).
+4. **The thunder is my own sound** (`tools/gen/thunder.py`).
