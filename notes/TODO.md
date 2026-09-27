@@ -14,8 +14,9 @@ being built and tested), so this always shows where the work is right now.
   Bessi beach: **approved by you** (and the radio tune, "for now",
   2026-09-27), full world run clean (after test-order fixes and two
   graphics-driver crashes, resumed), **pushed**. E3 (the photo) is built in
-  `../MPG_dev` and E4 (the roses) ahead of it. **E3 is in main, waiting for
-  your test** (`notes/TEST_MILESTONE_E.md`, E3). E4 waits on branch `e4`.
+  `../MPG_dev` and E4 (the roses) ahead of it. E3 **approved and pushed**.
+  [~] E4 (the roses) into main for your test (you tried it before it was
+  merged: main still ended after the photo).
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -735,7 +736,8 @@ in `notes/TEST_MILESTONE_E.md`).
   - [x] `run_test.sh` compiles first, stops in 5 s on a script error
   - [x] Merged into main after E2's push (not pushed); smoke 23, set:bessi,
         tower: 0 failures
-  - [ ] Your test (E3 in `notes/TEST_MILESTONE_E.md`), then push
+  - [x] Your test: approved with its 4 decisions (2026-09-27); Naresh gym
+        rechecked (0 failures); pushed
 - [~] E4. The smoke and the Five Roses rising; the roses open in travel order
       (windmill, water drop, bridge, wave, star); wrong order resets;
       Naresh in the fifth; `t_roses`

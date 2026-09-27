@@ -37,6 +37,11 @@ The engine-level details (exact Godot calls, numbers) are also in
 
 ## 2. Working as an AI model
 
+- **Say where a part lives** (E4): E4 was built on its own branch in
+  `MPG_dev`; the user tested `MPG` and found "the build ends for now". A
+  hand-over says which folder and which branch has the part, and nothing
+  is announced as ready until it is in the copy the user plays.
+
 - **Notes are the memory.** `MASTER_PROMPT.md` (how to resume), `TODO.md`
   (live checklist, "Right now" line), this file (lessons). Update them after
   every step and commit small: a new thread must carry on seamlessly.

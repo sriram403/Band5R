@@ -176,6 +176,8 @@ Road into Bessi (or F1 → Travel → **Bessi beach**, then walk).
 
 ## E3. The photo (where was it taken?)
 
+*Approved by you, 2026-09-27, with its decisions.*
+
 Start `Play.bat`, **New game**, then **F1** → **Story** → jump to **"Down to
 Bessi beach"**, and **F1** → **Travel** → **Bessi beach**. P2 on the
 controller. (Or play through from the coast watchtower.)
