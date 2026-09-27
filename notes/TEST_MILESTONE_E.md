@@ -171,3 +171,47 @@ Road into Bessi (or F1 → Travel → **Bessi beach**, then walk).
 5. **The radio tune** is my own, procedurally made (`tools/gen/radio.py`), so
    there's nothing to credit; a proper recording can replace it at the polish
    stage if you like.
+
+---
+
+## E3. The photo (where was it taken?)
+
+Start `Play.bat`, **New game**, then **F1** → **Story** → jump to **"Down to
+Bessi beach"**, and **F1** → **Travel** → **Bessi beach**. P2 on the
+controller. (Or play through from the coast watchtower.)
+
+1. On the beach. **Expect:** the objective changes to **"Find where Naresh's
+   photo was taken"**; a few seconds later P2 gets "Your phone buzzes: a
+   photo from Naresh's mother" and P1 gets "P2's phone buzzes...".
+2. **P2:** open the phone (D-pad right). **Expect:** a real picture of this
+   beach at dusk: the lighthouse with its beam, a green kiosk with a boat's
+   mast rising out of its roof, and Naresh at the right edge, alone, with
+   empty space beside him. "me and him at Bessi!" **P1's** phone only says it
+   went to P2. Only P2 can see it: P2 describes it, P1 looks.
+3. Use the binoculars and tags (T / RT) to point things out to each other:
+   the lighthouse, the memorial, the kiosk and the boat's mast all have names
+   on their tags.
+4. Walk along the promenade until both line up: the lighthouse right behind
+   the memorial's spire **and** the mast coming out of the kiosk roof. Face
+   the memorial. **Expect:** after a moment, both get "This is it. The
+   lighthouse right behind the spire, the mast coming out of the kiosk roof.
+   He stood exactly here." and the objective moves on (E4 comes next).
+5. Try a couple of steps off it, or looking the other way: nothing happens.
+6. If you want to skip the search: F1 → Travel → **The photo spot (E3)**.
+
+*Tell me:*
+- Was the photo clear enough to find the spot from P2's description?
+- Too easy (it's about 2 m wide), too hard?
+- The kiosk and the boat: do they look right there?
+
+### Decisions to confirm (provisional, my choices)
+1. **The second pair is a kiosk and a boat on the sand**, north-east of the
+   spot (the design page said "a mast on a stall roof"; behind the stalls the
+   view is full of trees, so they're on the open sand, against the sea and
+   sky).
+2. **The photo is a real snapshot** of the place, taken in the game at the
+   moment it arrives (so it has the same dusk light as the beach), with
+   Naresh standing at the edge.
+3. **Found = standing within 2 m of the spot, looking towards the memorial,
+   for about a second.** Either player can find it, not only P2.
+4. **The photo goes to P2 only**, as you decided; P1 gets a text saying so.

@@ -130,6 +130,7 @@ minutes (up to ~3 hours is fine); pacing and fun matter, not length.
 | Lorry | holding you up | pulls out with the van 25-60 m behind; 70 m at 22 km/h (~12 s); then the verge | traffic |
 | Mood | the way out | P2's home 1.0, J1 0.95, J2 0.85, bridge 0.78, ghat 0.7, coast tower 0.62, roses 0.6; eases 0.012/s | world |
 | Mood | what it drives | sun 1.6 -> 1.0 (0.5) -> 0.25 (0); saturation 1.22 -> 0.98 -> 0.8; cars gone by 0.6; dusk < 0.45 | world |
+| Photo spot | two pairs lining up (near in front of far) | on the spot within 2 m of both lines, facing the memorial within 35 deg, 1.2 s; at 2 m off in the world the lamp and spire look 0.5 deg apart, the mast and kiosk ~3 deg | photo |
 | Puzzle rule | a code meant for binoculars only | letters between distance / 450 and distance / 250 (readable zoomed in split view, never by eye) | binoculars |
 
 ## 7. Decisions (2026-09-24)

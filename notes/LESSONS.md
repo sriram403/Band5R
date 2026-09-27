@@ -78,6 +78,10 @@ The engine-level details (exact Godot calls, numbers) are also in
   the other ran the full world test; 144 alone). Now long runs go in `MPG`
   while the next part is built in `MPG_dev` (a git worktree). The way to
   work is in `notes/PRINCIPLES.md` (first principles, the algorithm).
+- **Fail fast, automatically** (E3): a typing slip in a test left the game
+  hanging on its failed load for the whole 10-minute timeout. `run_test.sh`
+  now compiles first and stops in ~5 s on a script error (`NO_CHECK=1` skips
+  it). Proven by breaking a line on purpose.
 - **Check which copy a file goes into:** two new E3 files were written into
   `MPG` (main) instead of `MPG_dev`, so the dev copy couldn't find them.
   With two copies, every path names its folder.

@@ -716,9 +716,22 @@ in `notes/TEST_MILESTONE_E.md`).
         failures; your test sheet (E2 in `notes/TEST_MILESTONE_E.md`)
   - [x] Your test and approval (2026-09-27)
   - [~] Full world run, then push
-- [ ] E3. The photo (W8): the phone photo held by one player (P2), the
+- [~] E3. The photo (W8): the phone photo held by one player (P2), the
       alignment spot (lighthouse behind the memorial spire, a mast on a
       stall roof), binoculars + tags; `t_photo`
+  - [x] Built in the second copy (`../MPG_dev`, branch `e3`) while the E2
+        full run went on here
+  - [x] `world/Alignment.gd` (pairs that line up, 2 m), the photo gym
+        (`--gym=photo`, `t_photo_gym`: 0 failures)
+  - [x] The kiosk and the boat with its mast on the sand NE of the spot;
+        tag names; `core/PhotoCamera.gd` takes a real snapshot with Naresh
+        at the edge; it goes to P2's phone only; story steps to_beach /
+        photo / end_e3; found on the spot looking along it; a load retakes
+        it without resending the texts. `t_photo`: 0 failures, the photo
+        looked at (Naresh first hid the kiosk: moved to the edge)
+  - [x] `run_test.sh` compiles first, stops in 5 s on a script error
+  - [ ] Merge into main after E2's push; smoke; your test (E3 in
+        `notes/TEST_MILESTONE_E.md`)
 - [ ] E4. The smoke and the Five Roses rising; the roses open in travel order
       (windmill, water drop, bridge, wave, star); wrong order resets;
       Naresh in the fifth; `t_roses`
