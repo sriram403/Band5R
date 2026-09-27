@@ -33,6 +33,7 @@ test_plan() {
 		echo "binoculars|binoculars"
 		echo "stealth|stealth,taken,hiding"
 		echo "creature|van"
+		echo "naresh|naresh"
 		echo "traffic|traffic,lorry"
 		echo "house|house"
 		echo "tyre|tyre"

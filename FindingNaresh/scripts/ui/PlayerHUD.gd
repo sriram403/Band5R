@@ -30,6 +30,10 @@ var _note_time := 0.0
 var map_view: PaperMap
 var _objective: Label
 var _objective_hint: Label
+var wheel: CommandWheel
+var _speech: Label
+var _speech_t := 0.0
+var speech_text := ""              ## the last line heard (tests read it)
 ## Seconds spent in each context; control hints fade once you have had time
 ## to learn them, and come back if you have been away for a while.
 var _hint_age := {"foot": 0.0, "driver": 0.0, "passenger": 0.0}
@@ -171,6 +175,22 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	phone.player = p
 	add_child(phone)
 
+	# what Naresh says, as a subtitle over the bottom of the view
+	_speech = _label(19, Color(0.72, 1.0, 0.72))
+	_speech.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_speech.offset_left = -380
+	_speech.offset_right = 380
+	_speech.offset_top = -172
+	_speech.offset_bottom = -118
+	_speech.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_speech.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	_speech.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(_speech)
+	# the wheel of jobs for Naresh
+	wheel = CommandWheel.new()
+	wheel.player = p
+	add_child(wheel)
+
 	# being taken: the view goes white (on top of everything)
 	_white = ColorRect.new()
 	_white.name = "Whiteout"
@@ -181,6 +201,7 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 
 	p.prompt_changed.connect(_on_prompt)
 	p.message.connect(show_note)
+	p.speech.connect(show_speech)
 
 
 func _bar(tag: String, col: Color) -> Control:
@@ -224,6 +245,13 @@ func show_note(text: String, seconds: float) -> void:
 	_note_time = seconds
 
 
+func show_speech(who: String, text: String, seconds: float) -> void:
+	speech_text = "%s: %s" % [who, text]
+	_speech.text = speech_text
+	_speech.visible = true
+	_speech_t = seconds
+
+
 ## Hides the note if one is showing; true if it did.
 func dismiss_note() -> bool:
 	if not _note.visible:
@@ -240,6 +268,10 @@ func _process(delta: float) -> void:
 		_note_time -= delta
 		if _note_time <= 0.0:
 			_note.visible = false
+	if _speech_t > 0.0:
+		_speech_t -= delta
+		if _speech_t <= 0.0:
+			_speech.visible = false
 	if player.journal_open:
 		_note.visible = false      # the journal has the reader's attention
 	var st := get_tree().get_first_node_in_group("story") as Story
@@ -348,6 +380,8 @@ func _update_hint(delta: float, seated: bool) -> void:
 				_: text = "Mouse look around · T tag · N swing the nav to you · L lights · C swap seats when stopped"
 	if text != "" and player.has_binoculars and ctx != "driver":
 		text += " · %s binoculars" % d.glyph("zoom")
+	if text != "" and ctx != "driver" and get_tree().get_first_node_in_group("naresh") != null:
+		text += " · %s (hold) Naresh" % d.glyph("command")
 	_hint.text = text
 
 

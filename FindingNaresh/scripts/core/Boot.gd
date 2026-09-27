@@ -22,6 +22,7 @@ enum Layout { SIDE_BY_SIDE, STACKED, SOLO }
 var world: Node3D
 var builder: LevelBuilder
 var camper: Camper
+var naresh: Naresh = null           ## once he's found (the fifth rose), or in the Naresh gym
 var players: Array[PlayerRig] = []
 var devices: Array[InputDevice] = []
 var huds: Array[PlayerHUD] = []
@@ -100,6 +101,8 @@ func _ready() -> void:
 	_spawn_players()
 	if gym == "house":
 		players[1].flashlight_seconds = 0.0
+	if builder.poi.has("naresh_spawn"):
+		naresh = Naresh.spawn(world, builder.poi["naresh_spawn"], PI)
 	story = Story.new()
 	story.name = "Story"
 	story.add_to_group("story")

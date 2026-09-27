@@ -11,6 +11,8 @@ extends CharacterBody3D
 ## The van draws it (its engine, its lights, seeing it move): it circles it
 ## within 15 m and does it harm while it stays (VanAttack), until the van
 ## drives off or goes under the tarp.
+## They follow Naresh (design/NARESH.md): within 60 m one drifts towards him
+## and circles him; if nobody is within 12 m of him it walks in and takes him.
 
 signal took(player: PlayerRig)
 
@@ -36,6 +38,8 @@ const VAN_ORBIT := 7.0            ## m from the van's middle while it circles it
 const VAN_LIT := [40.0, 80.0, 80.0]   ## m it notices headlights from (day / dusk / night)
 const VAN_MOVING := 45.0          ## m it notices the van moving from
 const VAN_MEMORY := Vector2(20.0, 40.0)   ## s of interest after it last noticed the van
+const NARESH_DRAW := 60.0         ## m; within this it drifts towards Naresh
+const NARESH_ORBIT := 7.0         ## m; it circles him while he isn't alone
 const HEIGHT := 2.6
 const GRAVITY := 22.0
 
@@ -50,6 +54,8 @@ var box_moved := false               ## it is watching a box move right now (tes
 var _box_notice := false             ## what it last noticed was a box
 var _item_ms := -99999               ## when and where the last item it heard landed
 var passive := false                 ## only walks its patrol and shows itself (a glimpse)
+var dormant := false                 ## switched off (the Naresh gym's creature switch)
+var naresh_drawn := false            ## drifting towards Naresh right now (tests read this)
 var van_interest := 0.0              ## s left of wanting to be at the van
 var _van_memory := randf_range(VAN_MEMORY.x, VAN_MEMORY.y)   ## this one's patience with the van
 var _item_at := Vector3.ZERO
@@ -135,6 +141,16 @@ func _build() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if dormant:
+		suspicion = 0.0
+		state = State.WANDER
+		target = null
+		naresh_drawn = false
+		velocity = Vector3(0, velocity.y - GRAVITY * delta if not is_on_floor() else 0.0, 0)
+		move_and_slide()
+		_show(delta)
+		_heard_id = Hearing.last_id()
+		return
 	if passive:
 		state = State.WANDER
 		_noticed_t = 99.0
@@ -163,6 +179,19 @@ func _physics_process(delta: float) -> void:
 	var v := _van()
 	if state == State.VAN and v != null and _flat_dist(v.global_position) <= VanAttack.NEAR:
 		v.attack.creature_near(self, delta)
+	var nz := _naresh()
+	if nz != null and state == State.WANDER and nz.can_be_taken() and _flat_dist(nz.global_position) < CATCH:
+		nz.take(self)
+
+
+## Naresh, if he's out in the open within reach of its interest.
+func _naresh() -> Naresh:
+	var n := get_tree().get_first_node_in_group("naresh") as Naresh
+	if n == null or n.state in [Naresh.State.SEATED, Naresh.State.TAKEN, Naresh.State.KNOCKED]:
+		return null
+	if _flat_dist(n.global_position) > NARESH_DRAW:
+		return null
+	return n
 
 
 # --- senses --------------------------------------------------------------------
@@ -328,10 +357,24 @@ func _give_up() -> void:
 
 func _move(delta: float) -> void:
 	var goal := global_position
+	naresh_drawn = false
 	match state:
 		State.WANDER:
+			var nz := _naresh()
+			naresh_drawn = nz != null and _noticed_t >= ATTEND
 			if _noticed_t < ATTEND:
 				goal = global_position       # stop and look (below)
+			elif nz != null:
+				# drawn to him: in to take him if he's alone, else round and round
+				var off := global_position - nz.global_position
+				off.y = 0.0
+				if nz.can_be_taken() or off.length() < 0.5:
+					goal = nz.global_position
+				elif off.length() > NARESH_ORBIT + 2.0:
+					goal = nz.global_position + off.normalized() * NARESH_ORBIT
+				else:
+					var a := atan2(off.z, off.x) + 0.35
+					goal = nz.global_position + Vector3(cos(a), 0, sin(a)) * NARESH_ORBIT
 			elif patrol.size() > 0:
 				goal = patrol[_pi]
 				if _flat_dist(goal) < 1.0:
@@ -368,7 +411,7 @@ func _move(delta: float) -> void:
 	var v := Vector3.ZERO
 	var stop := 0.3 if state != State.CURIOUS else (BOX_STARE if _box_notice else 1.5)
 	if to.length() > stop:
-		v = to.normalized() * float(SPEED[state])
+		v = to.normalized() * float(SPEED[State.CURIOUS if naresh_drawn and state == State.WANDER else state])
 		var want := atan2(-to.x, -to.z)
 		rotation.y = lerp_angle(rotation.y, want, 1.0 - exp(-delta * (10.0 if state == State.TAKE else 4.0)))
 	elif (state != State.WANDER or _noticed_t < ATTEND) and last_noticed != global_position:

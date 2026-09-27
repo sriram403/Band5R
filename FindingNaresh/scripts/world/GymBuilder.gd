@@ -12,7 +12,7 @@ extends LevelBuilder
 ## More gyms (tagging, hiding, creatures, Naresh, storm) are added as those
 ## mechanics are built; each one starts as a copy of `base`.
 
-const GYMS := ["base", "tyre", "house", "traffic", "tagging", "binoculars", "stealth", "creature"]
+const GYMS := ["base", "tyre", "house", "traffic", "tagging", "binoculars", "stealth", "creature", "naresh"]
 ## Stealth gym: a creature at STEALTH_EYE facing the players' side (+Z), cover
 ## pieces between, the players' lane 30 m out.
 const STEALTH_EYE := Vector3(60, 0, -30)
@@ -99,6 +99,8 @@ func build() -> Node3D:
 		_stealth_gym()
 	if gym == "creature":
 		_creature_gym()
+	if gym == "naresh":
+		_naresh_gym()
 	_world_edge()
 	_gym_spawns()
 	return world
@@ -361,6 +363,203 @@ func _creature_gym() -> void:
 		world.add_child(Build.box(Vector3(0.3, 4.0, 0.3), ToonMat.make(Color(0.9, 0.3, 0.25)), at + Vector3(2, 2, 0), Vector3.ZERO, "DropPost"))
 		world.add_child(Build.label3d(spec[1], at + Vector3(2, 4.6, 0), Vector3.ZERO, 0.8, Color(1, 0.95, 0.8)))
 		drop_points.append({"pos": at, "near": spec[1]})
+
+
+## The Naresh gym (design/NARESH.md): the base yard's cans (one empty), jug,
+## crates and wall, plus a wall with three ways through it: a heavy shutter
+## (someone holds it up), a gate on a spring lever 4 m off (someone holds the
+## lever) and a gate on a crank (worked once, it stays up). A fuel can hidden
+## behind the hide wall for his "I know where one is" act; a red timed zone
+## where no random act may happen; a creature asleep in its pen with a switch
+## by the start; two high places far off where it leaves him.
+const NARESH_WALL_Z := 0.0
+const NARESH_GAPS := {"shutter": 16.0, "lever": 26.0, "crank": 36.0}
+const NARESH_CREATURE := Vector3(70, 0, -40)
+
+func _naresh_gym() -> void:
+	var stone := ToonMat.make(C_STONE)
+	var wood := ToonMat.make(C_WOOD)
+	var steel := ToonMat.make(Color(0.55, 0.58, 0.62))
+	var z := NARESH_WALL_Z
+	var wall := StaticBody3D.new()
+	wall.name = "NareshWall"
+	var edges := [10.0]
+	for k in ["shutter", "lever", "crank"]:
+		edges.append(float(NARESH_GAPS[k]) - 1.5)
+		edges.append(float(NARESH_GAPS[k]) + 1.5)
+	edges.append(44.0)
+	for i in range(0, edges.size(), 2):
+		var x0: float = edges[i]
+		var x1: float = edges[i + 1]
+		var sz := Vector3(x1 - x0, 2.6, 0.4)
+		var at := Vector3((x0 + x1) * 0.5, 1.3, z)
+		wall.add_child(Build.box(sz, stone, at, Vector3.ZERO, "Wall"))
+		wall.add_child(_box_shape(sz, Transform3D(Basis(), at)))
+	# a lintel over each gap, so the way through reads as a doorway
+	for k in NARESH_GAPS:
+		var at := Vector3(float(NARESH_GAPS[k]), 2.45, z)
+		wall.add_child(Build.box(Vector3(3.0, 0.3, 0.4), stone, at, Vector3.ZERO, "Lintel"))
+		wall.add_child(_box_shape(Vector3(3.0, 0.3, 0.4), Transform3D(Basis(), at)))
+	world.add_child(wall)
+
+	# 1. the heavy shutter: hold its handle and it rolls up; let go and it drops
+	var sx: float = NARESH_GAPS["shutter"]
+	var shutter := _gym_gate("Shutter", Vector3(sx, 0, z), Vector3(2.9, 2.3, 0.12), steel)
+	var handle := Workable.new()
+	handle.name = "ShutterHandle"
+	handle.kind = "hold"
+	handle.label = "shutter"
+	handle.verb = "hold up"
+	handle.work_s = 1.2
+	handle.close_s = 0.8
+	handle.stand = Vector3(0, 0, 0.9)
+	handle.add_child(Build.box(Vector3(0.5, 0.12, 0.12), ToonMat.make(Color(0.9, 0.7, 0.2)), Vector3.ZERO, Vector3.ZERO, "Grip"))
+	handle.add_child(_box_shape(Vector3(0.6, 0.4, 0.4), Transform3D.IDENTITY))
+	handle.position = Vector3(sx + 2.1, 1.1, z + 0.35)
+	handle.on_amount = func(a: float): shutter.position.y = a * 2.2
+	world.add_child(handle)
+	poi["naresh_shutter"] = handle.position
+	poi["naresh_shutter_gap"] = Vector3(sx, 0, z)
+
+	# 2. the lever gate: hold the spring lever 4 m away, the gate is up
+	var lx: float = NARESH_GAPS["lever"]
+	var gate := _gym_gate("LeverGate", Vector3(lx, 0, z), Vector3(2.9, 2.3, 0.2), wood)
+	var lever := Workable.new()
+	lever.name = "GymLever"
+	lever.kind = "hold"
+	lever.label = "lever"
+	lever.verb = "pull down"
+	lever.work_s = 0.7
+	lever.close_s = 0.5
+	lever.stand = Vector3(0, 0, 0.9)
+	var arm := Node3D.new()
+	arm.name = "Arm"
+	lever.add_child(arm)
+	arm.add_child(Build.box(Vector3(0.08, 0.9, 0.08), ToonMat.make(Color(0.85, 0.2, 0.18)), Vector3(0, 0.45, 0), Vector3.ZERO, "Handle"))
+	lever.add_child(Build.box(Vector3(0.4, 1.0, 0.3), steel, Vector3(0, -0.5, 0), Vector3.ZERO, "Post"))
+	lever.add_child(_box_shape(Vector3(0.5, 1.9, 0.5), Transform3D(Basis(), Vector3(0, 0, 0))))
+	lever.position = Vector3(lx - 4.0, 1.0, z + 2.5)
+	lever.on_amount = func(a: float):
+		arm.rotation.x = deg_to_rad(-70.0) * a
+		gate.position.y = 2.2 * clampf(a * 1.5, 0.0, 1.0)
+	world.add_child(lever)
+	poi["naresh_lever"] = lever.position
+	poi["naresh_lever_gap"] = Vector3(lx, 0, z)
+
+	# 3. the crank gate: 8 s of cranking and it's up for good
+	var cx: float = NARESH_GAPS["crank"]
+	var cgate := _gym_gate("CrankGate", Vector3(cx, 0, z), Vector3(2.9, 2.3, 0.2), wood)
+	var crank := Workable.new()
+	crank.name = "GymCrank"
+	crank.kind = "work"
+	crank.label = "crank"
+	crank.verb = "turn"
+	crank.work_s = 8.0
+	crank.stand = Vector3(0, 0, 0.9)
+	var wheel := Node3D.new()
+	wheel.name = "Wheel"
+	crank.add_child(wheel)
+	wheel.add_child(Build.cyl(0.35, 0.06, steel, Vector3.ZERO, Vector3(90, 0, 0), 14, "Rim"))
+	wheel.add_child(Build.box(Vector3(0.06, 0.06, 0.3), ToonMat.make(Color(0.9, 0.7, 0.2)), Vector3(0.3, 0, 0.15), Vector3.ZERO, "Knob"))
+	crank.add_child(Build.box(Vector3(0.3, 1.0, 0.3), steel, Vector3(0, -0.5, -0.1), Vector3.ZERO, "Post"))
+	crank.add_child(_box_shape(Vector3(0.8, 1.9, 0.5), Transform3D(Basis(), Vector3(0, -0.1, 0))))
+	crank.position = Vector3(cx + 4.0, 1.0, z + 2.5)
+	crank.on_amount = func(a: float):
+		wheel.rotation.z = -a * TAU * 6.0
+		cgate.position.y = 2.2 * a
+	world.add_child(crank)
+	poi["naresh_crank"] = crank.position
+	poi["naresh_crank_gap"] = Vector3(cx, 0, z)
+	for k in NARESH_GAPS:
+		var names := {"shutter": "SHUTTER: hold it up", "lever": "LEVER GATE: hold the lever", "crank": "CRANK GATE: work it"}
+		world.add_child(Build.label3d(names[k], Vector3(float(NARESH_GAPS[k]), 3.2, z + 0.3), Vector3.ZERO, 0.45, Color(1, 0.95, 0.7)))
+
+	# a cardboard box to store, and a fuel can hidden behind the hide wall
+	var box := CardboardBox.new()
+	box.name = "NareshBox"
+	world.add_child(box)
+	box.position = Vector3(-14, 0.1, 22)
+	poi["naresh_box"] = box.position
+	_place_can(Vector3(-40, 0, -31.6), FuelCan.CAPACITY, "gym_hidden_can")
+	(world.get_node("FuelCan_gym_hidden_can") as Node).add_to_group("naresh_find")
+
+	# the timed zone: no random act while he or a player is on the red disc
+	var calm := Node3D.new()
+	calm.name = "TimedZone"
+	calm.position = Vector3(0, 0, -45)
+	calm.add_to_group("naresh_calm")
+	calm.set_meta("radius", 7.0)
+	calm.add_child(Build.cyl(7.0, 0.04, ToonMat.flat(Color(0.75, 0.22, 0.2)), Vector3(0, 0.03, 0), Vector3.ZERO, 32, "Disc"))
+	calm.add_child(Build.label3d("TIMED ZONE\nno random acts", Vector3(0, 2.2, 0), Vector3.ZERO, 0.6, Color(1, 0.85, 0.8)))
+	world.add_child(calm)
+	poi["naresh_calm"] = calm.position
+
+	# the creature, asleep in its pen until the switch by the start wakes it
+	var pen := StaticBody3D.new()
+	pen.name = "CreaturePen"
+	for spec in [[Vector3(20, 1.0, 0.3), Vector3(0, 0.5, -10)], [Vector3(0.3, 1.0, 20), Vector3(-10, 0.5, 0)], [Vector3(0.3, 1.0, 20), Vector3(10, 0.5, 0)]]:
+		pen.add_child(Build.box(spec[0], wood, spec[1], Vector3.ZERO, "Fence"))
+	pen.position = NARESH_CREATURE
+	world.add_child(pen)
+	var cr := Creature.new()
+	cr.name = "GymCreature"
+	cr.dormant = true
+	world.add_child(cr)
+	cr.position = NARESH_CREATURE
+	cr.rotation.y = PI
+	cr.patrol = PackedVector3Array([NARESH_CREATURE + Vector3(-6, 0, 0), NARESH_CREATURE + Vector3(6, 0, 0)])
+	poi["creature"] = NARESH_CREATURE
+	var sw := StaticBody3D.new()
+	sw.name = "CreatureSwitch"
+	sw.add_child(Build.box(Vector3(0.15, 1.2, 0.15), wood, Vector3(0, 0.6, 0), Vector3.ZERO, "Post"))
+	var lamp := Build.box(Vector3(0.4, 0.3, 0.2), ToonMat.flat(Color(0.3, 0.3, 0.32)), Vector3(0, 1.3, 0), Vector3.ZERO, "Lamp")
+	sw.add_child(lamp)
+	sw.add_child(_box_shape(Vector3(0.5, 1.5, 0.4), Transform3D(Basis(), Vector3(0, 0.75, 0))))
+	var sw_label := Build.label3d("CREATURE: asleep", Vector3(0, 1.9, 0), Vector3.ZERO, 0.3, Color(1, 0.9, 0.8))
+	sw.add_child(sw_label)
+	sw.set_meta("prompt", "Wake the creature")
+	sw.set_meta("prompt_fn", func(_p) -> String: return "Put the creature to sleep" if not cr.dormant else "Wake the creature")
+	sw.set_meta("callback", func(_p):
+		cr.dormant = not cr.dormant
+		sw_label.text = "CREATURE: asleep" if cr.dormant else "CREATURE: AWAKE"
+		lamp.material_override = ToonMat.flat(Color(0.3, 0.3, 0.32) if cr.dormant else Color(0.95, 0.2, 0.15)))
+	sw.position = Vector3(-12, 0, 38)
+	world.add_child(sw)
+	poi["creature_switch"] = sw.position + Vector3(0, 1.3, 0)
+
+	# where it leaves him: a tall platform and a hut roof, 250-300 m from the pen
+	var drops := [[Vector3(80, 0, -300), 5.0, "the tall platform"], [Vector3(-230, 0, -40), 3.5, "the hut roof"]]
+	for spec in drops:
+		var at: Vector3 = spec[0]
+		var h: float = spec[1]
+		var body := StaticBody3D.new()
+		body.name = "NareshDrop"
+		body.add_child(Build.box(Vector3(5, h, 5), stone, Vector3(0, h * 0.5, 0), Vector3.ZERO, "Block"))
+		body.add_child(_box_shape(Vector3(5, h, 5), Transform3D(Basis(), Vector3(0, h * 0.5, 0))))
+		body.add_child(Build.label3d(spec[2], Vector3(0, h + 3.0, 0), Vector3.ZERO, 1.0, Color(1, 0.95, 0.8)))
+		body.position = at
+		world.add_child(body)
+		naresh_drops.append({"pos": at + Vector3(0, h, 0), "near": spec[2]})
+	# and for players the creature takes, two posts
+	for spec in [[Vector3(-150, 0, 150), "the south-west post"], [Vector3(200, 0, 120), "the east post"]]:
+		var at: Vector3 = spec[0]
+		world.add_child(Build.box(Vector3(0.3, 4.0, 0.3), ToonMat.make(Color(0.9, 0.3, 0.25)), at + Vector3(2, 2, 0), Vector3.ZERO, "DropPost"))
+		drop_points.append({"pos": at, "near": spec[1]})
+	poi["naresh_spawn"] = Vector3(-3, 0.1, 35)
+
+
+## A gate panel that slides up out of a doorway (its collider goes with it).
+func _gym_gate(nm: String, at: Vector3, size: Vector3, mat: Material) -> StaticBody3D:
+	var g := StaticBody3D.new()
+	g.name = nm
+	var holder := Node3D.new()
+	holder.name = nm + "Frame"
+	holder.position = at
+	world.add_child(holder)
+	g.add_child(Build.box(size, mat, Vector3(0, size.y * 0.5, 0), Vector3.ZERO, "Panel"))
+	g.add_child(_box_shape(size, Transform3D(Basis(), Vector3(0, size.y * 0.5, 0))))
+	holder.add_child(g)
+	return g
 
 
 func _gym_spawns() -> void:

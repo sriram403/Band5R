@@ -220,6 +220,11 @@ func _trail() -> void:
 
 
 func _smoke(amount: int, life: float, alpha: float) -> CPUParticles3D:
+	return Taken.smoke(amount, life, alpha)
+
+
+## The white smoke, as a particle node to add and start (Naresh's taking too).
+static func smoke(amount: int, life: float, alpha: float) -> CPUParticles3D:
 	var p := CPUParticles3D.new()
 	p.amount = amount
 	p.lifetime = life

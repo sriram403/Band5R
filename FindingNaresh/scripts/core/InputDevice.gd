@@ -41,6 +41,8 @@ const KEYS := {
 	"tag": KEY_T,
 	# the driver's horn (heard 150 m away, by everything)
 	"horn": KEY_Q,
+	# give Naresh a job (hold for the wheel): on foot or from the passenger seat
+	"command": KEY_V,
 }
 ## Mouse buttons that also trigger an action (checked alongside KEYS).
 const MOUSE := {"throw": MOUSE_BUTTON_LEFT, "map_place": MOUSE_BUTTON_LEFT, "map_remove": MOUSE_BUTTON_RIGHT,
@@ -63,6 +65,8 @@ const BUTTONS := {
 	"phone": JOY_BUTTON_DPAD_RIGHT, "menu_up": JOY_BUTTON_DPAD_UP, "menu_down": JOY_BUTTON_DPAD_DOWN,
 	"menu_ok": JOY_BUTTON_A, "menu_back": JOY_BUTTON_B,
 	"nav_swing": JOY_BUTTON_A,
+	# D-Up is the ignition only for the driver, who can't give Naresh jobs
+	"command": JOY_BUTTON_DPAD_UP,
 }
 ## Triggers read as buttons (pressed past halfway). On foot RT and LT have no
 ## other job; in the driver's seat they are throttle and brake, so the actions
@@ -122,6 +126,7 @@ func glyph(action: String) -> String:
 			"tag": return "RT"
 			"zoom": return "LT"
 			"horn": return "L3"
+			"command": return "D-Up"
 			_: return "?"
 	match action:
 		"interact": return "E"
@@ -145,6 +150,7 @@ func glyph(action: String) -> String:
 		"tag": return "T"
 		"zoom": return "RMB"
 		"horn": return "Q"
+		"command": return "V"
 		_: return "?"
 
 

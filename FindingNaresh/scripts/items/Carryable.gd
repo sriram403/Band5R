@@ -69,6 +69,8 @@ func _refresh_prompt() -> void:
 		return "")
 	set_meta("blocked_fn", func() -> String:
 		if not holders.is_empty() and not two_handed:
+			if holders[0] is Naresh:
+				return "Naresh is carrying it"
 			return "P%d is carrying it" % (holders[0].index + 1)
 		return "")
 	set_meta("callback", func(p): p.pick_up(self))

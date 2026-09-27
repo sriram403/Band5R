@@ -375,6 +375,9 @@ func _rows_for(t: int) -> Array:
 				_row("A cardboard box", "spawn_box", null, "[b]Cardboard box[/b]\n\nPick it up (E), then E again to get under it."),
 				_row("A creature, 25 m in front", "spawn_creature", null, "[b]Creature[/b]\n\n25 m in front of P1, facing them."),
 				_row("Binoculars for both", "binoculars", null, "[b]Binoculars[/b]\n\nHold RMB / LT to look."),
+				_row("Naresh, next to P1", "spawn_naresh", null, "[b]Naresh[/b]\n\nNext to P1 (moved there if he's already about), following P1. Hold V / D-Up looking at something to give him a job."),
+				_row("Naresh: a random act now", "naresh_act", null, "[b]A random act[/b]\n\nOne of the acts that fits right now, announced 3 s before as usual."),
+				_row("Naresh: arm the refuel mistake", "naresh_mistake", null, "[b]The scripted mistake[/b]\n\nThe next time he's told to refuel, he picks up the empty can instead, and says he checked it twice."),
 			]
 		"World":
 			var rows: Array = [_header("Mood (sky, fog, birds, traffic, creatures' light)")]
@@ -561,6 +564,27 @@ func run(action: String, arg = null) -> void:
 			boot.world.add_child(bx)
 			bx.global_position = _in_front(p1, 2.0)
 			_note = "A cardboard box at P1's feet (E to pick it up, E again to get under it)."
+		"spawn_naresh":
+			var at := _in_front(p1, 2.5)
+			if boot.naresh == null or not is_instance_valid(boot.naresh):
+				boot.naresh = Naresh.spawn(boot.world, at, p1.yaw + PI)
+			else:
+				boot.naresh.command(p1, "wait")
+				boot.naresh.global_position = at
+				boot.naresh.reset_physics_interpolation()
+			boot.naresh.command(p1, "follow")
+			_note = "Naresh is next to P1, following. V / D-Up (hold) gives him jobs."
+		"naresh_act":
+			if boot.naresh == null:
+				_note = "No Naresh here: spawn him first."
+			elif boot.naresh.act_now():
+				_note = "Naresh: %s (in 3 s)." % boot.naresh.act
+			else:
+				_note = "No random act fits right now."
+		"naresh_mistake":
+			if boot.naresh != null:
+				boot.naresh.refuel_mistake = true
+			_note = "The next refuel will use the empty can." if boot.naresh != null else "No Naresh here: spawn him first."
 		"binoculars":
 			for p in boot.players:
 				p.has_binoculars = true

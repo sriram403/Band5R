@@ -184,6 +184,9 @@ var poi: Dictionary = {}         ## named points of interest, for tests and late
 ## Where a taken player wakes: [{"pos": Vector3, "near": "the windmill"}], placed
 ## by hand near landmarks, never in water or behind a closed gate.
 var drop_points: Array = []
+## Where a creature leaves Naresh: high up, 200-400 m off, within sight
+## (design/NARESH.md): [{"pos": Vector3 (where he stands), "near": String}]
+var naresh_drops: Array = []
 var facility_xf := Transform3D.IDENTITY   ## the water works yard (its -Z points at the river)
 var cooling_station: CoolingStation
 var bridge_span := Vector2i.ZERO          ## Pump House Road samples over the river

@@ -116,6 +116,7 @@ static func collect(boot: Node) -> Dictionary:
 		"relay": relay.to_dict() if relay else {},
 		"house": house.to_dict() if house else {},
 		"town_pump_litres": town_pump.litres if town_pump else 0.0,
+		"naresh": boot.naresh.save_state() if boot.naresh != null and is_instance_valid(boot.naresh) else {},
 		"mood": _mood(boot),
 	}
 
@@ -260,6 +261,17 @@ static func apply(boot: Node, d: Dictionary) -> void:
 		var role: String = e.get("seat", "")
 		if role != "":
 			p.enter_seat(c, c.seat_nodes[role], role)
+
+	# Naresh, where he was (or on the bench if that was somewhere bad); a save
+	# from before he was found has no Naresh in it
+	var nd: Dictionary = d.get("naresh", {})
+	if not nd.is_empty():
+		if boot.naresh == null or not is_instance_valid(boot.naresh):
+			boot.naresh = Naresh.spawn(boot.world, c.global_position + Vector3(3, 0, 0))
+		boot.naresh.load_state(nd, boot.players, c)
+	elif boot.gym == "" and boot.naresh != null and is_instance_valid(boot.naresh):
+		boot.naresh.queue_free()
+		boot.naresh = null
 
 
 static func _make_item(e: Dictionary) -> Carryable:

@@ -37,6 +37,7 @@ var _near_tick := false
 var _away_t := 0.0
 var _engine_t := 0.0
 var _horn_t := 0.0
+var _honk_extra := 0.0            ## s of horn someone else is pressing (Naresh)
 var _drip_t := 0.0
 var _cough_t := 3.0
 var _pull_idle := 0.0
@@ -138,6 +139,8 @@ func _noises(delta: float, speed: float, throttle: float) -> void:
 			Hearing.emit(van.global_position, r, "engine")
 	var d = van.driver.dev if van.driver != null else null
 	var honk: bool = d != null and d.held("horn") and van.battery > 0.05 and not van.driver.map_open
+	_honk_extra = maxf(0.0, _honk_extra - delta)
+	honk = honk or (_honk_extra > 0.0 and van.battery > 0.05)
 	_horn.target = 1.0 if honk else 0.0
 	if honk:
 		_horn_t -= delta
@@ -146,6 +149,15 @@ func _noises(delta: float, speed: float, throttle: float) -> void:
 			Hearing.emit(van.global_position, Hearing.HORN, "horn")
 	else:
 		_horn_t = 0.0
+
+
+## The horn for `seconds`, pressed by someone who isn't the driver (Naresh).
+func honk_for(seconds: float) -> void:
+	_honk_extra = maxf(_honk_extra, seconds)
+
+
+func is_honking() -> bool:
+	return _horn.target > 0.5
 
 
 func _telegraph(s: int) -> void:

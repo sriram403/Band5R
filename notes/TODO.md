@@ -9,7 +9,8 @@ being built and tested), so this always shows where the work is right now.
 - Milestone D: done, tested by you ("good to go"), Full suite 0 failures,
   pushed (2026-09-27).
 - Milestone E: your answers are in (`design/BESSI.md`, `design/NARESH.md`,
-  "Decisions"). Next, in a new thread: [ ] E1, the Naresh gym.
+  "Decisions"). [~] E1, the Naresh gym (new thread, 2026-09-27). Command key
+  chosen by you: **V** (keyboard) and **D-pad Up** (controller).
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -650,12 +651,27 @@ test was fixed and now restores its starting layout before the pad test.
 Design: `design/BESSI.md`, `design/NARESH.md` (proposals; their open questions
 get the provisional answers in MASTER_PROMPT section 6, listed for your review
 in `notes/TEST_MILESTONE_E.md`).
-- [ ] E1. Naresh gym (`--gym=naresh`): Naresh as a character (follows,
+- [~] E1. Naresh gym (`--gym=naresh`): Naresh as a character (follows,
       walks, climbs into the van's back seat), the command wheel (NOT Q:
       Q / L3 is the horn since D4; pick a free key and pad button), commands
       carry / store / refuel / hold / wait / follow / work it, the state
       machine, random acts (every 3-6 min), taken when alone (creatures
       follow him); `t_naresh`
+  - [x] Key agreed with you: V / D-pad Up (D-Up is the ignition only for
+        the driver, who can't give jobs)
+  - [x] `naresh/Naresh.gd`: walking (gravity, a 1 m A* grid round things,
+        jump then give up when stuck), follow / wait / go, jobs carry, store,
+        refuel (from the rack, told at the filler or on a can), hold, work,
+        get in / out (the van's bench, `Camper.bench`), the refuel mistake,
+        random acts (9, announced 3 s before, never in a `naresh_calm` zone),
+        taken when alone (`Creature` drifts to him), shouting until fetched,
+        knocked by the van, save / load (`SaveGame`)
+  - [x] `world/Workable.gd` (hold / work things: shutter, lever, crank)
+  - [x] Command wheel: `PlayerRig` (hold V, point, let go; tap = first job),
+        `ui/CommandWheel.gd`; his lines as subtitles (`PlayerHUD`)
+  - [x] The gym (`GymBuilder._naresh_gym`), F1 rows (spawn, act now, arm the
+        mistake), `t_naresh` written
+  - [~] Run `t_naresh`, fix, look at the screenshots
 - [ ] E2. Bessi beach greybox (the existing `_beach` / roses plaza): sand,
       sea, promenade, empty lit stalls with a radio, boats, casuarinas, the
       memorial, the lighthouse; the nav loses signal; mood to dusk

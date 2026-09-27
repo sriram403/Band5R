@@ -9,6 +9,7 @@ extends CharacterBody3D
 
 signal prompt_changed(text: String)
 signal message(text: String, seconds: float)   ## a note, board or story line to read
+signal speech(who: String, text: String, seconds: float)   ## someone talking (Naresh)
 
 const WALK := 4.3
 const SPRINT := 7.6
@@ -89,6 +90,19 @@ var _climb_since := 0
 var peek_offset := Vector3.ZERO        ## head offset while peeking (body space)
 var _peek_side := Vector3.ZERO         ## the way you last leaned (kept while it works)
 var _box_slot: Node3D
+## Giving Naresh a job: hold the command key, a wheel of the jobs that fit
+## what you look at; point (mouse / right stick) at one and let go. A quick
+## tap gives the first one. Not the driver.
+const WHEEL_PICK := 110.0              ## px of pointer travel to the edge of the wheel
+const WHEEL_DEAD := 26.0               ## px; nearer the middle picks nothing
+const WHEEL_TAP := 0.28                ## s; let go quicker than this: the first job
+var wheel_open := false
+var wheel_jobs: Array = []             ## [{"id", "label"}]
+var wheel_target: Object = null
+var wheel_point := Vector3.ZERO
+var wheel_sel := -1
+var wheel_cursor := Vector2.ZERO
+var _wheel_t := 0.0
 
 
 func _ready() -> void:
@@ -277,6 +291,7 @@ func _physics_process(delta: float) -> void:
 		_scan()
 		if dev.just_pressed("tag") and can_tag():
 			tag_look()
+	_command_controls(delta)
 	if seat != null and not map_open and dev.just_pressed("journal") and _van_parked():
 		_open_journal()
 
@@ -292,6 +307,8 @@ func _process(delta: float) -> void:
 			zoom = want
 		if map_open and paper_map != null:
 			paper_map.move_cursor(dev.cursor_delta(delta))
+		elif wheel_open:
+			_wheel_point(delta)
 		elif taken_hold <= 0.0:
 			_look(delta)
 	if cam == null:
@@ -575,6 +592,133 @@ func _scan() -> void:
 	# things you hold E on (pump handles, cranks) get called every tick
 	if target != null and target.has_meta("hold_fn") and dev.held("interact"):
 		(target.get_meta("hold_fn") as Callable).call(self, get_physics_process_delta_time())
+
+
+# --- giving Naresh jobs ----------------------------------------------------------
+
+func hear(who: String, text: String, seconds := 4.5) -> void:
+	speech.emit(who, text, seconds)
+
+
+## On foot or from the passenger seat, nothing else open.
+func can_command() -> bool:
+	return seat_role != "driver" and not map_open and not journal_open and not phone_open \
+		and knocked_t <= 0.0 and taken_hold <= 0.0 and not in_box and ladder == null
+
+
+func _command_controls(delta: float) -> void:
+	var nz := get_tree().get_first_node_in_group("naresh") as Naresh
+	if wheel_open:
+		_wheel_t += delta
+		if nz == null or not can_command():
+			wheel_open = false
+		elif not dev.held("command"):
+			_wheel_choose(nz)
+		return
+	if nz == null or not dev.just_pressed("command"):
+		return
+	if seat_role == "driver":
+		# on a pad D-Up is the ignition here; only the keyboard's V says why
+		if dev.kind == InputDevice.Kind.KBM:
+			message.emit("Only the passenger can give Naresh jobs from the van. Eyes on the road.", 3.0)
+		return
+	if not can_command():
+		return
+	var pick := command_look(nz)
+	var col: Object = pick.get("col")
+	if col == null:
+		message.emit("Too far for Naresh to see what you mean.", 2.5)
+		return
+	var jobs := nz.jobs_for(self, col, pick["point"])
+	if jobs.is_empty():
+		if nz.state == Naresh.State.TAKEN:
+			nz.command(self, "follow")         # he answers from where he was left
+		else:
+			message.emit("Nothing for Naresh to do there.", 2.5)
+		return
+	wheel_jobs = jobs
+	wheel_target = col
+	wheel_point = pick["point"]
+	wheel_cursor = Vector2.ZERO
+	wheel_sel = 0 if jobs.size() == 1 else -1
+	_wheel_t = 0.0
+	wheel_open = true
+	if prompt_text != "":
+		prompt_text = ""
+		prompt_changed.emit("")
+
+
+## Let go of the key: the job pointed at (a quick tap: the first one).
+func _wheel_choose(nz: Naresh) -> void:
+	wheel_open = false
+	var sel := wheel_sel
+	if sel < 0 and _wheel_t < WHEEL_TAP:
+		sel = 0
+	if sel < 0 or sel >= wheel_jobs.size():
+		return
+	var tgt: Node = null
+	if is_instance_valid(wheel_target):
+		tgt = wheel_target as Node
+	nz.command(self, wheel_jobs[sel]["id"], tgt, wheel_point)
+	Sfx.play_ui("tick", -8.0)
+
+
+## The pointer moves over the wheel instead of the view: slices go clockwise
+## from the top.
+func _wheel_point(delta: float) -> void:
+	wheel_cursor += dev.cursor_delta(delta)
+	if wheel_cursor.length() > WHEEL_PICK:
+		wheel_cursor = wheel_cursor.normalized() * WHEEL_PICK
+	var n := wheel_jobs.size()
+	if n <= 1:
+		wheel_sel = 0 if n == 1 else -1
+		return
+	if wheel_cursor.length() < WHEEL_DEAD:
+		wheel_sel = -1
+		return
+	var a := fposmod(atan2(wheel_cursor.x, -wheel_cursor.y), TAU)
+	wheel_sel = int(round(a / (TAU / n))) % n
+
+
+## What the command key points at: Naresh himself (a generous aim, he's who
+## you talk to), else the first thing the view ray hits (items, handles and
+## doors, the van, the ground), up to Naresh.COMMAND_RANGE away.
+func command_look(nz: Naresh) -> Dictionary:
+	var xf := head.global_transform
+	var from := xf.origin
+	var fwd := -xf.basis.z
+	# from the passenger seat, looking round at the bench behind you
+	if seat != null and nz.state == Naresh.State.SEATED and nz.van == vehicle and absf(_seat_yaw) > deg_to_rad(95.0):
+		return {"col": nz, "point": nz.global_position}
+	var ex: Array[RID] = [get_rid()]
+	if held != null:
+		ex.append(held.get_rid())
+	if vehicle != null:
+		ex.append(vehicle.get_rid())
+		for a in vehicle.find_children("*", "CollisionObject3D", true, false):
+			ex.append((a as CollisionObject3D).get_rid())
+	var space := get_world_3d().direct_space_state
+	if nz.state != Naresh.State.SEATED:
+		var chest := nz.global_position + Vector3.UP * 1.1
+		var along := (chest - from).dot(fwd)
+		if along > 0.3 and along < Naresh.COMMAND_RANGE and (from + fwd * along).distance_to(chest) < 0.55 + along * 0.012:
+			var ex2: Array[RID] = ex.duplicate()
+			ex2.append(nz.get_rid())
+			var q0 := PhysicsRayQueryParameters3D.create(from, chest, 1 | 8, ex2)
+			if space.intersect_ray(q0).is_empty():
+				return {"col": nz, "point": nz.global_position}
+	var to := from + fwd * Naresh.COMMAND_RANGE
+	var q := PhysicsRayQueryParameters3D.create(from, to, 1 | 8 | Carryable.LAYER, ex)
+	var hit := space.intersect_ray(q)
+	var qa := PhysicsRayQueryParameters3D.create(from, to, 4, ex)
+	qa.collide_with_areas = true
+	qa.collide_with_bodies = false
+	var hit_a := space.intersect_ray(qa)
+	if not hit_a.is_empty() and (hit.is_empty() or from.distance_to(hit_a.position) < from.distance_to(hit.position)):
+		hit = hit_a
+	if hit.is_empty():
+		return {}
+	return {"col": hit["collider"], "point": hit["position"]}
 
 
 # --- climbing ------------------------------------------------------------------

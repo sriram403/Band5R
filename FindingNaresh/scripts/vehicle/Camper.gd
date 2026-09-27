@@ -82,6 +82,9 @@ var driver: PlayerRig = null
 var passenger: PlayerRig = null
 
 var seat_nodes := {}               ## role -> Node3D
+## Naresh's place: the bench in the back, on the right, leaving room beside him
+var bench: Node3D
+var bench_by: Node = null
 var _steer := 0.0
 var _wheels: Array[VehicleWheel3D] = []
 var _wheel_meshes: Array[Node3D] = []
@@ -425,6 +428,11 @@ func _build_seats() -> void:
 			var taken: PlayerRig = driver if role == "driver" else passenger
 			return "" if taken == null else "Seat taken - P%d is in it" % (taken.index + 1))
 		_body_root.add_child(area)
+	# the bunk in the back is his bench (hips 0.14 below the marker, as the seats)
+	bench = Node3D.new()
+	bench.name = "Seat_bench"
+	bench.position = Vector3(0.5, 1.75, 1.7)
+	_body_root.add_child(bench)
 
 
 ## Fuel filler on the driver's side and a storage rack across the back.
@@ -451,13 +459,8 @@ func _build_service() -> void:
 		return "Hold to pour fuel  -  tank %d / %d L, can %d L" % [int(fuel), int(FUEL_CAPACITY), int(round(item.litres))])
 	inlet.set_meta("pour", true)
 	inlet.set_meta("held_action", func(_p, item, dt: float, _first: bool):
-		if item.kind != "fuel_can":
-			return
-		var room := FUEL_CAPACITY - fuel
-		var got: float = item.pour(minf(POUR_RATE * dt, room))
-		fuel += got
-		if got > 0.0005:           # an empty can (or a full tank) makes no pouring sound
-			_glug_at(Vector3(-1.2, 1.4, 1.9)))
+		if item.kind == "fuel_can":
+			pour_fuel(item, dt))
 	_body_root.add_child(inlet)
 
 	# radiator filler under the bonnet, reached from the front of the van
@@ -665,6 +668,59 @@ func _build_tyre_service() -> void:
 				spare_available = false
 				refresh_tyre_visuals())
 	_body_root.add_child(nuts)
+
+
+## One tick of pouring a can into the tank; returns the litres that went in.
+func pour_fuel(can, dt: float) -> float:
+	var room := FUEL_CAPACITY - fuel
+	var got: float = can.pour(minf(POUR_RATE * dt, room))
+	fuel += got
+	if got > 0.0005:           # an empty can (or a full tank) makes no pouring sound
+		_glug_at(Vector3(-1.2, 1.4, 1.9))
+	return got
+
+
+## The filler cap, and where to stand to pour into it (on the ground).
+func filler_point() -> Vector3:
+	return _body_root.global_transform * Vector3(-1.22, 1.40, 1.9)
+
+
+func filler_stand() -> Vector3:
+	return _on_ground(_body_root.global_transform * Vector3(-2.05, 1.0, 1.9))
+
+
+## Where to stand at the rear rack.
+func rack_stand() -> Vector3:
+	return _on_ground(_body_root.global_transform * Vector3(0, 1.0, 4.35))
+
+
+func _on_ground(at: Vector3) -> Vector3:
+	var q := PhysicsRayQueryParameters3D.create(at + Vector3.UP * 2.0, at + Vector3.DOWN * 6.0, 1, [get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	return (hit["position"] as Vector3) if not hit.is_empty() else Vector3(at.x, Landscape.ground(at.x, at.z), at.z)
+
+
+## A free rack slot for `item`: cans in the can slots first, anything in the last.
+func free_slot_for(item: Carryable) -> Node3D:
+	for s in storage_slots:
+		if stowed_item(s) != null:
+			continue
+		var acc: String = s.get_meta("accepts", "any")
+		if acc == "can" and item.kind != "fuel_can":
+			continue
+		return s
+	return null
+
+
+## Naresh's own tyre fix (a random act): slowly, badly, but it holds.
+func naresh_fix_tyre() -> void:
+	if not tyre_flat:
+		return
+	tyre_flat = false
+	tyre_stage = 0
+	tyre_work = 0.0
+	spare_available = false
+	refresh_tyre_visuals()
 
 
 func stowed_item(slot: Node3D) -> Carryable:
@@ -1234,9 +1290,10 @@ func _check_pedestrians(speed: float) -> void:
 		return
 	var inv := global_transform.affine_inverse()
 	var reach := 0.45 + speed * get_physics_process_delta_time() * 2.0
-	for node in get_tree().get_nodes_in_group("player"):
-		var p := node as PlayerRig
-		if p == null or p.seat != null or p.knocked_t > 0.0:
+	for node in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("naresh"):
+		var p := node as CharacterBody3D
+		if p == null or float(p.get("knocked_t")) > 0.0 or (p is PlayerRig and (p as PlayerRig).seat != null) \
+				or (p is Naresh and (p as Naresh).state in [Naresh.State.SEATED, Naresh.State.TAKEN]):
 			continue
 		var local := inv * (p.global_position + Vector3.UP * 0.9)
 		local.y -= BODY_Y + 1.70
@@ -1250,7 +1307,8 @@ func _check_pedestrians(speed: float) -> void:
 		var push := rel * 1.15
 		push.y = 0.0
 		push += Vector3.UP * (2.5 + rel.length() * 0.35)
-		p.knock(push, self)
+		p.call("knock", push, self)
+
 
 func toggle_engine() -> void:
 	Sfx.play3d("click", global_position, -6.0)
