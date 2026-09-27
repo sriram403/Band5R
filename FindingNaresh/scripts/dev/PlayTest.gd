@@ -1721,7 +1721,14 @@ func t_feedback() -> void:
 	c.coolant = 1.0
 	c.temp = Camper.TEMP_NORMAL
 	c.toggle_engine()
-	# 10: the nav points at your stamp, never at Bessi
+	# 10: the nav points at your stamp, never at Bessi. The loop this test
+	# parks on is in Bessi itself, where the nav has no signal (E2): check it
+	# up at Last Fuel instead, then come back.
+	boot.dev_menu.van_to(boot.dev_menu.van_spot(b.poi["gas_station"] + Vector3(0, 0, 40)), 0.0)
+	await physics_frames(20)
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
 	boot.map_state.stamps.clear()
 	await wait(0.4)
 	var nav: Label3D = c._needles["nav_label"]
@@ -1731,6 +1738,7 @@ func t_feedback() -> void:
 	await wait(0.4)
 	log_line("nav with a fuel stamp: '%s'" % nav.text.replace("\n", " / "))
 	check(nav.text.begins_with("FUEL"), "the nav points at the latest map stamp")
+	await reset_camper(steep)
 	# 10: map zoom
 	p.force_exit = true
 	await physics_frames(3)
