@@ -269,6 +269,8 @@ photo spot (E3)**, face the memorial and wait a second.
 
 ## E5. The evidence (found, never told)
 
+*Approved by you, 2026-09-27, with its decisions.*
+
 In the normal `MPG` folder (`Play.bat`). Carry on from E4 (Naresh just got
 up out of the rose), or **F1** → **Story** → jump to **"Someone is sitting in
 the fifth rose"**, **F1** → **Travel** → **The Five Roses**, and walk up to him.

@@ -15,8 +15,8 @@ being built and tested), so this always shows where the work is right now.
   2026-09-27), full world run clean (after test-order fixes and two
   graphics-driver crashes, resumed), **pushed**. E3 (the photo) is built in
   `../MPG_dev` and E4 (the roses) ahead of it. E3 **approved and pushed**.
-  E4 (the roses) **approved and pushed**. E5 (the evidence) is **in main,
-  waiting for your test** (`notes/TEST_MILESTONE_E.md`, E5).
+  E4 (the roses) **approved and pushed**. E5 (the evidence) **approved and
+  pushed**. [~] E6 (the stall shutter, the boat), in `../MPG_dev` branch `e6`.
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -764,7 +764,8 @@ in `notes/TEST_MILESTONE_E.md`).
         0 failures. The notebook's strike first didn't show: pencil red now
   - [x] Built in `MPG_dev` (branch `e5`), merged into main; set:bessi 5 +
         smoke 23: 0 failures
-  - [ ] Your test (E5 in `notes/TEST_MILESTONE_E.md`), then push
+  - [x] Your test: approved with its decisions (2026-09-27, after the F1
+        jump fix); pushed
 - [ ] E6. N1 the stall shutter (hold; the scripted early let-go) and N2 push
       the boat (work it; he pushes the wrong way first); rewards: torch
       batteries, a fuel drum
