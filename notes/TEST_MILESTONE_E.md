@@ -310,6 +310,8 @@ the fifth rose"**, **F1** → **Travel** → **The Five Roses**, and walk up to 
 
 ## E6. Naresh's two jobs: the store and the boat
 
+*Approved by you, 2026-09-27, with its decisions.*
+
 In the normal `MPG` folder (`Play.bat`). Carry on from E5, or **F1** →
 **Story** → jump to **"Torch batteries for the dark road"**, then **F1** →
 **Travel** → **Bessi beach** (Naresh comes along).
