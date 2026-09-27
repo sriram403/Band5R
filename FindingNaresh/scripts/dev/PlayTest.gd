@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -6694,3 +6694,35 @@ func t_evidence() -> void:
 	await look_at_point(p, ev.print_points[int(ev.print_points.size() * 0.35)])
 	await shot("evidence_prints")
 	mood.set_now(0.62)
+
+
+## F1 → Story jumps into Bessi set the world up to match (the user jumped to
+## "Someone is sitting in the fifth rose" and found an empty plaza), and a
+## jump back puts it away again. `tools/run_test.sh bessi_jumps`
+func t_bessi_jumps() -> void:
+	var st: Story = boot.story
+	var ro := get_tree().get_first_node_in_group("roses") as Roses
+	var ev := get_tree().get_first_node_in_group("evidence") as Evidence
+	var dm: DevMenu = boot.dev_menu
+	boot.dev_menu.teleport_to("roses")
+	await physics_frames(10)
+	dm.run("jump", st.index_of("naresh"))
+	var sat := await until(func() -> bool: return ro.phase == "done" and boot.naresh != null and boot.naresh.sitting, Roses.BLOOM_DOWN_S + 3.0)
+	check(sat and ro.open_amount.all(func(a): return a > 0.99), "jump to 'Someone is sitting in the fifth rose': the roses are up and open, he's in the fifth")
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	check(mood.value <= 0.41, "and it's dusk, as at the beach")
+	await look_at_point(p1(), ro.naresh_seat + Vector3.UP)
+	await shot("jump_naresh")
+	dm.run("jump", st.index_of("look_around"))
+	await wait(0.5)
+	var nz: Naresh = boot.naresh
+	log_line("after the jump: naresh %s sitting %s, camp %s, phase %s, objective %s" % [nz != null, nz.sitting if nz else false, ev.camp_root.visible, ro.phase, st.current()["id"]])
+	check(nz != null and not nz.sitting and ev.camp_root.visible and st.current()["id"] == "look_around", "jump to 'packing up': he's out with you, his camp is there")
+	var packing := await until(func() -> bool: return st.flags.has("packing"), Evidence.GREET_S + 2.0)
+	check(packing, "and he goes to pack")
+	dm.run("jump", st.index_of("photo"))
+	await wait(0.5)
+	check(ro.phase == "sunk" and not (ro.roses[0] as Node3D).visible and boot.naresh == null, "jump back to the photo: the roses are sunk again, no Naresh")
+	dm.run("jump", st.index_of("roses"))
+	var rising := await until(func() -> bool: return ro.phase in ["smoke", "rising", "up"], Roses.AFTER_PHOTO + 3.0)
+	check(rising, "jump to 'The Five Roses': the smoke comes and they rise")

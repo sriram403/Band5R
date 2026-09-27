@@ -192,7 +192,42 @@ func jump_to(i: int) -> void:
 		flags["opening_skipped"] = true
 		_opening_update()
 	index = clampi(i, 0, objectives.size() - 1)
+	_bessi_state_for(String(objectives[index]["id"]))
 	objective_changed.emit()
+
+
+## Bessi's steps depend on each other's state (the roses up, him met): a
+## jump there sets what the earlier steps would have, and a jump back before
+## them puts it all away again, so the world matches the objective.
+const BESSI_STEPS := ["photo", "roses", "naresh", "look_around", "end_e5"]
+const BESSI_FLAGS := ["photo_spot", "roses_up", "roses_open", "naresh_met", "packing", "packed"]
+
+func _bessi_state_for(id: String) -> void:
+	var k := BESSI_STEPS.find(id)
+	if k < 0 and index > index_of("photo") and index_of("photo") >= 0:
+		return                  # somewhere after Bessi (later milestones): leave it
+	for f in BESSI_FLAGS:
+		flags.erase(f)
+	for f in flags.keys():
+		if String(f).begins_with("seen_"):
+			flags.erase(f)      # what they'd looked at in his camp
+	if k >= 1:                  # the spot found
+		flags["photo_spot"] = true
+		flags["photo_sent"] = true
+	if k >= 2:                  # the roses up and all open: the bloom comes down
+		flags["roses_up"] = true
+		flags["roses_open"] = 5
+	if k >= 3:
+		flags["naresh_met"] = true
+	if k >= 4:
+		flags["packing"] = true
+		flags["packed"] = true
+	get_tree().call_group("roses", "match_story")
+	get_tree().call_group("evidence", "match_story")
+	# Bessi is at dusk (you'd have walked onto the beach to get here)
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	if k >= 0 and mood != null and mood.value > 0.4:
+		mood.set_now(0.4)
 
 
 func begin_opening() -> void:

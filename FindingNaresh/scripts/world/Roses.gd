@@ -277,6 +277,39 @@ func reset() -> void:
 	_set_sunk(true)
 
 
+## The story jumped (F1): back to sunk and start again from its flags, and
+## Naresh where that step has him (sitting in the rose, or met and along).
+func match_story() -> void:
+	reset()
+	var boot := get_tree().current_scene
+	var st := get_tree().get_first_node_in_group("story") as Story
+	if boot == null or st == null:
+		return
+	var nz: Naresh = boot.naresh
+	if not st.flags.has("roses_open"):
+		# before the fifth opens there's no Naresh in the world
+		if nz != null and is_instance_valid(nz) and boot.gym == "":
+			nz.queue_free()
+			boot.naresh = null
+		return
+	if st.flags.has("naresh_met"):
+		if nz == null or not is_instance_valid(nz):
+			nz = Naresh.spawn(boot.world, naresh_seat, 0.0)
+			boot.naresh = nz
+		nz.sitting = false
+		(nz.get_node("Collider") as CollisionShape3D).disabled = false
+		nz._set_seated_pose(false)
+		var p := boot.players[0] as PlayerRig
+		var at := ro_ground(naresh_seat + (centre - naresh_seat).normalized() * 6.0)
+		nz.global_position = at
+		nz.reset_physics_interpolation()
+		nz.command(p, "follow")
+
+
+func ro_ground(at: Vector3) -> Vector3:
+	return Vector3(at.x, Landscape.ground(at.x, at.z) + 0.2, at.z)
+
+
 ## Straight up, as after a load.
 func rise_now() -> void:
 	phase = "up"

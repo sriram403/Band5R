@@ -37,6 +37,11 @@ The engine-level details (exact Godot calls, numbers) are also in
 
 ## 2. Working as an AI model
 
+- **Test the way the user will get there** (E5): the test sheet said "F1,
+  jump to 'Someone is sitting in the fifth rose'"; a jump only moved the
+  objective, so the plaza was empty (the roses had never risen). The tests
+  set their own flags and never jumped. Now Bessi jumps set the world up
+  (and back), and `t_bessi_jumps` does exactly what the sheet says.
 - **Say where a part lives** (E4): E4 was built on its own branch in
   `MPG_dev`; the user tested `MPG` and found "the build ends for now". A
   hand-over says which folder and which branch has the part, and nothing

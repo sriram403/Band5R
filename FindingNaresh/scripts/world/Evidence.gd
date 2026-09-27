@@ -196,6 +196,11 @@ func _footprints(b, from: Vector3, to: Vector3) -> void:
 
 # --- while he packs -------------------------------------------------------------------
 
+## The story jumped (F1): his packing starts over.
+func match_story() -> void:
+	_greet_t = 0.0
+	_pack_t = 0.0
+
 func _physics_process(delta: float) -> void:
 	var st := get_tree().get_first_node_in_group("story") as Story
 	var ro := get_tree().get_first_node_in_group("roses") as Roses
