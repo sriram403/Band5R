@@ -37,6 +37,7 @@ var _back_t := -1.0
 var _boat_base := Vector3.ZERO
 var _drum_at := Vector3.ZERO
 var _box_at := Vector3.ZERO
+var _synced := false
 
 
 func setup(b) -> void:
@@ -217,6 +218,9 @@ func _physics_process(delta: float) -> void:
 	if st == null or boot == null or st.index_of("batteries") < 0:
 		return
 	var nz: Naresh = boot.naresh
+	if not _synced:
+		_synced = true
+		_sync_boat(st)          # after a load: the boat off if the drum was freed
 	_n1(delta, st, nz, boot)
 	_n2(st, nz)
 	# the drum stays put under the boat until it's off
@@ -276,6 +280,18 @@ func _n2(st: Story, nz: Naresh) -> void:
 		naresh_wrong = false
 		st.flags["n2_wrong_done"] = true
 		nz.say("Oh! THAT way. Right.")
+
+
+## The boat as the story has it; the box and the drum are where the save
+## (or the world) put them.
+func _sync_boat(st: Story) -> void:
+	var free := st.flags.has("drum_free")
+	boat.amount = 1.0 if free else 0.0
+	boat.is_done = free
+	boat.position = _boat_base + (Vector3(BOAT_SLIDE, 0, 0) if free else Vector3.ZERO)
+	boat_body.rotation = Vector3(0, 0, 0.0 if free else deg_to_rad(-14.0))
+	if free and drum.stowed_in == null:
+		drum.freeze = false
 
 
 # --- the story jumped (F1) ------------------------------------------------------------

@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -6858,3 +6858,251 @@ func t_boat() -> void:
 	check(bt.drum.holders.size() == 2 and bt.drum.litres > 39.0, "you both lift the full drum (40 L)")
 	p.drop_held()
 	q.drop_held()
+
+
+## E7, the storm: both jobs done, and a few seconds later the sky over the way
+## you came goes black (lightning, thunder, the light going), the roses sink,
+## Naresh: "My friend says we should go north." Everyone in the van, north on
+## the coast road. `tools/run_test.sh storm`
+func t_storm() -> void:
+	var st: Story = boot.story
+	var poi: Dictionary = boot.builder.poi
+	var sf := get_tree().get_first_node_in_group("storm_front") as StormFront
+	var ro := get_tree().get_first_node_in_group("roses") as Roses
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	var c := camper()
+	var p := p1()
+	boot.dev_menu.run("jump", st.index_of("drum"))
+	await wait(0.5)
+	var nz: Naresh = boot.naresh
+	check(sf != null and not sf.started and nz != null, "before the drum is free, no storm")
+	await place_player(p, poi["beach"] + Vector3(-10, 0.3, 0), 0.0)
+	await look_at_point(p, sf.root.global_position + Vector3.UP * 150.0)
+	st.flags["drum_free"] = true
+	await physics_frames(10)
+	check(not sf.started, "not at once")
+	var came := await until(func() -> bool: return sf.started, StormFront.AFTER + 2.0)
+	check(came and sf.root.visible and st.current()["id"] == "storm", "a few seconds later the storm comes; the objective: north on the coast road")
+	await physics_frames(5)
+	check(nz.said_since("we should go north", 0), "Naresh: 'My friend says we should go north.'")
+	check(ro.phase in ["sinking", "gone"], "the roses sink back into the sand")
+	var flash := await until(func() -> bool: return sf.flashes > 0, StormFront.FLASH.y + 3.0)
+	var thunder := await until(func() -> bool: return sf._thunder.playing, 4.0)
+	check(flash and (headless or thunder), "lightning in the clouds, thunder a moment later")
+	await wait(9.0)
+	check(mood.value <= 0.32 and ro.phase == "gone", "the light goes (mood %.2f); the roses are gone" % mood.value)
+	await shot("storm_front")
+	# into the van, Naresh too, and north
+	var road: Route = boot.builder.network.road("coast_road")
+	var i0 := 0
+	for i in road.point_count():
+		if road.point(i).z < 470.0:
+			i0 = i
+			break
+	boot.dev_menu.van_to(road.point(i0), atan2(-road.forward(i0).x, -road.forward(i0).z))
+	await physics_frames(30)
+	nz.command(p, "follow")
+	await place_player(p, c.global_transform * Vector3(-3, 0, -1) + Vector3.UP * 0.3, 0.0)
+	nz.global_position = c.global_transform * Vector3(4, 0, 0) + Vector3.UP * 0.3
+	nz.reset_physics_interpolation()
+	await seat_p1_driver()
+	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	var aboard := await until(func() -> bool: return nz.state == Naresh.State.SEATED, 15.0)
+	check(aboard, "he follows you into the back of the van")
+	await tap(KEY_X)
+	await wait(0.8)
+	var path: Route = boot.builder.network.chain([["coast_road"]])
+	var t := await drive_until(path, int(path.nearest(1728.0, 250.0)["index"]), func() -> bool: return st.current()["id"] == "end_e", 60.0)
+	log_line("north on the coast road: %.0f s, van at %s" % [t, c.global_position])
+	check(st.current()["id"] == "end_e", "north on the coast road with him in the back: the end of Bessi")
+	await shot("storm_north")
+
+
+## Saving at Bessi, after the storm starts: the story, the roses gone, the
+## storm, Naresh in the back, the drum on the rack, his camp, the photo on
+## P2's phone all come back. `tools/run_test.sh bessi_save` (its own process:
+## loading reloads the scene)
+func t_bessi_save() -> void:
+	var st: Story = boot.story
+	var c := camper()
+	var bt := get_tree().get_first_node_in_group("bessi_tasks") as BessiTasks
+	for i in [2]:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveGame.path(i)))
+	boot.dev_menu.run("jump", st.index_of("storm"))
+	await wait(1.0)
+	var nz: Naresh = boot.naresh
+	boot.dev_menu.van_to(boot.builder.poi["beach"] + Vector3(-60, 0, 0), 0.0)
+	await physics_frames(30)
+	# you in front, him following you into the back
+	await seat_p1_driver()
+	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	nz.command(p1(), "follow")
+	nz.global_position = c.global_transform * Vector3(3.5, 0, 0) + Vector3.UP * 0.3
+	nz.reset_physics_interpolation()
+	var sat := await until(func() -> bool: return nz.state == Naresh.State.SEATED, 15.0)
+	log_line("before saving: objective %s, storm %s, Naresh %s" % [st.current()["id"], st.flags.has("storm_on"), Naresh.State.keys()[nz.state]])
+	bt.drum.freeze = false
+	bt.drum.stow(c.free_slot_for(bt.drum))
+	await physics_frames(5)
+	check(sat and bt.drum.stowed_in != null and st.flags.has("storm_on"), "at Bessi, after the storm: Naresh in the back, the drum on the rack")
+	check(SaveGame.write(boot, 2), "the journal writes the save")
+	PlayTest.expect = {"objective": st.current()["id"], "drum_slot": c.storage_slots.find(bt.drum.stowed_in)}
+	PlayTest.carried_failures = _failures.duplicate()
+	PlayTest.resume = "bessi_save_verify"
+	boot.load_slot(2)
+
+
+func t_bessi_save_verify() -> void:
+	await wait(2.0)
+	var st: Story = boot.story
+	var c := camper()
+	var ro := get_tree().get_first_node_in_group("roses") as Roses
+	var sf := get_tree().get_first_node_in_group("storm_front") as StormFront
+	var ev := get_tree().get_first_node_in_group("evidence") as Evidence
+	var bt := get_tree().get_first_node_in_group("bessi_tasks") as BessiTasks
+	var nz: Naresh = boot.naresh
+	log_line("after loading: objective %s (saved %s), storm %s, roses %s, Naresh %s" % [st.current()["id"], PlayTest.expect["objective"], st.flags.has("storm_on"), ro.phase, Naresh.State.keys()[nz.state] if nz else "none"])
+	check(st.current()["id"] == PlayTest.expect["objective"] and st.flags.has("storm_on"), "loading at Bessi: the storm objective, the storm on")
+	check(ro.phase == "gone" and not (ro.roses[0] as Node3D).visible and sf.started and sf.root.visible, "the roses gone, the storm over the ghat")
+	check(nz != null and nz.state == Naresh.State.SEATED and nz.van == c, "Naresh back in the back of the van")
+	var slot: int = PlayTest.expect["drum_slot"]
+	var it := c.stowed_item(c.storage_slots[slot])
+	check(it != null and it.name == bt.drum.name and (it as FuelCan).litres > 39.0, "the fuel drum back on the rack, full")
+	check(ev.camp_root.visible and bt.boat.is_done, "his camp still there, the boat still off the drum")
+	var pic := await until(func() -> bool: return st.photo_texture != null, 3.0)
+	check(headless or pic, "the photo back on P2's phone")
+
+
+## E7: all of Bessi in one go, from the ghat pass to north in the storm, the
+## beats timed against design/BESSI.md (24:00 arrival to 31:00 the storm,
+## about 7 minutes). Driving by the auto-driver, the puzzles by their real
+## calls (each is tested with the real keys in its own scenario).
+## `tools/run_test.sh bessi_run` (Full only)
+func t_bessi_run() -> void:
+	var st: Story = boot.story
+	var poi: Dictionary = boot.builder.poi
+	var c := camper()
+	var p := p1()
+	var q := p2()
+	var ro := get_tree().get_first_node_in_group("roses") as Roses
+	var ev := get_tree().get_first_node_in_group("evidence") as Evidence
+	var bt := get_tree().get_first_node_in_group("bessi_tasks") as BessiTasks
+	var sf := get_tree().get_first_node_in_group("storm_front") as StormFront
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	boot.dev_menu.run("jump", st.index_of("to_beach"))
+	mood.set_now(0.62)
+	c.repair_all()
+	var t0 := Time.get_ticks_msec()
+	var beats := []
+	var beat := func(what: String): beats.append("%s %.1f min" % [what, (Time.get_ticks_msec() - t0) / 60000.0])
+	# down the Beach Road to the loop
+	var road: Route = boot.builder.network.road("beach_road")
+	boot.dev_menu.van_to(road.point(2), atan2(-road.forward(2).x, -road.forward(2).z))
+	await physics_frames(30)
+	await seat_p1_driver()
+	q.enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await tap(KEY_X)
+	await wait(0.8)
+	var down: Route = boot.builder.network.chain([["beach_road"]])
+	await drive_until(down, down.point_count() - 8, func() -> bool: return c.nav_signal_lost and c.global_position.distance_to(ro.centre) < 250.0, 240.0)
+	check(c.nav_signal_lost, "coming into Bessi the nav loses its signal")
+	beat.call("arrival")
+	await tap(KEY_X)
+	p.force_exit = true
+	await physics_frames(3)
+	q.force_exit = true
+	await physics_frames(3)
+	# the beach, the photo, the spot
+	await place_player(p, poi["beach"] + Vector3(0, 0.3, 0), 0.0)
+	await place_player(q, poi["beach"] + Vector3(2, 0.3, 0), 0.0)
+	await until(func() -> bool: return st.flags.has("photo_sent"), 20.0)
+	beat.call("the photo")
+	await place_player(p, poi["photo_spot"] + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, poi["memorial_spire"])
+	await until(func() -> bool: return st.flags.has("photo_spot"), 5.0)
+	beat.call("the spot found")
+	await until(func() -> bool: return ro.phase == "up", Roses.AFTER_PHOTO + Roses.SMOKE_S + Roses.RISE_S + 5.0)
+	beat.call("the roses up")
+	for sym in Roses.ORDER:
+		ro.touch(Roses.SLOT_SYMBOL.find(sym), p)
+		await wait(1.0)
+	await until(func() -> bool: return ro.phase == "done", Roses.BLOOM_DOWN_S + 3.0)
+	await place_player(p, ro.naresh_seat + (ro.centre - ro.naresh_seat).normalized() * 6.0 + Vector3(0, -2.0, 0), 0.0)
+	await until(func() -> bool: return st.flags.has("naresh_met"), 5.0)
+	beat.call("Naresh")
+	var nz: Naresh = boot.naresh
+	check(nz != null and st.flags.has("naresh_met"), "found Naresh in the fifth rose")
+	await until(func() -> bool: return st.flags.has("packing"), Evidence.GREET_S + 3.0)
+	for id in ["spare", "camera", "notebook"]:
+		ev.look(id, p)
+		await wait(3.0)
+	await until(func() -> bool: return st.flags.has("packed"), 5.0)
+	beat.call("the evidence")
+	# N1: he holds the shutter, you both go in, the slip, the box out
+	nz.command(p, "hold", bt.handle)
+	await until(func() -> bool: return bt.handle.amount >= 0.99, 30.0)
+	await place_player(p, bt.store.global_position + Vector3(-0.6, 0.3, 0.5), 0.0)
+	await place_player(q, bt.store.global_position + Vector3(-0.6, 0.3, -0.6), 0.0)
+	await until(func() -> bool: return st.flags.has("n1_slip") and bt.handle.amount >= 0.99, BessiTasks.SLIP_AFTER + BessiTasks.SLIP_BACK + 10.0)
+	p.pick_up(bt.box)
+	q.pick_up(bt.box)
+	for i in 12:
+		await place_player(p, p.global_position + Vector3(0.5, 0.05, 0), p.yaw)
+		await place_player(q, q.global_position + Vector3(0.5, 0.05, 0), q.yaw)
+	await until(func() -> bool: return st.flags.has("batteries_got"), 3.0)
+	p.drop_held()
+	q.drop_held()
+	check(st.flags.has("batteries_got"), "N1: the batteries")
+	beat.call("the store")
+	# N2: three push, told twice
+	await p2_pad()
+	var push: Vector3 = poi["boat_push"]
+	await place_player(p, push + Vector3(0, 0.3, -1.0), 0.0)
+	await place_player(q, push + Vector3(0, 0.3, 1.0), 0.0)
+	var hull := bt.boat.global_position + Vector3(0, 0.7, 0)
+	nz.global_position = push + Vector3(-3, 0.3, 0)      # he followed you down to the boat
+	nz.reset_physics_interpolation()
+	nz.command(p, "work", bt.boat)
+	await wait(4.0)                                      # round the wrong side first
+	await look_at_point(p, hull)
+	await look_at_point(q, hull)
+	key(KEY_E, true)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(5.0)
+	nz.command(p, "work", bt.boat)
+	for i in 12:
+		await wait(2.0)
+		log_line("boat: %.2f, hands %d, wrong %s, Naresh %s '%s' at %s, P1 target %s, P2 target %s" % [bt.boat.amount, bt.boat.hands_last, bt.naresh_wrong,
+			Naresh.State.keys()[nz.state], nz.job, nz.global_position, p.current_target.name if p.current_target else "-", q.current_target.name if q.current_target else "-"])
+		if bt.boat.is_done:
+			break
+	key(KEY_E, false)
+	pad_button(JOY_BUTTON_X, false)
+	check(st.flags.has("drum_free"), "N2: the drum")
+	beat.call("the boat")
+	# the storm, into the van, north
+	await until(func() -> bool: return sf.started, StormFront.AFTER + 3.0)
+	beat.call("the storm")
+	var cr: Route = boot.builder.network.road("coast_road")
+	var i0 := 0
+	for i in cr.point_count():
+		if cr.point(i).z < 470.0:
+			i0 = i
+			break
+	boot.dev_menu.van_to(cr.point(i0), atan2(-cr.forward(i0).x, -cr.forward(i0).z))
+	await physics_frames(30)
+	nz.command(p, "follow")
+	nz.global_position = c.global_transform * Vector3(4, 0, 0) + Vector3.UP * 0.3
+	nz.reset_physics_interpolation()
+	await seat_p1_driver()
+	q.enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await until(func() -> bool: return nz.state == Naresh.State.SEATED, 15.0)
+	await tap(KEY_X)
+	await wait(0.8)
+	var north: Route = boot.builder.network.chain([["coast_road"]])
+	await drive_until(north, int(north.nearest(1728.0, 250.0)["index"]), func() -> bool: return st.current()["id"] == "end_e", 60.0)
+	beat.call("north")
+	log_line("BESSI RUN: " + ", ".join(beats))
+	var mins := (Time.get_ticks_msec() - t0) / 60000.0
+	# (teleports between places: the minutes are not the pacing, the order is)
+	check(st.current()["id"] == "end_e", "all of Bessi in order, from the pass to north in the storm (%.1f min of test)" % mins)

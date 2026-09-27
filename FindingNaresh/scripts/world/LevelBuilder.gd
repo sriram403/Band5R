@@ -367,6 +367,10 @@ func _landmarks() -> void:
 	tasks.name = "BessiTasks"
 	world.add_child(tasks)
 	tasks.setup(self)
+	var storm := StormFront.new()
+	storm.name = "StormFront"
+	world.add_child(storm)
+	storm.setup(self)
 	_fishing_village()
 	_salt_pans()
 	_road_bridge("coast_road", "estuary_bridge")

@@ -206,7 +206,7 @@ func _physics_process(delta: float) -> void:
 	var ro := get_tree().get_first_node_in_group("roses") as Roses
 	if st == null or ro == null:
 		return
-	camp_root.visible = ro.phase == "done"
+	camp_root.visible = ro.phase in ["done", "sinking", "gone"] and st.flags.has("roses_open")
 	var boot := get_tree().current_scene
 	var nz: Naresh = boot.naresh if boot != null else null
 	if not st.flags.has("naresh_met") or nz == null or not is_instance_valid(nz):

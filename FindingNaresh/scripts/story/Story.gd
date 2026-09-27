@@ -126,7 +126,10 @@ func setup(b: Node) -> void:
 		{"id": "drum", "text": "Fuel for the coast road: the drum under the upturned boat",
 			"hint": "On the sand by the water. It takes three pushing at once from the land side: you two (hold E) and Naresh (V on the boat: Work it). Watch which side he goes to.",
 			"done": func(): return flags.has("drum_free")},
-		{"id": "end_e6", "text": "Batteries and fuel (the storm comes next: E7)",
+		{"id": "storm", "text": "The storm is coming. Everyone in the van, north on the coast road",
+			"hint": "Naresh too: have him follow you and he gets in the back, or V on the van (Get in the back). The coast road leaves the loop going north, past the lighthouse.",
+			"done": func(): return flags.has("storm_on") and _north_with_naresh()},
+		{"id": "end_e", "text": "North on the coast road (Milestone F comes next: the return)",
 			"hint": "This is where the build ends for now.",
 			"done": func(): return false},
 	]
@@ -205,9 +208,9 @@ func jump_to(i: int) -> void:
 ## Bessi's steps depend on each other's state (the roses up, him met): a
 ## jump there sets what the earlier steps would have, and a jump back before
 ## them puts it all away again, so the world matches the objective.
-const BESSI_STEPS := ["photo", "roses", "naresh", "look_around", "batteries", "drum", "end_e6"]
+const BESSI_STEPS := ["photo", "roses", "naresh", "look_around", "batteries", "drum", "storm", "end_e"]
 const BESSI_FLAGS := ["photo_spot", "roses_up", "roses_open", "naresh_met", "packing", "packed",
-	"n1_slip", "batteries_got", "n2_wrong_done", "drum_free"]
+	"n1_slip", "batteries_got", "n2_wrong_done", "drum_free", "storm_on"]
 
 func _bessi_state_for(id: String) -> void:
 	var k := BESSI_STEPS.find(id)
@@ -232,12 +235,14 @@ func _bessi_state_for(id: String) -> void:
 	if k >= 5:
 		flags["n1_slip"] = true
 		flags["batteries_got"] = true
-	if k >= 6:
+	if k >= 6:                  # the storm step: the drum found, the storm begun
 		flags["n2_wrong_done"] = true
 		flags["drum_free"] = true
+		flags["storm_on"] = true
 	get_tree().call_group("roses", "match_story")
 	get_tree().call_group("evidence", "match_story")
 	get_tree().call_group("bessi_tasks", "match_story")
+	get_tree().call_group("storm_front", "match_story")
 	# Bessi is at dusk (you'd have walked onto the beach to get here)
 	var mood := get_tree().get_first_node_in_group("mood") as Mood
 	if k >= 0 and mood != null and mood.value > 0.4:
@@ -434,6 +439,13 @@ func _tell_all(text: String, secs := 9.0) -> void:
 
 
 # --- helpers -------------------------------------------------------------------
+
+## E7: the van well up the coast road, north of Bessi, with Naresh in it.
+func _north_with_naresh() -> bool:
+	var v: Camper = boot.camper
+	var nz: Naresh = boot.naresh
+	return v.global_position.z < 380.0 and v.global_position.x > 1600.0 and nz != null 		and is_instance_valid(nz) and nz.van == v and (v.driver != null or v.passenger != null)
+
 
 func _van_near(poi_id: String, radius: float) -> bool:
 	var p: Vector3 = boot.builder.poi[poi_id]

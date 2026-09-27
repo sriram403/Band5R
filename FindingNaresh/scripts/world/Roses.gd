@@ -310,6 +310,28 @@ func ro_ground(at: Vector3) -> Vector3:
 	return Vector3(at.x, Landscape.ground(at.x, at.z) + 0.2, at.z)
 
 
+## The storm (E7): they sink back into the sand, rumbling (or at once,
+## after a load). The plaza and his camp stay.
+func sink_away(at_once := false) -> void:
+	if phase in ["sinking", "gone"]:
+		return
+	if at_once or phase == "sunk":
+		phase = "gone"
+		_set_sunk(true)
+		return
+	phase = "sinking"
+	_t = 0.0
+	_pool(false)
+	_rumble = AudioStreamPlayer3D.new()
+	_rumble.stream = load("res://audio/rumble_rise.wav")
+	_rumble.unit_size = 40.0
+	_rumble.max_distance = 400.0
+	_rumble.volume_db = 2.0
+	add_child(_rumble)
+	_rumble.global_position = centre
+	_rumble.play()
+
+
 ## Straight up, as after a load.
 func rise_now() -> void:
 	phase = "up"
@@ -333,6 +355,19 @@ func _physics_process(delta: float) -> void:
 	if st == null or st.index_of("roses") < 0:
 		return
 	# the story's state, after a load or a jump
+	if st.flags.has("storm_on") and phase not in ["sinking", "gone"] and phase != "done" and phase != "up":
+		phase = "gone"
+		_set_sunk(true)
+		return
+	if phase in ["sinking", "gone"]:
+		if phase == "sinking":
+			_t += delta
+			var ks := smoothstep(0.0, 1.0, _t / RISE_S)
+			for i in roses.size():
+				_place(i, -SINK * ks)
+			if _t >= RISE_S:
+				phase = "gone"
+		return
 	if phase == "sunk" and st.flags.has("roses_up"):
 		rise_now()
 		for k in int(st.flags.get("roses_open", 0)):
