@@ -109,20 +109,8 @@ func _build() -> void:
 	cs.shape = cap
 	cs.position = Vector3(0, STAND_HEIGHT * 0.5, 0)
 	add_child(cs)
-	# the same block-out body as the players, taller, in green, with a cap
-	_mesh_root = Node3D.new()
-	_mesh_root.name = "Avatar"
+	_mesh_root = make_figure()
 	add_child(_mesh_root)
-	var suit := ToonMat.make(SUIT, 0.018)
-	var skin := ToonMat.make(Color(0.78, 0.58, 0.42), 0.018)
-	var legs := ToonMat.make(Color(0.30, 0.26, 0.22), 0.018)
-	_mesh_root.add_child(Build.cyl(0.28, 1.08, suit, Vector3(0, 0.64, 0), Vector3.ZERO, 10, "Torso"))
-	_mesh_root.add_child(Build.sphere(0.22, skin, Vector3(0, 1.41, 0), Vector3.ONE, "Head"))
-	_mesh_root.add_child(Build.cyl(0.24, 0.10, ToonMat.make(Color(0.85, 0.25, 0.22), 0.018), Vector3(0, 1.58, 0), Vector3.ZERO, 12, "Cap"))
-	_mesh_root.add_child(Build.box(Vector3(0.16, 0.72, 0.16), suit, Vector3(-0.34, 0.78, 0), Vector3.ZERO, "ArmL"))
-	_mesh_root.add_child(Build.box(Vector3(0.16, 0.72, 0.16), suit, Vector3(0.34, 0.78, 0), Vector3.ZERO, "ArmR"))
-	_mesh_root.add_child(Build.box(Vector3(0.18, 0.64, 0.18), legs, Vector3(-0.13, 0.16, 0), Vector3.ZERO, "LegL"))
-	_mesh_root.add_child(Build.box(Vector3(0.18, 0.64, 0.18), legs, Vector3(0.13, 0.16, 0), Vector3.ZERO, "LegR"))
 	for m in _mesh_root.get_children():
 		_pose_stand[m.name] = (m as Node3D).transform
 	_bubble = Build.label3d("", Vector3(0, 2.25, 0), Vector3.ZERO, 0.16, Color(1, 1, 0.92))
@@ -140,6 +128,24 @@ func _build() -> void:
 	_bubble.visibility_range_begin = 7.0
 	_bubble.visible = false
 	add_child(_bubble)
+
+
+## His body on its own (no physics, no mind): the same block-out as the
+## players, taller, in green, with a red cap. Also stands in his photo (E3).
+static func make_figure() -> Node3D:
+	var root := Node3D.new()
+	root.name = "Avatar"
+	var suit := ToonMat.make(SUIT, 0.018)
+	var skin := ToonMat.make(Color(0.78, 0.58, 0.42), 0.018)
+	var legs := ToonMat.make(Color(0.30, 0.26, 0.22), 0.018)
+	root.add_child(Build.cyl(0.28, 1.08, suit, Vector3(0, 0.64, 0), Vector3.ZERO, 10, "Torso"))
+	root.add_child(Build.sphere(0.22, skin, Vector3(0, 1.41, 0), Vector3.ONE, "Head"))
+	root.add_child(Build.cyl(0.24, 0.10, ToonMat.make(Color(0.85, 0.25, 0.22), 0.018), Vector3(0, 1.58, 0), Vector3.ZERO, 12, "Cap"))
+	root.add_child(Build.box(Vector3(0.16, 0.72, 0.16), suit, Vector3(-0.34, 0.78, 0), Vector3.ZERO, "ArmL"))
+	root.add_child(Build.box(Vector3(0.16, 0.72, 0.16), suit, Vector3(0.34, 0.78, 0), Vector3.ZERO, "ArmR"))
+	root.add_child(Build.box(Vector3(0.18, 0.64, 0.18), legs, Vector3(-0.13, 0.16, 0), Vector3.ZERO, "LegL"))
+	root.add_child(Build.box(Vector3(0.18, 0.64, 0.18), legs, Vector3(0.13, 0.16, 0), Vector3.ZERO, "LegR"))
+	return root
 
 
 # --- talking -----------------------------------------------------------------------

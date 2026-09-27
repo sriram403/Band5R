@@ -19,6 +19,8 @@ var opening_mode := false
 var opening_steps := [0, 0]
 var phone_threads := [[], []]
 var phone_seen := [0, 0]
+## Naresh's photo (E3): a snapshot taken by Bessi.gd; not saved (retaken on load)
+var photo_texture: Texture2D = null
 
 const P1_OPENING := [
 	["Read the message from Naresh's mother (P)", "The phone opens with P or D-pad right. Messages arrive by themselves."],
@@ -103,7 +105,13 @@ func setup(b: Node) -> void:
 		{"id": "stamp_beach", "text": "From the top: find Bessi beach and stamp it on your map",
 			"hint": "Look out to the sea: the long beach with the stalls, the rose-shaped hill behind it. Open the map (M), move the stamp over the beach and stamp it. The nav in the van will point there.",
 			"done": func(): return _stamp_near("beach", 300.0)},
-		{"id": "end_d", "text": "Down to Bessi beach (milestone E comes next)",
+		{"id": "to_beach", "text": "Down to Bessi beach",
+			"hint": "Down the Beach Road to the loop round the rose-shaped hill, then east to the sea: the promenade with the stalls.",
+			"done": func(): return _near_on_foot("beach", 90.0) or _near_on_foot("photo_spot", 60.0)},
+		{"id": "photo", "text": "Find where Naresh's photo was taken",
+			"hint": "Only P2 has the photo (their phone, P / D-pad right). In it, things line up: something tall right behind something else, a mast over a roof. P2 describes it; the other looks around (binoculars, tags). Then walk until it all lines up, and look the way the photo does.",
+			"done": func(): return flags.has("photo_spot")},
+		{"id": "end_e3", "text": "Where the photo was taken (the smoke comes next: E4)",
 			"hint": "This is where the build ends for now.",
 			"done": func(): return false},
 	]
@@ -193,8 +201,11 @@ func begin_opening() -> void:
 	objective_changed.emit()
 
 
-func _send_phone(who: int, sender: String, body: String) -> void:
-	phone_threads[who].append({"from": sender, "body": body})
+func _send_phone(who: int, sender: String, body: String, photo := false) -> void:
+	var msg := {"from": sender, "body": body}
+	if photo:
+		msg["photo"] = true
+	phone_threads[who].append(msg)
 
 
 func phone_text(who: int) -> String:

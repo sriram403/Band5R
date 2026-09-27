@@ -26,7 +26,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
-const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"], "naresh": ["naresh"]}
+const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"], "naresh": ["naresh"], "photo": ["photo_gym"]}
 ## Smoke (tools/run_test.sh with no arguments, ~3 min): the controls in the
 ## base gym and one short world check per system. The long playthroughs are
 ## in the sets and in full (tools/test_plan.sh).
@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -3497,7 +3497,7 @@ func t_tower() -> void:
 	check(st.current()["id"] == "stamp_beach", "a stamp elsewhere doesn't count")
 	ms.add_stamp("puzzle", Vector2(beach.x + 40.0, beach.z - 30.0))
 	await wait(0.6)
-	check(st.current()["id"] == "end_d", "stamping the beach: done; the nav points there")
+	check(st.current()["id"] == "to_beach", "stamping the beach: done; the nav points there")
 	cr.passive = false
 	cr.queue_free()
 	cw.creature = null
@@ -6410,4 +6410,105 @@ func t_beach() -> void:
 	log_line("fps on the promenade at dusk, both views: %.0f" % fps)
 	check(headless or fps >= 110.0, "the lit promenade at dusk keeps the frame rate (%.0f fps)" % fps)
 	await shot("beach_dusk_split")
+	mood.set_now(0.62)
+
+
+## E3, the photo gym: two pairs of poles line up from one spot only; fixes
+## how far off it still counts (Alignment.TOLERANCE, 2 m).
+## `GYM=photo tools/run_test.sh photo_gym`
+func t_photo_gym() -> void:
+	var a: Alignment = boot.builder.photo_gym
+	var spot: Vector3 = boot.builder.poi["photo_gym_spot"]
+	check(a != null and a.spot().distance_to(Vector3(spot.x, a.spot().y, spot.z)) < 0.1, "the two lines cross at the marked spot")
+	check(a.aligned(spot), "on the spot both pairs line up")
+	var p := p1()
+	for spec in [[Vector3(1.5, 0, 0), true, "1.5 m to the side"], [Vector3(0, 0, 1.8), true, "1.8 m back"],
+			[Vector3(2.5, 0, 0), false, "2.5 m to the side"], [Vector3(0, 0, 10), false, "10 m back along the red line"],
+			[Vector3(0, 0, -40), false, "between the red poles"]]:
+		var at: Vector3 = spot + spec[0]
+		var eye := at + Vector3.UP * 1.56
+		var apart: Array = a.apart_deg(eye)
+		log_line("%s: %.1f m off, the pairs look %.1f and %.1f degrees apart" % [spec[2], a.off(at), apart[0], apart[1]])
+		check(a.aligned(at) == spec[1], "%s: %s" % [spec[2], "still on the spot" if spec[1] else "not the spot"])
+	await place_player(p, spot + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, spot + Vector3(4, 5, -20))
+	await shot("photo_gym_spot")
+	await place_player(p, spot + Vector3(2.0, 0.3, 0), 0.0)
+	await look_at_point(p, spot + Vector3(4, 5, -20))
+	await shot("photo_gym_2m_off")
+
+
+## E3, the photo in the world: reaching the beach, Naresh's photo comes to
+## P2's phone (only P2's); standing on the spot and looking along it finds
+## it; a step off, or looking away, doesn't. `tools/run_test.sh photo`
+func t_photo() -> void:
+	var st: Story = boot.story
+	var poi: Dictionary = boot.builder.poi
+	var bessi := get_tree().get_first_node_in_group("bessi") as Bessi
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	var p := p1()
+	var q := p2()
+	check(st.index_of("photo") > 0 and bessi != null and bessi.photo != null, "the story has the photo step")
+	st.flags.erase("photo_sent")
+	st.flags.erase("photo_spot")
+	st.photo_texture = null
+	st.jump_to(st.index_of("to_beach"))
+	mood.set_now(0.4)
+	await place_player(p, poi["beach"] + Vector3(0, 0.3, 0), 0.0)
+	await place_player(q, poi["beach"] + Vector3(2, 0.3, 0), 0.0)
+	var on := await until(func() -> bool: return st.current()["id"] == "photo", 3.0)
+	check(on, "reaching the beach: 'Find where Naresh's photo was taken'")
+	var sent := await until(func() -> bool: return st.flags.has("photo_sent"), Bessi.PHOTO_DELAY + 6.0)
+	check(sent, "a few seconds later the photo arrives")
+	var p2_msg: Dictionary = st.phone_threads[1][-1]
+	var p1_msg: Dictionary = st.phone_threads[0][-1]
+	check(p2_msg.get("photo", false) and String(p2_msg["body"]).contains("me and him at Bessi"), "on P2's phone: the photo, 'me and him at Bessi!'")
+	check(not p1_msg.get("photo", false) and String(p1_msg["body"]).contains("P2"), "P1 gets words only: it went to P2")
+	check(headless or st.photo_texture != null, "the photo is a real picture of the place")
+	if st.photo_texture != null:
+		st.photo_texture.get_image().save_png("res://_shots/test_photo_image.png")
+		log_line("shot test_photo_image.png (the photo itself)")
+	q.phone_open = true
+	await wait(0.6)
+	var pic := boot.huds[1].find_child("Photo", true, false) as TextureRect
+	check(pic != null and pic.is_visible_in_tree() and pic.texture != null, "P2's phone shows it")
+	boot._set_layout(Boot.Layout.SIDE_BY_SIDE)
+	await wait(0.3)
+	await shot("photo_phone")
+	q.phone_open = false
+	# off the spot, facing the right way: nothing
+	var spot: Vector3 = poi["photo_spot"]
+	var tip: Vector3 = poi["memorial_spire"]
+	var side := Vector3(-(tip - spot).z, 0, (tip - spot).x).normalized()
+	await place_player(p, spot + side * 3.0 + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, tip)
+	await wait(2.0)
+	check(not st.flags.has("photo_spot"), "3 m off the spot it doesn't count")
+	# on the spot, looking away: nothing
+	await place_player(p, spot + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, spot + (spot - tip).normalized() * 10.0)
+	await wait(2.0)
+	check(not st.flags.has("photo_spot"), "on the spot but looking away doesn't count")
+	# tag the mast from the spot, the way the other player would point it out
+	await look_at_point(p, poi["mast_top"] + Vector3(0, -1.5, 0))
+	await tap(KEY_T)
+	var tagm := TagMarker.of(p.index)
+	check(tagm != null and tagm.thing.contains("mast"), "the mast can be tagged (\"%s\")" % (tagm.thing if tagm else "-"))
+	# on the spot, looking at the memorial: found
+	await look_at_point(p, tip)
+	var found := await until(func() -> bool: return st.flags.has("photo_spot"), 3.0)
+	check(found, "on the spot, looking along the photo: found")
+	await wait(0.5)
+	check(st.current()["id"] == "end_e3", "and the story moves on")
+	check(boot.huds[0]._note.visible and boot.huds[0]._note_text.text.contains("He stood exactly here"), "'He stood exactly here.'")
+	await look_at_point(p, (tip + poi["mast_top"]) * 0.5)
+	await shot("photo_found_view")
+	# a load: the story comes back as saved; the picture is taken again (it
+	# isn't in the save file), without sending the texts a second time
+	var texts: int = st.phone_threads[1].size()
+	st.from_dict(st.to_dict())
+	st.photo_texture = null
+	var again := await until(func() -> bool: return st.photo_texture != null, 3.0)
+	check((headless or again) and st.phone_threads[1].size() == texts and st.current()["id"] == "end_e3",
+		"after a load the photo is back on P2's phone, the texts not sent twice")
 	mood.set_now(0.62)

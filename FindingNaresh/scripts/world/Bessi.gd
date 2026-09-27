@@ -23,12 +23,29 @@ const PROM_OUT := 44.0                       ## and its seaward edge
 const BEAM_TURN := 8.0                       ## s for one turn of the lighthouse beam
 const STALL_Z := [330, 960, 45]              ## LevelPlaces._beach: range(330, 960, 45)
 const RADIO_STALL := 4                       ## the stall with the radio (z 510, near the memorial)
+## E3, the photo's second pair: a kiosk on the sand and, behind it, a boat
+## drawn up with its mast stepped, both north-east of the photo spot, so the
+## mast rises out of the kiosk roof only from there (the two lines cross at
+## 45 degrees: one spot).
+const PHOTO_DIR2 := Vector2(0.7071, -0.7071)
+const KIOSK_AT := 12.0                       ## m from the photo spot
+const MAST_AT := 35.0
+const MAST_H := 7.5
+const FOUND_HOLD := 1.2                      ## s on the spot, looking along the photo
+const FACE_DEG := 35.0                       ## ...within this of the memorial
+const PHOTO_DELAY := 6.0                     ## s after the photo objective starts, it arrives
+const PHOTO_FOV := 58.0                      ## vertical degrees: both pairs and Naresh in frame
 
 var beam: Node3D
 var radio: AudioStreamPlayer3D
 var signal_lost := false
 var lights: Array[Light3D] = []
 var _roses := Vector3(1720, 0, 640)
+var photo: Alignment                         ## the two pairs (E3)
+var photo_xf := Transform3D.IDENTITY         ## the camera that took it
+var _found_t := 0.0
+var _photo_t := -1.0
+var _taking := false
 
 
 func setup(b) -> void:
@@ -41,6 +58,7 @@ func setup(b) -> void:
 	_stall_lights(b, root)
 	var m := _memorial(b, root)
 	_lighthouse(b, root, m)
+	_photo_pair(b, root)
 
 
 ## A waterline point: where the sand meets the sea at `z`.
@@ -51,6 +69,7 @@ static func shore_x(z: float) -> float:
 func _physics_process(delta: float) -> void:
 	if beam != null:
 		beam.rotate_y(delta * TAU / BEAM_TURN)
+	_photo_story(delta)
 	var van := get_tree().get_first_node_in_group("camper") as Camper
 	if van != null:
 		var c := _roses
@@ -176,6 +195,7 @@ func _memorial(b, root: Node3D) -> Vector3:
 	var pale := ToonMat.make((b.C_STONE as Color).lightened(0.12))
 	var body := StaticBody3D.new()
 	body.name = "Memorial"
+	body.set_meta("tag_name", "the memorial")
 	root.add_child(body)
 	for spec in [[Vector3(7, 0.4, 7), 0.2], [Vector3(5, 0.4, 5), 0.6]]:
 		body.add_child(Build.box(spec[0], stone, mp + Vector3(0, spec[1], 0), Vector3.ZERO, "Step"))
@@ -207,6 +227,7 @@ func _lighthouse(b, root: Node3D, tip: Vector3) -> void:
 	root.add_child(node)
 	var body := StaticBody3D.new()
 	body.name = "LighthouseRock"
+	body.set_meta("tag_name", "the lighthouse")
 	node.add_child(body)
 	var rock := ToonMat.make(Color(0.36, 0.34, 0.33), 0.03)
 	var ground := minf(at.y, rock_top - 1.0)
@@ -269,3 +290,132 @@ func _lighthouse(b, root: Node3D, tip: Vector3) -> void:
 
 func _v(b, p: Vector2) -> Vector3:
 	return Vector3(p.x, b._h(p.x, p.y), p.y)
+
+
+# --- E3: the photo ------------------------------------------------------------------
+
+## The kiosk on the sand and the boat behind it with its mast up, both on a
+## line north-east from the photo spot; the photo's two pairs; the camera.
+func _photo_pair(b, root: Node3D) -> void:
+	var s := _v(b, PHOTO_SPOT)
+	var k2 := PHOTO_SPOT + PHOTO_DIR2 * KIOSK_AT
+	var m2 := PHOTO_SPOT + PHOTO_DIR2 * MAST_AT
+	var kp := _v(b, k2)
+	var mp := _v(b, m2)
+	var face := Basis.looking_at(Vector3(s.x - kp.x, 0, s.z - kp.z).normalized(), Vector3.UP)
+	# the kiosk: a small stall, its counter towards the promenade
+	var kiosk := StaticBody3D.new()
+	kiosk.name = "Kiosk"
+	kiosk.set_meta("tag_name", "the kiosk")
+	kiosk.position = kp
+	kiosk.basis = face
+	root.add_child(kiosk)
+	var col := ToonMat.make(Color(0.30, 0.62, 0.62))
+	kiosk.add_child(Build.box(Vector3(2.4, 2.3, 2.2), col, Vector3(0, 1.15, 0), Vector3.ZERO, "Booth"))
+	kiosk.add_child(b._box_shape(Vector3(2.4, 2.3, 2.2), Transform3D(Basis(), Vector3(0, 1.15, 0))))
+	kiosk.add_child(Build.box(Vector3(3.0, 0.15, 2.8), ToonMat.make(Color(0.95, 0.92, 0.84)), Vector3(0, 2.45, -0.2), Vector3(-8, 0, 0), "Roof"))
+	var kl := _light(Color(1.0, 0.8, 0.5), 1.4, 6.0)
+	kl.position = Vector3(0, 2.1, -1.5)
+	kiosk.add_child(kl)
+	lights.append(kl)
+	# the boat, drawn up on the sand with its mast stepped
+	var boat := StaticBody3D.new()
+	boat.name = "MastBoat"
+	boat.set_meta("tag_name", "the boat's mast")
+	boat.position = mp
+	boat.basis = Basis(Vector3.UP, deg_to_rad(15.0))
+	root.add_child(boat)
+	var hull := ToonMat.make(Color(0.86, 0.42, 0.22))
+	boat.add_child(Build.box(Vector3(1.9, 0.9, 6.0), hull, Vector3(0, 0.45, 0), Vector3.ZERO, "Hull"))
+	boat.add_child(Build.box(Vector3(1.6, 0.12, 5.6), ToonMat.make(Color(0.25, 0.45, 0.70)), Vector3(0, 0.95, 0), Vector3.ZERO, "Gunwale"))
+	boat.add_child(b._box_shape(Vector3(1.9, 1.0, 6.0), Transform3D(Basis(), Vector3(0, 0.5, 0))))
+	var wood := ToonMat.make(b.C_WOOD)
+	boat.add_child(Build.cyl(0.08, MAST_H, wood, Vector3(0, 0.9 + MAST_H * 0.5, -0.8), Vector3.ZERO, 8, "Mast"))
+	boat.add_child(Build.cyl(0.05, 3.2, wood, Vector3(0, 2.2, 0.8), Vector3(90, 0, 0), 6, "Boom"))
+	boat.add_child(Build.box(Vector3(0.05, 0.45, 0.7), ToonMat.make(Color(0.85, 0.15, 0.15)), Vector3(0, 0.9 + MAST_H + 0.1, -0.5), Vector3.ZERO, "Pennant"))
+	boat.add_child(b._cyl_shape(Vector3(0, 0.9 + MAST_H * 0.5, -0.8), 0.12, MAST_H))
+	# (the world isn't in the scene tree yet while it's built: no global_transform)
+	var mast_top := mp + Basis(Vector3.UP, deg_to_rad(15.0)) * Vector3(0, 0.9 + MAST_H, -0.8)
+	var kiosk_roof := kp + Vector3(0, 2.55, 0)
+	b.poi["kiosk"] = kp
+	b.poi["mast_boat"] = mp
+	b.poi["mast_top"] = mast_top
+	photo = Alignment.new().add_pair(b.poi["memorial_spire"], b.poi["lighthouse_lamp"]).add_pair(kiosk_roof, mast_top)
+	var ps: Vector3 = photo.spot()
+	b.poi["photo_spot"] = Vector3(ps.x, s.y + 0.1, ps.z)
+	# the camera that took it: eye height, looking between the two pairs
+	var eye := s + Vector3.UP * 1.55
+	var d1 := Vector3(b.poi["lighthouse_lamp"].x - eye.x, 0, b.poi["lighthouse_lamp"].z - eye.z).normalized()
+	var d2 := Vector3(mast_top.x - eye.x, 0, mast_top.z - eye.z).normalized()
+	var mid := (d1 + d2).normalized()
+	photo_xf = Transform3D(Basis.looking_at(mid + Vector3.UP * 0.07, Vector3.UP), eye)
+
+
+## The photo in the story: it arrives a few seconds into "find where it was
+## taken" (P2's phone only), and standing on the spot, looking along it,
+## finds it.
+func _photo_story(delta: float) -> void:
+	var st := get_tree().get_first_node_in_group("story") as Story
+	if st == null or st.index_of("photo") < 0 or photo == null:
+		return
+	var on_photo: bool = st.current()["id"] == "photo"
+	if st.flags.has("photo_sent"):
+		if st.photo_texture == null and not _taking:
+			_take_photo(st, false)          # after a load: the picture, not the texts again
+	elif on_photo:
+		if _photo_t < 0.0:
+			_photo_t = PHOTO_DELAY
+		_photo_t -= delta
+		if _photo_t <= 0.0 and not _taking:
+			_take_photo(st, true)
+	if not on_photo or st.flags.has("photo_spot"):
+		return
+	var here := false
+	for n in get_tree().get_nodes_in_group("player"):
+		var p := n as PlayerRig
+		if p.seat == null and on_spot(p):
+			here = true
+	_found_t = _found_t + delta if here else 0.0
+	if _found_t >= FOUND_HOLD:
+		st.flags["photo_spot"] = true
+		for n in get_tree().get_nodes_in_group("player"):
+			(n as PlayerRig).say("This is it. The lighthouse right behind the spire, the mast coming out of the kiosk roof. He stood exactly here.", 7.0)
+
+
+## On the spot and looking along the photo, towards the memorial.
+func on_spot(p: PlayerRig) -> bool:
+	if not photo.aligned(p.global_position):
+		return false
+	var tip: Vector3 = photo.pairs[0][0]
+	var to := Vector2(tip.x - p.global_position.x, tip.z - p.global_position.z).normalized()
+	var look := Vector2(-sin(p.yaw), -cos(p.yaw))
+	return rad_to_deg(acos(clampf(to.dot(look), -1.0, 1.0))) <= FACE_DEG
+
+
+## Take the picture: Naresh stands a few steps off to the right, alone, as
+## if leaving room for someone beside him. Then (the first time) the texts.
+func _take_photo(st: Story, send: bool) -> void:
+	_taking = true
+	var fig := Naresh.make_figure()
+	fig.name = "PhotoNaresh"
+	var root := get_tree().get_first_node_in_group("world_root") as Node3D
+	root.add_child(fig)
+	var fwd := -photo_xf.basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized()
+	# at the right edge of the frame, clear of the kiosk, the space beside him empty
+	var at := photo_xf.origin + fwd.rotated(Vector3.UP, deg_to_rad(-31.0)) * 3.2
+	at.y = Landscape.ground(at.x, at.z) + 0.08
+	fig.global_transform = Transform3D(Basis.looking_at(-fwd, Vector3.UP), at)
+	var tex := await PhotoCamera.take(self, photo_xf, Vector2i(640, 480), PHOTO_FOV)
+	fig.queue_free()
+	st.photo_texture = tex
+	_taking = false
+	if send and not st.flags.has("photo_sent"):
+		st.flags["photo_sent"] = true
+		st._send_phone(1, "Naresh's mother", "His last message to me, the day he went quiet. I'm sending it on to you.\n\"me and him at Bessi!\"", true)
+		st._send_phone(0, "Naresh's mother", "I've sent his last photo to P2. It's all I have. He's alone in it. Where is he?")
+		var boot := get_tree().current_scene
+		if boot != null and boot.get("players") != null:
+			boot.players[1].say("Your phone buzzes: a photo from Naresh's mother. (%s)" % boot.players[1].dev.glyph("phone"), 5.0)
+			boot.players[0].say("P2's phone buzzes. Naresh's mother has sent them his photo.", 5.0)
