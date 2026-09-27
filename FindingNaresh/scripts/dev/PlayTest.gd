@@ -6039,6 +6039,7 @@ func t_naresh() -> void:
 					bad += 1
 		if started >= 4 and good >= 1 and bad >= 1 and n.state != Naresh.State.ACT:
 			break
+	await wait(0.5)      # an act that just started (the honk) acts on the van's next step
 	var lead_ok := true
 	var summary := []
 	var good_n := 0

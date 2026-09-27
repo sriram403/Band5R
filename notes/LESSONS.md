@@ -120,6 +120,19 @@ The engine-level details (exact Godot calls, numbers) are also in
 - **Reactions come a step later** (E1): Naresh says "It's done!" on his next
   physics step after the crank finishes; a check on the same step saw
   nothing. Wait a few frames before checking what someone said or did.
+- **Don't stop watching the moment something starts** (E1): the act test
+  ended its loop as soon as the honk act began, one step before the van
+  sounded the horn; it failed only when the honk happened to be last.
+- **A crash inside the graphics driver** (`nvoglv64.dll`, E1 full run, in
+  the world segment at the ghat) is not a game bug to chase first: resume
+  the run (`tools/run_test.sh resume`) and see if it comes back.
+- **A mouse test that passes alone but fails in a long run** read 40 and 48
+  degrees instead of 50.4: real mouse movement reached the test window.
+  Rerun it alone before looking at the code.
+- **Resume first, recheck after** (E1): running one scenario to check a
+  failure started a new run, which cleared the broken-off full run's
+  progress, so `resume` had nothing left. Resume (or finish) the long run
+  before starting any other test.
 - **Log what characters say** (E1): hooking Naresh's lines into the test log
   made every failure readable at once ("I dropped it." showed the bug).
 

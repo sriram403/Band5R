@@ -11,6 +11,8 @@
 #   set:creatures   the stealth and creature gyms, the ghat, the watchtower
 #   set:driving     the base gym's driving, the long drives and the way out
 #   set:world       the world checks (the old Quick list)
+#   set:world_full  the world part of full alone (the long drives and every
+#                   world check), e.g. after a crash in it
 #   full            everything: before a push or a hand-over, and on GitHub
 #   a,b,c           these scenarios (in the world, or in $GYM)
 #   quick           the old name: now the same as smoke
@@ -49,6 +51,8 @@ test_plan() {
 		echo "|journey,routes,way_out" ;;
 	set:world)
 		echo "|quick" ;;
+	set:world_full)
+		echo "|full" ;;
 	full)
 		test_plan set:opening
 		test_plan set:gyms
