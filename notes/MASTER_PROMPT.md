@@ -16,8 +16,10 @@ is established fact unless it says otherwise.
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
 Last updated: 2026-09-27, E1 (the Naresh gym) approved by the user (and its 8
-decisions, for now), full run clean, pushed; E2 (Bessi beach) built and
-tested by me, handed over for the user's test (TEST_MILESTONE_E.md E2), not pushed.
+decisions, for now), full run clean, pushed; E2 (Bessi beach) approved and
+pushed. E3 (the photo, branch `e3`) and E4 (the roses, branch `e4`) are built
+in the second copy `../MPG_dev` (a git worktree): E3 next into main for the
+user's test.
 Milestones A-D are done, approved by the user and pushed. The user is back:
 one part at a time, their test before each push (rule 2). Now: E2 (the
 Bessi beach greybox), then hand over for their test.

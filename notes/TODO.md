@@ -12,7 +12,10 @@ being built and tested), so this always shows where the work is right now.
   "Decisions"). E1, the Naresh gym: **approved by you** ("liked it", the 8
   decisions OK for now, 2026-09-27), full run clean, **pushed**. [~] E2,
   Bessi beach: **approved by you** (and the radio tune, "for now",
-  2026-09-27). [~] Full world run, push; then E3, the photo.
+  2026-09-27), full world run clean (after test-order fixes and two
+  graphics-driver crashes, resumed), **pushed**. E3 (the photo) is built in
+  `../MPG_dev` and E4 (the roses) ahead of it: next, E3 into main and your
+  test.
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -715,7 +718,7 @@ in `notes/TEST_MILESTONE_E.md`).
   - [x] smoke (23, now with the beach) + tower after the memorial move: 0
         failures; your test sheet (E2 in `notes/TEST_MILESTONE_E.md`)
   - [x] Your test and approval (2026-09-27)
-  - [~] Full world run, then push
+  - [x] Full world run, then push (2026-09-27)
 - [~] E3. The photo (W8): the phone photo held by one player (P2), the
       alignment spot (lighthouse behind the memorial spire, a mast on a
       stall roof), binoculars + tags; `t_photo`
