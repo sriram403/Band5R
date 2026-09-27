@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -6688,7 +6688,7 @@ func t_evidence() -> void:
 	var packed := await until(func() -> bool: return st.flags.has("packed"), 3.0)
 	await physics_frames(3)
 	check(packed and nz.said_since("All packed", 0) and nz.state == Naresh.State.FOLLOW, "three things seen: he's packed and comes along")
-	check(st.current()["id"] == "end_e5", "and the story moves on")
+	check(st.current()["id"] == "batteries", "and the story moves on")
 	# the prints, from the dune looking back down to the beach
 	await place_player(p, ev.print_points[int(ev.print_points.size() * 0.7)] + Vector3.UP * 0.4, 0.0)
 	await look_at_point(p, ev.print_points[int(ev.print_points.size() * 0.35)])
@@ -6726,3 +6726,135 @@ func t_bessi_jumps() -> void:
 	dm.run("jump", st.index_of("roses"))
 	var rising := await until(func() -> bool: return ro.phase in ["smoke", "rising", "up"], Roses.AFTER_PHOTO + 3.0)
 	check(rising, "jump to 'The Five Roses': the smoke comes and they rise")
+
+
+## P2 on a controller (the real one, or a pretend one on device 0).
+func p2_pad() -> void:
+	if boot.devices[1].kind != InputDevice.Kind.PAD:
+		boot._on_joy_changed(0, true)
+		await physics_frames(3)
+
+
+## E6 N1, the store: Naresh holds the heavy shutter, you both crouch in; he
+## lets go once (shut in), opens it again; the box takes two, carried out.
+## `tools/run_test.sh shutter`
+func t_shutter() -> void:
+	var st: Story = boot.story
+	var poi: Dictionary = boot.builder.poi
+	var bt := get_tree().get_first_node_in_group("bessi_tasks") as BessiTasks
+	var p := p1()
+	var q := p2()
+	boot.dev_menu.run("jump", st.index_of("batteries"))
+	await wait(0.5)
+	var nz: Naresh = boot.naresh
+	check(bt != null and nz != null and st.current()["id"] == "batteries", "the store step, Naresh along")
+	await p2_pad()
+	var door: Vector3 = poi["store_door"]
+	await place_player(p, door + Vector3(2.0, 0.3, 1.0), 0.0)
+	nz.global_position = door + Vector3(3.0, 0.3, -1.0)
+	nz.reset_physics_interpolation()
+	await physics_frames(3)
+	check(bt.handle.amount < 0.01, "the shutter is down")
+	check(await naresh_job(p, bt.handle.global_position, "hold", true), "V on the handle: 'Hold the shutter'")
+	var up := await until(func() -> bool: return bt.handle.amount >= 0.99, 15.0)
+	check(up, "he holds it up (%.2f m)" % bt.shutter.position.y)
+	await shot("shutter_held")
+	# crouch in under it, for real
+	key(KEY_CTRL, true)
+	var inn := await walk_to(p, bt.store.global_position + Vector3(-0.6, 0, 0.5), "under the shutter", 0.6, 10.0)
+	key(KEY_CTRL, false)
+	check(inn and bt.inside(p), "P1 crouches in under it")
+	await place_player(q, bt.store.global_position + Vector3(-0.6, 0.3, -0.6), 0.0)
+	var slip := await until(func() -> bool: return st.flags.has("n1_slip"), BessiTasks.SLIP_AFTER + 3.0)
+	var down := await until(func() -> bool: return bt.handle.amount <= 0.01, 2.0)
+	check(slip and down and nz.said_since("Oops", 0), "with you both in he lets go: 'Oops! My friend was telling me something...'")
+	await look_at_point(p, bt.store.global_position + Vector3(2.0, 0.6, 0))
+	await shot("shutter_shut_in")
+	var reopened := await until(func() -> bool: return bt.handle.amount >= 0.99, BessiTasks.SLIP_BACK + 8.0)
+	check(reopened and nz.said_since("Sorry", 0), "then he opens it again: 'Sorry! Sorry. Got it.'")
+	# the box: two to carry it
+	await face_point(p, bt.box.global_position + Vector3.UP * 0.25, 1.1, Vector3(1, 0, 0.6))
+	await tap(KEY_E)
+	await look_at_point(q, bt.box.global_position + Vector3.UP * 0.25)
+	await physics_frames(3)
+	pad_button(JOY_BUTTON_X, true)
+	await physics_frames(4)
+	pad_button(JOY_BUTTON_X, false)
+	await physics_frames(4)
+	check(bt.box.holders.size() == 2, "you both take hold of the box (%d holding)" % bt.box.holders.size())
+	# out under the shutter together, a step at a time
+	for i in 12:
+		var step := Vector3(0.5, 0, 0)
+		await place_player(p, p.global_position + step + Vector3.UP * 0.05, p.yaw)
+		await place_player(q, q.global_position + step + Vector3.UP * 0.05, q.yaw)
+	var got := await until(func() -> bool: return st.flags.has("batteries_got"), 3.0)
+	check(got and p.flashlight_seconds >= 599.0 and q.flashlight_seconds >= 599.0, "carried out: fresh batteries in both torches")
+	await physics_frames(5)
+	check(st.current()["id"] == "drum", "and the story moves on to the drum")
+	p.drop_held()
+	q.drop_held()
+
+
+## E6 N2, the boat: three push at once; Naresh goes round the wrong side
+## until he's told again; off it comes, and the drum under it takes two.
+## `tools/run_test.sh boat`
+func t_boat() -> void:
+	var st: Story = boot.story
+	var poi: Dictionary = boot.builder.poi
+	var bt := get_tree().get_first_node_in_group("bessi_tasks") as BessiTasks
+	var p := p1()
+	var q := p2()
+	boot.dev_menu.run("jump", st.index_of("drum"))
+	await wait(0.5)
+	var nz: Naresh = boot.naresh
+	await p2_pad()
+	var push: Vector3 = poi["boat_push"]
+	await place_player(p, push + Vector3(0, 0.3, -1.0), 0.0)
+	await place_player(q, push + Vector3(0, 0.3, 1.0), 0.0)
+	nz.global_position = push + Vector3(-3, 0.3, 0)
+	nz.reset_physics_interpolation()
+	check(not bt.boat.is_done and bt.drum.freeze, "the boat lies over the drum")
+	var hull_pt := bt.boat.global_position + Vector3(0, 0.7, 0)
+	check(await naresh_job(p, hull_pt, "work", true), "V on the boat: 'Work the boat'")
+	await look_at_point(p, hull_pt)
+	await look_at_point(q, hull_pt)
+	key(KEY_E, true)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(6.0)
+	var far_side := nz.global_position.x > bt.boat.global_position.x + 1.0
+	log_line("pushing with him the wrong way: boat %.2f, hands %d, Naresh at %s (boat %s)" % [bt.boat.amount, bt.boat.hands_last, nz.global_position, bt.boat.global_position])
+	check(bt.naresh_wrong and far_side and bt.boat.amount < 0.01 and nz.said_since("Is it moving", 0),
+		"he goes round the far side and pushes back: 'Is it moving? It's not moving.' and it doesn't budge")
+	await shot("boat_wrong_way")
+	key(KEY_E, false)
+	await physics_frames(3)
+	check(await naresh_job(p, hull_pt, "work", true), "told again (V on the boat)")
+	await look_at_point(p, hull_pt)
+	await look_at_point(q, hull_pt)
+	key(KEY_E, true)
+	for i in 8:
+		await wait(1.0)
+		log_line("after telling him: wrong %s, told %d (wrong at %d), job '%s' step %d, state %s, at %s, hands %d, boat %.2f" % [bt.naresh_wrong, nz.commands_given, bt._wrong_at, nz.job, nz.job_step, Naresh.State.keys()[nz.state], nz.global_position, bt.boat.hands_last, bt.boat.amount])
+		if bt.boat.is_done:
+			break
+	var off := await until(func() -> bool: return bt.boat.is_done, 12.0)
+	key(KEY_E, false)
+	pad_button(JOY_BUTTON_X, false)
+	await physics_frames(3)
+	check(off and nz.said_since("THAT way", 0), "the right side now ('Oh! THAT way.'), three pushing: off it slides")
+	check(st.flags.has("drum_free") and not bt.drum.freeze, "the drum is free")
+	await wait(1.0)
+	check(st.current()["id"] == "end_e6", "and the story moves on")
+	await look_at_point(p, bt.drum.global_position + Vector3.UP * 0.4)
+	await shot("boat_off")
+	# two to carry it
+	await face_point(p, bt.drum.global_position + Vector3.UP * 0.45, 1.1, Vector3(-1, 0, 0.5))
+	await tap(KEY_E)
+	await face_point(q, bt.drum.global_position + Vector3.UP * 0.45, 1.1, Vector3(-1, 0, -0.5))
+	pad_button(JOY_BUTTON_X, true)
+	await physics_frames(4)
+	pad_button(JOY_BUTTON_X, false)
+	await physics_frames(4)
+	check(bt.drum.holders.size() == 2 and bt.drum.litres > 39.0, "you both lift the full drum (40 L)")
+	p.drop_held()
+	q.drop_held()

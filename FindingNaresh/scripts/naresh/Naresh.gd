@@ -66,6 +66,7 @@ var _last_good := false
 var taken_near := ""              ## where he was left, while TAKEN
 var knocked_t := 0.0
 var sitting := false              ## cross-legged in the fifth rose, waiting (E4)
+var commands_given := 0           ## every command counts (the boat: told again, E6)
 ## What he said and did, for tests: [{"t": msec, "text": ...}], [{"id", "good", "tele", "start"}]
 var lines: Array = []
 var acts_log: Array = []
@@ -261,6 +262,7 @@ func command(p: PlayerRig, id: String, target: Node = null, point := Vector3.ZER
 	if state == State.KNOCKED:
 		return
 	_cancel_act(false)
+	commands_given += 1
 	var was_seated := state == State.SEATED
 	_end_job()
 	job_for = p
@@ -629,11 +631,18 @@ func _job_work(delta: float) -> void:
 		_job_done("It's done!" if job_step > 0 else "That's already done.")
 		return
 	if job_step == 0:
-		if _walk_to(w.stand_point(), WALK, 0.6, delta):
+		if _walk_to(w.stand_point_for(self), WALK, 0.6, delta):
 			job_step = 1
 		return
+	var at := w.stand_point_for(self)
+	if _flat_dist(at) > 2.5:
+		job_step = 0              # where he should stand changed (told the right way round)
+		return
+	# a thing that moves as it's worked (the boat): keep up with it, pushing
+	var to := at - global_position
+	to.y = 0.0
 	_face(w.global_position, delta)
-	_move(Vector3.ZERO, delta)
+	_move(to.normalized() * WALK if to.length() > 0.3 else Vector3.ZERO, delta)
 	w.work_by(self, delta)
 
 
@@ -832,13 +841,16 @@ func _walk_to(goal: Vector3, speed: float, arrive: float, delta: float) -> bool:
 		_path = PackedVector3Array()
 		_move(Vector3.ZERO, delta)
 		_stuck_t = 0.0
+		_force_grid = false
 		return true
+	if _path_goal.distance_to(goal) > 1.5:
+		_force_grid = false          # somewhere new
 	if _path.is_empty() or _path_goal.distance_to(goal) > 1.5:
 		_plan(goal)
 	var aim := goal
 	if not _path.is_empty():
 		# skip ahead to the furthest point in plain view
-		while _path_i < _path.size() - 1 and _clear(global_position, _path[_path_i + 1]):
+		while not _force_grid and _path_i < _path.size() - 1 and _clear(global_position, _path[_path_i + 1]):
 			_path_i += 1
 		aim = _path[_path_i]
 		var d := aim - global_position
@@ -859,6 +871,7 @@ func _walk_to(goal: Vector3, speed: float, arrive: float, delta: float) -> bool:
 				_jumped = true
 				_path = PackedVector3Array()
 				_cells.clear()
+				_force_grid = true
 			else:
 				_stuck_long(goal)
 		else:
@@ -869,6 +882,10 @@ func _walk_to(goal: Vector3, speed: float, arrive: float, delta: float) -> bool:
 
 
 var _stuck_count := 0
+## Stuck once on the way to this goal: plan round on the grid from now on.
+## The straight-line check can't see a thing he's already touching (a ray
+## that starts inside a collider doesn't hit it: the tilted boat, E6).
+var _force_grid := false
 
 func _stuck_long(goal: Vector3) -> void:
 	_stuck_count += 1
@@ -967,7 +984,7 @@ func _clear(a: Vector3, b: Vector3) -> bool:
 func _plan(goal: Vector3) -> void:
 	_path_goal = goal
 	_path_i = 0
-	if _clear(global_position, goal):
+	if not _force_grid and _clear(global_position, goal):
 		_path = PackedVector3Array([goal])
 		return
 	var start := _cell(global_position)

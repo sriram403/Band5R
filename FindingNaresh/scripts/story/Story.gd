@@ -120,7 +120,13 @@ func setup(b: Node) -> void:
 		{"id": "look_around", "text": "Naresh is packing up. Look around while he does",
 			"hint": "His camp is in the fifth rose, on the plaza. Have a look at what's there (E).",
 			"done": func(): return flags.has("packed")},
-		{"id": "end_e5", "text": "Naresh is with you (the stall shutter comes next: E6)",
+		{"id": "batteries", "text": "Torch batteries for the dark road: in the store with the heavy shutter",
+			"hint": "The red store on the stall row. The shutter only stays up while someone holds its handle outside, and the box takes two to carry. Ask Naresh (V on the handle: Hold the shutter), then crouch under (Ctrl / B).",
+			"done": func(): return flags.has("batteries_got")},
+		{"id": "drum", "text": "Fuel for the coast road: the drum under the upturned boat",
+			"hint": "On the sand by the water. It takes three pushing at once from the land side: you two (hold E) and Naresh (V on the boat: Work it). Watch which side he goes to.",
+			"done": func(): return flags.has("drum_free")},
+		{"id": "end_e6", "text": "Batteries and fuel (the storm comes next: E7)",
 			"hint": "This is where the build ends for now.",
 			"done": func(): return false},
 	]
@@ -199,8 +205,9 @@ func jump_to(i: int) -> void:
 ## Bessi's steps depend on each other's state (the roses up, him met): a
 ## jump there sets what the earlier steps would have, and a jump back before
 ## them puts it all away again, so the world matches the objective.
-const BESSI_STEPS := ["photo", "roses", "naresh", "look_around", "end_e5"]
-const BESSI_FLAGS := ["photo_spot", "roses_up", "roses_open", "naresh_met", "packing", "packed"]
+const BESSI_STEPS := ["photo", "roses", "naresh", "look_around", "batteries", "drum", "end_e6"]
+const BESSI_FLAGS := ["photo_spot", "roses_up", "roses_open", "naresh_met", "packing", "packed",
+	"n1_slip", "batteries_got", "n2_wrong_done", "drum_free"]
 
 func _bessi_state_for(id: String) -> void:
 	var k := BESSI_STEPS.find(id)
@@ -222,8 +229,15 @@ func _bessi_state_for(id: String) -> void:
 	if k >= 4:
 		flags["packing"] = true
 		flags["packed"] = true
+	if k >= 5:
+		flags["n1_slip"] = true
+		flags["batteries_got"] = true
+	if k >= 6:
+		flags["n2_wrong_done"] = true
+		flags["drum_free"] = true
 	get_tree().call_group("roses", "match_story")
 	get_tree().call_group("evidence", "match_story")
+	get_tree().call_group("bessi_tasks", "match_story")
 	# Bessi is at dusk (you'd have walked onto the beach to get here)
 	var mood := get_tree().get_first_node_in_group("mood") as Mood
 	if k >= 0 and mood != null and mood.value > 0.4:
