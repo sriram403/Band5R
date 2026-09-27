@@ -215,3 +215,45 @@ controller. (Or play through from the coast watchtower.)
 3. **Found = standing within 2 m of the spot, looking towards the memorial,
    for about a second.** Either player can find it, not only P2.
 4. **The photo goes to P2 only**, as you decided; P1 gets a text saying so.
+
+---
+
+## E4. The Five Roses and Naresh
+
+Carry on from E3 (standing on the photo spot), or **F1** → **Story** → jump to
+**"Find where Naresh's photo was taken"**, then **F1** → **Travel** → **The
+photo spot (E3)**, face the memorial and wait a second.
+
+1. **Expect:** the roses on the dune are gone at first (only the stone
+   plaza). When you find the photo spot: "Out at sea, a low white bank of
+   smoke rolls in..." Look out to sea: the smoke comes in low over the water
+   and up the beach to the dune.
+2. After about 12 s, a deep rumble, and **the Five Roses rise out of the
+   smoke** on the plaza (about 10 s).
+3. Walk up. Each rose has a stone plaque at its foot, facing the middle,
+   with a carving: a windmill, a water drop, a bridge, a wave, a star.
+   *(They aren't in order round the ring.)*
+4. Touch one in the wrong order (E). **Expect:** a boom, the smoke surges,
+   "the roses close again".
+5. Touch them in the order you travelled: **windmill, water drop, bridge,
+   wave, star**. **Expect:** each one's rose opens above it, petal by petal.
+6. After the star: the fifth rose's bloom comes down its stem to the plaza
+   and opens, and **someone is sitting in it**, cross-legged.
+7. Walk up close. **Expect:** Naresh gets down: "You came! He said you
+   would." and follows you. (His jobs from E1 work from here on: V / D-up.)
+
+*Tell me:*
+- The smoke and the rising: impressive enough, too slow, too fast?
+- The carvings: can you tell every symbol at a glance?
+- Is the order puzzle clear from the hint (hold H)?
+- Meeting him: does it land?
+
+### Decisions to confirm (provisional, my choices)
+1. **The roses are hidden (sunk) until the photo spot is found**; the dune
+   itself is still there to see from the coast tower.
+2. **The carvings are touched with E**, in any rose's plaque; a wrong one
+   closes them all, nothing else happens.
+3. **The fifth bloom comes down to the plaza** (the blooms are 35 m up, too
+   high to reach), with Naresh where the flower's heart was.
+4. **He gets up when anyone comes within 7 m**, and follows that player.
+5. **The rumble is my own sound** (`tools/gen/rumble.py`), like the radio.

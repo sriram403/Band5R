@@ -732,9 +732,19 @@ in `notes/TEST_MILESTONE_E.md`).
   - [x] `run_test.sh` compiles first, stops in 5 s on a script error
   - [ ] Merge into main after E2's push; smoke; your test (E3 in
         `notes/TEST_MILESTONE_E.md`)
-- [ ] E4. The smoke and the Five Roses rising; the roses open in travel order
+- [~] E4. The smoke and the Five Roses rising; the roses open in travel order
       (windmill, water drop, bridge, wave, star); wrong order resets;
       Naresh in the fifth; `t_roses`
+  - [x] Built ahead in `../MPG_dev` (branch `e4`, on top of `e3`):
+        `world/Roses.gd` (sunk until the photo spot, the smoke bank off the
+        sea, the rise with a rumble `tools/gen/rumble.py`, carvings built
+        from exact shapes, the order puzzle, the fifth bloom down to the
+        plaza), each rose its own collider, `Naresh.sit_at` /
+        `stand_from_seat`, story steps roses / naresh / end_e4, saved in
+        story flags. `t_roses`: 0 failures first run
+  - [~] The smoke bank didn't show (the test looked away; it also died
+        before the dune): longer and stronger, shot facing the sea; rerun
+  - [ ] Hand over after E3 (you test one part at a time)
 - [ ] E5. The evidence (one set of footprints, the unrolled second sleeping
       bag with its tag, the timer camera, the notebook "we"/"I")
 - [ ] E6. N1 the stall shutter (hold; the scripted early let-go) and N2 push
