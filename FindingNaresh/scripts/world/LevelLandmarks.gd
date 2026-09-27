@@ -808,14 +808,31 @@ func _five_roses(at: Vector3) -> void:
 	root.add_child(Build.cyl(PLAZA_R, 0.6, ToonMat.make(C_STONE, 0.03), centre + Vector3(0, PLAZA_TOP - 0.3, 0), Vector3.ZERO, 40, "Plaza"))
 	solid.add_child(_cyl_shape(centre + Vector3(0, PLAZA_TOP - 0.3, 0), PLAZA_R, 0.6))
 
+	var rose_nodes: Array = []
+	var rose_bodies: Array = []
 	for k in 5:
 		var a := TAU * float(k) / 5.0 - PI * 0.5
 		var p := centre + Vector3(cos(a) * 22.0, PLAZA_TOP, sin(a) * 22.0)
 		var sc := 2.4 + k * 0.10
-		root.add_child(_rose_monument(p, sc, a))
-		# plinth and stem are solid; the bloom overhead does not need to be
-		solid.add_child(_cyl_shape(p + Vector3(0, 0.5 * sc, 0), 1.6 * sc, 1.0 * sc))
-		solid.add_child(_cyl_shape(p + Vector3(0, 6.6 * sc, 0), 0.42 * sc, 12.0 * sc))
+		var rose := _rose_monument(p, sc, a)
+		rose.name = "Rose%d" % k
+		root.add_child(rose)
+		# plinth and stem are solid (their own body, so the rose can sink and
+		# rise with it: E4); the bloom overhead does not need to be
+		var rb := StaticBody3D.new()
+		rb.name = "RoseBody%d" % k
+		rb.position = p
+		rb.add_child(_cyl_shape(Vector3(0, 0.5 * sc, 0), 1.6 * sc, 1.0 * sc))
+		var stem := _cyl_shape(Vector3(0, 6.6 * sc, 0), 0.42 * sc, 12.0 * sc)
+		stem.name = "StemShape"
+		rb.add_child(stem)
+		root.add_child(rb)
+		rose_nodes.append(rose)
+		rose_bodies.append(rb)
+	var roses := Roses.new()
+	roses.name = "Roses"
+	world.add_child(roses)
+	roses.setup(self, rose_nodes, rose_bodies, centre)
 
 	# welcome sign on the side facing the road in from the bridge
 	var join: Vector3 = poi["bessi_join"]
@@ -849,6 +866,10 @@ func _rose_monument(pos: Vector3, scale: float, yaw: float) -> Node3D:
 		var leaf := Build.sphere(1.0, green, Vector3(s * 1.5, 5.4, 0), Vector3(1.6, 0.25, 0.8), "Leaf")
 		leaf.rotation_degrees = Vector3(0, 0, s * 22.0)
 		n.add_child(leaf)
+	# the bloom on its own node: it opens (E4), and the fifth comes down
+	var bloom := Node3D.new()
+	bloom.name = "Bloom"
+	n.add_child(bloom)
 	var rings := [
 		{"count": 8, "radius": 3.4, "y": 12.4, "len": 5.4, "tilt": 62.0, "col": C_ROSE_DEEP},
 		{"count": 7, "radius": 2.4, "y": 13.4, "len": 4.4, "tilt": 42.0, "col": C_ROSE},
@@ -866,8 +887,9 @@ func _rose_monument(pos: Vector3, scale: float, yaw: float) -> Node3D:
 			petal.position = Vector3(0, 0, -float(ring["len"]) * 0.28)
 			petal.scale = Vector3(1.0, 1.0, float(ring["len"]) / 3.0)
 			holder.add_child(petal)
-			n.add_child(holder)
-	n.add_child(Build.sphere(1.15, ToonMat.make(Color(0.95, 0.78, 0.32), 0.03, 0.6, Color(0.35, 0.22, 0.05)), Vector3(0, 14.4, 0), Vector3.ONE, "Core"))
+			holder.set_meta("tilt", float(ring["tilt"]))
+			bloom.add_child(holder)
+	bloom.add_child(Build.sphere(1.15, ToonMat.make(Color(0.95, 0.78, 0.32), 0.03, 0.6, Color(0.35, 0.22, 0.05)), Vector3(0, 14.4, 0), Vector3.ONE, "Core"))
 	return n
 
 

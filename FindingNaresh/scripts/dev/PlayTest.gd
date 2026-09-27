@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -288,6 +288,13 @@ func _run() -> void:
 				_failures.append(f + "  (earlier run)")
 			continue
 		log_line("---- %s ----" % s)
+		# memory as the run goes on: the long runs have crashed in the graphics
+		# driver after 35+ minutes; a steady climb here would say why
+		log_line("mem: video %d MB, textures %d MB, static %d MB, objects %d" % [
+			int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576.0),
+			int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TEXTURE_MEM_USED) / 1048576.0),
+			int(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0),
+			int(Performance.get_monitor(Performance.OBJECT_COUNT))])
 		var started_at := Time.get_ticks_msec()
 		PlayTest.reloading_scenario = s
 		PlayTest.scenario_fail_start = _failures.size()
@@ -6499,7 +6506,7 @@ func t_photo() -> void:
 	var found := await until(func() -> bool: return st.flags.has("photo_spot"), 3.0)
 	check(found, "on the spot, looking along the photo: found")
 	await wait(0.5)
-	check(st.current()["id"] == "end_e3", "and the story moves on")
+	check(st.current()["id"] == "roses", "and the story moves on")
 	check(boot.huds[0]._note.visible and boot.huds[0]._note_text.text.contains("He stood exactly here"), "'He stood exactly here.'")
 	await look_at_point(p, (tip + poi["mast_top"]) * 0.5)
 	await shot("photo_found_view")
@@ -6509,6 +6516,94 @@ func t_photo() -> void:
 	st.from_dict(st.to_dict())
 	st.photo_texture = null
 	var again := await until(func() -> bool: return st.photo_texture != null, 3.0)
-	check((headless or again) and st.phone_threads[1].size() == texts and st.current()["id"] == "end_e3",
+	check((headless or again) and st.phone_threads[1].size() == texts and st.current()["id"] == "roses",
 		"after a load the photo is back on P2's phone, the texts not sent twice")
+	mood.set_now(0.62)
+
+
+## E4, the Five Roses: sunk until the photo spot is found; the smoke rolls
+## in and they rise; a wrong carving resets them; in travel order (windmill,
+## water, bridge, wave, star) they open; the fifth comes down with Naresh in
+## it, who gets up when you come close. `tools/run_test.sh roses`
+func t_roses() -> void:
+	var st: Story = boot.story
+	var poi: Dictionary = boot.builder.poi
+	var ro := get_tree().get_first_node_in_group("roses") as Roses
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	var p := p1()
+	check(ro != null and st.index_of("roses") > 0, "the roses and their story step are there")
+	if ro == null:
+		return
+	for f in ["photo_spot", "roses_up", "roses_open", "naresh_met"]:
+		st.flags.erase(f)
+	st.jump_to(st.index_of("photo"))
+	mood.set_now(0.4)
+	var r0 := ro.roses[0] as Node3D
+	check(ro.phase == "sunk" and not r0.visible, "before the photo spot the roses are sunk out of sight")
+	# watch from the edge of the plaza, facing in
+	var watch: Vector3 = ro.centre + (poi["photo_spot"] - ro.centre).normalized() * 40.0
+	watch.y = Landscape.ground(watch.x, watch.z) + 0.3
+	await place_player(p, watch, 0.0)
+	await look_at_point(p, ro.centre + Vector3.UP * 12.0)
+	st.flags["photo_spot"] = true
+	var smoke := await until(func() -> bool: return ro.phase == "smoke", 2.0)
+	check(smoke and st.current()["id"] == "roses", "found: the smoke comes, the objective is the roses")
+	# turn round to the sea: the bank rolling in
+	await look_at_point(p, ro._sea_at + Vector3.UP * 4.0)
+	await wait(5.0)
+	await shot("roses_smoke")
+	await wait(4.0)
+	await shot("roses_smoke_near")
+	await look_at_point(p, ro.centre + Vector3.UP * 12.0)
+	var up := await until(func() -> bool: return ro.phase == "up", Roses.SMOKE_S + Roses.RISE_S + 3.0)
+	check(up and r0.visible and absf(r0.position.y - float(ro._up_y[0])) < 0.05, "out of the smoke the five rise")
+	await wait(1.0)
+	await shot("roses_up")
+	# the carvings: a wrong first one closes everything
+	var star_k := Roses.SLOT_SYMBOL.find("star")
+	var star_c := ro.carvings[star_k] as Node3D
+	await face_point(p, star_c.global_position + Vector3.UP * 1.2, 1.8, (ro.centre - star_c.global_position).normalized())
+	log_line("at the star carving: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("Touch the carving"), "a carving offers 'Touch the carving'")
+	await tap(KEY_E)
+	await wait(0.3)
+	check(int(st.flags.get("roses_open", 0)) == 0 and boot.huds[0]._note_text.text.contains("close again"), "the star first: the smoke surges and nothing opens")
+	# the right order
+	for i in 5:
+		var sym: String = Roses.ORDER[i]
+		var k := Roses.SLOT_SYMBOL.find(sym)
+		var c := ro.carvings[k] as Node3D
+		await face_point(p, c.global_position + Vector3.UP * 1.2, 1.8, (ro.centre - c.global_position).normalized())
+		await tap(KEY_E)
+		await wait(0.3)
+		check(int(st.flags.get("roses_open", 0)) == i + 1, "the %s opens its rose (%d of 5)" % [sym, i + 1])
+		if i == 1:
+			await wait(Roses.OPEN_S)
+			await look_at_point(p, (ro.roses[k] as Node3D).global_position + Vector3.UP * 30.0)
+			await shot("roses_one_open")
+	await wait(Roses.OPEN_S)
+	check(ro.open_amount.all(func(a): return a > 0.99), "all five are open")
+	# the fifth comes down with him in it
+	await place_player(p, watch, 0.0)
+	await look_at_point(p, ro.naresh_seat + Vector3.UP * 2.0)
+	var down := await until(func() -> bool: return ro.phase == "done", Roses.BLOOM_DOWN_S + 2.0)
+	var nz: Naresh = boot.naresh
+	check(down and nz != null and nz.sitting and nz.global_position.distance_to(ro.naresh_seat) < 0.3, "the fifth bloom comes down: Naresh is sitting in it")
+	check(st.current()["id"] == "naresh", "'Someone is sitting in the fifth rose'")
+	await wait(1.0)
+	await shot("roses_naresh_far")
+	var to_seat := ro.naresh_seat - ro.centre
+	to_seat.y = 0.0
+	var near := ro.naresh_seat - to_seat.normalized() * 6.0
+	near.y = Landscape.ground(near.x, near.z) + 0.3
+	await place_player(p, near + Vector3(0, 0.5, 0), 0.0)
+	await look_at_point(p, ro.naresh_seat + Vector3.UP * 0.8)
+	await shot("roses_naresh_near")
+	var met := await until(func() -> bool: return st.flags.has("naresh_met"), 3.0)
+	await physics_frames(5)
+	check(met and not nz.sitting and nz.said_since("You came!", 0) and nz.leader == p, "close up he gets down: 'You came! He said you would.' and follows")
+	check(st.current()["id"] == "end_e4", "and the story moves on")
+	await wait(2.0)
+	await look_at_point(p, nz.global_position + Vector3.UP * 1.2)
+	await shot("roses_naresh_met")
 	mood.set_now(0.62)
