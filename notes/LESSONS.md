@@ -78,6 +78,17 @@ The engine-level details (exact Godot calls, numbers) are also in
   the other ran the full world test; 144 alone). Now long runs go in `MPG`
   while the next part is built in `MPG_dev` (a git worktree). The way to
   work is in `notes/PRINCIPLES.md` (first principles, the algorithm).
+- **Intermittent driver crashes: measure, don't guess** (2026-09-27). Three
+  breakdowns in long world runs (two crashes in `nvoglv64.dll` at the same
+  address, one freeze), with one and with two game instances, at the ghat,
+  the journey and the way out. The way out run alone: no crash. So it's not
+  one scenario and not the second instance; most likely the graphics driver
+  under long heavy runs. What helps: `resume` (finished scenarios are kept),
+  and memory per scenario in the log. (Kept `../MPG_base`, a copy at the last
+  commit before E1, to compare if it gets worse.)
+- **A resumed run starts from a fresh world:** skipped scenarios no longer
+  set things up for the next one. The journey then met the town cars and
+  got stuck (it clears the traffic itself now, like the road drive).
 - **Fail fast, automatically** (E3): a typing slip in a test left the game
   hanging on its failed load for the whole 10-minute timeout. `run_test.sh`
   now compiles first and stops in ~5 s on a script error (`NO_CHECK=1` skips
