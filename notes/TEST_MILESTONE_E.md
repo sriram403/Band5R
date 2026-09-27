@@ -222,6 +222,8 @@ controller. (Or play through from the coast watchtower.)
 
 ## E4. The Five Roses and Naresh
 
+*Approved by you, 2026-09-27, with its decisions.*
+
 This is in the normal `MPG` folder now (`Play.bat`), merged after your E3
 approval. Carry on from E3 (standing on the photo spot), or **F1** → **Story** → jump to
 **"Find where Naresh's photo was taken"**, then **F1** → **Travel** → **The
