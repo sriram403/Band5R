@@ -37,6 +37,14 @@ The engine-level details (exact Godot calls, numbers) are also in
 
 ## 2. Working as an AI model
 
+- **A jump should put you there** (E7): "jump to the step, then Travel"
+  left Naresh 200 m away by the rose and the user lost (no Naresh, no
+  drum in sight). First principles: what does a tester want from a jump?
+  To play that step at once. Now a Bessi jump places both players, Naresh
+  and the van (`DevMenu.STEP_PLACES`), tested by `t_step_jumps`.
+- **Toggles in tests:** a blind X (engine) switched off an engine an
+  earlier test had left running; the van never moved. Set the state
+  (`engine_on()`), don't flip it.
 - **Test the way the user will get there** (E5): the test sheet said "F1,
   jump to 'Someone is sitting in the fifth rose'"; a jump only moved the
   objective, so the plaza was empty (the roses had never risen). The tests

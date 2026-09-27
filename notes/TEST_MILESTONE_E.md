@@ -6,6 +6,12 @@ ready; each part says what to do, what should happen, and what to tell me.
 Two players (P1 on keyboard + mouse, P2 on the controller), split screen.
 Note anything that feels wrong, slow, confusing or ugly, with the step number.
 
+**Jumping to a step (F1 → Story):** pick the step in the list (scroll down:
+the Bessi steps are 19 to 26) and press Enter. For every Bessi step this now
+**puts you both where that step happens**, with the van close by and, from
+"Naresh is packing up" on, **Naresh at your side, following you**. No
+separate Travel needed.
+
 ---
 
 ## E1. Naresh in his test map (the Naresh gym)
@@ -360,9 +366,17 @@ In the normal `MPG` folder (`Play.bat`). Carry on from E5, or **F1** →
 
 ## E7. The storm starts (the end of Bessi)
 
-In the normal `MPG` folder (`Play.bat`). Carry on from E6 (the drum just
-freed), or **F1** → **Story** → jump to **"Fuel for the coast road"** and free
-the drum (or jump straight to **"The storm is coming"** to see it at once).
+In the normal `MPG` folder (`Play.bat`). Two ways in:
+
+- **To see the storm arrive:** F1 → Story → **24. "Fuel for the coast
+  road..."**, Enter. You're both at the upturned boat on the beach, Naresh
+  with you, the drum still under the boat. Free it (you two hold E / X on the
+  boat, V on the boat for Naresh, and V again when he goes to the wrong side).
+  About 6 s later the storm comes (step 1 below).
+- **To go straight to the drive:** F1 → Story → **25. "The storm is
+  coming..."**, Enter. You're both next to the van at the start of the coast
+  road, Naresh with you, the storm already over the ghat behind you. Get in
+  (Naresh climbs into the back by himself) and drive north (step 4 below).
 
 1. With the batteries and the drum both done, about 6 s later: **"Back the
    way you came the sky has gone black. Lightning over the ghat, a wall of

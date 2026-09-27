@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -6909,8 +6909,7 @@ func t_storm() -> void:
 	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
 	var aboard := await until(func() -> bool: return nz.state == Naresh.State.SEATED, 15.0)
 	check(aboard, "he follows you into the back of the van")
-	await tap(KEY_X)
-	await wait(0.8)
+	await engine_on()
 	var path: Route = boot.builder.network.chain([["coast_road"]])
 	var t := await drive_until(path, int(path.nearest(1728.0, 250.0)["index"]), func() -> bool: return st.current()["id"] == "end_e", 60.0)
 	log_line("north on the coast road: %.0f s, van at %s" % [t, c.global_position])
@@ -7001,8 +7000,7 @@ func t_bessi_run() -> void:
 	await physics_frames(30)
 	await seat_p1_driver()
 	q.enter_seat(c, c.seat_nodes["passenger"], "passenger")
-	await tap(KEY_X)
-	await wait(0.8)
+	await engine_on()
 	var down: Route = boot.builder.network.chain([["beach_road"]])
 	await drive_until(down, down.point_count() - 8, func() -> bool: return c.nav_signal_lost and c.global_position.distance_to(ro.centre) < 250.0, 240.0)
 	check(c.nav_signal_lost, "coming into Bessi the nav loses its signal")
@@ -7097,8 +7095,7 @@ func t_bessi_run() -> void:
 	await seat_p1_driver()
 	q.enter_seat(c, c.seat_nodes["passenger"], "passenger")
 	await until(func() -> bool: return nz.state == Naresh.State.SEATED, 15.0)
-	await tap(KEY_X)
-	await wait(0.8)
+	await engine_on()
 	var north: Route = boot.builder.network.chain([["coast_road"]])
 	await drive_until(north, int(north.nearest(1728.0, 250.0)["index"]), func() -> bool: return st.current()["id"] == "end_e", 60.0)
 	beat.call("north")
@@ -7106,3 +7103,62 @@ func t_bessi_run() -> void:
 	var mins := (Time.get_ticks_msec() - t0) / 60000.0
 	# (teleports between places: the minutes are not the pacing, the order is)
 	check(st.current()["id"] == "end_e", "all of Bessi in order, from the pass to north in the storm (%.1f min of test)" % mins)
+
+
+## F1 → Story → a Bessi step puts you both where it happens, Naresh at your
+## side (from the evidence on) and the van close by; "The storm is coming"
+## leaves you by the van on the coast road, ready to drive north. The user
+## jumped to "Fuel for the coast road", travelled to the beach and found no
+## Naresh (he'd been left by the rose). `tools/run_test.sh step_jumps`
+func t_step_jumps() -> void:
+	var st: Story = boot.story
+	var dm: DevMenu = boot.dev_menu
+	var poi: Dictionary = boot.builder.poi
+	var c := camper()
+	var p := p1()
+	for id in ["photo", "naresh", "look_around", "batteries", "drum", "storm"]:
+		dm.run("jump", st.index_of(id))
+		await wait(0.6)
+		var nz: Naresh = boot.naresh
+		var place: String = DevMenu.STEP_PLACES[id][0]
+		var here: bool = place == "" or p.global_position.distance_to(poi[place]) < 10.0
+		var with_him: bool = id not in ["look_around", "batteries", "drum", "storm"] or (nz != null and nz.global_position.distance_to(p.global_position) < 6.0 and nz.leader == p)
+		var van_near := c.global_position.distance_to(p.global_position) < 40.0
+		log_line("jump to %s: P1 %.1f m from its place, Naresh %s, van %.0f m, note '%s'" % [id, p.global_position.distance_to(poi[place]) if place != "" else 0.0,
+			"%.1f m" % nz.global_position.distance_to(p.global_position) if nz != null else "none", c.global_position.distance_to(p.global_position), dm._note])
+		check(here and with_him and van_near and st.current()["id"] == id, "F1 jump to '%s': you're there%s, the van close by" % [id, ", Naresh with you" if id in ["look_around", "batteries", "drum", "storm"] else ""])
+		if id == "drum":
+			var bt := get_tree().get_first_node_in_group("bessi_tasks") as BessiTasks
+			check(not bt.boat.is_done and bt.drum.freeze, "at the boat: the drum still under it, ready to push")
+			await shot("jump_drum")
+	# the storm step: get in and drive
+	await seat_p1_driver()
+	var nz2: Naresh = boot.naresh
+	var aboard := await until(func() -> bool: return nz2.state == Naresh.State.SEATED, 15.0)
+	check(aboard, "get in: Naresh climbs into the back")
+	await engine_on()
+	var north: Route = boot.builder.network.chain([["coast_road"]])
+	await drive_until(north, int(north.nearest(1728.0, 250.0)["index"]), func() -> bool: return st.current()["id"] == "end_e", 60.0)
+	check(st.current()["id"] == "end_e", "and drive north: the end of Bessi")
+	# the Story tab shows every step, the storm among them
+	dm.toggle()
+	dm.set_tab(DevMenu.TABS.find("Story"))
+	var row := -1
+	for i in dm._rows.size():
+		if dm._rows[i]["action"] == "jump" and int(dm._rows[i]["arg"]) == st.index_of("storm"):
+			row = i
+	check(row >= 0 and String(dm._rows[row]["text"]).contains("The storm is coming"), "F1 → Story lists 'The storm is coming'")
+	if row >= 0:
+		dm._select(row, true)
+	await wait(0.3)
+	await shot("f1_story_storm")
+	dm.toggle()
+
+
+
+## The engine running: X only if it isn't (a toggle; an earlier test may
+## have left it on, and a blind X switched it off).
+func engine_on() -> void:
+	if not camper().engine_on:
+		await tap(KEY_X)
+	await wait(0.8)

@@ -509,7 +509,8 @@ func run(action: String, arg = null) -> void:
 			_note = "Objective: " + boot.story.objective_text(0)
 		"jump":
 			boot.story.jump_to(int(arg))
-			_note = "Objective: " + boot.story.objective_text(0)
+			var where := go_to_step(String(boot.story.current()["id"]))
+			_note = "Objective: " + boot.story.objective_text(0) + ("   (you're at %s)" % where if where != "" else "")
 		"van_here":
 			var fwd := -p1.global_transform.basis.z
 			fwd.y = 0.0
@@ -601,6 +602,55 @@ func run(action: String, arg = null) -> void:
 			Boot.gym_request = String(arg)
 			get_tree().paused = false
 			get_tree().reload_current_scene()
+
+
+## Bessi's steps (E): where each one happens, so a jump there puts you both
+## on the spot, Naresh at your side (from the evidence on) and the van close
+## by (for the storm, at the start of the coast road, ready to go).
+## [poi, what the note calls it]
+const STEP_PLACES := {
+	"photo": ["beach", "the beach"],
+	"roses": ["photo_spot", "the photo spot"],
+	"naresh": ["roses", "the Five Roses"],
+	"look_around": ["camp", "his camp"],
+	"batteries": ["store_door", "the store"],
+	"drum": ["boat_push", "the upturned boat"],
+	"storm": ["", "the van, at the start of the coast road"],
+}
+
+func go_to_step(id: String) -> String:
+	if boot.gym != "" or not STEP_PLACES.has(id):
+		return ""
+	var spec: Array = STEP_PLACES[id]
+	var poi: Dictionary = boot.builder.poi
+	var c: Camper = boot.camper
+	var at: Vector3
+	if id == "storm":
+		# the van on the coast road where it leaves the loop, facing north
+		var road: Route = boot.builder.network.road("coast_road")
+		var i0 := 0
+		for i in road.point_count():
+			if road.point(i).z < 470.0:
+				i0 = i
+				break
+		van_to(road.point(i0), atan2(-road.forward(i0).x, -road.forward(i0).z))
+		c.repair_all()
+		at = c.global_transform * Vector3(-3.2, 0, -1.0)
+	else:
+		at = poi[spec[0]]
+		van_to(van_spot(at + Vector3(-18, 0, 6)), 0.0)
+		c.repair_all()
+	teleport(at)
+	# Naresh with you from the evidence on (before that he's in the rose, or not yet found)
+	var nz: Naresh = boot.naresh
+	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm"]:
+		var p1: PlayerRig = boot.players[0]
+		if nz.sitting:
+			nz.stand_from_seat(p1)
+		nz.global_position = safe_spot(p1.global_position + p1.global_transform.basis * Vector3(1.5, 0, 1.5))
+		nz.reset_physics_interpolation()
+		nz.command(p1, "follow")
+	return String(spec[1])
 
 
 func _place_name(key: String) -> String:
