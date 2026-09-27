@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -6608,8 +6608,89 @@ func t_roses() -> void:
 	var met := await until(func() -> bool: return st.flags.has("naresh_met"), 3.0)
 	await physics_frames(5)
 	check(met and not nz.sitting and nz.said_since("You came!", 0) and nz.leader == p, "close up he gets down: 'You came! He said you would.' and follows")
-	check(st.current()["id"] == "end_e4", "and the story moves on")
+	check(st.current()["id"] == "look_around", "and the story moves on")
 	await wait(2.0)
 	await look_at_point(p, nz.global_position + Vector3.UP * 1.2)
 	await shot("roses_naresh_met")
+	mood.set_now(0.62)
+
+
+## E5, the evidence: his camp in the fifth rose (one bag slept in, one still
+## in its plastic with the tag, the camera on its timer, the notebook's "we"
+## over "I") and one set of footprints; each says only what you see; he
+## packs while you look, then comes along. `tools/run_test.sh evidence`
+func t_evidence() -> void:
+	var st: Story = boot.story
+	var poi: Dictionary = boot.builder.poi
+	var ro := get_tree().get_first_node_in_group("roses") as Roses
+	var ev := get_tree().get_first_node_in_group("evidence") as Evidence
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	var p := p1()
+	check(ev != null and ev.print_points.size() > 100, "the camp and the footprints are built (%d prints)" % (ev.print_points.size() if ev else 0))
+	if ev == null:
+		return
+	mood.set_now(0.4)
+	# the prints: one set, left-right, from the promenade to the camp
+	var first := ev.print_points[0]
+	var last := ev.print_points[ev.print_points.size() - 1]
+	var gaps_ok := true
+	for i in range(1, ev.print_points.size()):
+		var g := Vector2(ev.print_points[i].x - ev.print_points[i - 1].x, ev.print_points[i].z - ev.print_points[i - 1].z).length()
+		if g < 0.4 or g > 1.3:
+			gaps_ok = false
+	check(Vector2(first.x - poi["photo_spot"].x, first.z - poi["photo_spot"].z).length() < 2.0 and Vector2(last.x - ev.camp.x, last.z - ev.camp.z).length() < 2.0 and gaps_ok,
+		"one set of footprints, a step apart, from the photo spot to the camp")
+	# the rose done, Naresh just met (as E4 leaves it)
+	for f in ["photo_spot", "roses_up", "roses_open", "naresh_met", "packing", "packed"]:
+		st.flags.erase(f)
+	for it in Evidence.ITEMS:
+		st.flags.erase("seen_" + String(it[0]))
+	ro.reset()
+	st.flags["photo_spot"] = true
+	st.flags["roses_up"] = true
+	st.flags["roses_open"] = 5
+	st.flags["naresh_met"] = true
+	st.jump_to(st.index_of("look_around"))
+	var nz: Naresh = boot.naresh
+	if nz == null or not is_instance_valid(nz):
+		nz = Naresh.spawn(boot.world, ev.camp + Vector3(3, 0.3, 3), 0.0)
+		boot.naresh = nz
+	nz.sitting = false
+	nz.command(p, "follow")
+	await place_player(p, ev.camp + (ro.centre - ev.camp).normalized() * 5.0 + Vector3.UP * 0.3, 0.0)
+	var shown := await until(func() -> bool: return ro.phase == "done" and ev.camp_root.visible, 3.0)
+	check(shown, "with the fifth rose down, his camp is there")
+	var packing := await until(func() -> bool: return st.flags.has("packing"), Evidence.GREET_S + 2.0)
+	check(packing and nz.said_since("gone for a walk", 0), "he goes to pack: 'My friend's gone for a walk, he'll be back in a bit.'")
+	await look_at_point(p, ev.camp + Vector3.UP * 0.4)
+	await wait(2.0)
+	await shot("evidence_camp")
+	# look at each thing, as a player would (E)
+	for spec in [["spare", "price tag"], ["camera", "self-timer"], ["notebook", "we got to Bessi"]]:
+		var body := ev.camp_root.get_node("Evidence_" + spec[0]) as Node3D
+		await face_point(p, body.global_position + Vector3.UP * 0.25, 1.6, (p.global_position - body.global_position).normalized())
+		log_line("at %s: '%s'" % [spec[0], p.prompt_text])
+		await tap(KEY_E)
+		await wait(0.3)
+		var txt: String = boot.huds[0]._note_text.text
+		check(p.prompt_text.contains("Look at") or st.flags.has("seen_" + spec[0]), "%s: a 'Look at' prompt" % spec[0])
+		check(st.flags.has("seen_" + spec[0]) and txt.contains(spec[1]), "%s: it says what you see (\"...%s...\")" % [spec[0], spec[1]])
+		if spec[0] == "notebook":
+			await shot("evidence_notebook")
+	var nothing_told := true
+	for it in Evidence.ITEMS:
+		var t := String(it[2]).to_lower()
+		for w in ["friend", "imagin", "alone", "nobody", "no one", "lie"]:
+			if t.contains(w):
+				nothing_told = false
+				log_line("%s says '%s'" % [it[0], w])
+	check(nothing_told, "none of it spells it out (no 'friend', 'alone', 'imagined'...)")
+	var packed := await until(func() -> bool: return st.flags.has("packed"), 3.0)
+	await physics_frames(3)
+	check(packed and nz.said_since("All packed", 0) and nz.state == Naresh.State.FOLLOW, "three things seen: he's packed and comes along")
+	check(st.current()["id"] == "end_e5", "and the story moves on")
+	# the prints, from the dune looking back down to the beach
+	await place_player(p, ev.print_points[int(ev.print_points.size() * 0.7)] + Vector3.UP * 0.4, 0.0)
+	await look_at_point(p, ev.print_points[int(ev.print_points.size() * 0.35)])
+	await shot("evidence_prints")
 	mood.set_now(0.62)

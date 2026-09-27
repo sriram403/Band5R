@@ -117,7 +117,10 @@ func setup(b: Node) -> void:
 		{"id": "naresh", "text": "Someone is sitting in the fifth rose",
 			"hint": "Go up to it.",
 			"done": func(): return flags.has("naresh_met")},
-		{"id": "end_e4", "text": "Naresh! (what's in the rose comes next: E5)",
+		{"id": "look_around", "text": "Naresh is packing up. Look around while he does",
+			"hint": "His camp is in the fifth rose, on the plaza. Have a look at what's there (E).",
+			"done": func(): return flags.has("packed")},
+		{"id": "end_e5", "text": "Naresh is with you (the stall shutter comes next: E6)",
 			"hint": "This is where the build ends for now.",
 			"done": func(): return false},
 	]

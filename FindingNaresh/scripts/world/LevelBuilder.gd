@@ -359,6 +359,10 @@ func _landmarks() -> void:
 	bessi.name = "Bessi"
 	world.add_child(bessi)
 	bessi.setup(self)
+	var ev := Evidence.new()
+	ev.name = "Evidence"
+	world.add_child(ev)
+	ev.setup(self)
 	_fishing_village()
 	_salt_pans()
 	_road_bridge("coast_road", "estuary_bridge")

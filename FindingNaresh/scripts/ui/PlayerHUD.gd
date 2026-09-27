@@ -25,7 +25,7 @@ var _bars: Dictionary = {}
 var _hint: Label
 var _warn: Label
 var _note: PanelContainer
-var _note_text: Label
+var _note_text: RichTextLabel
 var _note_time := 0.0
 var map_view: PaperMap
 var _objective: Label
@@ -151,9 +151,14 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	sb.set_border_width_all(2)
 	sb.set_content_margin_all(16)
 	_note.add_theme_stylebox_override("panel", sb)
-	_note_text = Label.new()
-	_note_text.add_theme_font_size_override("font_size", 17)
-	_note_text.add_theme_color_override("font_color", Color(0.22, 0.18, 0.14))
+	# rich text, so a note can show crossed-out words (his notebook, E5)
+	_note_text = RichTextLabel.new()
+	_note_text.bbcode_enabled = true
+	_note_text.fit_content = true
+	_note_text.scroll_active = false
+	_note_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_note_text.add_theme_font_size_override("normal_font_size", 17)
+	_note_text.add_theme_color_override("default_color", Color(0.22, 0.18, 0.14))
 	_note_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_note_text.custom_minimum_size = Vector2(620, 0)
 	_note.add_child(_note_text)
@@ -239,8 +244,10 @@ func _on_prompt(text: String) -> void:
 	_prompt.text = text
 
 
+## A note on screen. Plain text shows exactly as written; text starting
+## with "<bb>" is formatted (bbcode: [s]crossed out[/s]).
 func show_note(text: String, seconds: float) -> void:
-	_note_text.text = text
+	_note_text.text = text.substr(4) if text.begins_with("<bb>") else text.replace("[", "[lb]")
 	_note.visible = true
 	_note_time = seconds
 
