@@ -11,8 +11,8 @@ being built and tested), so this always shows where the work is right now.
 - Milestone E: your answers are in (`design/BESSI.md`, `design/NARESH.md`,
   "Decisions"). E1, the Naresh gym: **approved by you** ("liked it", the 8
   decisions OK for now, 2026-09-27), full run clean, **pushed**. [~] E2,
-  Bessi beach: built and tested by me, **waiting for your test**
-  (`notes/TEST_MILESTONE_E.md`, E2). Not pushed yet.
+  Bessi beach: **approved by you** (and the radio tune, "for now",
+  2026-09-27). [~] Full world run, push; then E3, the photo.
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -698,7 +698,7 @@ in `notes/TEST_MILESTONE_E.md`).
         `reset_can`; the road drive run first then met the town cars (it now
         clears the traffic itself). Rechecked: routes + both, 0 failures.
         Pushed (2026-09-27)
-- [~] E2. Bessi beach greybox (the existing `_beach` / roses plaza): sand,
+- [x] E2. Bessi beach greybox (the existing `_beach` / roses plaza): sand,
       sea, promenade, empty lit stalls with a radio, boats, casuarinas, the
       memorial, the lighthouse; the nav loses signal; mood to dusk
   - [x] `world/Bessi.gd`: the promenade (slabs laid on the sand), 29 warm
@@ -714,7 +714,8 @@ in `notes/TEST_MILESTONE_E.md`).
         beam was a solid grey cone: fainter, no fog)
   - [x] smoke (23, now with the beach) + tower after the memorial move: 0
         failures; your test sheet (E2 in `notes/TEST_MILESTONE_E.md`)
-  - [ ] Your test and approval, then push
+  - [x] Your test and approval (2026-09-27)
+  - [~] Full world run, then push
 - [ ] E3. The photo (W8): the phone photo held by one player (P2), the
       alignment spot (lighthouse behind the memorial spire, a mast on a
       stall roof), binoculars + tags; `t_photo`

@@ -122,6 +122,8 @@ What you can look at, and the jobs:
 
 ## E2. Bessi beach, the arrival
 
+*Approved by you, 2026-09-27 (and the decisions below, for now).*
+
 Start `Play.bat`, **New game**, **F1** → **Travel** → **Coast watchtower** (or
 drive there from wherever you are). Get in the van and drive down the Beach
 Road into Bessi (or F1 → Travel → **Bessi beach**, then walk).
