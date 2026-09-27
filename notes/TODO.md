@@ -14,8 +14,8 @@ being built and tested), so this always shows where the work is right now.
   Bessi beach: **approved by you** (and the radio tune, "for now",
   2026-09-27), full world run clean (after test-order fixes and two
   graphics-driver crashes, resumed), **pushed**. E3 (the photo) is built in
-  `../MPG_dev` and E4 (the roses) ahead of it: next, E3 into main and your
-  test.
+  `../MPG_dev` and E4 (the roses) ahead of it. **E3 is in main, waiting for
+  your test** (`notes/TEST_MILESTONE_E.md`, E3). E4 waits on branch `e4`.
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -719,7 +719,7 @@ in `notes/TEST_MILESTONE_E.md`).
         failures; your test sheet (E2 in `notes/TEST_MILESTONE_E.md`)
   - [x] Your test and approval (2026-09-27)
   - [x] Full world run, then push (2026-09-27)
-- [~] E3. The photo (W8): the phone photo held by one player (P2), the
+- [x] E3. The photo (W8): the phone photo held by one player (P2), the
       alignment spot (lighthouse behind the memorial spire, a mast on a
       stall roof), binoculars + tags; `t_photo`
   - [x] Built in the second copy (`../MPG_dev`, branch `e3`) while the E2
@@ -733,8 +733,9 @@ in `notes/TEST_MILESTONE_E.md`).
         it without resending the texts. `t_photo`: 0 failures, the photo
         looked at (Naresh first hid the kiosk: moved to the edge)
   - [x] `run_test.sh` compiles first, stops in 5 s on a script error
-  - [ ] Merge into main after E2's push; smoke; your test (E3 in
-        `notes/TEST_MILESTONE_E.md`)
+  - [x] Merged into main after E2's push (not pushed); smoke 23, set:bessi,
+        tower: 0 failures
+  - [ ] Your test (E3 in `notes/TEST_MILESTONE_E.md`), then push
 - [~] E4. The smoke and the Five Roses rising; the roses open in travel order
       (windmill, water drop, bridge, wave, star); wrong order resets;
       Naresh in the fifth; `t_roses`
