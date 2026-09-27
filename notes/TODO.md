@@ -15,8 +15,8 @@ being built and tested), so this always shows where the work is right now.
   2026-09-27), full world run clean (after test-order fixes and two
   graphics-driver crashes, resumed), **pushed**. E3 (the photo) is built in
   `../MPG_dev` and E4 (the roses) ahead of it. E3 **approved and pushed**.
-  [~] E4 (the roses) into main for your test (you tried it before it was
-  merged: main still ended after the photo).
+  E4 (the roses) is **in main now, waiting for your test** (you tried it
+  before it was merged: main still ended after the photo).
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -748,9 +748,12 @@ in `notes/TEST_MILESTONE_E.md`).
         plaza), each rose its own collider, `Naresh.sit_at` /
         `stand_from_seat`, story steps roses / naresh / end_e4, saved in
         story flags. `t_roses`: 0 failures first run
-  - [~] The smoke bank didn't show (the test looked away; it also died
-        before the dune): longer and stronger, shot facing the sea; rerun
-  - [ ] Hand over after E3 (you test one part at a time)
+  - [x] The smoke bank didn't show (the test looked away; it also died
+        before the dune): longer, softer sprites; still thin (your eye)
+  - [x] Merged into main after E3's push; "He stood exactly here" was
+        overwritten at once by the smoke line: the smoke now waits 6 s;
+        `Roses.reset()` for tests; set:bessi 4 scenarios + smoke 23: 0 failures
+  - [ ] Your test (E4 in `notes/TEST_MILESTONE_E.md`), then push
 - [ ] E5. The evidence (one set of footprints, the unrolled second sleeping
       bag with its tag, the timer camera, the notebook "we"/"I")
 - [ ] E6. N1 the stall shutter (hold; the scripted early let-go) and N2 push

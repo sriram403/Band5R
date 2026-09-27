@@ -22,6 +22,8 @@ const ORDER := ["windmill", "water", "bridge", "wave", "star"]     ## the way yo
 const SLOT_SYMBOL := ["bridge", "star", "windmill", "wave", "water"]
 const SINK := 48.0                 ## m below the plaza while sunk
 const SMOKE_S := 12.0              ## s of smoke rolling in before they rise
+const AFTER_PHOTO := 6.0           ## s after the photo spot is found before the smoke comes
+                                   ## (so "He stood exactly here" is read first)
 const RISE_S := 10.0
 const OPEN_S := 2.0
 const BLOOM_DOWN_S := 6.0
@@ -41,6 +43,7 @@ var _smoke_roll: CPUParticles3D
 var _smoke_pool: CPUParticles3D
 var _rumble: AudioStreamPlayer3D
 var _sea_at := Vector3.ZERO
+var _wait_t := -1.0
 
 
 func setup(b, rose_nodes: Array, rose_bodies: Array, plaza_centre: Vector3) -> void:
@@ -240,6 +243,40 @@ func _smoke(amount: int, life: float, box: Vector3, alpha: float) -> CPUParticle
 	return p
 
 
+## Back as at the start: sunk, closed, no smoke, the fifth bloom back up
+## its stem (the dev menu, tests: the photo test sets them off).
+func reset() -> void:
+	phase = "sunk"
+	_t = 0.0
+	_bloom_t = 0.0
+	_wait_t = -1.0
+	for k in open_amount.size():
+		open_amount[k] = 0.0
+	for p in [_smoke_roll, _smoke_pool]:
+		if p != null and is_instance_valid(p):
+			p.queue_free()
+	_smoke_roll = null
+	_smoke_pool = null
+	if _rumble != null and is_instance_valid(_rumble):
+		_rumble.queue_free()
+	_rumble = null
+	var star_k := SLOT_SYMBOL.find("star")
+	var r := roses[star_k] as Node3D
+	(r.get_node("Bloom") as Node3D).position.y = 0.0
+	var stem := r.get_node("Stem") as Node3D
+	stem.scale.y = 1.0
+	stem.position.y = 6.6
+	var core := r.get_node("Bloom").get_node_or_null("Core") as Node3D
+	if core != null:
+		core.scale = Vector3.ONE
+	for c in r.get_children():
+		if c.name.begins_with("Leaf"):
+			(c as Node3D).visible = true
+	((bodies[star_k] as Node).get_node("StemShape") as CollisionShape3D).disabled = false
+	_show_open(1.0)
+	_set_sunk(true)
+
+
 ## Straight up, as after a load.
 func rise_now() -> void:
 	phase = "up"
@@ -271,7 +308,11 @@ func _physics_process(delta: float) -> void:
 			phase = "done"
 			_bloom_t = BLOOM_DOWN_S
 	if phase == "sunk" and st.flags.has("photo_spot"):
-		begin()
+		if _wait_t < 0.0:
+			_wait_t = AFTER_PHOTO
+		_wait_t -= delta
+		if _wait_t <= 0.0:
+			begin()
 	match phase:
 		"smoke":
 			_t += delta

@@ -222,14 +222,17 @@ controller. (Or play through from the coast watchtower.)
 
 ## E4. The Five Roses and Naresh
 
-Carry on from E3 (standing on the photo spot), or **F1** → **Story** → jump to
+This is in the normal `MPG` folder now (`Play.bat`), merged after your E3
+approval. Carry on from E3 (standing on the photo spot), or **F1** → **Story** → jump to
 **"Find where Naresh's photo was taken"**, then **F1** → **Travel** → **The
 photo spot (E3)**, face the memorial and wait a second.
 
 1. **Expect:** the roses on the dune are gone at first (only the stone
-   plaza). When you find the photo spot: "Out at sea, a low white bank of
-   smoke rolls in..." Look out to sea: the smoke comes in low over the water
-   and up the beach to the dune.
+   plaza). When you find the photo spot you get "He stood exactly here";
+   **about 6 seconds later**: "Out at sea, a low white bank of smoke rolls
+   in..." Look out to sea: the smoke comes in low over the water and up the
+   beach to the dune. *(The smoke is still a thin block-out; tell me how it
+   should look.)*
 2. After about 12 s, a deep rumble, and **the Five Roses rise out of the
    smoke** on the plaza (about 10 s).
 3. Walk up. Each rose has a stone plaque at its foot, facing the middle,

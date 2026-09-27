@@ -6536,6 +6536,10 @@ func t_roses() -> void:
 		return
 	for f in ["photo_spot", "roses_up", "roses_open", "naresh_met"]:
 		st.flags.erase(f)
+	ro.reset()        # the photo test before this one sets them off
+	if boot.naresh != null and is_instance_valid(boot.naresh) and boot.gym == "":
+		boot.naresh.queue_free()
+		boot.naresh = null
 	st.jump_to(st.index_of("photo"))
 	mood.set_now(0.4)
 	var r0 := ro.roses[0] as Node3D
@@ -6546,8 +6550,10 @@ func t_roses() -> void:
 	await place_player(p, watch, 0.0)
 	await look_at_point(p, ro.centre + Vector3.UP * 12.0)
 	st.flags["photo_spot"] = true
-	var smoke := await until(func() -> bool: return ro.phase == "smoke", 2.0)
-	check(smoke and st.current()["id"] == "roses", "found: the smoke comes, the objective is the roses")
+	await physics_frames(10)
+	check(ro.phase == "sunk", "not straight away: the finding is read first")
+	var smoke := await until(func() -> bool: return ro.phase == "smoke", Roses.AFTER_PHOTO + 2.0)
+	check(smoke and st.current()["id"] == "roses" and boot.huds[0]._note_text.text.contains("smoke"), "a few seconds later the smoke comes (\"Out at sea...\"), the objective is the roses")
 	# turn round to the sea: the bank rolling in
 	await look_at_point(p, ro._sea_at + Vector3.UP * 4.0)
 	await wait(5.0)
