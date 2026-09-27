@@ -12,7 +12,10 @@ being built and tested), so this always shows where the work is right now.
   "Decisions"). E1, the Naresh gym: **approved by you** ("liked it", the 8
   decisions OK for now, 2026-09-27), full run clean, **pushed**. [~] E2,
   Bessi beach: **approved by you** (and the radio tune, "for now",
-  2026-09-27). [~] Full world run, push; then E3, the photo.
+  2026-09-27), full world run clean (after test-order fixes and two
+  graphics-driver crashes, resumed), **pushed**. E3 (the photo) is built in
+  `../MPG_dev` and E4 (the roses) ahead of it: next, E3 into main and your
+  test.
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -715,13 +718,36 @@ in `notes/TEST_MILESTONE_E.md`).
   - [x] smoke (23, now with the beach) + tower after the memorial move: 0
         failures; your test sheet (E2 in `notes/TEST_MILESTONE_E.md`)
   - [x] Your test and approval (2026-09-27)
-  - [~] Full world run, then push
-- [ ] E3. The photo (W8): the phone photo held by one player (P2), the
+  - [x] Full world run, then push (2026-09-27)
+- [~] E3. The photo (W8): the phone photo held by one player (P2), the
       alignment spot (lighthouse behind the memorial spire, a mast on a
       stall roof), binoculars + tags; `t_photo`
-- [ ] E4. The smoke and the Five Roses rising; the roses open in travel order
+  - [x] Built in the second copy (`../MPG_dev`, branch `e3`) while the E2
+        full run went on here
+  - [x] `world/Alignment.gd` (pairs that line up, 2 m), the photo gym
+        (`--gym=photo`, `t_photo_gym`: 0 failures)
+  - [x] The kiosk and the boat with its mast on the sand NE of the spot;
+        tag names; `core/PhotoCamera.gd` takes a real snapshot with Naresh
+        at the edge; it goes to P2's phone only; story steps to_beach /
+        photo / end_e3; found on the spot looking along it; a load retakes
+        it without resending the texts. `t_photo`: 0 failures, the photo
+        looked at (Naresh first hid the kiosk: moved to the edge)
+  - [x] `run_test.sh` compiles first, stops in 5 s on a script error
+  - [ ] Merge into main after E2's push; smoke; your test (E3 in
+        `notes/TEST_MILESTONE_E.md`)
+- [~] E4. The smoke and the Five Roses rising; the roses open in travel order
       (windmill, water drop, bridge, wave, star); wrong order resets;
       Naresh in the fifth; `t_roses`
+  - [x] Built ahead in `../MPG_dev` (branch `e4`, on top of `e3`):
+        `world/Roses.gd` (sunk until the photo spot, the smoke bank off the
+        sea, the rise with a rumble `tools/gen/rumble.py`, carvings built
+        from exact shapes, the order puzzle, the fifth bloom down to the
+        plaza), each rose its own collider, `Naresh.sit_at` /
+        `stand_from_seat`, story steps roses / naresh / end_e4, saved in
+        story flags. `t_roses`: 0 failures first run
+  - [~] The smoke bank didn't show (the test looked away; it also died
+        before the dune): longer and stronger, shot facing the sea; rerun
+  - [ ] Hand over after E3 (you test one part at a time)
 - [ ] E5. The evidence (one set of footprints, the unrolled second sleeping
       bag with its tag, the timer camera, the notebook "we"/"I")
 - [ ] E6. N1 the stall shutter (hold; the scripted early let-go) and N2 push

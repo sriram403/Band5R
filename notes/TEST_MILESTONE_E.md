@@ -171,3 +171,89 @@ Road into Bessi (or F1 → Travel → **Bessi beach**, then walk).
 5. **The radio tune** is my own, procedurally made (`tools/gen/radio.py`), so
    there's nothing to credit; a proper recording can replace it at the polish
    stage if you like.
+
+---
+
+## E3. The photo (where was it taken?)
+
+Start `Play.bat`, **New game**, then **F1** → **Story** → jump to **"Down to
+Bessi beach"**, and **F1** → **Travel** → **Bessi beach**. P2 on the
+controller. (Or play through from the coast watchtower.)
+
+1. On the beach. **Expect:** the objective changes to **"Find where Naresh's
+   photo was taken"**; a few seconds later P2 gets "Your phone buzzes: a
+   photo from Naresh's mother" and P1 gets "P2's phone buzzes...".
+2. **P2:** open the phone (D-pad right). **Expect:** a real picture of this
+   beach at dusk: the lighthouse with its beam, a green kiosk with a boat's
+   mast rising out of its roof, and Naresh at the right edge, alone, with
+   empty space beside him. "me and him at Bessi!" **P1's** phone only says it
+   went to P2. Only P2 can see it: P2 describes it, P1 looks.
+3. Use the binoculars and tags (T / RT) to point things out to each other:
+   the lighthouse, the memorial, the kiosk and the boat's mast all have names
+   on their tags.
+4. Walk along the promenade until both line up: the lighthouse right behind
+   the memorial's spire **and** the mast coming out of the kiosk roof. Face
+   the memorial. **Expect:** after a moment, both get "This is it. The
+   lighthouse right behind the spire, the mast coming out of the kiosk roof.
+   He stood exactly here." and the objective moves on (E4 comes next).
+5. Try a couple of steps off it, or looking the other way: nothing happens.
+6. If you want to skip the search: F1 → Travel → **The photo spot (E3)**.
+
+*Tell me:*
+- Was the photo clear enough to find the spot from P2's description?
+- Too easy (it's about 2 m wide), too hard?
+- The kiosk and the boat: do they look right there?
+
+### Decisions to confirm (provisional, my choices)
+1. **The second pair is a kiosk and a boat on the sand**, north-east of the
+   spot (the design page said "a mast on a stall roof"; behind the stalls the
+   view is full of trees, so they're on the open sand, against the sea and
+   sky).
+2. **The photo is a real snapshot** of the place, taken in the game at the
+   moment it arrives (so it has the same dusk light as the beach), with
+   Naresh standing at the edge.
+3. **Found = standing within 2 m of the spot, looking towards the memorial,
+   for about a second.** Either player can find it, not only P2.
+4. **The photo goes to P2 only**, as you decided; P1 gets a text saying so.
+
+---
+
+## E4. The Five Roses and Naresh
+
+Carry on from E3 (standing on the photo spot), or **F1** → **Story** → jump to
+**"Find where Naresh's photo was taken"**, then **F1** → **Travel** → **The
+photo spot (E3)**, face the memorial and wait a second.
+
+1. **Expect:** the roses on the dune are gone at first (only the stone
+   plaza). When you find the photo spot: "Out at sea, a low white bank of
+   smoke rolls in..." Look out to sea: the smoke comes in low over the water
+   and up the beach to the dune.
+2. After about 12 s, a deep rumble, and **the Five Roses rise out of the
+   smoke** on the plaza (about 10 s).
+3. Walk up. Each rose has a stone plaque at its foot, facing the middle,
+   with a carving: a windmill, a water drop, a bridge, a wave, a star.
+   *(They aren't in order round the ring.)*
+4. Touch one in the wrong order (E). **Expect:** a boom, the smoke surges,
+   "the roses close again".
+5. Touch them in the order you travelled: **windmill, water drop, bridge,
+   wave, star**. **Expect:** each one's rose opens above it, petal by petal.
+6. After the star: the fifth rose's bloom comes down its stem to the plaza
+   and opens, and **someone is sitting in it**, cross-legged.
+7. Walk up close. **Expect:** Naresh gets down: "You came! He said you
+   would." and follows you. (His jobs from E1 work from here on: V / D-up.)
+
+*Tell me:*
+- The smoke and the rising: impressive enough, too slow, too fast?
+- The carvings: can you tell every symbol at a glance?
+- Is the order puzzle clear from the hint (hold H)?
+- Meeting him: does it land?
+
+### Decisions to confirm (provisional, my choices)
+1. **The roses are hidden (sunk) until the photo spot is found**; the dune
+   itself is still there to see from the coast tower.
+2. **The carvings are touched with E**, in any rose's plaque; a wrong one
+   closes them all, nothing else happens.
+3. **The fifth bloom comes down to the plaza** (the blooms are 35 m up, too
+   high to reach), with Naresh where the flower's heart was.
+4. **He gets up when anyone comes within 7 m**, and follows that player.
+5. **The rumble is my own sound** (`tools/gen/rumble.py`), like the radio.

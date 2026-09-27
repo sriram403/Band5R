@@ -5,6 +5,8 @@ Read this whole file (`notes/MASTER_PROMPT.md`) first, then `DESIGN.md` (the agr
 the professional build process with gyms; it supersedes the original spec's plan),
 `notes/TODO.md` (live progress; its "Right now" line says exactly where work stopped),
 `notes/LESSONS.md` (what to do and not to do: read it, and add to it as you learn),
+`notes/PRINCIPLES.md` (how the user wants the work done: first principles, never
+assume an untested limit, the algorithm; also in `CLAUDE.md`),
 `notes/POLISH.md` (agreed changes for after the milestones),
 `README.md`, `FUTURE.md`, `CREDITS.md`, `design/map_plan_v1.png`, and only then the
 original spec `Finding_Naresh_Game_Demo_Build_Prompt.md`, all in
@@ -14,8 +16,10 @@ is established fact unless it says otherwise.
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
 Last updated: 2026-09-27, E1 (the Naresh gym) approved by the user (and its 8
-decisions, for now), full run clean, pushed; E2 (Bessi beach) built and
-tested by me, handed over for the user's test (TEST_MILESTONE_E.md E2), not pushed.
+decisions, for now), full run clean, pushed; E2 (Bessi beach) approved and
+pushed. E3 (the photo, branch `e3`) and E4 (the roses, branch `e4`) are built
+in the second copy `../MPG_dev` (a git worktree): E3 next into main for the
+user's test.
 Milestones A-D are done, approved by the user and pushed. The user is back:
 one part at a time, their test before each push (rule 2). Now: E2 (the
 Bessi beach greybox), then hand over for their test.
@@ -251,6 +255,10 @@ they/them.
     at the end of a milestone or a full test run: a thread can be compacted or
     stop at any moment. Before leaving a milestone or a thread, go through
     the work and add what's missing.
+18. **Work from first principles (user, 2026-09-27):** `notes/PRINCIPLES.md`.
+    Break a problem down, test the assumption with the smallest experiment,
+    then decide; never assume a limit (speed, cost) you haven't measured.
+    Build in `../MPG_dev` (a git worktree) while long tests run in `MPG`.
 17. **At the end of each milestone, stop and ask (user, 2026-09-27):**
     "continue in this thread, or shall I prepare the hand-over notes for a
     new one?" Don't start the next milestone unasked. In the polishing stage,

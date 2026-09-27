@@ -1730,8 +1730,9 @@ func t_feedback() -> void:
 	c.toggle_engine()
 	# 10: the nav points at your stamp, never at Bessi. The loop this test
 	# parks on is in Bessi itself, where the nav has no signal (E2): check it
-	# up at Last Fuel instead, then come back.
-	boot.dev_menu.van_to(boot.dev_menu.van_spot(b.poi["gas_station"] + Vector3(0, 0, 40)), 0.0)
+	# at the windmill junction instead (on the map from the start: driving
+	# anywhere new would mark it on the paper map), then come back.
+	boot.dev_menu.van_to(boot.dev_menu.van_spot(b.poi["j1"] + Vector3(15, 0, 15)), 0.0)
 	await physics_frames(20)
 	await seat_p1_driver()
 	if not c.engine_on:
@@ -5064,6 +5065,12 @@ func t_climb() -> void:
 ## Drive from the homestead to the bridge barrier by each route, by keyboard.
 func t_journey() -> void:
 	var b: LevelBuilder = boot.builder
+	# the roads, not the town cars (as t_routes): run first in a fresh world
+	# the keyboard driver got stuck behind one; mood 0.6 has them all gone
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	var mood_was := mood.value if mood != null else 1.0
+	if mood != null:
+		mood.set_now(0.6)
 	for way in [["ridge_track", "ridge"], ["valley_road", "valley"]]:
 		var path := b.network.chain([["home_lane"], [way[0]], ["pump_house_road"]])
 		var stop_at: int = int(path.nearest(b.poi["bridge_barrier_near"].x, b.poi["bridge_barrier_near"].z)["index"]) - 10
@@ -5109,6 +5116,8 @@ func t_journey() -> void:
 			way[1], arrived, t, ad.idx * Route.SAMPLE_SPACING, ad.max_off, max_tilt, fuel0 - c.fuel, temp_max])
 		check(arrived, "keyboard driver reaches the bridge by the %s route" % way[1])
 		check(ad.max_off < 6.0, "stays on the road along the %s route" % way[1])
+	if mood != null:
+		mood.set_now(mood_was)
 
 
 ## Drive every road of the 4 km map with the keyboard auto-driver and time
