@@ -90,6 +90,20 @@ The engine-level details (exact Godot calls, numbers) are also in
 - **Flaky means the measurement is wrong**, not "rerun it": a lure test
   measured to a crate that rolls (measure to the spot it heard); a pickup
   test read the prompt before the map had settled (wait for it).
+- **Long runs must be resumable** (user, 2026-09-27): a 40-minute full run
+  that dies at minute 35 (a timeout, a crash, a restart) shouldn't be redone
+  from the start. Each finished scenario goes to a progress file with its
+  results; `tools/run_test.sh resume` skips those. A failing part shouldn't
+  stop the run either: report everything in one summary at the end.
+- **Give every wait a timeout that fits it, and check the run finished.** A
+  quick recheck was wrapped in a 900 s timeout; the way-out drive alone
+  outlasted it, the log just stopped, and "no failure lines" looked like a
+  pass. Trust only the summary line (`==== N failure(s) ====`); no summary
+  means it didn't finish.
+- **The full order changes the state.** Scenarios that passed alone failed
+  late in the full run: after the long drives the day had moved on (the mood
+  was already dusky), and the van ended far from where a test assumed. Each
+  test sets the time of day and positions it needs.
 - **Never edit game files while a test run is going:** later segments load
   the new files and the run is meaningless (one had to be thrown away).
 - **A parse error hangs the game** on its failed load: run tests with a

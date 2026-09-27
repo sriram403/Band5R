@@ -207,9 +207,16 @@ tools/run_test.sh                  (Smoke: base gym controls + one short world c
 tools/run_test.sh ghat,ghat_menu   (just these scenarios: after a fix, the ones for the change)
 tools/run_test.sh set:puzzles      (one area: set:opening / gyms / puzzles / creatures / driving / world)
 tools/run_test.sh full             (Full: everything, before a push or a hand-over; GitHub runs it on every push)
+tools/run_test.sh resume           (carry on with a run that broke off: crash, timeout, PC restart; done scenarios are skipped)
 python tools/gen/layout_check.py  (Road check when roads or hills change, ~2 s)
 SHOW=1 tools/run_test.sh drive     (on screen, with sound, to watch it)
 ```
+
+Each run ends with one summary of all its parts (also saved in
+`appdata/playtest/runs/summary.txt`, with a log per part next to it). A failing
+part no longer stops the run; a part that crashes or hangs (killed after
+`TIMEOUT` seconds, default 3600) does, and `tools/run_test.sh resume` then
+carries on from the scenario it was in, keeping the results so far.
 
 By default the window starts at the screen edge, then goes **behind** your other
 windows and hands focus back to whatever you were using (about 3 seconds). It is

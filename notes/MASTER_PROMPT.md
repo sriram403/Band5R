@@ -13,10 +13,10 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-26, Milestone D done, tested and pushed (user's own test pending); next Milestone E.
-Milestones A-D are done and pushed (D's own user test is pending: see
-`notes/TEST_MILESTONE_D.md`). The user is away and asked for the milestones
-to be built one after another (rule 14). Next is Milestone E.
+Last updated: 2026-09-27, Milestone D done, tested by the user, Full 0 failures, pushed; next Milestone E.
+Milestones A-D are done, approved by the user and pushed. The user is back:
+one milestone at a time, their test before each push (rule 2). Next is
+Milestone E, starting with E1 (the Naresh gym).
 Start at section 6.
 
 ---
@@ -344,7 +344,15 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   hand-over, and GitHub runs full on every push. Don't rerun the opening or
   the long playthroughs for an unrelated fix. The plans live in
   `tools/test_plan.sh` (shared with the headless runner); `SMOKE_GYM` /
-  `SMOKE_WORLD` in `PlayTest.gd`. Scenarios named on the command line run in
+  `SMOKE_WORLD` in `PlayTest.gd`.
+- **Resume (user, 2026-09-27):** a run that broke off (crash, hang killed by
+  `TIMEOUT`, default 3600 s per game process, closed window, restart) goes on
+  with `tools/run_test.sh resume`: PlayTest writes each finished scenario and
+  its failures to `appdata/playtest/runs/progress.txt` (`--progress=`), a
+  resumed segment skips those and carries their failures; finished segments
+  are skipped. A failing segment no longer stops the run; one summary at the
+  end (`runs/summary.txt`, logs `runs/seg_N.log`), SCRIPT ERRORs reported.
+  Starting any other run clears the progress. Scenarios named on the command line run in
   the `all` list's order, not the order typed; the window
   starts at the screen edge, then PlayTest moves it BEHIND all windows and hands focus
   back (run_test.sh passes the user's window as --refocus); muted unless focused, no

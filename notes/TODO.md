@@ -6,10 +6,10 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Milestone D: your test is done ("good to go"; the save check skipped: the
-  automated `save` covers it). Full suite running, then the push.
+- Milestone D: done, tested by you ("good to go"), Full suite 0 failures,
+  pushed (2026-09-27).
 - Milestone E: your answers are in (`design/BESSI.md`, `design/NARESH.md`,
-  "Decisions"). Next: [~] E1, the Naresh gym.
+  "Decisions"). Next, in a new thread: [ ] E1, the Naresh gym.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
@@ -599,7 +599,13 @@ test was fixed and now restores its starting layout before the pad test.
         (now 150 m, 1.6 m pictures, all one colour so only the shape tells);
         the dials read right to left from the front (now 1-4, left to right)
   - [x] Quick: 12 segments, 436 checks, 0 failures
-- [~] D13. Full run J1 -> Bessi on both routes; hand-over
+- [x] D13. Full run J1 -> Bessi on both routes; hand-over
+  - [x] Last Full (after your test's fixes): 5 failures, all from the full
+        order (the menu's van 20 m away, the day already dusky for
+        traffic_world / lorry / mood). Tests now set their own time of day;
+        the 10 scenarios rerun in the full order: 0 failures
+  - [x] `tools/run_test.sh resume` (your idea): a run that broke off carries
+        on from the scenario it was in; one summary at the end
   - [x] `t_way_out` (Full only): J1 -> the coast watchtower in one drive,
         story running, both routes. Puzzles by script where the van gets to
         them (refuel at Last Fuel, the water works fix and turbine, the

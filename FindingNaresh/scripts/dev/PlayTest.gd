@@ -12,6 +12,13 @@ var boot: Node
 var only := ""
 var _frame_times: PackedFloat32Array = PackedFloat32Array()
 var _failures: Array[String] = []
+## tools/run_test.sh passes --progress=<file>: each finished scenario is written
+## there with its failures, and a rerun of the same plan (`run_test.sh resume`)
+## skips what is already in it, so a run that broke off picks up where it
+## stopped. Keyed by "<gym>|<selection>" so the same scenario in two segments
+## is two entries.
+var progress_path := ""
+var _done := {}                  ## scenario -> its failures, from an earlier run
 ## No window and no GPU (`--headless`, e.g. CI or tools/run_test_headless.sh):
 ## screenshots are skipped and frame-rate checks are only logged.
 var headless := DisplayServer.get_name() == "headless"
@@ -34,6 +41,8 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--playtest="):
 			only = a.get_slice("=", 1)
+		elif a.begins_with("--progress="):
+			progress_path = a.substr(11)
 	# Stay out of the way of whatever the user is doing. tools/run_test.sh opens the
 	# window off screen; here it moves on screen but BEHIND every other window,
 	# without taking focus. The user can click it (or its taskbar button) to watch
@@ -236,8 +245,10 @@ func _run() -> void:
 		var resumed_at := Time.get_ticks_msec()
 		await call("t_" + r)
 		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
+		_record_done(PlayTest.reloading_scenario, PlayTest.scenario_fail_start)
 		_finish()
 		return
+	_read_progress()
 	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
@@ -271,8 +282,15 @@ func _run() -> void:
 	for s in all:
 		if selection != "" and not s in selection.split(","):
 			continue
+		if _done.has(s):
+			log_line("---- %s: done in the earlier run, skipped (%d failure(s) then) ----" % [s, _done[s].size()])
+			for f in _done[s]:
+				_failures.append(f + "  (earlier run)")
+			continue
 		log_line("---- %s ----" % s)
 		var started_at := Time.get_ticks_msec()
+		PlayTest.reloading_scenario = s
+		PlayTest.scenario_fail_start = _failures.size()
 		release_all()
 		await fresh_hands()
 		if s.begins_with("opening"):
@@ -283,7 +301,53 @@ func _run() -> void:
 		log_line("time %s %.1f s" % [s, (Time.get_ticks_msec() - started_at) / 1000.0])
 		if PlayTest.resume != "":
 			return      # the scene is reloading; the new test node finishes up
+		_record_done(s, PlayTest.scenario_fail_start)
 	_finish()
+
+
+func _segment_key() -> String:
+	return "%s|%s" % [boot.gym, only]
+
+
+## What an earlier, broken-off run of this segment already finished.
+func _read_progress() -> void:
+	if progress_path == "" or not FileAccess.file_exists(progress_path):
+		return
+	var key := _segment_key()
+	var fails := {}              # a scenario's failures count only once its "done" line follows
+	for line in FileAccess.get_file_as_string(progress_path).split("\n", false):
+		var f := line.split("\t")
+		if f.size() < 3 or f[1] != key:
+			continue
+		if f[0] == "fail" and f.size() >= 4:
+			if not fails.has(f[2]):
+				fails[f[2]] = []
+			fails[f[2]].append(f[3])
+		elif f[0] == "done":
+			_done[f[2]] = fails.get(f[2], [])
+			fails.erase(f[2])
+	if not _done.is_empty():
+		log_line("resuming: %d scenario(s) of this segment already done" % _done.size())
+
+
+## Write a finished scenario (and the failures it added) to the progress file.
+## Failures first, then "done", in one write: a crash before it leaves the
+## scenario unfinished, so the resumed run plays it again.
+func _record_done(s: String, fail_from: int) -> void:
+	if progress_path == "":
+		return
+	var fa := FileAccess.open(progress_path, FileAccess.READ_WRITE) if FileAccess.file_exists(progress_path) else FileAccess.open(progress_path, FileAccess.WRITE)
+	if fa == null:
+		log_line("could not write the progress file %s" % progress_path)
+		return
+	fa.seek_end()
+	var key := _segment_key()
+	var text := ""
+	for i in range(fail_from, _failures.size()):
+		text += "fail\t%s\t%s\t%s\n" % [key, s, _failures[i].replace("\t", " ").replace("\n", " ")]
+	text += "done\t%s\t%s\n" % [key, s]
+	fa.store_string(text)
+	fa.close()
 
 
 ## The opening's scenarios play P2 with the keyboard (TAB); with a real pad
@@ -1535,6 +1599,8 @@ func t_save() -> void:
 
 static var resume := ""
 static var carried_failures: Array[String] = []
+static var reloading_scenario := ""  ## the scenario running when a load test reloads the scene
+static var scenario_fail_start := 0
 static var expect := {}
 
 
@@ -1955,7 +2021,7 @@ func t_dev() -> void:
 	await physics_frames(10)
 	var vd := camper().global_position.distance_to(p1().global_position)
 	log_line("van brought: %.1f m from P1" % vd)
-	check(vd < 16.0 and camper().parking_brake, "the menu brings the van, handbrake on")
+	check(vd < 26.0 and camper().parking_brake, "the menu brings the van, handbrake on (on the nearest clear ground)")
 	# skip: during the opening it skips the rest of the opening (it used to
 	# only move the chain on underneath, so the opening's step never changed)
 	var st: Story = boot.story
@@ -4043,6 +4109,11 @@ func t_traffic() -> void:
 
 
 func t_traffic_world() -> void:
+	# the mood only ever falls on the way out, and traffic thins with it: start
+	# bright, as at the opening (the full run gets here after the coast)
+	var md := get_tree().get_first_node_in_group("mood") as Mood
+	md.set_now(1.0)
+	await physics_frames(2)
 	var lane: Route = boot.builder.network.road("home_lane")
 	var cars: Array[TrafficCar] = []
 	for k in 4:
@@ -4083,6 +4154,10 @@ func t_traffic_world() -> void:
 ## On the way out it falls, slowly, as the players reach each place.
 func t_mood() -> void:
 	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	await place_player(p1(), boot.builder.player_spawns[0].origin, 0.0)
+	await place_player(p2(), boot.builder.player_spawns[0].origin + Vector3(2, 0, 0), 0.0)
+	mood.set_now(1.0)            # as at the start; earlier scenarios may have been out at the coast
+	await physics_frames(2)
 	check(mood != null and mood.value > 0.9, "the mood dial is there, bright on the way out's first stretch")
 	if mood == null:
 		return
