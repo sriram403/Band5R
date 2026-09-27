@@ -264,3 +264,42 @@ photo spot (E3)**, face the memorial and wait a second.
    high to reach), with Naresh where the flower's heart was.
 4. **He gets up when anyone comes within 7 m**, and follows that player.
 5. **The rumble is my own sound** (`tools/gen/rumble.py`), like the radio.
+
+---
+
+## E5. The evidence (found, never told)
+
+In the normal `MPG` folder (`Play.bat`). Carry on from E4 (Naresh just got
+up out of the rose), or **F1** → **Story** → jump to **"Someone is sitting in
+the fifth rose"**, **F1** → **Travel** → **The Five Roses**, and walk up to him.
+
+1. After "You came! He said you would.", a few seconds later: **"Hang on, let
+   me pack up. My friend's gone for a walk, he'll be back in a bit."** He goes
+   to his camp by the fifth rose (a lantern on the plaza stones). Objective:
+   "Naresh is packing up. Look around while he does".
+2. Look at things (E) and read what you see, nothing more:
+   - **the sleeping bag**: slept in; one torch, one bottle, one mug;
+   - **the other sleeping bag**: still rolled in its plastic, the price tag on;
+   - **the camera** on its little tripod: the self-timer set, the last
+     picture is the one from the photo;
+   - **the notebook**: the last page, every "we" written after a
+     crossed-out red "I";
+   - **the footprints**: one trail of prints in the sand from the promenade
+     (the photo spot) up to the roses.
+3. After you've looked at three of them (or two minutes): **"All packed! He
+   says he'll catch us up."** and he follows you. Objective moves on (E6 next:
+   the stall shutter).
+
+*Tell me:*
+- Does it land (without anyone saying it)? Too subtle, too obvious?
+- Anything you'd add or take away from the camp?
+
+### Decisions to confirm (provisional, my choices)
+1. **The camp is on the plaza** at the foot of the fifth rose (its bloom came
+   down there), lit by his lantern.
+2. **He's done packing after 3 of the 5 things are seen**, or after two
+   minutes, so nobody is stuck if they don't look.
+3. **The descriptions never say "alone", "friend" or "imagined"** (a test
+   checks that): only what you'd see.
+4. **The footprints are there from the start** (a faint trail from the photo
+   spot to the dune), before the roses rise.

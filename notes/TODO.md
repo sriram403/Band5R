@@ -15,8 +15,8 @@ being built and tested), so this always shows where the work is right now.
   2026-09-27), full world run clean (after test-order fixes and two
   graphics-driver crashes, resumed), **pushed**. E3 (the photo) is built in
   `../MPG_dev` and E4 (the roses) ahead of it. E3 **approved and pushed**.
-  E4 (the roses) **approved and pushed**. [~] E5, the evidence (built in
-  `../MPG_dev`, branch `e5`).
+  E4 (the roses) **approved and pushed**. E5 (the evidence) is **in main,
+  waiting for your test** (`notes/TEST_MILESTONE_E.md`, E5).
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -754,8 +754,17 @@ in `notes/TEST_MILESTONE_E.md`).
         overwritten at once by the smoke line: the smoke now waits 6 s;
         `Roses.reset()` for tests; set:bessi 4 scenarios + smoke 23: 0 failures
   - [x] Your test: approved with its decisions (2026-09-27); pushed
-- [ ] E5. The evidence (one set of footprints, the unrolled second sleeping
+- [x] E5. The evidence (one set of footprints, the unrolled second sleeping
       bag with its tag, the timer camera, the notebook "we"/"I")
+  - [x] `world/Evidence.gd`: the camp at the fifth rose (lantern), each thing
+        a "Look at" with only what you see, one set of footprints (a trail
+        from the photo spot), he packs while you look (3 seen or 2 min);
+        notes can show crossed-out words (rich text, `<bb>`); story steps
+        look_around / end_e5; `t_evidence` (checks no text spells it out):
+        0 failures. The notebook's strike first didn't show: pencil red now
+  - [x] Built in `MPG_dev` (branch `e5`), merged into main; set:bessi 5 +
+        smoke 23: 0 failures
+  - [ ] Your test (E5 in `notes/TEST_MILESTONE_E.md`), then push
 - [ ] E6. N1 the stall shutter (hold; the scripted early let-go) and N2 push
       the boat (work it; he pushes the wrong way first); rewards: torch
       batteries, a fuel drum
