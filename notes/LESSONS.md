@@ -208,6 +208,14 @@ The engine-level details (exact Godot calls, numbers) are also in
 
 ## 5. Godot / GDScript habits that bit us
 
+- **A ray that starts inside a collider doesn't hit it** (E6): Naresh's
+  "is the way clear?" rays began inside the tilted boat and said yes; he
+  walked into it, got wedged, gave up. Once stuck, plan on the grid (shape
+  queries do see overlaps); keep colliders upright round tilted visuals.
+- **Don't make people chase what they're holding** (E6): a hull that slid
+  away while pushed took itself out of reach; it rocks in place and slides
+  off at the end.
+
 (Details and more in `MASTER_PROMPT.md` section 7.)
 
 - **Moving a physics object by hand:** reset the drawing smoothing on it *and

@@ -305,3 +305,51 @@ the fifth rose"**, **F1** → **Travel** → **The Five Roses**, and walk up to 
    checks that): only what you'd see.
 4. **The footprints are there from the start** (a faint trail from the photo
    spot to the dune), before the roses rise.
+
+---
+
+## E6. Naresh's two jobs: the store and the boat
+
+In the normal `MPG` folder (`Play.bat`). Carry on from E5, or **F1** →
+**Story** → jump to **"Torch batteries for the dark road"**, then **F1** →
+**Travel** → **Bessi beach** (Naresh comes along).
+
+**N1, the store** (the red "BESSI STORES" on the stall row):
+1. The shutter is down. Its yellow handle is outside, to one side: hold E
+   and it rolls up about 1.2 m; let go and it drops.
+2. The box of batteries inside takes **two** to carry, so you both have to
+   go in: look at the handle and give Naresh the job (V: **Hold the
+   shutter**). Crouch (Ctrl / B) and go under.
+3. **Expect:** once you're both inside, after a couple of seconds: "Oops! My
+   friend was telling me something..." and it slams down, you're shut in.
+   A few seconds later he opens it again: "Sorry! Sorry. Got it."
+4. Both pick up the box (E / X) and carry it out under the shutter.
+   **Expect:** "A whole box of torch batteries. Fresh ones in both your
+   torches now..." and the objective moves on.
+
+**N2, the boat** (on the sand by the water, an upturned blue boat):
+5. The fuel drum is under it. It takes **three** pushing at once from the
+   land side: you two holding E / X, and Naresh (V on the boat: **Work the
+   boat**). The prompt shows how many are on it ("2 of 3").
+6. **Expect:** the first time he goes round to the **sea side** and pushes
+   back: "Pushing! Is it moving? It's not moving." Nothing moves.
+7. Tell him again (V on the boat). **Expect:** "Oh! THAT way. Right." He
+   comes round to your side; with all three, it rocks, then slides off down
+   the sand. Under it: a full blue fuel drum (40 L), two to carry, and it
+   pours into the van like a can.
+
+*Tell me:*
+- Were both clear from the hints (hold H)? Too easy, too fiddly?
+- Is his slip at the shutter funny or annoying? The wrong-way push?
+- Anything else you'd want him to do here?
+
+### Decisions to confirm (provisional, my choices)
+1. **The store's box takes two**, so Naresh has to hold the shutter (else
+   one of you could hold it and the other fetch it, and he'd never be needed).
+2. **"Push the boat" became an upturned boat lying on the drum** (the design
+   page had a boat grounded on a sand bar with the drum aboard; pushing it off
+   the drum ties the reward to the push, and nobody has to wade out).
+3. **While three push, the boat rocks in place; when it gives, it slides
+   off in one go** (people pushing a hull that slides away kept losing
+   their grip).
+4. **Both slips happen once each** (the design's "scripted this once").

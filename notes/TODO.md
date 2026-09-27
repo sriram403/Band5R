@@ -16,7 +16,8 @@ being built and tested), so this always shows where the work is right now.
   graphics-driver crashes, resumed), **pushed**. E3 (the photo) is built in
   `../MPG_dev` and E4 (the roses) ahead of it. E3 **approved and pushed**.
   E4 (the roses) **approved and pushed**. E5 (the evidence) **approved and
-  pushed**. [~] E6 (the stall shutter, the boat), in `../MPG_dev` branch `e6`.
+  pushed**. E6 (the store and the boat) is **in main, waiting for your
+  test** (`notes/TEST_MILESTONE_E.md`, E6).
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -766,9 +767,22 @@ in `notes/TEST_MILESTONE_E.md`).
         smoke 23: 0 failures
   - [x] Your test: approved with its decisions (2026-09-27, after the F1
         jump fix); pushed
-- [ ] E6. N1 the stall shutter (hold; the scripted early let-go) and N2 push
+- [~] E6. N1 the stall shutter (hold; the scripted early let-go) and N2 push
       the boat (work it; he pushes the wrong way first); rewards: torch
       batteries, a fuel drum
+  - [x] `world/BessiTasks.gd`: the store (the shutter rolls up while its
+        handle is held; the box takes two; his slip once, with you both in),
+        the upturned boat over the fuel drum (three at once; he goes round
+        the wrong side until told again), `items/FuelDrum.gd` (40 L, two to
+        carry); `Workable` need_hands / helps / stand_fn; story steps
+        batteries / drum / end_e6 and their F1 jumps. `t_shutter`, `t_boat`
+  - [x] Found and fixed: a tilted boat collider wedged Naresh fast; his
+        straight-line check can't see a thing he's touching, so once stuck
+        he plans round on the grid; players lost their grip on a sliding
+        hull, so it rocks in place and slides off at the end; the raised
+        shutter poked through the roof (rolls up into the doorway now)
+  - [x] Merged into main; set:bessi 8 + smoke 23 + the Naresh gym: 0 failures
+  - [ ] Your test (E6 in `notes/TEST_MILESTONE_E.md`), then push
 - [ ] E7. The storm starts, the roses sink; "my friend says we should go
       north"; save/load of all of it; the full run pass-to-storm
 - [ ] E8. Full suite, `notes/TEST_MILESTONE_E.md`, push
