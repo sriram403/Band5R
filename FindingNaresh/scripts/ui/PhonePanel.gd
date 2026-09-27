@@ -16,6 +16,7 @@ var _footer: Label
 var _badge: Label
 var _shown := -1
 var _built_w := 0.0
+var _built_pic := false
 
 
 func _ready() -> void:
@@ -107,8 +108,9 @@ func _ready() -> void:
 	_phone.visible = false
 
 
-## One text: sender in its colour over a rounded bubble.
-func _bubble(sender: String, text: String, width: float) -> Control:
+## One text: sender in its colour over a rounded bubble; a photo above the
+## words if it carries one (Naresh's, E3).
+func _bubble(sender: String, text: String, width: float, photo: Texture2D = null) -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 2)
 	var who := Label.new()
@@ -127,13 +129,24 @@ func _bubble(sender: String, text: String, width: float) -> Control:
 	st.content_margin_top = 6
 	st.content_margin_bottom = 7
 	bubble.add_theme_stylebox_override("panel", st)
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 6)
+	bubble.add_child(inner)
+	if photo != null:
+		var pic := TextureRect.new()
+		pic.name = "Photo"
+		pic.texture = photo
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		pic.custom_minimum_size = Vector2(width, width * 0.75)
+		inner.add_child(pic)
 	var body := Label.new()
 	body.text = text
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.custom_minimum_size.x = width
 	body.add_theme_font_size_override("font_size", 15)
 	body.add_theme_color_override("font_color", Color(0.10, 0.11, 0.13))
-	bubble.add_child(body)
+	inner.add_child(body)
 	box.add_child(bubble)
 	return box
 
@@ -160,10 +173,12 @@ func _process(_delta: float) -> void:
 	_phone.position = Vector2(size.x - w - maxf(24.0, size.x * 0.06), (size.y - h) * 0.55)
 	_footer.text = "[%s] put away" % glyph
 	var msgs: Array = story.phone_threads[who]
-	if msgs.size() != _shown or absf(w - _built_w) > 1.0:
+	var has_pic := story.photo_texture != null
+	if msgs.size() != _shown or absf(w - _built_w) > 1.0 or has_pic != _built_pic:
 		_shown = msgs.size()
 		_built_w = w
+		_built_pic = has_pic
 		for c in _thread.get_children():
 			c.queue_free()
 		for m in msgs.slice(maxi(0, msgs.size() - SHOWN)):
-			_thread.add_child(_bubble(m["from"], m["body"], w - 64.0))
+			_thread.add_child(_bubble(m["from"], m["body"], w - 64.0, story.photo_texture if m.get("photo", false) else null))

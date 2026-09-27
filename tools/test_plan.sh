@@ -37,6 +37,7 @@ test_plan() {
 		echo "stealth|stealth,taken,hiding"
 		echo "creature|van"
 		echo "naresh|naresh"
+		echo "photo|photo_gym"
 		echo "traffic|traffic,lorry"
 		echo "house|house"
 		echo "tyre|tyre"
@@ -53,7 +54,8 @@ test_plan() {
 	set:world)
 		echo "|quick" ;;
 	set:bessi)
-		echo "|beach" ;;
+		echo "photo|photo_gym"
+		echo "|beach,photo" ;;
 	set:world_full)
 		echo "|full" ;;
 	full)

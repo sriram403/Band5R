@@ -12,7 +12,7 @@ extends LevelBuilder
 ## More gyms (tagging, hiding, creatures, Naresh, storm) are added as those
 ## mechanics are built; each one starts as a copy of `base`.
 
-const GYMS := ["base", "tyre", "house", "traffic", "tagging", "binoculars", "stealth", "creature", "naresh"]
+const GYMS := ["base", "tyre", "house", "traffic", "tagging", "binoculars", "stealth", "creature", "naresh", "photo"]
 ## Stealth gym: a creature at STEALTH_EYE facing the players' side (+Z), cover
 ## pieces between, the players' lane 30 m out.
 const STEALTH_EYE := Vector3(60, 0, -30)
@@ -101,6 +101,8 @@ func build() -> Node3D:
 		_creature_gym()
 	if gym == "naresh":
 		_naresh_gym()
+	if gym == "photo":
+		_photo_gym()
 	_world_edge()
 	_gym_spawns()
 	return world
@@ -550,6 +552,41 @@ func _naresh_gym() -> void:
 	var mood := Mood.new()
 	mood.name = "Mood"
 	world.add_child(mood)
+
+
+## The photo gym (design/BESSI.md, W8): two pairs of poles that line up from
+## one spot only, a red pair to the north and a blue pair to the north-east,
+## to fix how far off the spot still counts (Alignment.TOLERANCE).
+const PHOTO_SPOT := Vector3(0, 0, 20)
+var photo_gym: Alignment
+
+func _photo_gym() -> void:
+	var red := ToonMat.make(Color(0.85, 0.2, 0.18))
+	var blue := ToonMat.make(Color(0.2, 0.4, 0.85))
+	var north := Vector3(0, 0, -1)
+	var ne := Vector3(0.7071, 0, -0.7071)
+	var specs := [["RedNear", north * 25.0, 4.0, red], ["RedFar", north * 90.0, 12.0, red],
+		["BlueNear", ne * 12.0, 3.0, blue], ["BlueFar", ne * 40.0, 8.0, blue]]
+	var tops := {}
+	for sp in specs:
+		var at: Vector3 = PHOTO_SPOT + sp[1]
+		at.y = _h(at.x, at.z)
+		var body := StaticBody3D.new()
+		body.name = sp[0]
+		body.set_meta("tag_name", String(sp[0]).to_lower())
+		var h: float = sp[2]
+		body.add_child(Build.cyl(0.25, h, sp[3], Vector3(0, h * 0.5, 0), Vector3.ZERO, 10, "Pole"))
+		body.add_child(Build.sphere(0.5, sp[3], Vector3(0, h, 0), Vector3.ONE, "Top"))
+		body.add_child(_cyl_shape(Vector3(0, h * 0.5, 0), 0.25, h))
+		body.position = at
+		world.add_child(body)
+		tops[sp[0]] = at + Vector3(0, h, 0)
+		poi["photo_" + String(sp[0]).to_lower()] = tops[sp[0]]
+	photo_gym = Alignment.new().add_pair(tops["RedNear"], tops["RedFar"]).add_pair(tops["BlueNear"], tops["BlueFar"])
+	var mark := PHOTO_SPOT
+	mark.y = _h(mark.x, mark.z)
+	world.add_child(Build.label3d("the spot", mark + Vector3(0, 0.05, 1.5), Vector3(-90, 0, 0), 0.6, Color(1, 0.95, 0.6)))
+	poi["photo_gym_spot"] = mark
 
 
 ## A gate panel that slides up out of a doorway (its collider goes with it).
