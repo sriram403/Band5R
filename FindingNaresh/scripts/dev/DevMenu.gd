@@ -59,7 +59,10 @@ const PLACES := [
 	["Bessi and the coast", [
 		["beach", "Bessi beach", "Milestone E."],
 		["roses", "The Five Roses", "The plaza on the dune."],
-		["memorial", "The memorial", "On the beach."],
+		["memorial", "The memorial", "On the sand, its spire in line with the lighthouse."],
+		["promenade_north", "The promenade", "The stalls, lit and empty; a radio in one of them."],
+		["radio_stall", "The radio stall", "The one playing softly."],
+		["photo_spot", "The photo spot (E3)", "Where Naresh's photo was taken: the lamp just over the spire."],
 		["fishing_village", "Fishing village", "The coast road north."],
 		["net_shed", "The net shed", "In the fishing village."],
 		["salt_pans", "Salt pans", "The coast road."],

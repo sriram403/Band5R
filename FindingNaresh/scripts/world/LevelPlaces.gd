@@ -198,16 +198,10 @@ func _beach() -> void:
 			root.add_child(Build.cyl(0.25, 5.0, trunk, cp + Vector3(0, 2.5, 0), Vector3.ZERO, 6, "CasuarinaTrunk"))
 			root.add_child(Build.cone(1.6, 9.0, casu, cp + Vector3(0, 8.5, 0), Vector3.ZERO, 7, "Casuarina"))
 		k += 1
-	# the memorial: a plain stone column on a stepped base, facing the sea
-	var shore0 := Landscape.coast_inland(0.0, 480.0)
-	var mp := Vector3(shore0 - 45.0, 0, 480.0)
-	mp.y = _h(mp.x, mp.z)
-	root.add_child(Build.solid_box(Vector3(6, 0.6, 6), ToonMat.make(C_STONE), mp + Vector3(0, 0.3, 0), Vector3.ZERO, "MemorialBase"))
-	root.add_child(Build.solid_box(Vector3(1.4, 8.0, 1.4), ToonMat.make(C_STONE.lightened(0.1)), mp + Vector3(0, 4.6, 0), Vector3.ZERO, "Memorial"))
+	# the memorial, the promenade, the lights and the lighthouse: world/Bessi.gd (E2)
 	var bp0 := Vector3(Landscape.coast_inland(0.0, 600.0) - 30.0, 0, 600.0)
 	bp0.y = _h(bp0.x, bp0.z)
 	poi["beach"] = bp0
-	poi["memorial"] = mp
 
 
 func _fishing_village() -> void:

@@ -11,6 +11,7 @@
 #   set:creatures   the stealth and creature gyms, the ghat, the watchtower
 #   set:driving     the base gym's driving, the long drives and the way out
 #   set:world       the world checks (the old Quick list)
+#   set:bessi       Bessi beach and the roses (Milestone E)
 #   set:world_full  the world part of full alone (the long drives and every
 #                   world check), e.g. after a crash in it
 #   full            everything: before a push or a hand-over, and on GitHub
@@ -51,6 +52,8 @@ test_plan() {
 		echo "|journey,routes,way_out" ;;
 	set:world)
 		echo "|quick" ;;
+	set:bessi)
+		echo "|beach" ;;
 	set:world_full)
 		echo "|full" ;;
 	full)

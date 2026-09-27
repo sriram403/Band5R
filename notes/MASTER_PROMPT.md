@@ -14,7 +14,8 @@ is established fact unless it says otherwise.
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
 Last updated: 2026-09-27, E1 (the Naresh gym) approved by the user (and its 8
-decisions, for now), full run clean, pushed; E2 (Bessi beach) in progress.
+decisions, for now), full run clean, pushed; E2 (Bessi beach) built and
+tested by me, handed over for the user's test (TEST_MILESTONE_E.md E2), not pushed.
 Milestones A-D are done, approved by the user and pushed. The user is back:
 one part at a time, their test before each push (rule 2). Now: E2 (the
 Bessi beach greybox), then hand over for their test.
@@ -325,6 +326,8 @@ MPG/
                                 taken / fetched, the van's bench (`Camper.bench`), save
       world/Workable.gd         things held or worked (shutter, lever, crank) by players or Naresh
       ui/CommandWheel.gd        the job wheel round the crosshair (PlayerRig.wheel_*)
+      world/Bessi.gd            E2 the beach: promenade, lights, radio, memorial on the
+                                photo line, lighthouse, the nav's "NO SIGNAL"
       world/GymBuilder.gd       gyms: small flat test maps (extends LevelBuilder)
 ```
 
@@ -429,7 +432,8 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
    user (they're testing step by step; rule 2). **E1 (the Naresh gym) is
    approved and pushed**. **E2 in progress** (`world/Bessi.gd`: promenade,
    stall lights, the radio, the memorial moved onto the photo line, the
-   lighthouse, the nav's lost signal; `t_beach`), then hand over. The open questions are **answered** (user, 2026-09-26; the
+   lighthouse, the nav's lost signal; `t_beach`) **handed over**: wait for
+   the user's report, then push and E3 (the photo). The open questions are **answered** (user, 2026-09-26; the
    "Decisions" at the end of `design/BESSI.md` and `design/NARESH.md`): roses
    in travel order; evidence shown, not spelled out; the photo to P2; Naresh
    commands on foot, in the van only from the passenger seat, on a key free

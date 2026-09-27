@@ -117,3 +117,55 @@ What you can look at, and the jobs:
    you tell him again (nothing is ever lost: it lies where he dropped it).
 8. **What he says** shows at the bottom of the screen of anyone within 40 m
    (or in the van with him), and over his head when you're further than 7 m.
+
+---
+
+## E2. Bessi beach, the arrival
+
+Start `Play.bat`, **New game**, **F1** → **Travel** → **Coast watchtower** (or
+drive there from wherever you are). Get in the van and drive down the Beach
+Road into Bessi (or F1 → Travel → **Bessi beach**, then walk).
+
+1. Drive into Bessi, P2 in the passenger seat watching the nav. **Expect:**
+   about 400 m from the roses the nav screen starts flickering **"NO
+   SIGNAL"** / "searching...", and stays like that everywhere in Bessi. Drive
+   back up the road: it comes back.
+2. Park and walk to the beach (east, towards the sea). **Expect:** the light
+   slowly turns to **dusk** (it takes about half a minute); it stays dusk.
+3. The **promenade**: a paved walk along the row of coloured stalls, lamp
+   posts between them. **Expect:** the stalls and lamps are lit, warm, and
+   there is nobody at all. Walk along it, and step on and off it from the
+   sand (no jumping needed).
+4. **The radio:** one stall, near the north end by the memorial, has a small
+   red radio on its counter. **Expect:** soft music (a plucked tune over a
+   drone, like an old transistor radio) as you get near; it fades away as
+   you walk off. *I made this tune myself (no samples); I can't hear it, so
+   please tell me how it sounds.*
+5. **The memorial** has moved onto the sand: a pale stone column with a
+   pointed spire, on steps.
+6. **The lighthouse:** on the rocks just off the north end of the beach,
+   white with red bands. At dusk its lamp glows and a soft beam turns (one
+   turn every 8 s).
+7. F1 → Travel → **The photo spot (E3)**, look north. **Expect:** the
+   memorial's spire right in front of the lighthouse, its lamp just showing
+   over the spire's tip. Step a few metres to the side: the two separate.
+   (This is the spot Naresh's photo will be taken from in E3.)
+
+*Tell me:*
+- Does the empty, lit promenade feel right (eerie but still warm)?
+- The radio tune: nice, annoying, too loud, too quiet?
+- The lighthouse: size, place, the beam (too much? too faint?).
+- Is the nav's "NO SIGNAL" noticeable enough?
+
+### Decisions to confirm (provisional, my choices)
+1. **The memorial moved** onto the sand, 130 m in front of the photo spot,
+   so that the lighthouse stands exactly behind its spire (the E3 clue).
+2. **The lighthouse** is on rocks just off the north end of the beach, out
+   of reach (it's a landmark, not a place to go), about 28 m tall.
+3. **The nav loses its signal within about 400 m of the roses**, and gets it
+   back outside.
+4. **Dusk comes at the beach** and stays (the mood never brightens on the
+   way out).
+5. **The radio tune** is my own, procedurally made (`tools/gen/radio.py`), so
+   there's nothing to credit; a proper recording can replace it at the polish
+   stage if you like.

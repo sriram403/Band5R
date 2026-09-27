@@ -63,6 +63,7 @@ var parking_brake := true
 ## layer, which the driver's camera never draws. They have to talk.
 var nav_aside := false
 var nav_override: Callable              ## returns text to show instead (the ghat's pace notes), or ""
+var nav_signal_lost := false           ## Bessi: no signal (the screen flickers "NO SIGNAL")
 var _nav: Node3D
 var _nav_t := 0.0                  ## 0 = middle, 1 = aside (animated)
 var _mirrors: Array[SubViewport] = []
@@ -1034,6 +1035,13 @@ func _update_visuals(delta: float, speed: float, fwd_speed: float) -> void:
 func _nav_text() -> String:
 	if battery <= 0.02:
 		return ""
+	if nav_signal_lost:
+		# a flicker: the screen keeps trying and losing it
+		var k := int(Time.get_ticks_msec() / 250) % 11
+		if k == 3 or k == 7:
+			return ""
+		return "NO SIGNAL" if k < 6 else "NO SIGNAL
+searching..."
 	if nav_override.is_valid():
 		var t: String = nav_override.call()
 		if t != "":

@@ -12,7 +12,7 @@ extends Node
 const EASE := 0.012                   ## per second: 0.4 of the dial takes ~35 s
 ## [poi name, mood there]: the way out greys from P2's home to the coast.
 const WAY_OUT := [["p2_home", 1.0], ["j1", 0.95], ["j2", 0.85], ["bridge", 0.78],
-	["ghat_pass", 0.7], ["coast_tower", 0.62], ["roses", 0.6]]
+	["ghat_pass", 0.7], ["coast_tower", 0.62], ["roses", 0.6], ["beach", 0.4]]
 const REACH := 70.0                   ## m from a place to count as there
 
 ## Three looks the dial blends between: dark (0), grey (0.5), bright (1).

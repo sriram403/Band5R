@@ -355,6 +355,10 @@ func _landmarks() -> void:
 	_coast_watch()
 	_lookout(END_TOWER, 22.0, "EndTower", "OLD\nWATCHTOWER", Vector3(400, 0, -300), "end_tower")
 	_beach()
+	var bessi := Bessi.new()
+	bessi.name = "Bessi"
+	world.add_child(bessi)
+	bessi.setup(self)
 	_fishing_village()
 	_salt_pans()
 	_road_bridge("coast_road", "estuary_bridge")

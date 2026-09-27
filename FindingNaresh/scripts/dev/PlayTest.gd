@@ -31,7 +31,7 @@ const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traff
 ## base gym and one short world check per system. The long playthroughs are
 ## in the sets and in full (tools/test_plan.sh).
 const SMOKE_GYM := ["mouse", "taps", "enter", "cockpit", "exit", "swap"]
-const SMOKE_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "audio", "dev", "mirrors", "map", "story", "power", "relay_kb", "climb", "look", "pad", "perf", "save"]
+const SMOKE_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "audio", "dev", "mirrors", "map", "story", "power", "relay_kb", "climb", "look", "pad", "perf", "beach", "save"]
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
 const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "climb", "carry", "look", "pad", "teleports", "perf", "save"]
 
@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -6280,3 +6280,117 @@ func t_naresh() -> void:
 	await wait(0.5)
 	var fps := Engine.get_frames_per_second()
 	log_line("fps with Naresh about: %d" % fps)
+
+
+## E2, Bessi beach: the nav loses its signal coming in, the mood falls to
+## dusk at the beach, the stalls and lamps are lit, the radio plays, the
+## promenade walks on and off, and from the photo spot the lighthouse's lamp
+## stands just over the memorial's spire (E3's photo). `tools/run_test.sh beach`
+func t_beach() -> void:
+	var poi: Dictionary = boot.builder.poi
+	var c := camper()
+	c.repair_all()
+	var bessi := get_tree().get_first_node_in_group("bessi") as Bessi
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	check(bessi != null, "Bessi beach is built")
+	if bessi == null:
+		return
+	var p := p1()
+	var nav: Label3D = c._needles["nav_label"]
+	# the nav: fine at the coast watchtower, no signal in Bessi
+	mood.set_now(0.62)
+	boot.dev_menu.van_to(boot.dev_menu.van_spot(poi["coast_tower"] + Vector3(30, 0, 30)), 0.0)
+	await physics_frames(30)
+	await seat_p1_driver()
+	await wait(1.0)
+	check(not c.nav_signal_lost and not nav.text.contains("SIGNAL"), "at the coast watchtower the nav works (\"%s\")" % nav.text.replace("\n", " / "))
+	boot.dev_menu.van_to(boot.dev_menu.van_spot(poi["beach"] + Vector3(-45, 0, 0)), PI * 0.5)
+	await physics_frames(30)
+	await seat_p1_driver()
+	var seen := {}
+	var tt := 0.0
+	while tt < 3.0:
+		await get_tree().physics_frame
+		tt += 1.0 / 60.0
+		seen[nav.text] = true
+	log_line("nav in Bessi showed: %s" % str(seen.keys()).replace("\n", " / "))
+	check(c.nav_signal_lost and seen.keys().any(func(t): return String(t).contains("NO SIGNAL")), "in Bessi the nav loses its signal (\"NO SIGNAL\", flickering)")
+	await shot("beach_arrival")
+	await tap(KEY_E)
+	await wait(0.4)
+
+	# dusk at the beach
+	await place_player(p, poi["beach"] + Vector3(0, 0.3, 0), -PI * 0.5)
+	var dusk := await until(func() -> bool: return mood.target <= 0.41, 8.0)
+	check(dusk, "at the beach the mood falls to dusk (target %.2f)" % mood.target)
+	mood.set_now(0.4)
+
+	# the stalls and lamps lit, the radio playing by its stall
+	check(bessi.lights.size() >= 20, "the stalls and lamps have their lights (%d)" % bessi.lights.size())
+	check(bessi.radio != null and bessi.radio.playing and bessi.radio.stream != null, "a radio plays in one stall")
+	await place_player(p, poi["radio_stall"] + Vector3(0, 0.3, 0), PI * 0.5)
+	check(p.global_position.distance_to(bessi.radio.global_position) < bessi.radio.max_distance * 0.5, "you can hear it standing at its stall")
+	await look_at_point(p, bessi.radio.global_position)
+	await shot("beach_radio_stall")
+
+	# the promenade: along it, and up onto it from the sand
+	var north: Vector3 = poi["promenade_north"]
+	await place_player(p, north + Vector3(0, 0.3, 0), PI)
+	await shot("beach_promenade")
+	var along := await walk_to(p, north + Vector3(Bessi.shore_x(north.z + 60.0) - Bessi.shore_x(north.z), 0, 60.0), "along the promenade", 0.8, 25.0)
+	check(along, "you can walk 60 m along the promenade")
+	var z := north.z + 60.0
+	var sand := Vector3(Bessi.shore_x(z) - 30.0, 0, z)
+	sand.y = Landscape.ground(sand.x, sand.z) + 0.3
+	await place_player(p, sand, PI * 0.5)
+	var onto := await walk_to(p, Vector3(Bessi.shore_x(z) - 50.0, 0, z), "onto the promenade", 0.8, 12.0)
+	check(onto, "and step up onto it from the sand without jumping")
+
+	# the photo spot: the lamp just over the spire
+	var spot: Vector3 = poi["photo_spot"]
+	var tip: Vector3 = poi["memorial_spire"]
+	var lamp: Vector3 = poi["lighthouse_lamp"]
+	var eye := spot + Vector3.UP * (PlayerRig.STAND_HEIGHT - 0.16 - 0.1)
+	var yaw_tip := atan2(tip.x - eye.x, tip.z - eye.z)
+	var yaw_lamp := atan2(lamp.x - eye.x, lamp.z - eye.z)
+	var el_tip := rad_to_deg(atan2(tip.y - eye.y, Vector2(tip.x - eye.x, tip.z - eye.z).length()))
+	var el_lamp := rad_to_deg(atan2(lamp.y - eye.y, Vector2(lamp.x - eye.x, lamp.z - eye.z).length()))
+	log_line("photo spot: spire at %.2f deg up, lamp %.2f deg up, %.2f deg apart sideways; memorial %.0f m, lighthouse %.0f m" % [
+		el_tip, el_lamp, rad_to_deg(absf(angle_difference(yaw_tip, yaw_lamp))), eye.distance_to(tip), eye.distance_to(lamp)])
+	check(rad_to_deg(absf(angle_difference(yaw_tip, yaw_lamp))) < 0.3 and el_lamp > el_tip and el_lamp - el_tip < 0.8,
+		"from the photo spot the lighthouse's lamp stands just over the memorial's spire")
+	var q := PhysicsRayQueryParameters3D.create(eye, lamp.lerp(eye, 4.0 / eye.distance_to(lamp)), 1 | 8)
+	q.exclude = [p.get_rid()]
+	var edge := boot.world.get_node_or_null("WorldEdge") as CollisionObject3D
+	if edge != null:
+		q.exclude = [p.get_rid(), edge.get_rid()]     # the invisible wall out at sea hides nothing
+	var hit := p.get_world_3d().direct_space_state.intersect_ray(q)
+	if not hit.is_empty():
+		log_line("the line to the lamp hits %s at %s (%.0f m from the spot)" % [(hit["collider"] as Node).get_path(), hit["position"], eye.distance_to(hit["position"])])
+	var mem := boot.world.find_child("Memorial", true, false) as Node3D
+	log_line("memorial column at %s, spot %s, tip %s, lamp %s" % [(mem.get_node("Column") as Node3D).global_position if mem else Vector3.ZERO, spot, tip, lamp])
+	check(hit.is_empty(), "nothing solid between the photo spot and the lamp")
+	await place_player(p, spot + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, (tip + lamp) * 0.5)
+	await shot("beach_photo_view")
+	# a step to the side: the lighthouse comes out from behind the spire
+	var side := Vector3(-(lamp - spot).z, 0, (lamp - spot).x).normalized() * 6.0
+	await place_player(p, spot + side + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, (tip + lamp) * 0.5)
+	await shot("beach_photo_off")
+
+	# the frame rate at dusk, both views
+	boot._set_layout(Boot.Layout.SIDE_BY_SIDE)
+	await place_player(p2(), north + Vector3(1.5, 0.3, 2.0), PI)
+	await place_player(p, north + Vector3(-1.5, 0.3, 0.0), PI)
+	await wait(1.0)
+	_frame_times.clear()
+	await wait(3.0)
+	var avg := 0.0
+	for f in _frame_times:
+		avg += f
+	var fps := float(_frame_times.size()) / maxf(avg, 0.001)
+	log_line("fps on the promenade at dusk, both views: %.0f" % fps)
+	check(headless or fps >= 110.0, "the lit promenade at dusk keeps the frame rate (%.0f fps)" % fps)
+	await shot("beach_dusk_split")
+	mood.set_now(0.62)
