@@ -1723,8 +1723,9 @@ func t_feedback() -> void:
 	c.toggle_engine()
 	# 10: the nav points at your stamp, never at Bessi. The loop this test
 	# parks on is in Bessi itself, where the nav has no signal (E2): check it
-	# up at Last Fuel instead, then come back.
-	boot.dev_menu.van_to(boot.dev_menu.van_spot(b.poi["gas_station"] + Vector3(0, 0, 40)), 0.0)
+	# at the windmill junction instead (on the map from the start: driving
+	# anywhere new would mark it on the paper map), then come back.
+	boot.dev_menu.van_to(boot.dev_menu.van_spot(b.poi["j1"] + Vector3(15, 0, 15)), 0.0)
 	await physics_frames(20)
 	await seat_p1_driver()
 	if not c.engine_on:
