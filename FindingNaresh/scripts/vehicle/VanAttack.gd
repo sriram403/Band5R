@@ -38,6 +38,7 @@ var _away_t := 0.0
 var _engine_t := 0.0
 var _horn_t := 0.0
 var _honk_extra := 0.0            ## s of horn someone else is pressing (Naresh)
+var last_honk_ms := -1            ## when the horn last sounded (tests read it)
 var _drip_t := 0.0
 var _cough_t := 3.0
 var _pull_idle := 0.0
@@ -143,6 +144,7 @@ func _noises(delta: float, speed: float, throttle: float) -> void:
 	honk = honk or (_honk_extra > 0.0 and van.battery > 0.05)
 	_horn.target = 1.0 if honk else 0.0
 	if honk:
+		last_honk_ms = Time.get_ticks_msec()
 		_horn_t -= delta
 		if _horn_t <= 0.0:
 			_horn_t = 1.0

@@ -46,6 +46,7 @@ var state: int = State.IDLE
 var leader: PlayerRig = null      ## the player he follows (kept through jobs and rides)
 var job := ""                     ## carry, store, refuel, hold, work, get_in
 var job_target: Node = null
+var _has_target := false          ## a freed target reads as null: remember there was one
 var job_for: PlayerRig = null     ## who asked
 var job_step := 0
 var go_point := Vector3.ZERO
@@ -127,7 +128,10 @@ func _build() -> void:
 	_bubble = Build.label3d("", Vector3(0, 2.25, 0), Vector3.ZERO, 0.16, Color(1, 1, 0.92))
 	_bubble.name = "Speech"
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_bubble.no_depth_test = true
+	_bubble.fixed_size = true          # the same size on screen near or far
+	_bubble.pixel_size = 0.0011
+	# close by the subtitle says it; the bubble shows who, from further off
+	_bubble.visibility_range_begin = 7.0
 	_bubble.visible = false
 	add_child(_bubble)
 
@@ -283,6 +287,7 @@ func command(p: PlayerRig, id: String, target: Node = null, point := Vector3.ZER
 			_was_following = leader != null
 			job = id
 			job_target = target
+			_has_target = target != null
 			job_step = 0
 			state = State.JOB
 			if id == "get_in" and was_seated:
@@ -302,12 +307,14 @@ func _end_job() -> void:
 	pouring = false
 	job = ""
 	job_target = null
+	_has_target = false
 	job_step = 0
 	_path = PackedVector3Array()
 
 
 ## A job is over: back to following whoever he was following, else stand.
 func _job_done(line: String) -> void:
+	print("[naresh] %s ends at step %d: \"%s\"" % [job, job_step, line])
 	if line != "":
 		say(line)
 	_end_job()
@@ -320,7 +327,13 @@ func _job_failed(line: String) -> void:
 
 # --- the frame ---------------------------------------------------------------------
 
+var _last_state := -1
+var _last_step := -1
+
 func _physics_process(delta: float) -> void:
+	if state != _last_state:
+		print("[naresh] %s -> %s (job '%s' step %d)" % [State.keys()[_last_state] if _last_state >= 0 else "-", State.keys()[state], job, job_step])
+		_last_state = state
 	if _bubble_t > 0.0:
 		_bubble_t -= delta
 		if _bubble_t <= 0.0:
@@ -383,7 +396,10 @@ func _follow(delta: float) -> void:
 # --- jobs ---------------------------------------------------------------------
 
 func _do_job(delta: float) -> void:
-	if job_target != null and not is_instance_valid(job_target):
+	if job_step != _last_step:
+		print("[naresh] %s step %d (target %s, holding %s)" % [job, job_step, job_target.name if is_instance_valid(job_target) else "-", held.name if held else "-"])
+		_last_step = job_step
+	if _has_target and not is_instance_valid(job_target):
 		_job_failed("Where did it go? It's gone.")
 		return
 	match job:
@@ -468,10 +484,7 @@ func _job_store(delta: float) -> void:
 			drop_held()
 			_job_done("The rack's full. I've left it by the van.")
 			return
-		held = null
-		item.pouring = false
-		item.stow(slot)
-		Sfx.play3d("drop", item.global_position, -8.0)
+		_stow(item, slot)
 		_job_done("On the rack.")
 
 
@@ -496,6 +509,7 @@ func _job_refuel(delta: float) -> void:
 				_act_data["mistake_full"] = can
 				can = wrong
 		job_target = can
+		_has_target = true
 		job_step = 1
 		return
 	if can == null:
@@ -505,7 +519,7 @@ func _job_refuel(delta: float) -> void:
 		if _fetch_job(can, delta):
 			job_step = 2
 		return
-	if held != can:
+	if job_step in [2, 3, 4] and held != can:
 		_job_failed("I dropped it.")
 		return
 	if job_step == 2:
@@ -535,15 +549,14 @@ func _job_refuel(delta: float) -> void:
 		if _walk_to(v.rack_stand(), WALK, 0.8, delta):
 			var slot := v.free_slot_for(can)
 			if slot != null:
-				held = null
-				can.pouring = false
-				can.stow(slot)
+				_stow(can, slot)
 			else:
 				drop_held()
 			var full: FuelCan = _act_data.get("mistake_full")
 			if full != null and is_instance_valid(full):
 				job_step = 5
 				job_target = full
+				_has_target = true
 				return
 			_act_data.clear()
 			_job_done("Tank's topped up!" if v.fuel >= Camper.FUEL_CAPACITY - 0.1 else "Done. The can's empty.")
@@ -560,8 +573,7 @@ func _job_refuel(delta: float) -> void:
 		if _walk_to(v.rack_stand(), WALK, 0.8, delta):
 			var slot := v.free_slot_for(full)
 			if slot != null:
-				held = null
-				full.stow(slot)
+				_stow(full, slot)
 			else:
 				drop_held()
 			_mistake_done()
@@ -726,6 +738,18 @@ func drop_held() -> void:
 	it.pouring = false
 	it.release(self)
 	Sfx.play3d("drop", it.global_position, -8.0)
+
+
+## Onto a rack slot out of his hands (let go properly first, or the item
+## still counts him as holding it and nobody can pick it up again).
+func _stow(item: Carryable, slot: Node3D) -> void:
+	if held == item:
+		held = null
+		pouring = false
+		item.pouring = false
+		item.release(self)
+	item.stow(slot)
+	Sfx.play3d("drop", item.global_position, -8.0)
 
 
 func hold_point(item: Carryable) -> Vector3:
@@ -1132,6 +1156,8 @@ func _door_to_hold() -> Workable:
 
 ## Start an act now (dev menu, tests): skips the timer, still announced.
 func act_now(id := "") -> bool:
+	if state == State.ACT or _tele_t > 0.0 or state in [State.TAKEN, State.KNOCKED]:
+		return false
 	if id == "":
 		var pick := _choose_act()
 		if pick.is_empty():
@@ -1251,8 +1277,7 @@ func _do_act(delta: float) -> void:
 			if _walk_to(at, WALK, 0.9 if v != null else 1.7, delta):
 				var slot := v.free_slot_for(can) if v != null else null
 				if slot != null:
-					held = null
-					can.stow(slot)
+					_stow(can, slot)
 				else:
 					drop_held()
 				can.remove_from_group("naresh_find")

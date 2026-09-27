@@ -523,7 +523,7 @@ func _naresh_gym() -> void:
 		cr.dormant = not cr.dormant
 		sw_label.text = "CREATURE: asleep" if cr.dormant else "CREATURE: AWAKE"
 		lamp.material_override = ToonMat.flat(Color(0.3, 0.3, 0.32) if cr.dormant else Color(0.95, 0.2, 0.15)))
-	sw.position = Vector3(-12, 0, 38)
+	sw.position = Vector3(4, 0, 46)
 	world.add_child(sw)
 	poi["creature_switch"] = sw.position + Vector3(0, 1.3, 0)
 
@@ -546,6 +546,10 @@ func _naresh_gym() -> void:
 		world.add_child(Build.box(Vector3(0.3, 4.0, 0.3), ToonMat.make(Color(0.9, 0.3, 0.25)), at + Vector3(2, 2, 0), Vector3.ZERO, "DropPost"))
 		drop_points.append({"pos": at, "near": spec[1]})
 	poi["naresh_spawn"] = Vector3(-3, 0.1, 35)
+	# the mood dial, so dusk can be tried here (his headlights act, the dev menu)
+	var mood := Mood.new()
+	mood.name = "Mood"
+	world.add_child(mood)
 
 
 ## A gate panel that slides up out of a doorway (its collider goes with it).

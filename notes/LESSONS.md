@@ -113,6 +113,15 @@ The engine-level details (exact Godot calls, numbers) are also in
   readable text sizes) measurable before they went into the world.
 - **Test like a person too:** walk, don't teleport, where the layout matters
   (P2 couldn't get out of their own house while teleport tests passed).
+- **Stand where a person would stand** (E1): a test "picked up" a can from
+  7 m away; carried things let go beyond 2.4 m, so the can fell straight
+  back and the check failed for the wrong reason. Put the player next to
+  what they grab.
+- **Reactions come a step later** (E1): Naresh says "It's done!" on his next
+  physics step after the crank finishes; a check on the same step saw
+  nothing. Wait a few frames before checking what someone said or did.
+- **Log what characters say** (E1): hooking Naresh's lines into the test log
+  made every failure readable at once ("I dropped it." showed the bug).
 
 ## 4. Game design lessons (from the user's play)
 
@@ -161,6 +170,10 @@ The engine-level details (exact Godot calls, numbers) are also in
   the anchors.
 - **`Route.nearest` searches only nearby cells:** for a place well off the
   road, scan the road's points.
+- **A guard meant for some steps of a job, applied to all of them** (E1):
+  "is he still holding the can?" ran on the step where he had just put the
+  empty can down to fetch the full one, so the scripted refuel mistake
+  always ended in "I dropped it." Check per step.
 - **Build meshes from exact points when shape matters** (a `PrismMesh` came
   out lopsided).
 - **Patches through bash heredocs mangle backslashes:** use the edit tool for

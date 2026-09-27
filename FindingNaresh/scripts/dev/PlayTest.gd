@@ -5681,7 +5681,7 @@ func nz() -> Naresh:
 func naresh_job(p: PlayerRig, at: Vector3, job: String, quick := false) -> bool:
 	await look_at_point(p, at)
 	key(KEY_V, true)
-	await physics_frames(4)
+	await until(func() -> bool: return p.wheel_open, 0.5)
 	if not p.wheel_open:
 		key(KEY_V, false)
 		await physics_frames(2)
@@ -5734,6 +5734,7 @@ func t_naresh() -> void:
 	c.repair_all()
 	n.acts_on = false
 	n.act_t = 999.0
+	n.said.connect(func(t: String): log_line("  Naresh: \"%s\"" % t))
 	await place_player(p2(), Vector3(-160, 0.3, 160), 0.0)      # out of the way (and not "with" him)
 	await place_player(p, Vector3(-6, 0.25, 40), 0.0)
 	n.command(p, "wait")
@@ -5815,6 +5816,7 @@ func t_naresh() -> void:
 	check(await naresh_job(p, empty.global_position + Vector3.UP * 0.25, "store"), "an empty can offers 'Store it on the van'")
 	stored = await until(func() -> bool: return empty.stowed_in != null, 30.0)
 	check(stored and empty.stowed_in in [c.storage_slots[0], c.storage_slots[1]], "the empty can goes in a can slot")
+	check(empty.holders.is_empty() and box.holders.is_empty(), "on the rack they're out of his hands (anyone can take them)")
 
 	# refuel from the rack, told at the filler
 	var can_b := await reset_can("gym_can_full_b", FuelCan.CAPACITY)
@@ -5890,6 +5892,7 @@ func t_naresh() -> void:
 	since = Time.get_ticks_msec()
 	check(await naresh_job(p, crank.global_position, "work", true), "the crank offers 'Work the crank'")
 	var cranked := await until(func() -> bool: return crank.is_done, 25.0)
+	await physics_frames(3)      # he says so on his next step
 	check(cranked and n.said_since("done", since), "he cranks it up and says it's done")
 	await wait(1.0)
 	through = await walk_to(p, cgap + Vector3(0, 0, -4), "through the crank gate", 0.6, 12.0)
@@ -5904,6 +5907,7 @@ func t_naresh() -> void:
 	await physics_frames(5)
 	check(await naresh_job(p, can.global_position + Vector3.UP * 0.25, "carry"), "bring the can (again)")
 	await wait(0.5)
+	await face_point(p, can.global_position + Vector3.UP * 0.25, 1.2)
 	p.pick_up(can)
 	since = Time.get_ticks_msec()
 	var gave_up := await until(func() -> bool: return n.state != Naresh.State.JOB, 5.0)
@@ -5911,6 +5915,11 @@ func t_naresh() -> void:
 	p.drop_held()
 	await physics_frames(10)
 	var jug := boot.world.get_node("CoolantJug") as Carryable
+	await place_player(p, jug.global_position + Vector3(4, 0.25, 4), 0.0)
+	n.command(p, "wait")
+	n.global_position = jug.global_position + Vector3(-10, 0.2, 12)
+	n.reset_physics_interpolation()
+	await physics_frames(5)
 	check(await naresh_job(p, jug.global_position + Vector3.UP * 0.2, "carry"), "bring the coolant jug")
 	jug.queue_free()
 	since = Time.get_ticks_msec()
@@ -5971,7 +5980,9 @@ func t_naresh() -> void:
 	check(sat, "following P1, he gets in the back when P1 gets in")
 	await tap(KEY_E)
 	await wait(0.4)
-	await walk_to(p, p.global_position + p.global_transform.basis * Vector3(0, 0, -9), "away from the van", 0.6, 6.0)
+	var away := p.global_position - c.global_position
+	away.y = 0.0
+	await walk_to(p, p.global_position + away.normalized() * 10.0, "away from the van", 0.6, 6.0)
 	var followed := await until(func() -> bool: return n.state == Naresh.State.FOLLOW and n.global_position.distance_to(p.global_position) < 6.0, 12.0)
 	check(followed, "and gets out and follows when P1 walks off")
 
@@ -5982,17 +5993,21 @@ func t_naresh() -> void:
 	await place_player(q, n.global_position + Vector3(0, 0.2, 5), 0.0)
 	await look_at_point(q, n.global_position + Vector3.UP * 1.2)
 	pad_button(JOY_BUTTON_DPAD_UP, true)
-	await physics_frames(4)
+	await until(func() -> bool: return q.wheel_open, 0.5)
 	check(q.wheel_open, "P2 on a pad: D-Up opens the wheel")
+	log_line("P2's wheel: %s, sel %d" % [str(q.wheel_jobs), q.wheel_sel])
 	pad_button(JOY_BUTTON_DPAD_UP, false)
 	await physics_frames(4)
+	log_line("after D-Up: wheel %s, Naresh %s following P%d" % [q.wheel_open, Naresh.State.keys()[n.state], n.leader.index + 1 if n.leader else 0])
 	check(n.leader == q and n.state == Naresh.State.FOLLOW, "and a tap on him makes him follow P2 (the last command wins)")
 	await _unplug_test_pad()
 	await place_player(q, Vector3(-160, 0.3, 160), 0.0)
 	n.command(p, "follow")
 
-	# random acts, sped up: each announced 3 s before; good and bad
-	await reset_camper(0)
+	# random acts, sped up: each announced 3 s before; good and bad. By the
+	# van, 20 m from the hidden can (the good act that fits here)
+	boot.dev_menu.van_to(Vector3(-28, 0, -12), 0.0)
+	await physics_frames(30)
 	await place_player(p, c.global_transform * Vector3(6, 0, 3) + Vector3.UP * 0.3, 0.0)
 	n.global_position = p.global_position + Vector3(2, 0, 0)
 	n.reset_physics_interpolation()
@@ -6055,7 +6070,7 @@ func t_naresh() -> void:
 		if a["id"] == "honk" and int(a["start"]) > 0:
 			did_honk = true
 	if did_honk:
-		check(honked, "his honk act sounds the van's horn")
+		check(honked or c.attack.last_honk_ms > t0, "his honk act sounds the van's horn")
 	# not in the timed zone
 	var calm: Vector3 = boot.builder.poi["naresh_calm"]
 	n.acts_on = false
@@ -6075,13 +6090,118 @@ func t_naresh() -> void:
 	var came := await until(func() -> bool: return n.acts_log.size() > before, 30.0)
 	check(came, "out of the zone, the acts carry on")
 	await until(func() -> bool: return n.state != Naresh.State.ACT and n._tele_t <= 0.0, 40.0)
+	n.command(p, "wait")
 	n.act_gap = Naresh.ACT_GAP
-	var gap_ok := n.act_now() or true
+	var gap_ok := n.act_now()
 	await until(func() -> bool: return n._tele_t <= 0.0, 5.0)
 	check(n.act_t >= 180.0 and n.act_t <= 360.0 and gap_ok, "at the real setting the next act is 3-6 min away (%.0f s)" % n.act_t)
 	n.acts_on = false
 	n.command(p, "follow")
 	await wait(0.5)
+
+	# every other act once, each set up so it fits (act_now still announces it)
+	n.acts_on = true
+	n.act_t = 999.0
+	var near_van := c.global_transform * Vector3(5, 0, 2) + Vector3.UP * 0.3
+	await place_player(p, near_van + Vector3(3, 0, 0), 0.0)
+	n.command(p, "wait")
+	n.global_position = near_van
+	n.reset_physics_interpolation()
+	c.attack.set_tarp(true)
+	since = Time.get_ticks_msec()
+	check(n.act_now("tarp_off"), "act: 'pull the tarp off' fits with the van under it")
+	var untarped := await until(func() -> bool: return not c.attack.tarped, 15.0)
+	check(untarped and n.said_since("can't breathe", since), "he says the van can't breathe, and pulls the tarp off")
+	await until(func() -> bool: return n.state != Naresh.State.ACT, 5.0)
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	mood.set_now(0.3)
+	c.set_headlights(false)
+	check(n.act_now("headlights"), "act: 'headlights on' fits at dusk by the van")
+	var lit := await until(func() -> bool: return c.headlights_on, 5.0)
+	check(lit, "he switches the headlights on")
+	c.set_headlights(false)
+	mood.set_now(1.0)
+	check(not n.act_now("headlights"), "not in daylight")
+	c.puncture()
+	c.set_parking_brake(true)
+	await wait(0.5)
+	check(n.act_now("fix_tyre"), "act: 'fix the flat' fits with the van parked on a flat")
+	var fixed := await until(func() -> bool: return not c.tyre_flat, 45.0)
+	check(fixed and n.said_since("Sort of", since), "he fixes the flat by himself ('Sort of.')")
+	c.repair_all()
+	await until(func() -> bool: return n.state != Naresh.State.ACT, 5.0)
+	# holding the shutter for P1, unasked
+	handle.amount = 0.0
+	await place_player(p, gap + Vector3(0, 0.25, 3), PI)
+	n.command(p, "wait")
+	n.global_position = gap + Vector3(-6, 0.2, 6)
+	n.reset_physics_interpolation()
+	await physics_frames(3)
+	check(n.act_now("hold_door"), "act: 'hold the door' fits with P1 at the shutter")
+	up = await until(func() -> bool: return handle.amount >= 0.99, 15.0)
+	check(up, "he holds the shutter up for P1 without being asked")
+	n.command(p, "follow")
+	await until(func() -> bool: return handle.amount <= 0.01, 3.0)
+	# spotting a creature, with a tag on it
+	var crt := boot.world.get_node("GymCreature") as Creature
+	crt.dormant = false
+	n.command(p, "wait")
+	n.global_position = GymBuilder.NARESH_CREATURE + Vector3(-40, 0.2, 10)
+	n.reset_physics_interpolation()
+	await place_player(p, n.global_position + Vector3(-4, 0.05, 0), 0.0)
+	p.taken_grace = 30.0
+	check(n.act_now("spot_creature"), "act: 'someone's watching us' fits with a creature 40 m off")
+	await wait(3.4)
+	var tagm := TagMarker.of(p.index)
+	check(tagm != null and tagm.global_position.distance_to(crt.global_position + Vector3.UP * 2.0) < 3.0, "he tags the creature for P1")
+	crt.dormant = true
+	crt.global_position = GymBuilder.NARESH_CREATURE
+	crt.reset_physics_interpolation()
+	p.taken_grace = 0.0
+	# dropping what he carries, halfway to the van
+	var crate := boot.world.get_node("Crate0") as Carryable
+	await place_player(p, crate.global_position + Vector3(3, 0.25, 3), 0.0)
+	n.command(p, "wait")
+	n.global_position = crate.global_position + Vector3(4, 0.2, -2)
+	n.reset_physics_interpolation()
+	await physics_frames(3)
+	check(await naresh_job(p, crate.global_position + Vector3.UP * 0.3, "store"), "store a crate")
+	var carrying := await until(func() -> bool: return n.held == crate, 15.0)
+	await wait(1.0)
+	check(carrying and n.act_now("drop_it"), "act: 'drop it' fits while he carries something")
+	await wait(3.4)
+	await until(func() -> bool: return n.state != Naresh.State.JOB, 2.0)
+	check(n.held == null and crate.holders.is_empty() and n.state != Naresh.State.JOB, "he drops it ('Oops') and says so; it lies there for anyone to pick up")
+	n.acts_on = false
+	# knocked by the van: over he goes, and up again
+	boot.dev_menu.van_to(Vector3(-28, 0, -12), 0.0)
+	await physics_frames(30)
+	n.command(p, "wait")
+	n.global_position = c.global_transform * Vector3(0, 0, -20) + Vector3.UP * 0.2
+	n.global_position.y = Landscape.ground(n.global_position.x, n.global_position.z) + 0.2
+	n.reset_physics_interpolation()
+	await seat_p1_driver()
+	await tap(KEY_X)
+	await wait(0.8)
+	var knocked := false
+	key(KEY_W, true)
+	var kt := 0.0
+	while kt < 8.0 and not knocked:
+		await get_tree().physics_frame
+		kt += 1.0 / 60.0
+		knocked = n.state == Naresh.State.KNOCKED
+	key(KEY_W, false)
+	key(KEY_S, true)
+	await until(func() -> bool: return c.linear_velocity.length() < 0.3, 6.0)
+	key(KEY_S, false)
+	await tap(KEY_SPACE)
+	await tap(KEY_X)
+	check(knocked, "driving into him knocks him over (%.0f km/h)" % kmh())
+	since = Time.get_ticks_msec() - 8000
+	var up_again := await until(func() -> bool: return n.state != Naresh.State.KNOCKED, 8.0)
+	check(up_again and n.said_since("Ow!", since), "and he gets up: 'Ow! I'm fine!'")
+	await tap(KEY_E)
+	await wait(0.4)
 
 	# left alone near a creature, he's taken and left high up far away
 	var cr := boot.world.get_node("GymCreature") as Creature
