@@ -17,8 +17,10 @@ being built and tested), so this always shows where the work is right now.
   `../MPG_dev` and E4 (the roses) ahead of it. E3 **approved and pushed**.
   E4 (the roses) **approved and pushed**. E5 (the evidence) **approved and
   pushed**. E6 (the store and the boat) **approved and pushed**.
-  E7, the storm: **approved** (2026-09-29). E8: the full suite running,
-  then push and the end of Milestone E.
+  E7, the storm: **approved** (2026-09-29). E8: full run 85 scenarios (one
+  driver crash, resumed), 4 test-order failures in old world tests fixed and
+  rerun in order (0 failures); **pushed. Milestone E done.** Next:
+  Milestone F, discuss `design/RETURN.md`'s open questions first.
   Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
   Then E2, the Bessi beach greybox.
 
@@ -797,7 +799,7 @@ in `notes/TEST_MILESTONE_E.md`).
         gym: 0 failures (one stale check in t_boat fixed)
   - [x] F1 Story jumps to Bessi steps put everyone at the step (`t_step_jumps`)
   - [x] Your test: approved with its decisions (2026-09-29)
-- [~] E8. Full suite, `notes/TEST_MILESTONE_E.md`, push
+- [x] E8. Full suite, `notes/TEST_MILESTONE_E.md`, push (2026-09-29)
 
 ## Milestone F: The return and the ending
 - [ ] Storm gym: gusts that can throw the van; driving carefully gets through
