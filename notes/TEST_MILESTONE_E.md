@@ -405,7 +405,7 @@ In the normal `MPG` folder (`Play.bat`). Two ways in:
 - The thunder: I made it myself (like the radio); how does it sound?
 - Is it clear that north (the coast road) is the way?
 
-### Decisions to confirm (provisional, my choices)
+### Decisions to confirm (provisional, my choices): approved by you for now, 2026-09-29
 1. **The storm comes 6 s after both jobs**, whichever you do last.
 2. **The storm is a scene over the Beach Road, not weather yet**: the cloud,
    the rain curtains and the lightning stand there; driving into it (the
