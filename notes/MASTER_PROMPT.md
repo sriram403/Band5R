@@ -471,25 +471,15 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
    go in `MPG`. Bessi ends with the flag `storm_on` and the objective
    `end_e` ("North on the coast road"): F starts from there. After all
    milestones, remind the user of `notes/POLISH.md`.
-   (Milestone E, for reference:) The open questions are **answered** (user, 2026-09-26; the
-   "Decisions" at the end of `design/BESSI.md` and `design/NARESH.md`): roses
-   in travel order; evidence shown, not spelled out; the photo to P2; Naresh
-   commands on foot, in the van only from the passenger seat, on a key free
-   in both (not Q/G/LB: show the user); random acts every 3-6 min; **there was
-   never a friend** and the friend is never shown in any form.
-   Milestone F's questions (RETURN) are still open: ask before building F.
-1. (done) Milestone D, the way out (`notes/TODO.md` D1-D13, `DESIGN.md`,
-   `design/WAY_OUT.md`, `design/CREATURES.md`). **Both pages were approved on
-   2026-09-25** with every recommended answer (their "Decisions" sections).
-   D1-D10 are done (the four gyms, traffic, mood, windmill, power line, lift
-   bridge, ghat, coast watchtower, optional puzzles). Next: D13 ( lift bridge, ghat fog and the first attack,
-   coast watchtower, optional puzzles), then the full run D13.
-2. Then Milestones E-G follow `notes/TODO.md` / `DESIGN.md`.
-   New mechanics (tagging, binoculars, hiding, creatures, Naresh, storm) each get a
-   gym first. The merged `design/PUZZLES.md`, `design/WAY_OUT.md`,
-   `design/CREATURES.md`, `design/NARESH.md`, `design/BESSI.md` and
-   `design/RETURN.md` are proposals; discuss their open questions before building
-   their suggested choices.
+   The second copy `../MPG_dev` sits on branch `e7` (merged): start F
+   there on a new branch from main (`git -C ../MPG_dev switch -c f1 main`).
+1. Then Milestone G (`notes/TODO.md`, `DESIGN.md`). New mechanics each get
+   a gym first. The design pages (`design/*.md`) are proposals until their
+   open questions are answered by the user; the answered ones have a
+   "Decisions" section (WAY_OUT, CREATURES, BESSI, NARESH).
+2. At the end of every milestone: the full run, push, then ask the user
+   "continue in this thread, or shall I prepare the hand-over notes for a
+   new one?"
 
 ## 7. Hard-won technical lessons (don't relearn these)
 

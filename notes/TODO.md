@@ -6,23 +6,16 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- Milestone D: done, tested by you ("good to go"), Full suite 0 failures,
-  pushed (2026-09-27).
-- Milestone E: your answers are in (`design/BESSI.md`, `design/NARESH.md`,
-  "Decisions"). E1, the Naresh gym: **approved by you** ("liked it", the 8
-  decisions OK for now, 2026-09-27), full run clean, **pushed**. [~] E2,
-  Bessi beach: **approved by you** (and the radio tune, "for now",
-  2026-09-27), full world run clean (after test-order fixes and two
-  graphics-driver crashes, resumed), **pushed**. E3 (the photo) is built in
-  `../MPG_dev` and E4 (the roses) ahead of it. E3 **approved and pushed**.
-  E4 (the roses) **approved and pushed**. E5 (the evidence) **approved and
-  pushed**. E6 (the store and the boat) **approved and pushed**.
-  E7, the storm: **approved** (2026-09-29). E8: full run 85 scenarios (one
-  driver crash, resumed), 4 test-order failures in old world tests fixed and
-  rerun in order (0 failures); **pushed. Milestone E done.** Next:
-  Milestone F, discuss `design/RETURN.md`'s open questions first.
-  Command key chosen by you: **V** (keyboard) and **D-pad Up** (controller).
-  Then E2, the Bessi beach greybox.
+- Milestones A-E: done, each part tested and approved by you, full run
+  clean, **pushed** (Milestone E finished 2026-09-29, main `8c18ef3`).
+  Test sheets and your decisions: `notes/TEST_MILESTONE_E.md`.
+- **Next: Milestone F, the return.** First discuss the open questions in
+  `design/RETURN.md` with you (no building before your answers), then split
+  F into parts (F1, F2, ... like E; the storm gym first), one part at a time,
+  your test before each push.
+- The second copy `../MPG_dev` is on branch `e7` (fully merged into main):
+  for F, make a new branch from main there (`git -C ../MPG_dev switch -c f1 main`).
+- Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
 - [x] Cloud PR integration (2026-09-24): #1 headless/CI, #4 nine review fixes,
