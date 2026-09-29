@@ -15,14 +15,13 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-27, E1 (the Naresh gym) approved by the user (and its 8
-decisions, for now), full run clean, pushed; E2 (Bessi beach) approved and
-pushed. E3 (the photo, branch `e3`) and E4 (the roses, branch `e4`) are built
-in the second copy `../MPG_dev` (a git worktree): E3 next into main for the
-user's test.
-Milestones A-D are done, approved by the user and pushed. The user is back:
-one part at a time, their test before each push (rule 2). Now: E2 (the
-Bessi beach greybox), then hand over for their test.
+Last updated: 2026-09-29, Milestone E (Naresh and Bessi, E1-E7) done and
+approved by the user part by part (each with its decisions, "for now"); E8
+the full run and the push.
+Milestones A-E are done, approved by the user and pushed. The user is here:
+one part at a time, their test before each push (rule 2). Next: Milestone F
+(the return), whose open questions (`design/RETURN.md`) must be discussed
+with the user before anything is built.
 Start at section 6.
 
 ---
@@ -46,7 +45,7 @@ they/them.
 
 ---
 
-## 2. Status right now (2026-09-25)
+## 2. Status right now (2026-09-29)
 
 - **Stage 1** (prototype + feel pass) and **Milestone A** (homestead -> road trip ->
   water works -> broken bridge): done, approved, pushed.
@@ -179,6 +178,28 @@ they/them.
   (`PlayerRig`, `ui/CommandWheel.gd`), his subtitles (`PlayerHUD`), the
   `naresh` gym, F1 rows, `t_naresh` (0 failures, ~5 min). set:gyms 21
   scenarios 0 failures. **Approved by the user and pushed (2026-09-27).**
+- **Milestone E done (2026-09-27 to 29), each part approved and pushed**
+  (test sheets and decisions: `notes/TEST_MILESTONE_E.md`):
+  E2 the Bessi beach (`world/Bessi.gd`; promenade, stall lights, the radio
+  tune `tools/gen/radio.py`, the memorial on the photo line, lighthouse, the
+  nav's NO SIGNAL); E3 the photo (`world/Alignment.gd`, `core/PhotoCamera.gd`:
+  line up two landmarks within 2 m, the photo goes to P2's phone); E4 the
+  roses (`world/Roses.gd`: sunk until the photo spot is found, smoke, they
+  rise, carvings, Naresh sitting in the fifth); E5 the evidence
+  (`world/Evidence.gd`: his camp, footprints for one, packing up); E6 the
+  store and the boat (`world/BessiTasks.gd`, `items/FuelDrum.gd`: batteries
+  from the rolled-up store, the 40 L drum under an upturned boat that needs
+  three pairs of hands, Naresh on the wrong side first); E7 the storm
+  (`world/StormFront.gd`: a black bank over the Beach Road, rain, lightning,
+  thunder `tools/gen/thunder.py`; the roses sink; "my friend says we should
+  go north"; Bessi ends on the coast road north with Naresh in the back).
+  F1 → Story jumps to any Bessi step set the world up (`Story._bessi_state_for`)
+  and put both players, Naresh and the van at the step (`DevMenu.go_to_step`).
+  Tests: `set:bessi` (11 scenarios), `t_bessi_save`, `t_bessi_run` (Full).
+- **Working in two copies (user, 2026-09-27):** `MPG` runs the long tests,
+  `../MPG_dev` (a git worktree, branch per part) builds the next part at the
+  same time; two game instances measured fine (112 vs 144 fps). The user's
+  principles: `notes/PRINCIPLES.md`, `CLAUDE.md`.
 
 ---
 
@@ -336,6 +357,12 @@ MPG/
       ui/CommandWheel.gd        the job wheel round the crosshair (PlayerRig.wheel_*)
       world/Bessi.gd            E2 the beach: promenade, lights, radio, memorial on the
                                 photo line, lighthouse, the nav's "NO SIGNAL"
+      world/Alignment.gd, core/PhotoCamera.gd   E3: landmark pairs; a one-shot SubViewport photo
+      world/Roses.gd            E4: the Five Roses (sunk, smoke, rise, carvings, his seat)
+      world/Evidence.gd         E5: his camp, footprints, packing up
+      world/BessiTasks.gd       E6: the store (shutter, box of batteries), the upturned boat
+      items/FuelDrum.gd         E6: the 40 L drum, carried by two
+      world/StormFront.gd       E7: the storm bank over the Beach Road (flag storm_on)
       world/GymBuilder.gd       gyms: small flat test maps (extends LevelBuilder)
 ```
 
@@ -434,14 +461,17 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 6. What to do next
 
-**Milestones A-D are approved and pushed. Next, in this order:**
+**Milestones A-E are approved and pushed. Next, in this order:**
 
-0. **Milestone E** (`notes/TODO.md` E1-E8), one part at a time with the
-   user (they're testing step by step; rule 2). **E1 (the Naresh gym) is
-   approved and pushed**. **E2 in progress** (`world/Bessi.gd`: promenade,
-   stall lights, the radio, the memorial moved onto the photo line, the
-   lighthouse, the nav's lost signal; `t_beach`) **handed over**: wait for
-   the user's report, then push and E3 (the photo). The open questions are **answered** (user, 2026-09-26; the
+0. **Milestone F, the return** (`notes/TODO.md`, `design/RETURN.md`,
+   `DESIGN.md`). **First discuss RETURN.md's open questions with the user**
+   ("let's discuss" = no building yet), then break F into parts like E
+   (a gym first for the storm), one part at a time with the user's test
+   before each push. Build the next part in `../MPG_dev` while the long runs
+   go in `MPG`. Bessi ends with the flag `storm_on` and the objective
+   `end_e` ("North on the coast road"): F starts from there. After all
+   milestones, remind the user of `notes/POLISH.md`.
+   (Milestone E, for reference:) The open questions are **answered** (user, 2026-09-26; the
    "Decisions" at the end of `design/BESSI.md` and `design/NARESH.md`): roses
    in travel order; evidence shown, not spelled out; the photo to P2; Naresh
    commands on foot, in the van only from the passenger seat, on a key free
@@ -669,6 +699,20 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   `offset` is in those pixels too; `visibility_range_begin` hides it close up.
 - **Naresh's debug lines:** `[naresh] <state> -> <state>`, job steps and job
   ends are printed to the log; tests also log what he says.
+- **A story jump must set up the world, not just the objective:** each
+  Bessi step's flags are set / cleared in `Story._bessi_state_for`, the
+  groups `roses`, `evidence`, `bessi_tasks`, `storm_front` get
+  `match_story`, and `DevMenu.go_to_step` moves both players, Naresh and the
+  van there. A new story step needs a row in `STEP_PLACES` and in
+  `t_step_jumps`.
+- **World tests pass alone but fail in order** when an earlier one leaves
+  state behind (the lorry gone, a can on the rack, a running engine): each
+  test resets what it uses (`Roses.reset()`, `Lorry.reset()`, `engine_on()`
+  rather than toggling).
+- **A tilted collider wedges a character:** keep pushable things' colliders
+  upright; a stuck Naresh falls back to grid A* (`_force_grid`).
+- **Two game instances at once are fine here** (112 vs 144 fps); the NVIDIA
+  driver still crashes now and then on long runs (nvoglv64.dll): resume.
 
 ---
 
