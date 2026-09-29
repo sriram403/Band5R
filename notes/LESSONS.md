@@ -187,6 +187,18 @@ The engine-level details (exact Godot calls, numbers) are also in
 - **Log what characters say** (E1): hooking Naresh's lines into the test log
   made every failure readable at once ("I dropped it." showed the bug).
 
+- **A new feature changes what old tests start from** (the E8 full run,
+  2026-09-29): the sets for the new part were clean, but in the full order
+  three old world tests failed: the roses were now sunk until the photo, so
+  "the rose monument blocks the player" walked through the spot; the storm
+  test left the storm on, which holds the light at 0.3, so the mood test's
+  J2 check saw 0.3; a fix in the feedback test parked the van at J1, which
+  delivered Naresh's old text before the story test looked for it. When a
+  part changes the world's starting state or leaves state behind, search
+  the old tests for what they assume about it, and have the test that
+  changes it put it back. Only the full order finds these, so run it before
+  the push, not after.
+
 ## 4. Game design lessons (from the user's play)
 
 - **Give both players something to do, all the time.** The maze's hay dust
