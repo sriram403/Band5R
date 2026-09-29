@@ -563,6 +563,11 @@ func t_solid() -> void:
 			targets.append({"name": "tree 90 m+ from road", "pos": o})
 			break
 	var roses: Node = boot.world.get_node("FiveRoses")
+	# the roses stay sunk until the photo spot is found (E4): stand them up
+	var ro := get_tree().get_first_node_in_group("roses") as Roses
+	if ro != null:
+		ro.rise_now()
+		await physics_frames(3)
 	for c in roses.get_children():
 		if c.name.begins_with("Rose") and c is Node3D and c.get_child_count() > 3 and not (c is StaticBody3D):
 			targets.append({"name": "rose monument", "pos": (c as Node3D).global_position})
@@ -589,6 +594,8 @@ func t_solid() -> void:
 			check(p.global_position.y - top > -0.05, "player walks on top of the rose plaza, not inside it")
 		else:
 			check(min_d > 0.3, "%s blocks the player" % t["name"])
+	if ro != null:
+		ro.reset()
 
 
 ## Drive off the road into the woods at speed, then try to carry on.
@@ -1732,6 +1739,9 @@ func t_feedback() -> void:
 	# parks on is in Bessi itself, where the nav has no signal (E2): check it
 	# at the windmill junction instead (on the map from the start: driving
 	# anywhere new would mark it on the paper map), then come back.
+	# (being there would also deliver Naresh's old text at J1: put that back
+	# after, for the story test)
+	var had_text_j1: bool = boot.story.flags.has("text_j1")
 	boot.dev_menu.van_to(boot.dev_menu.van_spot(b.poi["j1"] + Vector3(15, 0, 15)), 0.0)
 	await physics_frames(20)
 	await seat_p1_driver()
@@ -1747,6 +1757,8 @@ func t_feedback() -> void:
 	log_line("nav with a fuel stamp: '%s'" % nav.text.replace("\n", " / "))
 	check(nav.text.begins_with("FUEL"), "the nav points at the latest map stamp")
 	await reset_camper(steep)
+	if not had_text_j1:
+		boot.story.flags.erase("text_j1")
 	# 10: map zoom
 	p.force_exit = true
 	await physics_frames(3)
@@ -4176,6 +4188,10 @@ func t_traffic_world() -> void:
 ## On the way out it falls, slowly, as the players reach each place.
 func t_mood() -> void:
 	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	# the Bessi tests run before this one and leave the storm on, which holds
+	# the light down (E7): put it away
+	boot.story.flags.erase("storm_on")
+	get_tree().call_group("storm_front", "match_story")
 	await place_player(p1(), boot.builder.player_spawns[0].origin, 0.0)
 	await place_player(p2(), boot.builder.player_spawns[0].origin + Vector3(2, 0, 0), 0.0)
 	mood.set_now(1.0)            # as at the start; earlier scenarios may have been out at the coast
