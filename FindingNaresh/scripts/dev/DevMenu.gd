@@ -647,6 +647,8 @@ const STEP_PLACES := {
 	"swing": ["swing_controls", "the swing bridge's controls, the van by the bridge"],
 	"tunnel": ["", "the van inside the rail tunnel, short of the flood gate"],
 	"mast": ["mast_foot", "the foot of the radio mast (the van on the road below)"],
+	"end_f7": ["", "the van on the road to Naresh's home, him in the back"],
+	"drive_home": ["", "the van at Naresh's home, him at home, the West Road ahead"],
 }
 
 func go_to_step(id: String) -> String:
@@ -696,6 +698,15 @@ func go_to_step(id: String) -> String:
 		c.repair_all()
 		c.fuel = FishingVillage.LOW_FUEL
 		at = c.global_transform * Vector3(-3.2, 0, -1.0)
+	elif id == "end_f7" or id == "drive_home":
+		# on the coast road ~200 m short of Naresh's home (him aboard), or at it
+		var road: Route = boot.builder.network.road("coast_road")
+		var home: Vector3 = poi["naresh_home_road"]
+		var i0 := int(road.nearest(home.x, home.z)["index"]) - (100 if id == "end_f7" else 0)
+		i0 = clampi(i0, 0, road.point_count() - 2)
+		van_to(road.point(i0), atan2(-road.forward(i0).x, -road.forward(i0).z))
+		c.repair_all()
+		at = c.global_transform * Vector3(-3.2, 0, -1.0)
 	elif id == "mast":
 		var road_at: Vector3 = poi["mast_road"]
 		van_to(van_spot(road_at), 0.0)
@@ -710,12 +721,12 @@ func go_to_step(id: String) -> String:
 	var nz: Naresh = boot.naresh
 	if id == "fuel":
 		c.fuel = FishingVillage.LOW_FUEL
-	if id in ["storm", "end_e", "village", "fuel", "salt_pans", "swing", "tunnel", "mast"]:
+	if id in ["storm", "end_e", "village", "fuel", "salt_pans", "swing", "tunnel", "mast", "end_f7"]:
 		# the return's dusk at once (it would ease down from the day over a minute)
 		var mood := get_tree().get_first_node_in_group("mood") as Mood
 		if mood != null:
 			mood.set_now(StormFront.MOOD)
-	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e", "village", "fuel", "salt_pans", "swing", "tunnel", "mast"]:
+	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e", "village", "fuel", "salt_pans", "swing", "tunnel", "mast", "end_f7"]:
 		var p1: PlayerRig = boot.players[0]
 		if nz.sitting:
 			nz.stand_from_seat(p1)

@@ -29,6 +29,14 @@ func _ready() -> void:
 	super._ready()
 
 
+## Picked up: found (the tracker counts it, F8).
+func grab(p) -> void:
+	super.grab(p)
+	var st := get_tree().get_first_node_in_group("story") as Story
+	if st != null:
+		st.flags["flare_gun_found"] = true
+
+
 func flares_left() -> int:
 	var st := get_tree().get_first_node_in_group("story") as Story
 	var used := int(st.flags.get("flares_used", 0)) if st != null else 0

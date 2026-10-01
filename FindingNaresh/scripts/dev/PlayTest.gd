@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -7291,6 +7291,94 @@ func t_mast() -> void:
 	log_line("fps by the dish screen, both views: %.0f (without the screen %.0f)" % [fps, fps_off])
 	check(headless or fps >= 110.0, "the dish screen keeps the frame rate (%.0f fps)" % fps)
 	boot._set_layout(Boot.Layout.SOLO)
+
+
+## Drive up to Naresh's home with him in the back and let the scene play.
+func home_arrive(hc: Homecoming) -> bool:
+	var st: Story = boot.story
+	var c := camper()
+	var n := nz()
+	await seat_p1_driver()
+	n.command(p1(), "get_in", c)
+	await until(func() -> bool: return n.state == Naresh.State.SEATED, 15.0)
+	await van_to(boot.builder.poi["naresh_home_road"])
+	await seat_p1_driver()
+	return await until(func() -> bool: return st.flags.has("naresh_home_done"), 70.0)
+
+
+## F8: Naresh's home, the tracker, the West Road, the watchtower's lights,
+## the end. `tools/run_test.sh home`
+func t_home() -> void:
+	var st: Story = boot.story
+	var hc := get_tree().get_first_node_in_group("homecoming") as Homecoming
+	check(hc != null and hc.lights.size() >= 10, "the homecoming: his family at the door, %d site lights" % (hc.lights.size() if hc else 0))
+	if hc == null:
+		return
+	var poi: Dictionary = boot.builder.poi
+	var c := camper()
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	boot.dev_menu.run("jump", st.index_of("end_f7"))
+	await wait(1.0)
+	check(st.current()["id"] == "end_f7" and not hc._mother.visible, "F1 jump: on the road to his home, him with you")
+	var t0 := Time.get_ticks_msec()
+	var home := await home_arrive(hc)
+	log_line("the scene took %.0f s" % ((Time.get_ticks_msec() - t0) / 1000.0))
+	check(home, "he walks to the door; his mother; his sister's look; he goes in")
+	check(not nz().visible and not Creature.on_return and mood.target >= Homecoming.HOME_MOOD - 0.01, "he's home: the creatures stop following, the light comes back")
+	check(not st.flags.has("tracker"), "the optional things not done: no tracker (and nobody says so)")
+	await until(func() -> bool: return st.current()["id"] == "drive_home", 3.0)
+	check(st.current()["id"] == "drive_home", "the objective: home along the West Road")
+	await look_at_point(p1(), hc.door + Vector3.UP * 1.5)
+	await shot("home_door")
+	# the West Road: full sun
+	var west: Route = boot.builder.network.road("west_road")
+	await van_to(west.point(west.point_count() / 2))
+	await wait(1.0)
+	check(mood.target >= Homecoming.SUN_MOOD - 0.01, "away down the West Road: full sun")
+	# the ending watchtower: the lights (the optional ones dark)
+	p1().force_exit = true
+	await physics_frames(3)
+	await place_player(p1(), poi["end_tower_deck"] + Vector3(0, 0.3, 0), 0.0)
+	await wait(0.5)
+	var dark := 0
+	for l in hc.lights:
+		if not l.visible:
+			dark += 1
+	check(st.flags.has("tower_view") and dark == 3, "from the watchtower: a light over every place, the 3 optional ones dark (%d dark)" % dark)
+	mood.set_now(1.0)
+	await look_at_point(p1(), poi["radio_mast"] + Vector3.UP * 40.0)
+	await shot("tower_lights")
+	# near home: the phones, then the end
+	var lane: Route = boot.builder.network.road("home_lane")
+	var hs: Vector3 = poi["homestead"]
+	var li := int(lane.nearest(hs.x, hs.z)["index"])
+	await van_to(lane.point(li + 40))
+	var ended := await until(func() -> bool: return st.flags.has("end_reached"), 5.0)
+	var msg: Dictionary = st.phone_threads[0][-1]
+	check(ended and String(msg["body"]).contains("LiveStander"), "near home, both phones: '%s'" % msg["body"])
+	await until(func() -> bool: return hc._end != null, 12.0)
+	await wait(5.5)
+	check(hc._end != null, "the end screen")
+	await shot("the_end")
+	hc._end.queue_free()
+	hc._end = null
+	hc._end_t = -1.0
+	# a second time with every optional thing done: the tracker
+	var maze := get_tree().get_first_node_in_group("barn_maze")
+	var relay := get_tree().get_first_node_in_group("lookout_relay")
+	maze.set("chest_open", true)
+	relay.set("opened", true)
+	for id in hc._fragments:
+		if not id in st.collected:
+			st.collected.append(id)
+	boot.dev_menu.run("jump", st.index_of("end_f7"))
+	await wait(1.0)
+	st.flags["flare_gun_found"] = true
+	check(hc.all_optional(), "every optional thing done (maze, relay, flare gun, %d fragments)" % hc._fragments.size())
+	var home2 := await home_arrive(hc)
+	check(home2 and st.flags.has("tracker"), "his sister: a tracker, 'For next time.'")
+	p1().force_exit = true
+	await physics_frames(3)
 
 
 func t_storm_gym() -> void:

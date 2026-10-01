@@ -85,6 +85,11 @@ func build() -> Node3D:
 	mast.name = "RadioMastFinale"
 	world.add_child(mast)
 	mast.setup(self)
+	# F8: Naresh's home, the tracker, the ending watchtower's lights, the end
+	var home := Homecoming.new()
+	home.name = "Homecoming"
+	world.add_child(home)
+	home.setup(self)
 	var mood := Mood.new()
 	mood.name = "Mood"
 	world.add_child(mood)
