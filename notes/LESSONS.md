@@ -263,6 +263,23 @@ The engine-level details (exact Godot calls, numbers) are also in
 - **Patches through bash heredocs mangle backslashes:** use the edit tool for
   lines with `\n`.
 
+- **A tuning hack for one feel breaks another** (F1): the van's centre of
+  mass sits below its floor so normal driving never flips it; so a van
+  thrown onto its side by a storm gust rolled back up like a toy, every
+  time, from 100 deg. The storm gives it a real van's centre of mass only
+  once a gust has it past 70 deg (`Storm._tip_check`), and R puts both back.
+- **Measure what the player ends with, not a peak:** "rolled past 60 deg"
+  counted as tipped while the van was back on its wheels a second later.
+  The check is where it comes to rest.
+- **Grip that never limits doesn't change anything:** lowering the tyres'
+  friction for a wet road made no difference to braking (the brakes, not
+  the tyres, were the limit). Wet braking is the brake force itself
+  (`Camper.WET_BRAKE`).
+- **The headlights shone backwards into the cab from stage 1 to F1**
+  (a SpotLight shines along its -Z; the van's nose is -Z, and the lights
+  were turned 180 deg). Nobody saw it in daylight; the first dark storm
+  shot did. Look at every new light in a dark shot.
+
 ## 6. Performance
 
 - **Every extra camera is a whole extra render.** The van's three mirrors
