@@ -14,8 +14,9 @@ being built and tested), so this always shows where the work is right now.
   fragments. F split into F1-F9 below.
 - F1 the storm gym: **approved by you (2026-10-01, with its 8 decisions)
   and pushed.**
-- [~] **F2 next:** the storm over the ghat and the Beach Road, the dead end
-  at J3; built in `../MPG_dev` on branch `f2` from main.
+- **F2 (the storm on the old road, the dead end at the bridge): built,
+  tested, merged into main, not pushed. Waiting for your test**
+  (`notes/TEST_MILESTONE_F.md`, section F2).
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -839,7 +840,11 @@ test before each push.
         hose and started the first ghat attack again; the jump now marks the
         way out's one-offs done
   - [x] `t_storm_road` (in set:bessi and full): 17 checks, 0 failures
-  - [~] set:bessi + bridge, power, save; then your test sheet (F2)
+  - [x] set:bessi (1 failure: the new test leaned on the storm the test
+        before left on; it sets its own start now) + bridge, power, save:
+        0 failures; storm + storm_road rerun in order: 0 failures
+  - [x] Merged into main; test sheet F2
+  - [ ] Your test, then push
   - [ ] Creatures drift to Naresh: moved to F3, where the return's creatures start
 - [ ] F3. Fishing village, R1 the decoy (fuel in the net shed, Naresh waits
       on the jetty); the scripted refuel mistake; the van dies past the village
