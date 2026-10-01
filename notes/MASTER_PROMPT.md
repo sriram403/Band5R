@@ -475,14 +475,14 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
    `--gym=storm`, `t_storm_gym`) is approved and pushed (2026-10-01).
    F2 (the storm on the old road: `StormFront` zone + `Storm`, the power
    line down, `LiftBridge.storm_blow`, `t_storm_road`) is approved and pushed
-   (2026-10-01).** Next F3 (fishing village R1,
-   the refuel mistake, creatures drift to Naresh). Next F2
-   (the storm over the ghat, the dead end at J3) in `../MPG_dev` on a new
-   branch from main. Build the next part in `../MPG_dev` while the long runs
-   go in `MPG`. Bessi ends with the flag `storm_on` and the objective
-   `end_e` ("North on the coast road"): F starts from there. After all
-   milestones, remind the user of `notes/POLISH.md`.
-   The second copy `../MPG_dev` sits on branch `e7` (merged): start F
+   (2026-10-01).** F3 (`world/FishingVillage.gd`, R1 the decoy, the refuel
+   mistake, `Creature.on_return`, `t_decoy`, `t_decoy_save`, `set:return`)
+   is merged into main, **not pushed: waiting for the user's test**
+   (`notes/TEST_MILESTONE_F.md` F3). Then F4 (the salt pans) in
+   `../MPG_dev` on a new branch from main. Build the next part in
+   `../MPG_dev` while the long runs go in `MPG`. After all milestones,
+   remind the user of `notes/POLISH.md`.
+   (Old note: `../MPG_dev` was on branch `e7` at the start of F: start F
    there on a new branch from main (`git -C ../MPG_dev switch -c f1 main`).
 1. Then Milestone G (`notes/TODO.md`, `DESIGN.md`). New mechanics each get
    a gym first. The design pages (`design/*.md`) are proposals until their
