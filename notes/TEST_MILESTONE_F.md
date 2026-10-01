@@ -94,10 +94,13 @@ you came: you go into the storm, and the road home that way is blocked.
 by the van at the start of the coast road, Naresh with you, and behind you
 over the hills a **black bank of storm cloud**.
 
+   **The van is already pointing north:** north is straight ahead out of
+   the windscreen; the storm is behind the van.
 1. **Get in** (Naresh too: look at the van, V, *Get in the back*). Drive
-   north a little way. **Expect:** dry, calm, no rain: the storm stays
+   straight ahead (north) a little way. **Expect:** dry, calm, no rain: the storm stays
    behind you.
-2. **Turn round and drive towards the black clouds.** Back past the dune
+2. **Turn round (so the van faces back the way its tail pointed) and drive
+   towards the black clouds.** Back past the dune
    with the roses, the road climbs away from the sea, south-west, up to the pass.
    **Expect:** as you get under the clouds: rain, wind, fog, the wipers
    start, gusts shove the van (slow down: under 25 km/h it can't tip).

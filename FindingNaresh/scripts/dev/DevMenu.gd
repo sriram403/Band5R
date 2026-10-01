@@ -634,8 +634,8 @@ const STEP_PLACES := {
 	"look_around": ["camp", "his camp"],
 	"batteries": ["store_door", "the store"],
 	"drum": ["boat_push", "the upturned boat"],
-	"storm": ["", "the van, at the start of the coast road"],
-	"end_e": ["", "the van, at the start of the coast road"],
+	"storm": ["", "the van, at the start of the coast road, pointing north; the storm is behind it"],
+	"end_e": ["", "the van, at the start of the coast road, pointing north; the storm is behind it"],
 }
 
 func go_to_step(id: String) -> String:
