@@ -8,6 +8,20 @@ to tell me. Your answers to the design questions are in `design/RETURN.md`
 Two players (P1 on keyboard + mouse, P2 on the controller), split screen.
 Note anything that feels wrong, slow, confusing or ugly, with the step number.
 
+**Testing F3 to F8 in one go (your plan, 2026-10-01).** F1 and F2 you've
+tested. F3-F8 were built back to back with my recommended answers; each part
+below has its steps and its "Decisions to confirm". Either:
+
+- **play straight through:** F1 → Story → "North on the coast road", then
+  drive on: the village (F3), the salt pans (F4), the estuary bridge (F5),
+  the rail tunnel (F6), the mast on the hill (F7), Naresh's home and the
+  drive home to the end (F8). By my automated drive the roads alone are
+  7.5 min; with the puzzles about 25-30 min; or
+- **jump to each part** with the F1 → Story row named at the top of its
+  section.
+
+Report per part (F3, F4, ...), and say which decisions you'd change.
+
 ---
 
 ## F1. The storm (the storm gym)
@@ -444,3 +458,20 @@ already inside.)
    13 of them, 3 optional (the barn maze, the lookout relay, the flare gun).
 6. **The end** comes within 250 m of either home, after the phones; a black
    end screen ("End of part one / Part two: LiveStander").
+
+---
+
+## F9. The whole return in one go (what I checked)
+
+- `return_run`: the van drove Bessi to home in one go, every new place on
+  the way, the puzzles done by script where the van gets to them: 7.5 min
+  of driving (village 0.9, salt pans 1.3, estuary 1.7, tunnel 3.2, below the
+  mast 3.8, Naresh's door 5.0, the ending watchtower 7.1, home 7.5).
+- It found three things no part's test had: (1) the swing bridge "locked"
+  by a load never moved its span (the van fell in the river); (2) the van
+  could be squeezed through the ground and fall for ever: it now has a
+  safety net (back where it last stood safely, with a message); (3) the
+  estuary bridge's deck edge (Milestone B's) stood up like a step and
+  stopped the van dead: ramps now.
+
+**What to look out for:** anything the van gets stuck on, anywhere.

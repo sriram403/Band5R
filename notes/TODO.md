@@ -27,7 +27,7 @@ being built and tested), so this always shows where the work is right now.
 - F6 the rail tunnel: built (local).
 - F7 the radio mast: built (local).
 - F8 Naresh's home and the ending: built (local).
-- [~] **F9: the whole return driven end to end, the full run**, then your test (from F3 on).
+- [~] **F9:** the whole return drives end to end (7.5 min of roads); the full run is going; then **your test, from F3 on** (`notes/TEST_MILESTONE_F.md`).
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -962,7 +962,15 @@ test before each push.
         with everything done; 3 lights dark). From the shots: his "wait"
         made him say "I'll wait here" after his goodbye (gone); the site
         lights were a pixel at 2-3 km (3x bigger)
-- [ ] F9. Full run (Bessi -> home, timed, about 29 min), `notes/TEST_MILESTONE_F.md`, push
+- [~] F9. Full run (Bessi -> home, timed, about 29 min), `notes/TEST_MILESTONE_F.md`, push
+  - [x] `t_return_run` (Full): Bessi to home in one drive, 7.5 min of
+        driving (+ ~20 min of puzzles = near the beat chart's 29). Found and
+        fixed: a locked span never moved (fell in the river); the van could
+        fall through the ground for ever (`Camper._safety_net`); the
+        estuary bridge's deck edge was a step (ramps)
+  - [x] The test sheet: how to test F3-F8 in one go, per part
+  - [~] The full run (in `MPG`, merged main, not pushed)
+  - [ ] Your test (F3 on); push after it
 
 ## Milestone G: Finish
 - [ ] The polish list (`notes/POLISH.md`): remind the user, agree the order, build it

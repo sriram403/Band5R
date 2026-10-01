@@ -477,7 +477,14 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
    line down, `LiftBridge.storm_blow`, `t_storm_road`) is approved and pushed
    (2026-10-01).** F3 (`world/FishingVillage.gd`, R1 the decoy, the refuel
    mistake, `Creature.on_return`, `t_decoy`, `t_decoy_save`, `set:return`)
-   is pushed (2026-10-01) but **not yet tested by the user**.
+   is pushed (2026-10-01) but **not yet tested by the user**. F4-F9 are
+   built and merged into main locally (not pushed): F4 `world/SaltPans.gd`,
+   F5 `puzzles/SwingBridge.gd`, F6 `world/RailTunnel.gd` +
+   `items/FlareGun.gd` + the van's bump start, F7 `puzzles/RadioMast.gd`,
+   F8 `world/Homecoming.gd`, F9 `t_return_run` (+ `Camper._safety_net`, the
+   estuary bridge's ramps). Tests: `set:return`, `return_run` in full.
+   **Waiting for the user's test from F3 on** (`notes/TEST_MILESTONE_F.md`),
+   then push; then Milestone G (remind the user of `notes/POLISH.md`).
    **Mode for the rest of F (user, 2026-10-01):** build F4-F9 with the
    recommended answers (each part's "Decisions to confirm" in
    `notes/TEST_MILESTONE_F.md`); the user tests once F is finished, from F3

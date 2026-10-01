@@ -251,6 +251,14 @@ The engine-level details (exact Godot calls, numbers) are also in
   span and a story gap a part's test would never meet. Keep a whole-journey
   run for every milestone.
 
+- **Scripted drivers: S on a stopped van is reverse** (F9): the end-to-end
+  drive "held" the van at a door by tapping S; once stopped, S reversed it
+  at full power into a house. Hold with the handbrake, as a person does.
+- **An old greybox can hide a trap for years:** the estuary bridge's deck
+  edge was a 0.3-0.5 m step from Milestone B on; it only stopped the van
+  on some lines and speeds (one run got over it, the next didn't). Drive
+  every structure end to end, more than once.
+
 ## 4. Game design lessons (from the user's play)
 
 - **Give both players something to do, all the time.** The maze's hay dust
