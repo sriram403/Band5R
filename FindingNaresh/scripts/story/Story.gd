@@ -129,7 +129,23 @@ func setup(b: Node) -> void:
 		{"id": "storm", "text": "The storm is coming. Everyone in the van, north on the coast road",
 			"hint": "Naresh too: have him follow you and he gets in the back, or V on the van (Get in the back). The coast road leaves the loop going north, past the lighthouse.",
 			"done": func(): return flags.has("storm_on") and _north_with_naresh()},
-		{"id": "end_e", "text": "North on the coast road (Milestone F comes next: the return)",
+		{"id": "end_e", "text": "North on the coast road",
+			"hint": "The coast road leaves Bessi going north, past the lighthouse, to a fishing village.",
+			"done": func(): return flags.has("fuel_low") or _van_near("fishing_village", 120.0)},
+		# F3, the fishing village (design/RETURN.md decision 5)
+		{"id": "village", "text": "Nearly out of fuel. The fishing village: the fuel's in the net shed",
+			"hint": "The net shed is padlocked: look around it, and above it. Two of them pace the village and keep turning towards Naresh: send him away (V on the ground far off, the end of the jetty: Go and wait there), and call him back (V on him: Follow me) before one reaches him.",
+			"done": func(): return flags.has("shed_open")},
+		{"id": "fuel", "text": "Fuel into the van",
+			"hint": "The heavy can's the full one. At the van: hold E at the fuel filler with the can in your hands.",
+			"done": func(): return flags.has("mistake_done") or (boot.camper != null and boot.camper.fuel > 8.0)},
+		{"id": "drive_on", "text": "North on the coast road",
+			"hint": "On towards the salt pans.",
+			"done": func(): return flags.has("stalled") or not flags.has("mistake_done")},
+		{"id": "stalled", "text": "The van's dry. Pour the full can in yourself, quickly",
+			"hint": "The full can's on the rack at the back. Hold E at the filler with it. Then get going.",
+			"done": func(): return flags.has("stall_fixed") or not flags.has("mistake_done")},
+		{"id": "end_f3", "text": "North on the coast road, to the salt pans (F4 comes next)",
 			"hint": "This is where the build ends for now.",
 			"done": func(): return false},
 	]
@@ -208,9 +224,12 @@ func jump_to(i: int) -> void:
 ## Bessi's steps depend on each other's state (the roses up, him met): a
 ## jump there sets what the earlier steps would have, and a jump back before
 ## them puts it all away again, so the world matches the objective.
-const BESSI_STEPS := ["photo", "roses", "naresh", "look_around", "batteries", "drum", "storm", "end_e"]
+## Bessi and on (E, F3): a jump to one of these sets the flags of every step before it.
+const BESSI_STEPS := ["photo", "roses", "naresh", "look_around", "batteries", "drum", "storm", "end_e",
+	"village", "fuel", "drive_on", "stalled", "end_f3"]
 const BESSI_FLAGS := ["photo_spot", "roses_up", "roses_open", "naresh_met", "packing", "packed",
-	"n1_slip", "batteries_got", "n2_wrong_done", "drum_free", "storm_on"]
+	"n1_slip", "batteries_got", "n2_wrong_done", "drum_free", "storm_on",
+	"fuel_low", "key_got", "shed_open", "mistake_done", "stalled", "stall_fixed"]
 
 func _bessi_state_for(id: String) -> void:
 	var k := BESSI_STEPS.find(id)
@@ -245,10 +264,16 @@ func _bessi_state_for(id: String) -> void:
 		flags["n2_wrong_done"] = true
 		flags["drum_free"] = true
 		flags["storm_on"] = true
+	if k >= 8:                  # F3: at the village on the last of the fuel
+		flags["fuel_low"] = true
+	if k >= 9:                  # the shed open
+		flags["key_got"] = true
+		flags["shed_open"] = true
 	get_tree().call_group("roses", "match_story")
 	get_tree().call_group("evidence", "match_story")
 	get_tree().call_group("bessi_tasks", "match_story")
 	get_tree().call_group("storm_front", "match_story")
+	get_tree().call_group("fishing_village", "match_story")
 	# Bessi is at dusk (you'd have walked onto the beach to get here)
 	var mood := get_tree().get_first_node_in_group("mood") as Mood
 	if k >= 0 and mood != null and mood.value > 0.4:

@@ -28,6 +28,9 @@ const LEFT_BEHIND := 45.0         ## m; the one he follows drove off: he waits t
 const ALONE := 12.0               ## m; nobody this close and the creatures can take him
 const REACH := 1.3                ## m from where he stands to use something
 const COMMAND_RANGE := 60.0       ## m; how far away he can be given a job
+const SNAG_RETRIES := 3           ## times he picks up a thing that snagged out of his hands
+var _snags := 0
+const ZOOMED_RANGE := 2.5         ## times that, looking through the binoculars (150 m)
 const HEAR := 40.0                ## m; players this close hear what he says
 const ACT_GAP := Vector2(180.0, 360.0)   ## s between random acts (the user's 3-6 min)
 const TELEGRAPH := 3.0            ## s from "Ooh, what's that?" to the act
@@ -93,7 +96,7 @@ var _step_phase := 0.0
 func _ready() -> void:
 	add_to_group("naresh")
 	collision_layer = 2
-	collision_mask = 1 | 8 | Carryable.LAYER
+	collision_mask = 1 | 8 | Carryable.LAYER | 64
 	floor_max_angle = deg_to_rad(52)
 	floor_snap_length = 0.5
 	set_meta("tag_name", "Naresh")
@@ -263,6 +266,7 @@ func command(p: PlayerRig, id: String, target: Node = null, point := Vector3.ZER
 		return
 	_cancel_act(false)
 	commands_given += 1
+	_snags = 0
 	var was_seated := state == State.SEATED
 	_end_job()
 	job_for = p
@@ -456,6 +460,17 @@ func _fetch_job(item: Carryable, delta: float) -> bool:
 	return r == 1
 
 
+## It snagged on something (a doorway, someone in the way) and slipped out of
+## his hands: he picks it up again and carries on, a few times. Dropped on
+## purpose (his "drop it" act) it stays dropped.
+func _pick_up_again(item: Carryable) -> bool:
+	if _snags >= SNAG_RETRIES or not item.holders.is_empty() or item.stowed_in != null:
+		return false
+	_snags += 1
+	job_step = 0
+	return true
+
+
 func _job_carry(delta: float) -> void:
 	var item := job_target as Carryable
 	if item == null:
@@ -466,6 +481,8 @@ func _job_carry(delta: float) -> void:
 			job_step = 1
 		return
 	if held != item:
+		if _pick_up_again(item):
+			return
 		_job_failed("I dropped it.")
 		return
 	var who := job_for
@@ -498,6 +515,8 @@ func _job_store(delta: float) -> void:
 			job_step = 1
 		return
 	if held != item:
+		if _pick_up_again(item):
+			return
 		_job_failed("I dropped it.")
 		return
 	if _walk_to(v.rack_stand(), WALK, 0.8, delta):
@@ -882,12 +901,21 @@ func _walk_to(goal: Vector3, speed: float, arrive: float, delta: float) -> bool:
 
 
 var _stuck_count := 0
+var _excuse_ms := -99999
 ## Stuck once on the way to this goal: plan round on the grid from now on.
 ## The straight-line check can't see a thing he's already touching (a ray
 ## that starts inside a collider doesn't hit it: the tilted boat, E6).
 var _force_grid := false
 
 func _stuck_long(goal: Vector3) -> void:
+	# someone's standing in his way: he asks, and waits (never gives up on it)
+	var p := _nearest_player()
+	if p != null and p.global_position.distance_to(global_position) < 1.4:
+		_stuck_count = 0
+		if Time.get_ticks_msec() - _excuse_ms > 5000:
+			_excuse_ms = Time.get_ticks_msec()
+			say("Excuse me!")
+		return
 	_stuck_count += 1
 	_path = PackedVector3Array()
 	_cells.clear()
@@ -1274,6 +1302,7 @@ func _start_act() -> void:
 			_act_over()
 		"drop_it":
 			var it := held
+			_snags = SNAG_RETRIES          # on purpose: it stays where it falls
 			drop_held()
 			if it != null:
 				it.linear_velocity = Vector3.UP * 1.5

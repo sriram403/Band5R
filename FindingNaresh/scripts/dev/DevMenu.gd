@@ -636,6 +636,8 @@ const STEP_PLACES := {
 	"drum": ["boat_push", "the upturned boat"],
 	"storm": ["", "the van, at the start of the coast road, pointing north; the storm is behind it"],
 	"end_e": ["", "the van, at the start of the coast road, pointing north; the storm is behind it"],
+	"village": ["", "the van, just short of the fishing village, on its last litre"],
+	"fuel": ["shed_door", "the net shed, open"],
 }
 
 func go_to_step(id: String) -> String:
@@ -656,6 +658,19 @@ func go_to_step(id: String) -> String:
 		van_to(road.point(i0), atan2(-road.forward(i0).x, -road.forward(i0).z))
 		c.repair_all()
 		at = c.global_transform * Vector3(-3.2, 0, -1.0)
+	elif id == "village":
+		# on the coast road ~150 m short of the village, facing it, nearly dry
+		var road: Route = boot.builder.network.road("coast_road")
+		var vz: float = LevelBuilder.FISHING_VILLAGE.z + 150.0
+		var i0 := 0
+		for i in road.point_count():
+			if road.point(i).z < vz:
+				i0 = i
+				break
+		van_to(road.point(i0), atan2(-road.forward(i0).x, -road.forward(i0).z))
+		c.repair_all()
+		c.fuel = FishingVillage.LOW_FUEL
+		at = c.global_transform * Vector3(-3.2, 0, -1.0)
 	else:
 		at = poi[spec[0]]
 		van_to(van_spot(at + Vector3(-18, 0, 6)), 0.0)
@@ -663,7 +678,14 @@ func go_to_step(id: String) -> String:
 	teleport(at)
 	# Naresh with you from the evidence on (before that he's in the rose, or not yet found)
 	var nz: Naresh = boot.naresh
-	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e"]:
+	if id == "fuel":
+		c.fuel = FishingVillage.LOW_FUEL
+	if id in ["storm", "end_e", "village", "fuel"]:
+		# the return's dusk at once (it would ease down from the day over a minute)
+		var mood := get_tree().get_first_node_in_group("mood") as Mood
+		if mood != null:
+			mood.set_now(StormFront.MOOD)
+	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e", "village", "fuel"]:
 		var p1: PlayerRig = boot.players[0]
 		if nz.sitting:
 			nz.stand_from_seat(p1)

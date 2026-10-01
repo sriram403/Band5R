@@ -372,6 +372,10 @@ func _landmarks() -> void:
 	world.add_child(storm)
 	storm.setup(self)
 	_fishing_village()
+	var village := FishingVillage.new()
+	village.name = "FishingVillageR1"
+	world.add_child(village)
+	village.setup(self)
 	_salt_pans()
 	_road_bridge("coast_road", "estuary_bridge")
 	_tunnel("coast_road")
@@ -419,10 +423,11 @@ func _place_fragment(id: String, at: Vector3, min_feet_y := -INF) -> void:
 	poi["fragment_" + id] = at
 
 
-func _place_can(at: Vector3, fill: float, tag: String) -> void:
+func _place_can(at: Vector3, fill: float, tag: String) -> FuelCan:
 	var can := FuelCan.create(fill)
 	can.name = "FuelCan_" + tag
 	world.add_child(can)
 	can.position = Vector3(at.x, _h(at.x, at.z) + 0.05, at.z)
 	can.rotation.y = float(tag.length()) * 0.37
 	poi[tag] = can.position
+	return can

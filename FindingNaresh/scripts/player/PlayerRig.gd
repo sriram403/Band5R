@@ -108,7 +108,7 @@ var _wheel_t := 0.0
 func _ready() -> void:
 	add_to_group("player")
 	collision_layer = 2
-	collision_mask = 1 | 8 | Carryable.LAYER   # world, vehicle body, loose items
+	collision_mask = 1 | 8 | Carryable.LAYER | 64   # world, vehicle body, loose items, the world edge
 	floor_max_angle = deg_to_rad(52)
 	floor_snap_length = 0.5
 	_build()
@@ -698,16 +698,18 @@ func command_look(nz: Naresh) -> Dictionary:
 		for a in vehicle.find_children("*", "CollisionObject3D", true, false):
 			ex.append((a as CollisionObject3D).get_rid())
 	var space := get_world_3d().direct_space_state
+	# through the binoculars he can be told from much further (the decoy, F3)
+	var reach := Naresh.COMMAND_RANGE * (Naresh.ZOOMED_RANGE if zoom > 2.0 else 1.0)
 	if nz.state != Naresh.State.SEATED:
 		var chest := nz.global_position + Vector3.UP * 1.1
 		var along := (chest - from).dot(fwd)
-		if along > 0.3 and along < Naresh.COMMAND_RANGE and (from + fwd * along).distance_to(chest) < 0.55 + along * 0.012:
+		if along > 0.3 and along < reach and (from + fwd * along).distance_to(chest) < 0.55 + along * 0.012:
 			var ex2: Array[RID] = ex.duplicate()
 			ex2.append(nz.get_rid())
 			var q0 := PhysicsRayQueryParameters3D.create(from, chest, 1 | 8, ex2)
 			if space.intersect_ray(q0).is_empty():
 				return {"col": nz, "point": nz.global_position}
-	var to := from + fwd * Naresh.COMMAND_RANGE
+	var to := from + fwd * reach
 	var q := PhysicsRayQueryParameters3D.create(from, to, 1 | 8 | Carryable.LAYER, ex)
 	var hit := space.intersect_ray(q)
 	var qa := PhysicsRayQueryParameters3D.create(from, to, 4, ex)

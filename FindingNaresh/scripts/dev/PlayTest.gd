@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -6631,6 +6631,188 @@ func t_storm_road() -> void:
 	check(lift.locked == st.flags.has("bridge_down"), "the leaf as the story left it (locked %s)" % lift.locked)
 
 
+## F3, the fishing village and R1 the decoy (design/RETURN.md decision 5).
+## `tools/run_test.sh decoy`
+func t_decoy() -> void:
+	var st: Story = boot.story
+	var fv := get_tree().get_first_node_in_group("fishing_village") as FishingVillage
+	check(fv != null and fv.creatures.size() == 2 and fv.can_full != null and fv.can_empty != null, "the village: two creatures, the shed with two cans")
+	if fv == null:
+		return
+	var poi: Dictionary = boot.builder.poi
+	var c := camper()
+	var p := p1()
+	var q := p2()
+	boot.dev_menu.run("jump", st.index_of("village"))
+	await wait(1.0)
+	var n := nz()
+	check(st.current()["id"] == "village" and c.fuel <= FishingVillage.LOW_FUEL + 0.01 and Creature.on_return, "F1 jump: short of the village on the last litre (%.1f L)" % c.fuel)
+	await shot("decoy_arrive")
+	# P1 and Naresh walk in towards the shed (teleported to the village edge)
+	var edge: Vector3 = fv.centre + Vector3(-45, 0, 30)
+	edge.y = Landscape.ground(edge.x, edge.z) + 0.3
+	await place_player(p, edge, 0.0)
+	await place_player(q, edge + Vector3(-2, 0, 2), 0.0)
+	n.global_position = edge + Vector3(1.5, 0, 1.5)
+	n.reset_physics_interpolation()
+	n.command(p, "wait")
+	await wait(4.0)
+	var drawn := 0
+	for cr in fv.creatures:
+		if cr.naresh_drawn:
+			drawn += 1
+	check(drawn == 2, "both turn and drift towards Naresh (%d of 2)" % drawn)
+	await look_at_point(p, fv.centre + Vector3(10, 2, 10))
+	await shot("decoy_village")
+	# the decoy: send him to the end of the jetty
+	await place_player(p, fv.jetty_start + Vector3(-6, 0.3, -4), 0.0)
+	await place_player(q, fv.jetty_start + Vector3(-8, 0.3, -6), 0.0)
+	n.global_position = fv.jetty_start + Vector3(-2, 0.2, 0)
+	n.reset_physics_interpolation()
+	await wait(0.3)
+	n.command(p, "go", null, fv.jetty_end)
+	var j := boot.world.get_node("Jetty") as StaticBody3D
+	log_line("jetty: centre %s, start %s, end %s, body at %s, waterline x %.0f; Naresh %s" % [fv.centre, fv.jetty_start, fv.jetty_end, j.global_position, fv.centre.x + Landscape.coast_inland(fv.centre.x, fv.jetty_start.z), n.global_position])
+	var got_out := await until(func() -> bool: return n.global_position.distance_to(fv.jetty_end) < 3.0, 90.0)
+	log_line("Naresh ended at %s" % n.global_position)
+	check(got_out, "he walks out to the end of the jetty (%.1f m from it)" % n.global_position.distance_to(fv.jetty_end))
+	await place_player(p, fv.centre + Vector3(-30, 0.3, 40), 0.0)
+	await place_player(q, fv.centre + Vector3(-32, 0.3, 42), 0.0)
+	await look_at_point(p, fv.jetty_end)
+	await shot("decoy_jetty")
+	# the decoy at work: P1 (keyboard) searches, P2 (pad) watches through the
+	# binoculars from the beach and calls him back
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	var t0 := Time.get_ticks_msec()
+	var shed: Vector3 = poi["net_shed"]
+	var clear := await until(func() -> bool:
+		for cr in fv.creatures:
+			if cr.global_position.distance_to(shed) < 25.0:
+				return false
+		return true, 60.0)
+	var clear_s := (Time.get_ticks_msec() - t0) / 1000.0
+	check(clear, "they leave the shed for him (clear after %.0f s)" % clear_s)
+	# up the fish crates with the real keys: W and jumps
+	var foot: Vector3 = poi["shed_crates"]
+	var roof_y: float = (poi["shed_roof"] as Vector3).y
+	await place_player(p, foot + Vector3(0, 0.3, 0), -PI * 0.5)     # facing +X, along the steps
+	await shot("decoy_crates")
+	key(KEY_W, true)
+	for _k in 7:
+		await tap(KEY_SPACE)
+		await wait(0.45)
+	key(KEY_W, false)
+	# at the top, turn left onto the roof
+	p.yaw = 0.0
+	p.rotation.y = 0.0
+	key(KEY_W, true)
+	await tap(KEY_SPACE)
+	await wait(0.8)
+	key(KEY_W, false)
+	await wait(0.4)
+	log_line("climb: P1 at y %.2f, the roof at %.2f" % [p.global_position.y, roof_y])
+	check(p.global_position.y > roof_y - 0.4, "up the stacked fish crates onto the shed roof")
+	await look_at_point(p, poi["shed_key"])
+	await wait(0.2)
+	await shot("decoy_roof")
+	check(p.prompt_text.contains("Take the key"), "the boat on the roof: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await physics_frames(3)
+	check(st.flags.has("key_got"), "the key, tied to a cork float")
+	await place_player(p, poi["shed_door"], 0.0)
+	await look_at_point(p, fv.door.global_position)
+	await wait(0.2)
+	check(p.prompt_text.contains("Unlock"), "at the door: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await physics_frames(3)
+	await until(func() -> bool: return st.current()["id"] == "fuel", 3.0)
+	check(st.flags.has("shed_open") and st.current()["id"] == "fuel", "the shed opens: next, fuel into the van")
+	var search_s := (Time.get_ticks_msec() - t0) / 1000.0
+	# P2 calls him back from the beach, 70 m off, through the binoculars
+	q.has_binoculars = true      # from the way out (the jump doesn't hand them over)
+	await place_player(q, fv.jetty_start + Vector3(-4, 0.3, 4), 0.0)
+	var closest := 999.0
+	for cr in fv.creatures:
+		closest = minf(closest, cr.global_position.distance_to(n.global_position))
+	log_line("decoy: shed clear %.0f s, shed open %.0f s after he reached the end; the nearest is %.0f m from him; P2 is %.0f m from him" % [clear_s, search_s, closest, q.global_position.distance_to(n.global_position)])
+	check(closest > 8.0 and n.state != Naresh.State.TAKEN, "searched in time: none has reached him yet (%.0f m)" % closest)
+	await look_at_point(q, n.global_position + Vector3.UP * 1.1)
+	pad_axis(JOY_AXIS_TRIGGER_LEFT, 1.0)
+	await wait(0.5)
+	await shot("decoy_binoculars")
+	log_line("recall: P2 zoom %.1f, binoculars %s, looking at %s" % [q.zoom, q.has_binoculars, q.command_look(n)])
+	pad_button(JOY_BUTTON_DPAD_UP, true)      # a press a few frames long, like a thumb
+	await physics_frames(5)
+	pad_button(JOY_BUTTON_DPAD_UP, false)
+	await physics_frames(4)
+	log_line("recall: Naresh %s, leader %s" % [Naresh.State.keys()[n.state], n.leader.name if n.leader != null else "-"])
+	pad_axis(JOY_AXIS_TRIGGER_LEFT, 0.0)
+	check(n.state == Naresh.State.FOLLOW and n.leader == q, "D-pad Up through the binoculars, %.0f m: he follows P2" % q.global_position.distance_to(n.global_position))
+	# the van parked at the village (as you would), P2 walks him back to it;
+	# P1 brings the full can
+	await van_to(fv.centre + Vector3(-40, 0, 10))
+	await place_player(q, c.global_transform * Vector3(-4, 0, 4) + Vector3(0, 0.3, 0), 0.0)
+	n.global_position = q.global_position + Vector3(1.5, 0, 1.5)
+	n.reset_physics_interpolation()
+	n.command(q, "follow")
+	await place_player(p, fv.can_full.global_position + Vector3(-1.2, 0.3, 0), -PI * 0.5)
+	await look_at_point(p, fv.can_full.global_position)
+	await tap(KEY_E)
+	await physics_frames(3)
+	check(p.held == fv.can_full, "P1 picks up the heavy can")
+	# P1 takes it out to the van and puts it down beside it
+	await place_player(p, c.global_transform * Vector3(-3.0, 0, 1.5) + Vector3(0, 0.3, 0), 0.0)
+	p.drop_held()
+	await physics_frames(5)
+	# Naresh at the shed: "there's two!" and he takes the light one to the van
+	n.global_position = poi["shed_door"] + Vector3(-2, 0, 1)
+	n.reset_physics_interpolation()
+	var helped := await until(func() -> bool: return fv._helped, 5.0)
+	check(helped and n.refuel_mistake, "Naresh: 'There's two! I'll take this one to the van.'")
+	var stored := await until(func() -> bool: return fv.can_empty.stowed_in != null, 90.0)
+	check(stored, "he puts the light can on the van's rack")
+	var did := await until(func() -> bool: return st.flags.has("mistake_done"), 60.0)
+	log_line("the mistake: fuel %.2f L, the full can %.1f L, the empty %.1f L" % [c.fuel, fv.can_full.litres, fv.can_empty.litres])
+	check(did and c.fuel < 1.0 and fv.can_full.litres > 19.0, "'Leave the fuel to me!' He fills it from the empty can (the full one untouched)")
+	await until(func() -> bool: return st.current()["id"] == "drive_on", 3.0)
+	check(st.current()["id"] == "drive_on", "and the story says drive on ('%s')" % st.current()["id"])
+	# drive on: it dies up the road, and one comes
+	n.command(q, "get_in", c)
+	await until(func() -> bool: return n.state == Naresh.State.SEATED, 15.0)
+	await seat_p1_driver()
+	q.enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await engine_on()
+	var north: Route = boot.builder.network.road("coast_road")
+	var stop := int(north.nearest(1640.0, -900.0)["index"])
+	var t1 := Time.get_ticks_msec()
+	var x0 := c.global_position
+	await drive_until(north, stop, func() -> bool: return st.flags.has("stalled"), 90.0, 40.0)
+	key(KEY_W, false)
+	var went := c.global_position.distance_to(x0)
+	log_line("stalled %.0f m on, after %.0f s" % [went, (Time.get_ticks_msec() - t1) / 1000.0])
+	check(st.flags.has("stalled") and went > 150.0 and went < 600.0, "the van coughs and dies %.0f m up the road" % went)
+	await wait(1.5)
+	var sc := boot.world.get_node_or_null("StallCreature") as Creature
+	check(sc != null and sc.global_position.distance_to(c.global_position) < 110.0, "up the road something steps out of the dark")
+	await shot("decoy_stalled")
+	# pour the full can in yourself
+	p.force_exit = true
+	await physics_frames(3)
+	await place_player(p, c.rack_stand() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, fv.can_full.global_position)
+	await tap(KEY_E)
+	await physics_frames(3)
+	check(p.held == fv.can_full, "P1 takes the full can off the rack")
+	await place_player(p, c.filler_stand() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, c.filler_point())
+	await hold_physics(KEY_E, 5.0)
+	log_line("poured: the tank %.1f L, the can %.1f L" % [c.fuel, fv.can_full.litres])
+	check(st.flags.has("stall_fixed") and st.current()["id"] == "end_f3", "the tank's filled: north on to the salt pans")
+	p.drop_held()
+	boot._set_layout(Boot.Layout.SOLO)
+
+
 func t_storm_gym() -> void:
 	var s := storm()
 	var c := camper()
@@ -7338,6 +7520,36 @@ func t_bessi_save() -> void:
 	PlayTest.carried_failures = _failures.duplicate()
 	PlayTest.resume = "bessi_save_verify"
 	boot.load_slot(2)
+
+
+## F3 saved and loaded: the key taken, the shed open, his mistake armed with
+## the light can on the rack. `tools/run_test.sh decoy_save` (its own process)
+func t_decoy_save() -> void:
+	var st: Story = boot.story
+	var fv := get_tree().get_first_node_in_group("fishing_village") as FishingVillage
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveGame.path(2)))
+	boot.dev_menu.run("jump", st.index_of("fuel"))
+	await wait(0.5)
+	var c := camper()
+	fv.can_empty.stow(c.free_slot_for(fv.can_empty))
+	nz().refuel_mistake = true
+	await physics_frames(5)
+	check(st.flags.has("shed_open") and not fv.door.visible and not fv.key_node.visible, "the shed open, the key taken")
+	check(SaveGame.write(boot, 2), "the journal writes the save")
+	PlayTest.carried_failures = _failures.duplicate()
+	PlayTest.resume = "decoy_save_verify"
+	boot.load_slot(2)
+
+
+func t_decoy_save_verify() -> void:
+	await wait(2.0)
+	var st: Story = boot.story
+	var fv := get_tree().get_first_node_in_group("fishing_village") as FishingVillage
+	await physics_frames(5)
+	log_line("after loading: objective %s, door %s, key %s, the light can %s, mistake %s" % [st.current()["id"], fv.door.visible, fv.key_node.visible, fv.can_empty.stowed_in, nz().refuel_mistake if nz() else "-"])
+	check(st.current()["id"] == "fuel" and not fv.door.visible and not fv.key_node.visible, "loaded: still 'fuel into the van', the shed open, the key gone")
+	check(fv.can_empty.stowed_in != null and fv._helped and nz() != null and nz().refuel_mistake, "the light can on the rack, his mistake still to come")
+	check(Creature.on_return, "and the creatures still follow him")
 
 
 func t_bessi_save_verify() -> void:
