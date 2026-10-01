@@ -17,8 +17,8 @@ being built and tested), so this always shows where the work is right now.
 - F2 (the storm on the old road, the dead end at the bridge): **approved by
   you (2026-10-01, its 5 decisions) and pushed**, with the fix from your
   test (the rain followed P2 left at J3).
-- Next: **F3** (fishing village R1, the refuel mistake, creatures drift to
-  Naresh).
+- [~] **F3 the fishing village (the decoy):** design agreed with you
+  (`design/RETURN.md` decision 5); being built in `../MPG_dev` (branch `f3`).
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -854,8 +854,16 @@ test before each push.
         the fishing village you were thrown and spun round (likely a gust
         rolling the van into you, from the same bug; watch for it). Pushed
   - [ ] Creatures drift to Naresh: moved to F3, where the return's creatures start
-- [ ] F3. Fishing village, R1 the decoy (fuel in the net shed, Naresh waits
+- [~] F3. Fishing village, R1 the decoy (fuel in the net shed, Naresh waits
       on the jetty); the scripted refuel mistake; the van dies past the village
+      (design agreed 2026-10-01: `design/RETURN.md` decision 5)
+  - [ ] Creatures drift towards Naresh on the return (within 120 m, slowly)
+  - [ ] The village: a jetty, two creatures pacing huts <-> shed, the shed
+        locked, fish crates to climb, the boat on the roof with the key, a
+        full can inside; the van's tank low on arrival
+  - [ ] Naresh as bait: they follow him down the jetty; recalled from afar
+  - [ ] Leaving: the scripted mistake armed; the van dies ~300 m on, they come
+  - [ ] Story steps, F1 jumps, save; `t_decoy` (short, real controls)
 - [ ] F4. Salt pans, R2 red light / green light (dashes between heaps, the
       spotter calls go / tarp)
 - [ ] F5. Estuary bridge, R3 the three-hand swing bridge (two cranks and a

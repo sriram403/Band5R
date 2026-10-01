@@ -116,6 +116,18 @@ end screen. Creatures and Naresh from their own pages.
    tunnel's flare gun, and every puzzle Memory Fragment. The Bessi store
    batteries are dropped (a required step since E6).
 
+5. **R1, the decoy (fishing village), agreed 2026-10-01:** two creatures pace
+   between the huts and the net shed; on the return creatures drift towards
+   Naresh. Send him to wait at the end of the jetty: they follow him out and
+   the shed side clears. The shed's key is in a small boat on its flat roof
+   (climb stacked fish crates). The watcher (binoculars, from the van's roof
+   or a hut) calls him back from afar (look at him, V, Follow me) before one
+   reaches him; taken, he's dropped high up 200-400 m away (time lost, no
+   fail). The van arrives low on fuel (the lamp on near the village); the
+   shed holds a full can. Leaving, he "refuels" with the empty one (the
+   scripted mistake); the van dies ~300 m on and the creatures, following
+   him, come while you pour the full can yourself.
+
 Found while checking the page against the built world: the scripted refuel
 mistake already exists (`Naresh.refuel_mistake`, E1); it only needs arming at
 the fishing village.
