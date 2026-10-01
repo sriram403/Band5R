@@ -638,6 +638,7 @@ const STEP_PLACES := {
 	"end_e": ["", "the van, at the start of the coast road, pointing north; the storm is behind it"],
 	"village": ["", "the van, just short of the fishing village, on its last litre"],
 	"fuel": ["shed_door", "the net shed, open"],
+	"salt_pans": ["", "the van, just short of the salt pans, Naresh in the back"],
 }
 
 func go_to_step(id: String) -> String:
@@ -655,6 +656,14 @@ func go_to_step(id: String) -> String:
 			if road.point(i).z < 470.0:
 				i0 = i
 				break
+		van_to(road.point(i0), atan2(-road.forward(i0).x, -road.forward(i0).z))
+		c.repair_all()
+		at = c.global_transform * Vector3(-3.2, 0, -1.0)
+	elif id == "salt_pans":
+		# on the coast road ~100 m short of the open ground, facing it
+		var road: Route = boot.builder.network.road("coast_road")
+		var start: Vector3 = poi["salt_pans_start"]
+		var i0 := int(road.nearest(start.x, start.z)["index"]) - 50
 		van_to(road.point(i0), atan2(-road.forward(i0).x, -road.forward(i0).z))
 		c.repair_all()
 		at = c.global_transform * Vector3(-3.2, 0, -1.0)
@@ -680,12 +689,12 @@ func go_to_step(id: String) -> String:
 	var nz: Naresh = boot.naresh
 	if id == "fuel":
 		c.fuel = FishingVillage.LOW_FUEL
-	if id in ["storm", "end_e", "village", "fuel"]:
+	if id in ["storm", "end_e", "village", "fuel", "salt_pans"]:
 		# the return's dusk at once (it would ease down from the day over a minute)
 		var mood := get_tree().get_first_node_in_group("mood") as Mood
 		if mood != null:
 			mood.set_now(StormFront.MOOD)
-	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e", "village", "fuel"]:
+	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e", "village", "fuel", "salt_pans"]:
 		var p1: PlayerRig = boot.players[0]
 		if nz.sitting:
 			nz.stand_from_seat(p1)

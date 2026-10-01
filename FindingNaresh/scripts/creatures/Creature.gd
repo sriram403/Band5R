@@ -377,7 +377,7 @@ func _move(delta: float) -> void:
 	naresh_drawn = false
 	match state:
 		State.WANDER:
-			var nz := _naresh()
+			var nz := _naresh() if not passive else null      # a watcher at its post stays put
 			naresh_drawn = nz != null and _noticed_t >= ATTEND
 			if _noticed_t < ATTEND:
 				goal = global_position       # stop and look (below)

@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -6811,6 +6811,124 @@ func t_decoy() -> void:
 	check(st.flags.has("stall_fixed") and st.current()["id"] == "end_f3", "the tank's filled: north on to the salt pans")
 	p.drop_held()
 	boot._set_layout(Boot.Layout.SOLO)
+
+
+## F4, the salt pans and R2 red light / green light. `tools/run_test.sh saltpans`
+func t_saltpans() -> void:
+	var st: Story = boot.story
+	var sp := get_tree().get_first_node_in_group("salt_pans") as SaltPans
+	check(sp != null and sp.heaps.size() >= 5 and sp.watcher != null, "the salt pans: the gantry with its watcher, %d salt heaps" % (sp.heaps.size() if sp else 0))
+	if sp == null:
+		return
+	var c := camper()
+	boot.dev_menu.run("jump", st.index_of("salt_pans"))
+	await wait(1.0)
+	check(st.current()["id"] == "salt_pans" and sp.watcher.global_position.y > sp.centre.y + SaltPans.GANTRY_H - 0.5, "F1 jump: short of the pans, the watcher up on its gantry")
+	await look_at_point(p1(), sp.eye)
+	await shot("pans_gantry")
+	# it looks one way, then another
+	var lo := 9.0
+	var hi := -9.0
+	for _k in 60:
+		await wait(0.25)
+		lo = minf(lo, sp.gaze)
+		hi = maxf(hi, sp.gaze)
+	log_line("gaze swept %.0f deg in 15 s" % rad_to_deg(hi - lo))
+	check(rad_to_deg(hi - lo) > 40.0, "its gaze turns from one stare to the next")
+	# behind a heap: hidden; in the open: seen
+	sp.auto_sweep = false
+	var heap: Vector3 = sp.heaps[2]
+	var away := Vector3(heap.x - sp.eye.x, 0, heap.z - sp.eye.z).normalized()
+	await van_to(heap + away * 9.0)
+	await physics_frames(10)
+	var to := c.global_position - sp.eye
+	sp.gaze = atan2(-to.x, -to.z)
+	await physics_frames(3)
+	check(not sp.van_in_view(c), "behind a salt heap, right in its gaze: hidden")
+	var gap := (sp.heaps[2] + sp.heaps[3]) * 0.5
+	await van_to(gap + Vector3(gap.x - sp.eye.x, 0, gap.z - sp.eye.z).normalized() * 9.0)
+	await physics_frames(10)
+	to = c.global_position - sp.eye
+	sp.gaze = atan2(-to.x, -to.z)
+	await physics_frames(3)
+	check(sp.van_in_view(c), "between two heaps, in its gaze: in plain view")
+	await shot("pans_in_view")
+	# stopped in the open it takes a moment; moving, at once
+	await wait(SaltPans.STILL_SEEN + 0.6)
+	check(sp.seen and st.flags.has("pans_seen"), "stopped in the open, it sees the van after %.1f s" % SaltPans.STILL_SEEN)
+	await physics_frames(20)
+	check(not sp.watcher.passive and sp.watcher.state == Creature.State.VAN, "it drops off the gantry and comes for the van")
+	# a careful crossing: a spotter's calls, dash and stop behind the heaps
+	boot.dev_menu.run("jump", st.index_of("salt_pans"))
+	await wait(1.0)
+	check(not sp.seen and sp.watcher.passive, "a jump back: it's up on its gantry again")
+	sp.auto_sweep = true
+	await seat_p1_driver()
+	await engine_on()
+	var road: Route = boot.builder.network.road("coast_road")
+	var ad := AutoDriver.new(self, road, c)
+	ad.lane = -1.8
+	var t0 := Time.get_ticks_msec()
+	var stops := 0
+	var was_go := true
+	while not st.flags.has("pans_crossed") and not sp.seen and (Time.get_ticks_msec() - t0) < 150000:
+		await physics_frames(1)
+		var v := c.global_position - sp.eye
+		var vdir := Vector2(v.x, v.z).normalized()
+		var now_a := absf(rad_to_deg(Vector2(-sin(sp.gaze), -cos(sp.gaze)).angle_to(vdir)))
+		var next_a := absf(rad_to_deg(Vector2(-sin(sp._to), -cos(sp._to)).angle_to(vdir)))
+		var after_a := absf(rad_to_deg(Vector2(-sin(sp.next_aim()), -cos(sp.next_aim())).angle_to(vdir)))
+		var leaving := sp._t > sp._hold_now() * 0.5     # the next turn is coming
+		var danger := now_a < SaltPans.CORNER + 8.0 or next_a < SaltPans.CORNER + 8.0 or (leaving and after_a < SaltPans.CORNER + 8.0)
+		var hidden := sp._hidden(c)
+		# a careful driver: go while it looks away; when it turns your way,
+		# stop behind a heap, or dash on if the next one hides you in a moment,
+		# else freeze where you are
+		var fwd := -c.global_transform.basis.z
+		var stop_at := sp.hidden_at(c.global_position + c.linear_velocity * 0.45)  # where braking now ends
+		var soon := sp.hidden_at(c.global_position + c.linear_velocity * 1.4)
+		var back := sp.hidden_at(c.global_position - fwd * 4.0)
+		var go := not danger or (not stop_at and soon and kmh() > 8.0)
+		if go:
+			ad.step(28.0)
+		elif (kmh() < 1.0 or c.linear_velocity.dot(fwd) < 0.0) and not hidden and back:
+			# overshot the cover: back into it (S, stopped, reverses)
+			ad.steer_only()
+			key(KEY_W, false)
+			key(KEY_S, true)
+		else:
+			ad.steer_only()
+			key(KEY_W, false)
+			key(KEY_S, kmh() > 0.5 and (c.linear_velocity.dot(fwd) > 0.0))
+		if go != was_go:
+			log_line("  %.0f s: %s (%s, %.0f km/h, gaze %.0f deg off, next %.0f)" % [(Time.get_ticks_msec() - t0) / 1000.0, "GO" if go else "STOP", "hidden" if hidden else "open", kmh(), now_a, next_a])
+		if go != was_go and not go:
+			stops += 1
+		was_go = go
+	ad.release()
+	key(KEY_S, false)
+	var took := (Time.get_ticks_msec() - t0) / 1000.0
+	await shot("pans_careful_end")
+	log_line("careful crossing: %s after %.0f s, %d stops behind heaps" % ["crossed unseen" if st.flags.has("pans_crossed") and not sp.seen else ("SEEN" if sp.seen else "not across"), took, stops])
+	check(st.flags.has("pans_crossed") and not sp.seen, "dashing between heaps, stopping behind them when it turns: across unseen")
+	await until(func() -> bool: return st.current()["id"] == "end_f4", 3.0)
+	check(st.current()["id"] == "end_f4", "on to the estuary bridge")
+	# reckless: straight across at speed gets seen
+	boot.dev_menu.run("jump", st.index_of("salt_pans"))
+	await wait(1.0)
+	await seat_p1_driver()
+	await engine_on()
+	var ad2 := AutoDriver.new(self, road, c)
+	ad2.lane = -1.8
+	var t1 := Time.get_ticks_msec()
+	while not sp.seen and not st.flags.has("pans_crossed") and (Time.get_ticks_msec() - t1) < 60000:
+		await physics_frames(1)
+		ad2.step(45.0)
+	ad2.release()
+	log_line("reckless crossing: %s (it glanced round %d times)" % ["seen" if sp.seen else "not seen", sp.glances])
+	check(sp.seen, "straight across without stopping: it sees the van")
+	p1().force_exit = true
+	await physics_frames(3)
 
 
 func t_storm_gym() -> void:

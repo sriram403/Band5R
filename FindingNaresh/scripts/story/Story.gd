@@ -145,7 +145,14 @@ func setup(b: Node) -> void:
 		{"id": "stalled", "text": "The van's dry. Pour the full can in yourself, quickly",
 			"hint": "The full can's on the rack at the back. Hold E at the filler with it. Then get going.",
 			"done": func(): return flags.has("stall_fixed") or not flags.has("mistake_done")},
-		{"id": "end_f3", "text": "North on the coast road, to the salt pans (F4 comes next)",
+		{"id": "end_f3", "text": "North on the coast road, to the salt pans",
+			"hint": "The coast road runs on north along the shore.",
+			"done": func(): return _van_near("salt_pans_start", 90.0)},
+		# F4, the salt pans (R2): across the open ground without being seen
+		{"id": "salt_pans", "text": "Open salt flats, and something on the old gantry watching the road",
+			"hint": "Its gaze is the pale beam. Move while it looks away; stop behind a salt heap when it turns your way (the heap must be between you and it). Stopped in the open it sees you too, unless the tarp's on. The passenger can watch it; Naresh calls out, not always right.",
+			"done": func(): return flags.has("pans_crossed")},
+		{"id": "end_f4", "text": "North on the coast road, to the estuary bridge (F5 comes next)",
 			"hint": "This is where the build ends for now.",
 			"done": func(): return false},
 	]
@@ -226,10 +233,11 @@ func jump_to(i: int) -> void:
 ## them puts it all away again, so the world matches the objective.
 ## Bessi and on (E, F3): a jump to one of these sets the flags of every step before it.
 const BESSI_STEPS := ["photo", "roses", "naresh", "look_around", "batteries", "drum", "storm", "end_e",
-	"village", "fuel", "drive_on", "stalled", "end_f3"]
+	"village", "fuel", "drive_on", "stalled", "end_f3", "salt_pans", "end_f4"]
 const BESSI_FLAGS := ["photo_spot", "roses_up", "roses_open", "naresh_met", "packing", "packed",
 	"n1_slip", "batteries_got", "n2_wrong_done", "drum_free", "storm_on",
-	"fuel_low", "key_got", "shed_open", "mistake_done", "stalled", "stall_fixed"]
+	"fuel_low", "key_got", "shed_open", "mistake_done", "stalled", "stall_fixed",
+	"pans_seen", "pans_crossed"]
 
 func _bessi_state_for(id: String) -> void:
 	var k := BESSI_STEPS.find(id)
@@ -269,11 +277,16 @@ func _bessi_state_for(id: String) -> void:
 	if k >= 9:                  # the shed open
 		flags["key_got"] = true
 		flags["shed_open"] = true
+	if k >= 12:                 # the village behind you: the mistake made and mended
+		flags["mistake_done"] = true
+		flags["stalled"] = true
+		flags["stall_fixed"] = true
 	get_tree().call_group("roses", "match_story")
 	get_tree().call_group("evidence", "match_story")
 	get_tree().call_group("bessi_tasks", "match_story")
 	get_tree().call_group("storm_front", "match_story")
 	get_tree().call_group("fishing_village", "match_story")
+	get_tree().call_group("salt_pans", "match_story")
 	# Bessi is at dusk (you'd have walked onto the beach to get here)
 	var mood := get_tree().get_first_node_in_group("mood") as Mood
 	if k >= 0 and mood != null and mood.value > 0.4:

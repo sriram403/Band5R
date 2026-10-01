@@ -377,6 +377,10 @@ func _landmarks() -> void:
 	world.add_child(village)
 	village.setup(self)
 	_salt_pans()
+	var pans := SaltPans.new()
+	pans.name = "SaltPansR2"
+	world.add_child(pans)
+	pans.setup(self)
 	_road_bridge("coast_road", "estuary_bridge")
 	_tunnel("coast_road")
 	_naresh_home()
