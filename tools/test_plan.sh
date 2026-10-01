@@ -38,6 +38,7 @@ test_plan() {
 		echo "creature|van"
 		echo "naresh|naresh"
 		echo "photo|photo_gym"
+		echo "storm|storm_gym"
 		echo "traffic|traffic,lorry"
 		echo "house|house"
 		echo "tyre|tyre"

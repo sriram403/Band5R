@@ -5032,7 +5032,11 @@ func t_mirrors() -> void:
 	await shot("mirror_rear")
 	p._seat_yaw = 0.0
 	p.pitch = PlayerRig.SEATED_PITCH
-	# the nav, swung to the passenger with N
+	# the nav, swung to the passenger with N. Hidden from the driver only with
+	# two screens: in the one-screen view one person plays both seats (and with
+	# no controller plugged in the game starts in it), so set two screens here
+	var start_layout: int = boot.layout
+	boot._set_layout(Boot.Layout.SIDE_BY_SIDE)
 	await tap(KEY_N)
 	await wait(0.6)
 	var label: Label3D = c._needles["nav_label"]
@@ -5051,6 +5055,13 @@ func t_mirrors() -> void:
 	await tap(KEY_N)
 	await wait(0.6)
 	check(not c.nav_aside and driver_cam.cull_mask & label.layers != 0, "N swings it back to the middle for both")
+	boot._set_layout(Boot.Layout.SOLO)
+	await tap(KEY_N)
+	await wait(0.6)
+	check(c.nav_aside and label.layers == 1, "in the one-screen view, swung aside it still shows (one person plays both seats)")
+	await tap(KEY_N)
+	await wait(0.6)
+	boot._set_layout(start_layout)
 	q.exit_vehicle()
 	await physics_frames(3)
 	p.force_exit = true
