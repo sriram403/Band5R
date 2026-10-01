@@ -236,6 +236,12 @@ The engine-level details (exact Godot calls, numbers) are also in
 - **Heredocs with quotes and apostrophes break the shell:** write notes
   through a script file, not a bash heredoc.
 
+- **A merge with a new `class_name` script greys out `Play.bat`** (F3, the
+  user's launch): Godot only learns new class names on an import; the test
+  runner imports first, `Play.bat` didn't, and nothing ran in `MPG` after
+  the merge. `Play.bat` now imports when any script is newer than the class
+  list. After a merge, start the game once in `MPG` before handing over.
+
 ## 4. Game design lessons (from the user's play)
 
 - **Give both players something to do, all the time.** The maze's hay dust
