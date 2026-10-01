@@ -98,7 +98,7 @@ over the hills a **black bank of storm cloud**.
    north a little way. **Expect:** dry, calm, no rain: the storm stays
    behind you.
 2. **Turn round and drive towards the black clouds.** Back past the dune
-   with the roses, the road climbs away from the sea, west, up to the pass.
+   with the roses, the road climbs away from the sea, south-west, up to the pass.
    **Expect:** as you get under the clouds: rain, wind, fog, the wipers
    start, gusts shove the van (slow down: under 25 km/h it can't tip).
    Over the pass and down the two hairpins to the bottom (J3).
@@ -114,7 +114,7 @@ over the hills a **black bank of storm cloud**.
    down again, the lamps lit.
 
 **Short cut (to skip the long drive):** after step 1, **F1 → Travel →
-"Foot of the ghat (J3)"**, then **F1 → Van → bring the van**, and drive on
+"Foot of the ghat (J3)"**, then **F1 → Van → "Bring the van here"**, and drive on
 from there (step 3). Or Travel → "The pass" to start at the top.
 
 ### Decisions to confirm (F2)
