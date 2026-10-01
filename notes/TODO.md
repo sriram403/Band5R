@@ -17,8 +17,8 @@ being built and tested), so this always shows where the work is right now.
 - F2 (the storm on the old road, the dead end at the bridge): **approved by
   you (2026-10-01, its 5 decisions) and pushed**, with the fix from your
   test (the rain followed P2 left at J3).
-- [~] **F3 the fishing village (the decoy):** design agreed with you
-  (`design/RETURN.md` decision 5); being built in `../MPG_dev` (branch `f3`).
+- **F3 the fishing village (the decoy): built, tested, merged into main, not
+  pushed. Waiting for your test** (`notes/TEST_MILESTONE_F.md`, section F3).
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -880,7 +880,8 @@ test before each push.
         snagged in a 1.4 m door; P1 standing at the rack made him give up
         ("Excuse me!" now, and he picks up a snagged thing again)
   - [x] `t_decoy` 21 checks + `t_decoy_save` 5: 0 failures
-  - [~] Regression: set:creatures, the Naresh gym, set:bessi, teleports, smoke
+  - [x] Regression: set:creatures 7, the Naresh gym, set:bessi 12, teleports,
+        smoke 23: 0 failures, no script errors. Merged into main (not pushed)
   - [ ] Your test (`notes/TEST_MILESTONE_F.md` F3), then push
 - [ ] F4. Salt pans, R2 red light / green light (dashes between heaps, the
       spotter calls go / tarp)
