@@ -7381,6 +7381,118 @@ func t_home() -> void:
 	await physics_frames(3)
 
 
+## F9: the whole return in one drive, Bessi to home (Full only). The van
+## drives every road; the puzzles are done by script where the van gets to
+## them (each has its own test); the timings are logged against the beat
+## chart's ~29 min. `tools/run_test.sh return_run`
+func t_return_run() -> void:
+	var st: Story = boot.story
+	var b = boot.builder
+	var c := camper()
+	var fv := get_tree().get_first_node_in_group("fishing_village") as FishingVillage
+	var sp := get_tree().get_first_node_in_group("salt_pans") as SaltPans
+	var sb := get_tree().get_first_node_in_group("swing_bridge") as SwingBridge
+	var rt := get_tree().get_first_node_in_group("rail_tunnel") as RailTunnel
+	var hc := get_tree().get_first_node_in_group("homecoming") as Homecoming
+	boot.dev_menu.run("jump", st.index_of("storm"))
+	await wait(1.0)
+	var n := nz()
+	var path := (b.network as RoadNetwork).chain([["coast_road"], ["west_road"]])
+	var hs: Vector3 = b.poi["homestead"]
+	var stop_at := int(path.nearest(hs.x, hs.z)["index"])
+	var start_i := int(path.nearest(c.global_position.x, c.global_position.z)["index"])
+	log_line("return path: %d samples, %.1f km; from %d to %d" % [path.point_count(), path.total_length / 1000.0, start_i, stop_at])
+	# the van's safety net: pushed down through the ground, it comes back
+	await wait(2.5)
+	var safe := c.global_position
+	c.global_position = safe + Vector3(0, -12.0, 0)
+	await physics_frames(3)
+	check(c.global_position.distance_to(safe) < 1.5, "the van's safety net: under the ground, it's put back where it stood (%.1f m off)" % c.global_position.distance_to(safe))
+	n.command(p1(), "get_in", c)
+	await until(func() -> bool: return n.state == Naresh.State.SEATED, 15.0)
+	await seat_p1_driver()
+	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await engine_on()
+	c.parking_brake = false
+	var ad := AutoDriver.new(self, path, c)
+	ad.lane = -1.8
+	var t := 0.0
+	var stuck := 0.0
+	var marks := {}
+	var places := [["fishing_village", 90.0], ["salt_pans_start", 40.0], ["swing_near", 40.0], ["tunnel_in", 40.0], ["mast_road", 60.0], ["naresh_home_road", 40.0], ["end_tower", 300.0], ["homestead", 250.0]]
+	var stopped_home := false
+	while t < 2400.0 and not st.flags.has("end_reached"):
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		var hold := false
+		# Naresh's home: stop at the door and let the scene play
+		if not st.flags.has("naresh_home_done") and st.flags.has("mast_done") and c.global_position.distance_to(b.poi["naresh_home_road"]) < 18.0:
+			hold = true
+			if not stopped_home:
+				stopped_home = true
+				log_line("at Naresh's home after %.1f min" % (t / 60.0))
+		if hold:
+			# stopped at the door: brake, then the handbrake (S stopped is reverse)
+			ad.steer_only()
+			key(KEY_W, false)
+			key(KEY_S, kmh() > 0.5 and -c.global_transform.basis.z.dot(c.linear_velocity) > 0.0)
+			if kmh() < 0.5 and not c.parking_brake:
+				c.set_parking_brake(true)
+		else:
+			key(KEY_S, false)
+			ad.step(-1.0)
+		stuck = stuck + 1.0 / 60.0 if kmh() < 2.0 and not hold else 0.0
+		for pl in places:
+			if not b.poi.has(pl[0]):
+				continue
+			var at: Vector3 = b.poi[pl[0]]
+			if not marks.has(pl[0]) and Vector2(c.global_position.x - at.x, c.global_position.z - at.z).length() < float(pl[1]):
+				marks[pl[0]] = t
+		# the village (t_decoy): the fuel found and poured, no mistake
+		if st.flags.has("fuel_low") and not st.flags.has("stall_fixed"):
+			for f in ["key_got", "shed_open", "mistake_done", "stalled", "stall_fixed"]:
+				st.flags[f] = true
+			fv.match_story()
+			c.fuel = 50.0
+		# the salt pans (t_saltpans): it looks out to sea the whole time
+		if sp.auto_sweep:
+			sp.auto_sweep = false
+			sp.gaze = sp._base + PI
+		# the estuary (t_swing): swung back before the van gets there
+		if not sb.locked and c.global_position.distance_to(sb.pivot) < 150.0:
+			sb._lock(true)
+		# the tunnel (t_tunnel): someone holds the winch while the van goes by
+		if c.global_position.distance_to(rt.gate.global_position) < 70.0 and not st.flags.has("gate_through"):
+			rt.winch.work_by(p2(), 1.0 / 60.0)
+		# the mast (t_mast): done on the hill above while the van waits below
+		if not st.flags.has("mast_done") and marks.has("mast_road"):
+			for f in ["gen_running", "dish_1", "dish_2", "dish_3", "mast_done"]:
+				st.flags[f] = true
+			(get_tree().get_first_node_in_group("radio_mast") as RadioMast).match_story()
+			# (players walk up to the mast for real: here the story moves on)
+			if st.index < st.index_of("end_f7"):
+				st.index = st.index_of("end_f7")
+		if c.fuel < 8.0:
+			c.fuel = 40.0
+	ad.release()
+	key(KEY_W, false)
+	key(KEY_S, false)
+	var times := []
+	for pl in places:
+		times.append("%s %s" % [pl[0], ("%.1f" % (float(marks[pl[0]]) / 60.0)) if marks.has(pl[0]) else "-"])
+	log_line("RETURN: %s after %.1f min of driving; at (min): %s; objective '%s'" % ["home" if st.flags.has("end_reached") else "NOT home", t / 60.0, ", ".join(times), st.current()["id"]])
+	if not st.flags.has("end_reached"):
+		log_line("  stuck at %s, %.0f km/h, story '%s'" % [c.global_position, kmh(), st.current()["id"]])
+		await shot("return_stuck")
+	check(st.flags.has("naresh_home_done"), "the van drove Naresh home: the coast road, the pans, the swing bridge, the tunnel, past the mast")
+	check(st.flags.has("end_reached"), "and on home along the West Road to the end (%.1f min of driving)" % (t / 60.0))
+	await until(func() -> bool: return hc._end != null, 15.0)
+	check(hc._end != null, "the end screen")
+	if hc._end != null:
+		hc._end.queue_free()
+		hc._end = null
+
+
 func t_storm_gym() -> void:
 	var s := storm()
 	var c := camper()
