@@ -366,6 +366,15 @@ MPG/
       world/BessiTasks.gd       E6: the store (shutter, box of batteries), the upturned boat
       items/FuelDrum.gd         E6: the 40 L drum, carried by two
       world/StormFront.gd       E7: the storm bank over the Beach Road (flag storm_on)
+      world/Storm.gd            F1/F2: gusts, rain, fog, lightning, wet road (per player / van);
+                                StormFront gives it its zone over the old road, the dead end
+      world/FishingVillage.gd   F3: jetty, net shed, roof key, two cans, the refuel mistake
+      world/SaltPans.gd         F4: the gantry watcher's gaze, salt heaps
+      puzzles/SwingBridge.gd    F5: the estuary swing span, cranks, brake, tide gauge
+      world/RailTunnel.gd       F6: dark tunnel, flood gate, service gallery, winch
+      items/FlareGun.gd         F6: 3 flares, Creature.scare (80 m, 90 s)
+      puzzles/RadioMast.gd      F7: generator, beacons, dishes, cranks, the dish screen
+      world/Homecoming.gd       F8: Naresh's home, the tracker, site lights, the end screen
       world/GymBuilder.gd       gyms: small flat test maps (extends LevelBuilder)
 ```
 
