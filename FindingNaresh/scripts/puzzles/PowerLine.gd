@@ -17,6 +17,7 @@ const C_LAMP_ON := Color(1.0, 0.86, 0.52)
 
 var powered := false             ## the turbine is running
 var hut_powered := false         ## the wave of lamps has reached the hut
+var cut := false                 ## F2: the storm has the line down (no power, whatever the turbine does)
 var lamps: Array[MeshInstance3D] = []
 var halos: Array[MeshInstance3D] = []   ## a soft glow round each lit lamp (seen by day)
 var wheel: Node3D
@@ -134,7 +135,7 @@ func _process(delta: float) -> void:
 		_spin = move_toward(_spin, TURBINE_SPIN if powered else 0.0, delta * 1.5)
 		if _spin > 0.0:
 			wheel.rotate_z(-_spin * delta)
-	if not powered or hut_powered:
+	if not powered or hut_powered or cut:
 		return
 	_t += delta
 	while _lit < lamps.size() and _t >= WAVE * (_lit + 1):
@@ -167,11 +168,18 @@ func _power_hut() -> void:
 	Sfx.play3d("latch", hut_lamp.global_position, -4.0)
 
 
+## F2: the storm brings the line down: every lamp dark, the hut dead.
+## `on` false puts it back (a story jump to before the storm).
+func storm_cut(on: bool) -> void:
+	cut = on
+	sync()
+
+
 ## After a load: the state follows the station without the show.
 func sync() -> void:
 	if _station == null:
 		return
-	powered = _station.solved
+	powered = _station.solved and not cut
 	hut_powered = powered
 	_lit = lamps.size() if powered else 0
 	_t = 0.0

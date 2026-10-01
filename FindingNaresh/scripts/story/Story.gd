@@ -221,6 +221,12 @@ func _bessi_state_for(id: String) -> void:
 	for f in flags.keys():
 		if String(f).begins_with("seen_"):
 			flags.erase(f)      # what they'd looked at in his camp
+	# anyone at Bessi has come the way out: its one-off moments are behind
+	# them (driving back over the ghat must not burst the hose or start the
+	# first attack again)
+	if k >= 0:
+		for f in ["text_j1", "text_j2", "leak_started", "leak_fixed", "ghat_glimpse", "first_attack", "first_attack_over", "tower_seen"]:
+			flags[f] = true
 	if k >= 1:                  # the spot found
 		flags["photo_spot"] = true
 		flags["photo_sent"] = true
