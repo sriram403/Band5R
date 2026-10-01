@@ -73,28 +73,49 @@ What to report: anything above that didn't happen, plus how it felt.
 
 ## F2. The storm on the old road (the dead end)
 
-Start `Play.bat`, **New game**, **F1 → Story**, pick **"North on the coast
-road"** (the storm step, near the bottom), Enter. You're both by the van at
-the start of the coast road, Naresh in the back, the black storm bank over
-the Beach Road behind you.
+**What this part is:** at the end of Bessi the story sends you north on the
+coast road. F2 is what happens if you *don't* listen and drive back the way
+you came: you go into the storm, and the road home that way is blocked.
 
-1. **Drive north a little way** up the coast road. **Expect:** no rain, no
-   gusts, dry road; the storm stays behind you, over the Beach Road.
-2. **Turn round and take the old way back:** the Beach Road towards the
-   ghat (south-west). **Expect:** as you reach it the rain, wind and fog
-   close in, the wipers start, the gusts begin (wind in off the sea, from
-   the left as you climb). Up the hairpins and down to J3. *Nothing from the
-   way out happens again (no burst hose, no creature attack on the ghat).*
-3. **On to the lift bridge** (Pump House Road from J3). **Expect:** the
-   leaf stands up again, swaying, the barriers back, every lamp along the
-   road dark; a message says the storm has the power line down and there's
-   no way across. The hut's panel says NO POWER; the levers do nothing.
-4. **Turn back.** About 300 m on, **Naresh:** "My friend said north."
-5. **F1 → Story**, jump back to an earlier Bessi step: **Expect:** the
-   bridge is down again (as you left it) and the lamps lit.
+**The old way, in plain words** (you drove it on the way out, in Milestone D):
 
-Tip: F1 → Travel takes you both to the ghat pass or the bridge; F1 → Van
-brings the van.
+- **The ghat** is the mountain road with the two hairpin bends and the fog
+  (where the creature first came for the van). **The pass** is the top of
+  it, where the road comes over towards the sea.
+- **J3** is the bottom of the ghat on the river side.
+- From J3 the road goes on, the same road, to **the lift bridge** you
+  lowered in Milestone D (with the hut and the levers). That road is called
+  Pump House Road (it's named on the board at Last Fuel, on the far side of
+  the bridge); you don't need the name: just keep going from the bottom of
+  the hairpins.
+
+**Getting there.** Start `Play.bat`, **New game**, **F1 → Story**, pick
+**"North on the coast road"** (the last row), Enter. You're both standing
+by the van at the start of the coast road, Naresh with you, and behind you
+over the hills a **black bank of storm cloud**.
+
+1. **Get in** (Naresh too: look at the van, V, *Get in the back*). Drive
+   north a little way. **Expect:** dry, calm, no rain: the storm stays
+   behind you.
+2. **Turn round and drive towards the black clouds.** Back past the dune
+   with the roses, the road climbs away from the sea, west, up to the pass.
+   **Expect:** as you get under the clouds: rain, wind, fog, the wipers
+   start, gusts shove the van (slow down: under 25 km/h it can't tip).
+   Over the pass and down the two hairpins to the bottom (J3).
+   *Nothing from the way out should happen again* (no burst hose, no
+   creature attack on the hairpins).
+3. **Keep going on the same road** to the lift bridge (about a minute).
+   **Expect:** its leaf stands up again, swaying, the barriers are back,
+   every lamp along the road is dark; a message says the storm has the
+   power line down and there's no way across. In the hut the panel says
+   NO POWER and the levers do nothing.
+4. **Turn back.** After about 300 m, **Naresh:** "My friend said north."
+5. **F1 → Story**, jump to an earlier Bessi row. **Expect:** the bridge is
+   down again, the lamps lit.
+
+**Short cut (to skip the long drive):** after step 1, **F1 → Travel →
+"Foot of the ghat (J3)"**, then **F1 → Van → bring the van**, and drive on
+from there (step 3). Or Travel → "The pass" to start at the top.
 
 ### Decisions to confirm (F2)
 

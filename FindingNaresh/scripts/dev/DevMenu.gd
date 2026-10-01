@@ -635,6 +635,7 @@ const STEP_PLACES := {
 	"batteries": ["store_door", "the store"],
 	"drum": ["boat_push", "the upturned boat"],
 	"storm": ["", "the van, at the start of the coast road"],
+	"end_e": ["", "the van, at the start of the coast road"],
 }
 
 func go_to_step(id: String) -> String:
@@ -644,7 +645,7 @@ func go_to_step(id: String) -> String:
 	var poi: Dictionary = boot.builder.poi
 	var c: Camper = boot.camper
 	var at: Vector3
-	if id == "storm":
+	if id in ["storm", "end_e"]:
 		# the van on the coast road where it leaves the loop, facing north
 		var road: Route = boot.builder.network.road("coast_road")
 		var i0 := 0
@@ -662,7 +663,7 @@ func go_to_step(id: String) -> String:
 	teleport(at)
 	# Naresh with you from the evidence on (before that he's in the rose, or not yet found)
 	var nz: Naresh = boot.naresh
-	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm"]:
+	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e"]:
 		var p1: PlayerRig = boot.players[0]
 		if nz.sitting:
 			nz.stand_from_seat(p1)
