@@ -857,13 +857,31 @@ test before each push.
 - [~] F3. Fishing village, R1 the decoy (fuel in the net shed, Naresh waits
       on the jetty); the scripted refuel mistake; the van dies past the village
       (design agreed 2026-10-01: `design/RETURN.md` decision 5)
-  - [ ] Creatures drift towards Naresh on the return (within 120 m, slowly)
-  - [ ] The village: a jetty, two creatures pacing huts <-> shed, the shed
-        locked, fish crates to climb, the boat on the roof with the key, a
-        full can inside; the van's tank low on arrival
-  - [ ] Naresh as bait: they follow him down the jetty; recalled from afar
-  - [ ] Leaving: the scripted mistake armed; the van dies ~300 m on, they come
-  - [ ] Story steps, F1 jumps, save; `t_decoy` (short, real controls)
+  - [x] Creatures on the return (`Creature.on_return`, set by the storm):
+        drawn to Naresh from 120 m, kept to 300 m, drift 0.9 m/s, go to him in
+        the van too; `Creature.funnels` (the jetty: they go round by its start)
+  - [x] `world/FishingVillage.gd`: the jetty (railed to the seabed, the sea
+        wall's gap), the net shed (door 2.2 m, flat roof), fish-crate stairs
+        with a stop at the top, the roof boat and key, two cans inside, two
+        creatures, two high drop places; the fuel lamp 420 m short
+  - [x] Naresh as bait (measured: the shed clear 20 s after he reaches the
+        end, the first creature 10 m from him after 78 s); recalled through
+        the binoculars (jobs reach 150 m zoomed)
+  - [x] The mistake: "There's two!" (he stores the light can), "Leave the
+        fuel to me!"; the van dies ~200 m on, a creature steps out ahead;
+        pour it yourself
+  - [x] Story steps village / fuel / drive_on / stalled / end_f3, F1 jumps
+        (village, fuel; the mood at dusk at once), save (`t_decoy_save`)
+  - [x] Found on the way: positions taken from `global_transform` before
+        the world is in the scene (P1 fell through the map); Naresh waded
+        round the jetty (a 0.25 m step he can't take; the deck is flush
+        now); the sea wall blocked looking at the jetty (the world edge is
+        on its own layer, 64: it stops bodies, not eyes); a carried can
+        snagged in a 1.4 m door; P1 standing at the rack made him give up
+        ("Excuse me!" now, and he picks up a snagged thing again)
+  - [x] `t_decoy` 21 checks + `t_decoy_save` 5: 0 failures
+  - [~] Regression: set:creatures, the Naresh gym, set:bessi, teleports, smoke
+  - [ ] Your test (`notes/TEST_MILESTONE_F.md` F3), then push
 - [ ] F4. Salt pans, R2 red light / green light (dashes between heaps, the
       spotter calls go / tarp)
 - [ ] F5. Estuary bridge, R3 the three-hand swing bridge (two cranks and a

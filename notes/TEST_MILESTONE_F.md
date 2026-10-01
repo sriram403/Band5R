@@ -134,3 +134,74 @@ from there (step 3). Or Travel → "The pass" to start at the top.
    in or by the van.
 5. **The coast watchtower's creature** is still there on the way back (as
    before).
+
+---
+
+## F3. The fishing village (the decoy)
+
+**Getting there.** `Play.bat`, **New game**, **F1 → Story**, pick **"Nearly
+out of fuel. The fishing village: the fuel's in the net shed"**, Enter. You
+both stand by the van on the coast road, a short walk south of the village,
+Naresh with you, the fuel lamp on (about a litre left). It's dusk.
+(Or drive there from "North on the coast road": about 420 m before the
+village the lamp comes on and a message says you'll only just make it.)
+
+**What's there.** A few huts, nets on poles, boats on the sand, a long
+wooden **jetty** out into the sea (railed both sides), and the **net shed**
+(brown, flat roof, "NETS - PRIVATE"), padlocked. Two creatures pace between
+the huts and the shed. Fish crates are stacked up one side of the shed like
+steps; up on its roof is a small blue boat.
+
+1. **Walk in with Naresh.** **Expect:** the creatures stop and turn towards
+   *him*, then drift his way, slowly. (Keep your distance: if they see you,
+   they come for you.)
+2. **Send him to the end of the jetty:** look at the far end of the jetty,
+   hold V (pad: D-pad Up), *Go and wait there*. From the beach it's far:
+   with the binoculars (hold RMB / LT) you can give him jobs up to 150 m
+   away (60 m by eye). **Expect:** he walks out to the end; the creatures
+   follow him out along the jetty (about 20 s later the shed side is clear);
+   they need over a minute to reach him.
+3. **One of you: the key.** Climb the fish crates (W and jump, step by step;
+   at the top, turn onto the roof). In the blue boat: **E: Take the key**.
+   Down again, the shed door: **E: Unlock the shed**. Inside: two cans, one
+   heavy, one light.
+4. **The other: watch him** through the binoculars. Before a creature reaches
+   him, look at him and V / D-pad Up: *Follow me*, even from the beach.
+   (If he's taken: he's left high up on the old water tank or the rock
+   stack, shouting; go and fetch him. Nothing lost but time.)
+5. **The fuel.** Take the heavy can to the van. **Expect:** when Naresh comes
+   by the shed he says "There's two! I'll take this one to the van" and puts
+   the *light* can on the rack. Once the heavy can is at the van too:
+   "Leave the fuel to me! I know how." Let him. **Expect:** "Done. I even
+   checked it twice." (Watch the fuel gauge: it doesn't move.)
+6. **Drive on north.** **Expect:** after a couple of hundred metres the
+   engine coughs and dies; "The full can is still on the rack"; Naresh:
+   "Then imagine how much fuel I put in." Up the road a creature steps out
+   and turns towards you.
+7. **Pour it yourself:** the heavy can off the rack, hold E at the filler.
+   **Expect:** the tank fills; the objective: on to the salt pans (the end
+   of the build for now).
+
+Try the other ways too: pour the heavy can yourself before he offers (then
+no mistake, no stall); stand in his way at the van (he says "Excuse me!").
+
+### Decisions to confirm (F3)
+
+1. **Why the fuel's low:** the storm road and the climb drank the Bessi drum;
+   the lamp comes on 420 m short of the village, ~1 L left.
+2. **The creatures on the return:** drawn to Naresh from 120 m, they keep
+   after him to 300 m, drift slowly (0.9 m/s, so a decoy buys about a
+   minute), and go to him even when he's in the van (they can't take him
+   there).
+3. **Binoculars stretch his jobs to 150 m** (60 m by eye).
+4. **The mistake is his idea:** once both cans are at the van he offers to
+   do the fuel and uses the light one. If you pour the heavy can yourself
+   first, there's no mistake and no stall.
+5. **The stall:** the van dies ~200 m on; one creature steps out ~70 m
+   ahead.
+6. **Naresh copes with clutter:** a thing that snags out of his hands he
+   picks up again (up to 3 times); someone in his way gets "Excuse me!"
+   and he waits.
+7. **Where he's left if taken:** two new greybox high places near the
+   village: "the old water tank" and "the rock stack".
+8. **The shed's door is wide (2.2 m)** so carried cans don't catch on it.

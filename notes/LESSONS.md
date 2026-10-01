@@ -215,6 +215,27 @@ The engine-level details (exact Godot calls, numbers) are also in
   van; shared things (fog, sound) follow the views on screen. Test with the
   players split up, the way one person tests a two-player game.
 
+- **`global_transform` before the world is in the scene is wrong** (F3):
+  the builder runs before the world joins the tree; points taken from a
+  node's `global_transform` then were garbage (a player placed by one fell
+  through the map). Use `transform` (the world root sits at the origin).
+- **An invisible wall blocks eyes too** (F3): the sea wall stood between the
+  beach and the jetty, so looking at Naresh out there hit the wall. Walls
+  that only keep bodies in go on their own layer (64), which rays skip.
+- **A step a character can't take sends its path round the long way:** a
+  jetty 0.25 m above the sand made Naresh wade round it in the sea. Make
+  the way in flush.
+- **Real-world clutter breaks scripted helpers:** a can carried at his side
+  snagged on a 1.4 m door; a player standing at the rack made him give up.
+  He now picks a snagged thing up again and says "Excuse me!" and waits.
+- **Test inputs must be as long as a human's:** a pad press shorter than one
+  physics tick never opened the command wheel. Hold a few frames.
+- **Check the story after it has had a tick to move on:** a check right
+  after the action that completes a step passed or failed by luck; wait for
+  it (`until`).
+- **Heredocs with quotes and apostrophes break the shell:** write notes
+  through a script file, not a bash heredoc.
+
 ## 4. Game design lessons (from the user's play)
 
 - **Give both players something to do, all the time.** The maze's hay dust
