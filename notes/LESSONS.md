@@ -242,6 +242,15 @@ The engine-level details (exact Godot calls, numbers) are also in
   the merge. `Play.bat` now imports when any script is newer than the class
   list. After a merge, start the game once in `MPG` before handing over.
 
+- **A state flag without the thing it describes** (F9): the swing bridge's
+  "locked" set from a load or a script never moved the span (only the cranks'
+  path drew it), so the end-to-end drive fell into the estuary while the
+  part's own test passed. Setting a state must also put the world in it.
+- **The end-to-end drive finds what part tests can't** (F9): `return_run`
+  drives Bessi to home in one go; in its first two runs it found the open
+  span and a story gap a part's test would never meet. Keep a whole-journey
+  run for every milestone.
+
 ## 4. Game design lessons (from the user's play)
 
 - **Give both players something to do, all the time.** The maze's hay dust
