@@ -52,7 +52,7 @@ the windsocks' side.
 
 What to report: anything above that didn't happen, plus how it felt.
 
-### Decisions to confirm (F1)
+### Decisions to confirm (F1): confirmed by you, 2026-10-01 (for now)
 
 1. **Wipers are automatic** (they run in the rain while the engine is on).
    No wiper key: there was only one right answer ("on"), and the pad has no

@@ -12,8 +12,10 @@ being built and tested), so this always shows where the work is right now.
   (2026-10-01): the storm road a brutal dead end; the dishes point at nearer
   return sites; the family silent; the tracker = maze, relay, flare gun,
   fragments. F split into F1-F9 below.
-- **F1 the storm gym: built, tested, merged into main (not pushed).
-  Waiting for your test** (`notes/TEST_MILESTONE_F.md`, section F1).
+- F1 the storm gym: **approved by you (2026-10-01, with its 8 decisions)
+  and pushed.**
+- [~] **F2 next:** the storm over the ghat and the Beach Road, the dead end
+  at J3; built in `../MPG_dev` on branch `f2` from main.
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -796,7 +798,7 @@ in `notes/TEST_MILESTONE_E.md`).
 ## Milestone F: The return and the ending
 Design: `design/RETURN.md` (decisions 2026-10-01). One part at a time, your
 test before each push.
-- [~] F1. Storm gym (`--gym=storm`): a flat plain, a road, a gust schedule.
+- [x] F1. Storm gym (`--gym=storm`): a flat plain, a road, a gust schedule.
       Gusts push the van 1-2 m sideways at 50 km/h, can tip it above ~45 km/h
       in a crosswind, never under 25 km/h; rain and fog (~60 m); lightning
       lights the scene; wipers and headlights help. `t_storm_gym`
@@ -822,7 +824,7 @@ test before each push.
         which a plugged-in controller used to give it; fixed) + set:gyms 22
         scenarios: 0 failures. The storm gym is in set:gyms
   - [x] Merged into main; your test sheet `notes/TEST_MILESTONE_F.md` (F1)
-  - [ ] Your test, then push
+  - [x] Your test: approved with its decisions (2026-10-01); pushed
 - [ ] F2. The storm over the ghat and the Beach Road (the old way); the dead
       end at J3 (the lift bridge swung open in the wind); "My friend said
       north"; the dark end of the mood curve; creatures drift to Naresh
