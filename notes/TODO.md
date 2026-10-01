@@ -799,6 +799,25 @@ test before each push.
       Gusts push the van 1-2 m sideways at 50 km/h, can tip it above ~45 km/h
       in a crosswind, never under 25 km/h; rain and fog (~60 m); lightning
       lights the scene; wipers and headlights help. `t_storm_gym`
+  - [x] `world/Storm.gd`: gusts (rise 1.8 s, hold 1, fall 1.5; every 7-14 s;
+        only the part across the van counts; push grows with speed; roll
+        torque only above 25 km/h), a wet road (`Camper.set_wet`: 60% grip,
+        brakes 70%), rain round each player (GPU particles, the van's body
+        keeps it out of the cab), fog to ~60 m and the sky into it
+        (`Mood.storm`), lightning (`Mood.flash`) and thunder, wind and rain
+        sounds (`NoiseLoop.Kind.RAIN`), windsocks that lift before a gust
+  - [x] Measured (full gust, hands off): 25-30 km/h leans 0.5-2 deg; 40-42
+        leans ~20 deg and stays up; 45+ tips. At 50 km/h a 55/70/85% gust
+        pushes it 0.25/1/5 m. First found: the van always rolled back up
+        (its centre of mass is below the floor for the driving feel): past
+        70 deg in a gust it gets a real van's, so it stays down; R rights it
+  - [x] Wipers (automatic in the rain with the engine on, park when off)
+  - [x] Found: the headlights shone backwards into the cab since stage 1
+        (fixed; they light the road now)
+  - [x] The gym (`--gym=storm`: windward windsocks, distance boards), F1 World
+        rows (storm on/off, a gust now, lightning now)
+  - [x] `t_storm_gym`: 24 checks, 0 failures; 144 fps in the storm, both views
+  - [~] smoke + set:gyms after the van / mood changes; then your test sheet
 - [ ] F2. The storm over the ghat and the Beach Road (the old way); the dead
       end at J3 (the lift bridge swung open in the wind); "My friend said
       north"; the dark end of the mood curve; creatures drift to Naresh
