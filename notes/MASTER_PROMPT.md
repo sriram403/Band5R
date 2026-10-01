@@ -39,7 +39,10 @@ Windows PC, keyboard + mouse for P1 and a controller for P2. The full story arc 
 `DESIGN.md`. Engine: Godot 4.7.1, GDScript, everything built
 in code (no hand-made scenes beyond `scenes/Main.tscn` running `Boot.gd`).
 
-GitHub: <https://github.com/sriram403/Band5R> (branch `main`). The user is
+GitHub: <https://github.com/sriram403/Band5R> (branch `main`). **Push only as
+the `sriram403` account, never `sriram-lexbolt`** (both are in this PC's
+credential manager; the repo's local git config pins
+`credential.https://github.com.username = sriram403`; check it before a push). The user is
 **sriram**; refer to them as "the user"/"you", pronouns
 they/them.
 
