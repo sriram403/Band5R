@@ -29,7 +29,7 @@ const MAX_SPEED := 30.0          ## m/s; nothing a player does should go faster
 func _ready() -> void:
 	add_to_group("carryable")
 	collision_layer = LAYER
-	collision_mask = 1 | 2 | 8 | LAYER
+	collision_mask = 1 | 2 | 8 | LAYER | 64
 	continuous_cd = true
 	can_sleep = true
 	linear_damp = 0.1
@@ -225,6 +225,6 @@ func unstow() -> void:
 	reparent(world if world else get_tree().current_scene, false)
 	global_transform = xf.translated(Vector3.UP * 0.2)
 	collision_layer = LAYER
-	collision_mask = 1 | 2 | 8 | LAYER
+	collision_mask = 1 | 2 | 8 | LAYER | 64
 	freeze = false
 	reset_physics_interpolation()

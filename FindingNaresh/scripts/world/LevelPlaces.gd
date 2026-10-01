@@ -215,9 +215,7 @@ func _fishing_village() -> void:
 	var offs := [Vector3(-14, 0, -20), Vector3(-14, 0, 2), Vector3(-12, 0, 24), Vector3(10, 0, -14)]
 	for i in offs.size():
 		_house(c + offs[i], face, Vector3(6, 3.4, 5), cols[i % cols.size()], Color(0.40, 0.36, 0.30), "Hut%d" % i)
-	# the net shed (locked) and nets drying on poles
-	var shed := _house(c + Vector3(12, 0, 12), c + Vector3(40, 0, 12), Vector3(8, 4, 6), Color(0.50, 0.42, 0.34), Color(0.30, 0.28, 0.26), "NetShed")
-	shed.add_child(Build.label3d("NETS - PRIVATE", Vector3(0, 3.0, 3.1), Vector3.ZERO, 0.3, Color(0.95, 0.92, 0.85)))
+	# nets drying on poles (the net shed and the jetty: FishingVillage, F3)
 	for k in 3:
 		var np := c + Vector3(24, 0, -10 + k * 8)
 		np.y = _h(np.x, np.z)
@@ -229,7 +227,6 @@ func _fishing_village() -> void:
 		bp.y = _h(bp.x, bp.z)
 		root.add_child(Build.box(Vector3(1.8, 0.8, 6.5), ToonMat.make(Color(0.80, 0.30, 0.25) if k != 1 else Color(0.25, 0.45, 0.65)), bp + Vector3(0, 0.4, 0), Vector3(0, 10.0 * k, 0), "Boat"))
 	poi["fishing_village"] = Vector3(c.x, _h(c.x, c.z), c.z)
-	poi["net_shed"] = shed.position
 
 
 ## Salt pans: a grid of shallow white beds between low mud dikes.

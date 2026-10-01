@@ -42,6 +42,7 @@ var said_north := false
 
 func setup(b) -> void:
 	add_to_group("storm_front")
+	Creature.on_return = false      # static: a reloaded scene starts on the way out
 	var roses: Vector3 = b.ROSE_CENTRE
 	var pass_at: Vector3 = b.poi["ghat_pass"]
 	var dir := Vector3(pass_at.x - roses.x, 0, pass_at.z - roses.z).normalized()
@@ -174,6 +175,7 @@ func start(st: Story, tell: bool) -> void:
 	started = true
 	st.flags["storm_on"] = true
 	root.visible = true
+	Creature.on_return = true
 	_blow(true)
 	_flash_t = 1.5
 	var ro := get_tree().get_first_node_in_group("roses") as Roses
@@ -240,6 +242,7 @@ func match_story() -> void:
 		return
 	if started:
 		_blow(false)
+	Creature.on_return = false
 	started = false
 	at_bridge = false
 	said_north = false

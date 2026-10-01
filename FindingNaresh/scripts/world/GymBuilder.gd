@@ -50,6 +50,8 @@ static func slope_height(x: float, z: float) -> float:
 
 
 func build() -> Node3D:
+	Creature.on_return = false      # statics outlive a scene: a gym is never the return
+	Creature.funnels.clear()
 	Landscape.height_fn = GymBuilder.slope_height
 	Landscape.EXTENT = 1200.0
 	network = RoadNetwork.new()

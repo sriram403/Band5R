@@ -44,7 +44,7 @@ func configure(r: Route, a: int, b: int, start: int, way: int) -> void:
 
 func _ready() -> void:
 	collision_layer = 1
-	collision_mask = 1 | 8
+	collision_mask = 1 | 8 | 64
 	sync_to_physics = true
 	_build()
 	_position_on_road()

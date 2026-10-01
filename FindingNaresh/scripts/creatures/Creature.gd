@@ -39,6 +39,17 @@ const VAN_LIT := [40.0, 80.0, 80.0]   ## m it notices headlights from (day / dus
 const VAN_MOVING := 45.0          ## m it notices the van moving from
 const VAN_MEMORY := Vector2(20.0, 40.0)   ## s of interest after it last noticed the van
 const NARESH_DRAW := 60.0         ## m; within this it drifts towards Naresh
+## On the return (from the storm, F3; design/CREATURES.md) they're drawn from
+## 120 m, keep after him to 300 m once they are, drift slowly (a decoy buys
+## time), and go for him even sat in the van (they can't take him there).
+static var on_return := false
+const RETURN_DRAW := 120.0
+const RETURN_KEEP := 300.0
+const RETURN_DRIFT := 0.9         ## m/s
+## Places reached only one way (the village jetty): {box: AABB, entry: Vector3}.
+## A creature going for something inside walks to the entry first.
+static var funnels: Array = []
+var _following := false
 const NARESH_ORBIT := 7.0         ## m; it circles him while he isn't alone
 const HEIGHT := 2.6
 const GRAVITY := 22.0
@@ -74,7 +85,7 @@ var _hum: NoiseLoop
 func _ready() -> void:
 	add_to_group("creature")
 	collision_layer = 32
-	collision_mask = 1 | 8
+	collision_mask = 1 | 8 | 64
 	set_meta("tag_name", "it")
 	_build()
 	_heard_id = Hearing.last_id()
@@ -187,10 +198,16 @@ func _physics_process(delta: float) -> void:
 ## Naresh, if he's out in the open within reach of its interest.
 func _naresh() -> Naresh:
 	var n := get_tree().get_first_node_in_group("naresh") as Naresh
-	if n == null or n.state in [Naresh.State.SEATED, Naresh.State.TAKEN, Naresh.State.KNOCKED]:
+	if n == null or n.state in [Naresh.State.TAKEN, Naresh.State.KNOCKED] or (n.state == Naresh.State.SEATED and not on_return):
+		_following = false
 		return null
-	if _flat_dist(n.global_position) > NARESH_DRAW:
+	var reach := NARESH_DRAW
+	if on_return:
+		reach = RETURN_KEEP if _following else RETURN_DRAW
+	if _flat_dist(n.global_position) > reach:
+		_following = false
 		return null
+	_following = on_return
 	return n
 
 
@@ -406,12 +423,19 @@ func _move(delta: float) -> void:
 				target = null
 				took.emit(p)
 				Taken.take(p, self)
+	for f in funnels:
+		var box: AABB = f["box"]
+		if box.has_point(goal) and not box.has_point(global_position):
+			goal = f["entry"]
 	var to := goal - global_position
 	to.y = 0.0
 	var v := Vector3.ZERO
 	var stop := 0.3 if state != State.CURIOUS else (BOX_STARE if _box_notice else 1.5)
 	if to.length() > stop:
-		v = to.normalized() * float(SPEED[State.CURIOUS if naresh_drawn and state == State.WANDER else state])
+		var spd := float(SPEED[State.CURIOUS if naresh_drawn and state == State.WANDER else state])
+		if naresh_drawn and state == State.WANDER and on_return:
+			spd = RETURN_DRIFT
+		v = to.normalized() * spd
 		var want := atan2(-to.x, -to.z)
 		rotation.y = lerp_angle(rotation.y, want, 1.0 - exp(-delta * (10.0 if state == State.TAKE else 4.0)))
 	elif (state != State.WANDER or _noticed_t < ATTEND) and last_noticed != global_position:

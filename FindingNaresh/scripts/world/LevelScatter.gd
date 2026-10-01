@@ -380,15 +380,35 @@ func _backdrop() -> void:
 func _world_edge() -> void:
 	var body := StaticBody3D.new()
 	body.name = "WorldEdge"
+	# its own layer: it stops bodies (people, Naresh, creatures, the van, loose
+	# things) but not eyes: looking, tags, Naresh's jobs and creatures' sight
+	# go through it (the sea wall stood between the beach and the jetty)
+	body.collision_layer = EDGE_LAYER
 	var e := Landscape.EXTENT * 0.5 - 6.0
 	for side in [[Vector3(e, 0, 0), Vector3(2, 400, e * 2)], [Vector3(-e, 0, 0), Vector3(2, 400, e * 2)],
 			[Vector3(0, 0, e), Vector3(e * 2, 400, 2)], [Vector3(0, 0, -e), Vector3(e * 2, 400, 2)]]:
 		body.add_child(_box_shape(side[1], Transform3D(Basis(), side[0])))
-	# the sea: wade in knee-deep, no further
+	# the sea: wade in knee-deep, no further (a gap where the village's jetty
+	# goes out; its fenced sides close it)
+	var gap_z := FISHING_VILLAGE.z + VILLAGE_JETTY_Z
+	var gap := Vector2(gap_z - VILLAGE_JETTY_W * 0.5 - 0.05, gap_z + VILLAGE_JETTY_W * 0.5 + 0.05)
 	for i in COAST.size() - 1:
 		var a := Vector3(COAST[i].x + 18.0, 0, COAST[i].y)
 		var b := Vector3(COAST[i + 1].x + 18.0, 0, COAST[i + 1].y)
-		var mid := (a + b) * 0.5
-		body.add_child(_box_shape(Vector3(2, 400, a.distance_to(b) + 4.0),
-			Transform3D(Basis.looking_at(b - a, Vector3.UP), mid)))
+		var parts := [[a, b]]
+		var lo := minf(a.z, b.z)
+		var hi := maxf(a.z, b.z)
+		if gap.x > lo and gap.y < hi:
+			var ta := (gap.x - a.z) / (b.z - a.z)
+			var tb := (gap.y - a.z) / (b.z - a.z)
+			parts = [[a, a.lerp(b, minf(ta, tb))], [a.lerp(b, maxf(ta, tb)), b]]
+		for pr in parts:
+			var pa: Vector3 = pr[0]
+			var pb: Vector3 = pr[1]
+			var mid := (pa + pb) * 0.5
+			var l := pa.distance_to(pb)
+			if l < 0.5:
+				continue
+			body.add_child(_box_shape(Vector3(2, 400, l + (4.0 if parts.size() == 1 else 0.0)),
+				Transform3D(Basis.looking_at(pb - pa, Vector3.UP), mid)))
 	world.add_child(body)
