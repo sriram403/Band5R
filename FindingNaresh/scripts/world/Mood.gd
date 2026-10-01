@@ -34,6 +34,9 @@ var fog_boost := 0.0             ## 0..1 local fog on top (the ghat hairpins), s
 ## sun and sky gone grey-black; `flash` 0..1 is a lightning flash
 var storm := 0.0
 var flash := 0.0
+## 0..1 underground (the rail tunnel, F6): the sky's light gone, night for
+## the creatures' eyes. Set by RailTunnel.
+var dark := 0.0
 const STORM_FOG := [4.0, 85.0]        ## fog begin / end in the full storm
 const STORM_FOG_COL := Color(0.20, 0.22, 0.26)
 const FLASH_COL := Color(0.78, 0.82, 0.95)
@@ -70,7 +73,7 @@ func _process(delta: float) -> void:
 		_check_t = 0.5
 		_way_out()
 	value = move_toward(value, target, EASE * delta)
-	if absf(value - _shown) > 0.002 or absf(storm + flash * 3.0 - _shown_storm) > 0.002:
+	if absf(value - _shown) > 0.002 or absf(storm + flash * 3.0 + dark * 7.0 - _shown_storm) > 0.002:
 		apply()
 
 
@@ -95,7 +98,7 @@ func _way_out() -> void:
 
 func apply() -> void:
 	_shown = value
-	_shown_storm = storm + flash * 3.0
+	_shown_storm = storm + flash * 3.0 + dark * 7.0
 	if _sky != null:
 		var dark := Color(0.12, 0.13, 0.16)
 		_sky.sky_top_color = (_blend("sky_top") as Color).lerp(dark, storm * 0.85).lerp(FLASH_COL, flash * 0.5)
@@ -116,10 +119,10 @@ func apply() -> void:
 		_env.fog_sky_affect = 0.85 * storm        # the sky melts into the rain
 		if flash > 0.0:
 			_env.fog_light_color = _env.fog_light_color.lerp(FLASH_COL, flash * 0.6)
-		_env.ambient_light_energy = _blend("ambient") * (1.0 - 0.35 * storm) + flash * 1.4
+		_env.ambient_light_energy = (_blend("ambient") * (1.0 - 0.35 * storm) + flash * 1.4) * (1.0 - 0.92 * dark)
 		_env.adjustment_saturation = _blend("saturation") * (1.0 - 0.25 * storm)
 	if _sun != null:
-		_sun.light_energy = _blend("sun") * (1.0 - 0.7 * storm)
+		_sun.light_energy = _blend("sun") * (1.0 - 0.7 * storm) * (1.0 - 0.9 * dark)
 		_sun.light_color = _blend("sun_color")
 	var amb := get_parent().get_node_or_null("Ambience") as Ambience
 	if amb != null:
@@ -134,7 +137,7 @@ func apply() -> void:
 
 ## For the creatures' eyes: 0 day, 1 dusk, 2 night.
 func light() -> int:
-	if value < 0.2:
+	if value < 0.2 or dark > 0.5:
 		return 2
 	return 1 if value < 0.45 else 0
 

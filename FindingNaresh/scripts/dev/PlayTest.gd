@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -6811,6 +6811,344 @@ func t_decoy() -> void:
 	check(st.flags.has("stall_fixed") and st.current()["id"] == "end_f3", "the tank's filled: north on to the salt pans")
 	p.drop_held()
 	boot._set_layout(Boot.Layout.SOLO)
+
+
+## F4, the salt pans and R2 red light / green light. `tools/run_test.sh saltpans`
+func t_saltpans() -> void:
+	var st: Story = boot.story
+	var sp := get_tree().get_first_node_in_group("salt_pans") as SaltPans
+	check(sp != null and sp.heaps.size() >= 5 and sp.watcher != null, "the salt pans: the gantry with its watcher, %d salt heaps" % (sp.heaps.size() if sp else 0))
+	if sp == null:
+		return
+	var c := camper()
+	boot.dev_menu.run("jump", st.index_of("salt_pans"))
+	await wait(1.0)
+	check(st.current()["id"] == "salt_pans" and sp.watcher.global_position.y > sp.centre.y + SaltPans.GANTRY_H - 0.5, "F1 jump: short of the pans, the watcher up on its gantry")
+	await look_at_point(p1(), sp.eye)
+	await shot("pans_gantry")
+	# it looks one way, then another
+	var lo := 9.0
+	var hi := -9.0
+	for _k in 60:
+		await wait(0.25)
+		lo = minf(lo, sp.gaze)
+		hi = maxf(hi, sp.gaze)
+	log_line("gaze swept %.0f deg in 15 s" % rad_to_deg(hi - lo))
+	check(rad_to_deg(hi - lo) > 40.0, "its gaze turns from one stare to the next")
+	# behind a heap: hidden; in the open: seen
+	sp.auto_sweep = false
+	var heap: Vector3 = sp.heaps[2]
+	var away := Vector3(heap.x - sp.eye.x, 0, heap.z - sp.eye.z).normalized()
+	await van_to(heap + away * 9.0)
+	await physics_frames(10)
+	var to := c.global_position - sp.eye
+	sp.gaze = atan2(-to.x, -to.z)
+	await physics_frames(3)
+	check(not sp.van_in_view(c), "behind a salt heap, right in its gaze: hidden")
+	var gap := (sp.heaps[2] + sp.heaps[3]) * 0.5
+	await van_to(gap + Vector3(gap.x - sp.eye.x, 0, gap.z - sp.eye.z).normalized() * 9.0)
+	await physics_frames(10)
+	to = c.global_position - sp.eye
+	sp.gaze = atan2(-to.x, -to.z)
+	await physics_frames(3)
+	check(sp.van_in_view(c), "between two heaps, in its gaze: in plain view")
+	await shot("pans_in_view")
+	# stopped in the open it takes a moment; moving, at once
+	await wait(SaltPans.STILL_SEEN + 0.6)
+	check(sp.seen and st.flags.has("pans_seen"), "stopped in the open, it sees the van after %.1f s" % SaltPans.STILL_SEEN)
+	await physics_frames(20)
+	check(not sp.watcher.passive and sp.watcher.state == Creature.State.VAN, "it drops off the gantry and comes for the van")
+	# a careful crossing: a spotter's calls, dash and stop behind the heaps
+	boot.dev_menu.run("jump", st.index_of("salt_pans"))
+	await wait(1.0)
+	check(not sp.seen and sp.watcher.passive, "a jump back: it's up on its gantry again")
+	sp.auto_sweep = true
+	await seat_p1_driver()
+	await engine_on()
+	var road: Route = boot.builder.network.road("coast_road")
+	var ad := AutoDriver.new(self, road, c)
+	ad.lane = -1.8
+	var t0 := Time.get_ticks_msec()
+	var stops := 0
+	var was_go := true
+	while not st.flags.has("pans_crossed") and not sp.seen and (Time.get_ticks_msec() - t0) < 150000:
+		await physics_frames(1)
+		var v := c.global_position - sp.eye
+		var vdir := Vector2(v.x, v.z).normalized()
+		var now_a := absf(rad_to_deg(Vector2(-sin(sp.gaze), -cos(sp.gaze)).angle_to(vdir)))
+		var next_a := absf(rad_to_deg(Vector2(-sin(sp._to), -cos(sp._to)).angle_to(vdir)))
+		var after_a := absf(rad_to_deg(Vector2(-sin(sp.next_aim()), -cos(sp.next_aim())).angle_to(vdir)))
+		var leaving := sp._t > sp._hold_now() * 0.5     # the next turn is coming
+		var danger := now_a < SaltPans.CORNER + 8.0 or next_a < SaltPans.CORNER + 8.0 or (leaving and after_a < SaltPans.CORNER + 8.0)
+		var hidden := sp._hidden(c)
+		# a careful driver: go while it looks away; when it turns your way,
+		# stop behind a heap, or dash on if the next one hides you in a moment,
+		# else freeze where you are
+		var fwd := -c.global_transform.basis.z
+		var stop_at := sp.hidden_at(c.global_position + c.linear_velocity * 0.45)  # where braking now ends
+		var soon := sp.hidden_at(c.global_position + c.linear_velocity * 1.4)
+		var back := sp.hidden_at(c.global_position - fwd * 4.0)
+		var go := not danger or (not stop_at and soon and kmh() > 8.0)
+		if go:
+			ad.step(28.0)
+		elif (kmh() < 1.0 or c.linear_velocity.dot(fwd) < 0.0) and not hidden and back:
+			# overshot the cover: back into it (S, stopped, reverses)
+			ad.steer_only()
+			key(KEY_W, false)
+			key(KEY_S, true)
+		else:
+			ad.steer_only()
+			key(KEY_W, false)
+			key(KEY_S, kmh() > 0.5 and (c.linear_velocity.dot(fwd) > 0.0))
+		if go != was_go:
+			log_line("  %.0f s: %s (%s, %.0f km/h, gaze %.0f deg off, next %.0f)" % [(Time.get_ticks_msec() - t0) / 1000.0, "GO" if go else "STOP", "hidden" if hidden else "open", kmh(), now_a, next_a])
+		if go != was_go and not go:
+			stops += 1
+		was_go = go
+	ad.release()
+	key(KEY_S, false)
+	var took := (Time.get_ticks_msec() - t0) / 1000.0
+	await shot("pans_careful_end")
+	log_line("careful crossing: %s after %.0f s, %d stops behind heaps" % ["crossed unseen" if st.flags.has("pans_crossed") and not sp.seen else ("SEEN" if sp.seen else "not across"), took, stops])
+	check(st.flags.has("pans_crossed") and not sp.seen, "dashing between heaps, stopping behind them when it turns: across unseen")
+	await until(func() -> bool: return st.current()["id"] == "end_f4", 3.0)
+	check(st.current()["id"] == "end_f4", "on to the estuary bridge")
+	# reckless: straight across at speed gets seen
+	boot.dev_menu.run("jump", st.index_of("salt_pans"))
+	await wait(1.0)
+	await seat_p1_driver()
+	await engine_on()
+	var ad2 := AutoDriver.new(self, road, c)
+	ad2.lane = -1.8
+	var t1 := Time.get_ticks_msec()
+	while not sp.seen and not st.flags.has("pans_crossed") and (Time.get_ticks_msec() - t1) < 60000:
+		await physics_frames(1)
+		ad2.step(45.0)
+	ad2.release()
+	log_line("reckless crossing: %s (it glanced round %d times)" % ["seen" if sp.seen else "not seen", sp.glances])
+	check(sp.seen, "straight across without stopping: it sees the van")
+	p1().force_exit = true
+	await physics_frames(3)
+
+
+## F5, the estuary bridge and R3 the three-hand swing bridge. `tools/run_test.sh swing`
+func t_swing() -> void:
+	var st: Story = boot.story
+	var sb := get_tree().get_first_node_in_group("swing_bridge") as SwingBridge
+	check(sb != null and sb.crank_a != null and sb.brake != null, "the estuary bridge: a swing span, two cranks, a brake lever, a tide gauge")
+	if sb == null:
+		return
+	var c := camper()
+	var p := p1()
+	var q := p2()
+	boot.dev_menu.run("jump", st.index_of("swing"))
+	await wait(1.0)
+	var n := nz()
+	check(st.current()["id"] == "swing" and absf(sb.angle - SwingBridge.OPEN_DEG) < 0.1 and sb.barriers.visible, "F1 jump: at the controls, the span swung open, the barriers up")
+	await look_at_point(p, sb.pivot + Vector3.UP * 2.0)
+	await shot("swing_open")
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	# the cranks alone, brake on: nothing
+	await place_player(p, sb.crank_a.stand_point() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, sb.crank_a.global_position)
+	await wait(0.2)
+	check(p.prompt_text.contains("turn the crank"), "at a crank: '%s'" % p.prompt_text)
+	key(KEY_E, true)
+	await wait(2.0)
+	check(sb.angle >= SwingBridge.OPEN_DEG - 0.1, "turning a crank with the brake on does nothing (%.0f deg)" % sb.angle)
+	# Naresh on the brake, P2 on the other crank (pad X)
+	n.global_position = sb.brake.stand_point() + Vector3(1.0, 0.2, 0)
+	n.reset_physics_interpolation()
+	await place_player(q, sb.crank_b.stand_point() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(q, sb.crank_b.global_position)
+	key(KEY_E, false)
+	await physics_frames(3)
+	var job_ok := await naresh_job(p, sb.brake.global_position, "hold")
+	var on := await until(func() -> bool: return sb.brake_off(), 15.0)
+	check(job_ok and on, "V on the lever, Hold the brake: Naresh holds it off")
+	await look_at_point(p, sb.crank_a.global_position)
+	key(KEY_E, true)
+	await wait(0.4)
+	var a0 := sb.angle
+	await wait(3.0)
+	var one_rate := (a0 - sb.angle) / 3.0
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.4)
+	var a1 := sb.angle
+	await wait(3.0)
+	var two_rate := (a1 - sb.angle) / 3.0
+	log_line("swing: one crank %.1f deg/s, two %.1f deg/s; now %.0f deg" % [one_rate, two_rate, sb.angle])
+	check(one_rate > 1.0 and two_rate > one_rate * 1.7, "one crank turns it slowly, both twice as fast")
+	await look_at_point(p, sb.pivot + Vector3.UP * 2.0)
+	await shot("swing_turning")
+	await look_at_point(p, sb.crank_a.global_position)
+	# half way he waves at a boat and lets go: it swings back
+	var waved := await until(func() -> bool: return st.flags.has("swing_waved"), 40.0)
+	await physics_frames(10)
+	var b0 := sb.angle
+	await wait(1.5)
+	log_line("he let go at %.0f deg; 1.5 s later %.0f deg" % [b0, sb.angle])
+	check(waved and not sb.brake_off() and sb.angle > b0 + 2.0, "half way Naresh lets go to wave at a boat: the span swings back open")
+	n.command(p, "hold", sb.brake)
+	var done := await until(func() -> bool: return sb.locked, 60.0)
+	key(KEY_E, false)
+	pad_button(JOY_BUTTON_X, false)
+	check(done and st.flags.has("swing_locked") and not sb.barriers.visible, "told again: round it comes, it bolts home, the barriers go")
+	await until(func() -> bool: return st.current()["id"] == "end_f5", 3.0)
+	check(st.current()["id"] == "end_f5", "on to the rail tunnel")
+	await look_at_point(p, sb.pivot + Vector3.UP * 2.0)
+	await shot("swing_closed")
+	# the van drives over it
+	await van_to(sb.pivot - (sb._fwd * 40.0))
+	await seat_p1_driver()
+	await engine_on()
+	var road: Route = boot.builder.network.road("coast_road")
+	var far := sb.pivot + sb._fwd * 40.0
+	await drive_until(road, int(road.nearest(far.x, far.z)["index"]), func() -> bool: return c.global_position.distance_to(far) < 8.0, 30.0, 30.0)
+	key(KEY_W, false)
+	log_line("over the bridge: the van %.1f m from the far side, at height %.1f" % [c.global_position.distance_to(far), c.global_position.y])
+	check(c.global_position.distance_to(far) < 12.0 and c.global_position.y > Landscape.SEA_Y + 1.0, "the van drives over the swung-back span")
+	# the tide: at the red mark the current pulls twice as hard
+	sb.match_story()
+	st.flags.erase("swing_locked")
+	sb.match_story()
+	sb.tide = 1.0
+	var c0 := sb.angle
+	sb.angle = 45.0
+	await wait(2.0)
+	log_line("at the red mark it swings open at %.1f deg/s" % ((sb.angle - 45.0) / 2.0))
+	check((sb.angle - 45.0) / 2.0 > SwingBridge.DRIFT * 1.6, "at the tide's red mark the current pulls it open twice as fast")
+	p.force_exit = true
+	await physics_frames(3)
+	boot._set_layout(Boot.Layout.SOLO)
+
+
+## F6, the old rail tunnel: the flood gate, the dark gallery, the flare gun,
+## the push start. `tools/run_test.sh tunnel`
+func t_tunnel() -> void:
+	var st: Story = boot.story
+	var rt := get_tree().get_first_node_in_group("rail_tunnel") as RailTunnel
+	check(rt != null and rt.doors.size() == 2 and rt.gate != null and rt.winch != null and rt.gun != null, "the rail tunnel: a flood gate, a gallery with two doors, a winch, the flare gun")
+	if rt == null or rt.doors.is_empty():
+		return
+	var poi: Dictionary = boot.builder.poi
+	var c := camper()
+	var p := p1()
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	boot.dev_menu.run("jump", st.index_of("tunnel"))
+	await wait(2.0)
+	var n := nz()
+	var gate_y: float = (poi["tunnel_gate"] as Vector3).y
+	check(st.current()["id"] == "tunnel" and rt.gate.global_position.y < gate_y + 0.2, "F1 jump: in the tunnel, the flood gate down ahead")
+	check(mood.dark > 0.8 and mood.light() == 2, "underground it's dark (%.2f): night for their eyes" % mood.dark)
+	log_line("tunnel: samples %d-%d, doors %s, gate %d" % [rt.run.x, rt.run.y, rt.doors, rt.gate_i])
+	await look_at_point(p, rt.gate.global_position + Vector3.UP * 2.0)
+	await shot("tunnel_gate_dark")
+	p.flashlight_seconds = 600.0
+	p.toggle_flashlight()
+	await wait(0.2)
+	await shot("tunnel_gate_torch")
+	p.toggle_flashlight()
+	# the creature out of the way while we look round the gallery
+	rt.watcher.dormant = true
+	rt.watcher.global_position = poi["gallery_far_door"] + Vector3(0, 0.2, 0)
+	# in through the first door, along to the first fork
+	var door: Vector3 = poi["gallery_door"]
+	await place_player(p, door - rt.road.right(rt.doors[0]) * 2.5 + Vector3(0, 0.3, 0), 0.0)
+	var r0 := rt.road.right(rt.doors[0])
+	var inside_door := rt.road.point(rt.doors[0]) + r0 * rt._off
+	var in_ok := await walk_to(p, inside_door, "the gallery door", 0.8)
+	check(in_ok, "through the door into the service gallery")
+	var fork: Vector3 = poi["gallery_fork_1"]
+	var to_fork := await walk_to(p, fork, "the first fork", 0.8, 40.0)
+	check(to_fork, "along the gallery to the first fork")
+	await look_at_point(p, fork - rt.road.right(rt.doors[0]) * 1.2 + Vector3.UP * 1.6)
+	await shot("gallery_fork_dark")
+	p.toggle_flashlight()
+	await wait(0.2)
+	await shot("gallery_fork_torch")
+	# the creature sees a torch from far off, not you in the dark
+	var cr := rt.watcher
+	cr.dormant = false
+	cr.patrol = PackedVector3Array()
+	var fi: int = rt.doors[0] + (rt.gate_i - rt.doors[0]) / 2 + 12      # ~24 m on from the first fork
+	var ahead := rt.road.point(fi) + rt.road.right(fi) * rt._off + Vector3.UP * 0.2
+	cr.global_position = ahead
+	cr.reset_physics_interpolation()
+	cr.suspicion = 0.0
+	var to_p := p.global_position - ahead
+	cr.rotation.y = atan2(-to_p.x, -to_p.z)
+	p.flashlight.visible = false
+	await wait(2.0)
+	var dark_s := cr.suspicion
+	p.flashlight.visible = true
+	await wait(1.5)
+	var lit_s := cr.suspicion
+	log_line("gallery creature %.0f m off: torch off suspicion %.2f, on %.2f" % [ahead.distance_to(p.global_position), dark_s, lit_s])
+	check(dark_s < 0.2 and lit_s > 0.3, "in the dark it doesn't see you %.0f m off; with the torch on it does" % ahead.distance_to(p.global_position))
+	p.flashlight.visible = false
+	calm_creature(cr, ahead)
+	cr.dormant = true
+	# the flare gun at the second fork's dead end
+	var gun_at: Vector3 = poi["flare_gun"]
+	await place_player(p, gun_at - rt.road.right(rt.gate_i) * 1.3 + Vector3(0, 0.2, 0), 0.0)
+	await look_at_point(p, gun_at)
+	await wait(0.2)
+	await shot("gallery_flare_gun")
+	await tap(KEY_E)
+	await physics_frames(3)
+	check(p.held == rt.gun, "the flare gun, in a red case at the dead end: picked up")
+	cr.dormant = false
+	var gi: int = rt.gate_i + (rt.doors[1] - rt.gate_i) / 2 - 10           # 20 m back along the gallery
+	cr.global_position = rt.road.point(gi) + rt.road.right(gi) * rt._off + Vector3.UP * 0.2
+	cr.reset_physics_interpolation()
+	await wait(0.3)
+	var near_before := cr.global_position.distance_to(p.global_position)
+	await tap(KEY_G)
+	await wait(1.0)
+	check(cr.scared_t > 0.0 and rt.gun.flares_left() == 2 and st.flags.get("flares_used", 0) == 1, "G / RB fires a flare: the creature runs (2 left)")
+	await wait(3.0)
+	await shot("gallery_flare")
+	var ran := cr.global_position.distance_to(p.global_position)
+	check(ran > near_before + 6.0, "it runs from the flare (%.0f m off, was %.0f)" % [ran, near_before])
+	p.drop_held()
+	cr.scared_t = 0.0
+	calm_creature(cr, ahead)
+	cr.dormant = true
+	# Naresh holds the winch, P1 drives through
+	var w: Vector3 = poi["gate_winch"]
+	n.global_position = w + rt.road.right(rt.gate_i) * 1.0 + Vector3(0, 0.2, 0)
+	n.reset_physics_interpolation()
+	await place_player(p, w + rt.road.right(rt.gate_i) * 2.0 - rt.road.forward(rt.gate_i) * 2.0 + Vector3(0, 0.2, 0), 0.0)
+	await physics_frames(5)
+	var job_ok := await naresh_job(p, rt.winch.global_position, "hold")
+	var up := await until(func() -> bool: return rt.gate.global_position.y > gate_y + 3.0, 12.0)
+	check(job_ok and up, "V on the winch, Hold the gate winch: Naresh holds the flood gate up")
+	await place_player(p, c.global_transform * Vector3(-3.0, 0, 0) + Vector3(0, 0.3, 0), 0.0)
+	await seat_p1_driver()
+	await engine_on()
+	await drive_until(rt.road, rt.gate_i + 20, func() -> bool: return st.flags.has("gate_through"), 40.0, 20.0)
+	key(KEY_W, false)
+	check(st.flags.has("gate_through"), "the van drives under the gate and on")
+	await until(func() -> bool: return st.current()["id"] == "end_f6", 3.0)
+	check(st.current()["id"] == "end_f6", "on to the radio mast")
+	# R5, the push start: a flat battery won't start; rolling, it does
+	await tap(KEY_X)                       # engine off
+	c.battery = 0.0
+	await wait(0.3)
+	await tap(KEY_X)
+	await wait(0.3)
+	check(not c.engine_on, "a flat battery: click, click")
+	c.parking_brake = false
+	c.linear_velocity = -c.global_transform.basis.z * 4.0
+	await physics_frames(2)
+	await tap(KEY_X)
+	await wait(0.3)
+	check(c.engine_on, "rolling at %.0f km/h: it bump-starts" % kmh())
+	p.force_exit = true
+	await physics_frames(3)
+	rt.watcher.dormant = false
 
 
 func t_storm_gym() -> void:

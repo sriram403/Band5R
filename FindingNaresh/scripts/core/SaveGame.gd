@@ -181,6 +181,8 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	# story first: other systems read from it (collected fragments, flags)
 	boot.story.from_dict(d.get("story", {}))
 	boot.get_tree().call_group("fishing_village", "match_story")    # F3: the key, the shed door
+	boot.get_tree().call_group("salt_pans", "match_story")          # F4: the watcher up or down
+	boot.get_tree().call_group("swing_bridge", "match_story")       # F5: the span open or locked
 	boot.map_state.from_dict(d.get("map", {}))
 	var station := boot.get_tree().get_first_node_in_group("cooling_station") as CoolingStation
 	if station and d.has("station"):
