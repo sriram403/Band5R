@@ -14,9 +14,11 @@ being built and tested), so this always shows where the work is right now.
   fragments. F split into F1-F9 below.
 - F1 the storm gym: **approved by you (2026-10-01, with its 8 decisions)
   and pushed.**
-- **F2 (the storm on the old road, the dead end at the bridge): built,
-  tested, merged into main, not pushed. Waiting for your test**
-  (`notes/TEST_MILESTONE_F.md`, section F2).
+- F2 (the storm on the old road, the dead end at the bridge): **approved by
+  you (2026-10-01, its 5 decisions) and pushed**, with the fix from your
+  test (the rain followed P2 left at J3).
+- Next: **F3** (fishing village R1, the refuel mistake, creatures drift to
+  Naresh).
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -826,7 +828,7 @@ test before each push.
         scenarios: 0 failures. The storm gym is in set:gyms
   - [x] Merged into main; your test sheet `notes/TEST_MILESTONE_F.md` (F1)
   - [x] Your test: approved with its decisions (2026-10-01); pushed
-- [~] F2. The storm over the ghat and the Beach Road (the old way); the dead
+- [x] F2. The storm over the ghat and the Beach Road (the old way); the dead
       end at J3 (the lift bridge swung open in the wind); "My friend said
       north"; the dark end of the mood curve; creatures drift to Naresh
   - [x] `StormFront` makes the world's `Storm` (wind off the sea) with a
@@ -844,7 +846,13 @@ test before each push.
         before left on; it sets its own start now) + bridge, power, save:
         0 failures; storm + storm_road rerun in order: 0 failures
   - [x] Merged into main; test sheet F2
-  - [ ] Your test, then push
+  - [x] Your test: approved with its decisions (2026-10-01). Found: the
+        "North on the coast road" jump left you where you were (now at the
+        van, pointing north); the storm followed P2 left at J3, raining and
+        gusting on P1 and the van up the coast road (now per player / van;
+        `t_storm_road` checks it). One unexplained report: getting out near
+        the fishing village you were thrown and spun round (likely a gust
+        rolling the van into you, from the same bug; watch for it). Pushed
   - [ ] Creatures drift to Naresh: moved to F3, where the return's creatures start
 - [ ] F3. Fishing village, R1 the decoy (fuel in the net shed, Naresh waits
       on the jetty); the scripted refuel mistake; the van dies past the village

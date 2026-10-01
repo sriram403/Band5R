@@ -120,7 +120,7 @@ over the hills a **black bank of storm cloud**.
 "Foot of the ghat (J3)"**, then **F1 → Van → "Bring the van here"**, and drive on
 from there (step 3). Or Travel → "The pass" to start at the top.
 
-### Decisions to confirm (F2)
+### Decisions to confirm (F2): confirmed by you, 2026-10-01 (for now)
 
 1. **The storm hugs the old road:** full within 60 m of the Beach Road (from
    the storm bank on), the ghat road, and Pump House Road from J3 to the

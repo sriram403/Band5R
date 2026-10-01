@@ -471,8 +471,8 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
    a time with the user's test before each push. **F1 (`world/Storm.gd`,
    `--gym=storm`, `t_storm_gym`) is approved and pushed (2026-10-01).
    F2 (the storm on the old road: `StormFront` zone + `Storm`, the power
-   line down, `LiftBridge.storm_blow`, `t_storm_road`) is merged into main,
-   not pushed: waiting for the user's test.** Next F3 (fishing village R1,
+   line down, `LiftBridge.storm_blow`, `t_storm_road`) is approved and pushed
+   (2026-10-01).** Next F3 (fishing village R1,
    the refuel mistake, creatures drift to Naresh). Next F2
    (the storm over the ghat, the dead end at J3) in `../MPG_dev` on a new
    branch from main. Build the next part in `../MPG_dev` while the long runs
