@@ -6547,6 +6547,9 @@ func t_storm_road() -> void:
 	if s == null:
 		return
 	var poi: Dictionary = boot.builder.poi
+	# its own start: the step before the storm (t_storm may have left it on)
+	boot.dev_menu.run("jump", st.index_of("drum"))
+	await wait(1.0)
 	check(front.storm_at(poi["ghat_pass"]) == 0.0, "before the storm starts there is none")
 	boot.dev_menu.run("jump", st.index_of("storm"))
 	await wait(1.0)
@@ -6585,7 +6588,7 @@ func t_storm_road() -> void:
 	await seat_p1_driver()
 	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
 	var n := nz()
-	n.global_position = c.global_position + Vector3(3, 0, 0)
+	n.global_position = c.global_transform * Vector3(0, -0.3, 6.5)     # on the road behind it
 	await wait(0.5)
 	n.command(p1(), "get_in", c)
 	await until(func() -> bool: return n.state == Naresh.State.SEATED, 10.0)
