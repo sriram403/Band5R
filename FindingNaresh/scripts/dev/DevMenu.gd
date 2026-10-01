@@ -386,6 +386,12 @@ func _rows_for(t: int) -> Array:
 			var rows: Array = [_header("Mood (sky, fog, birds, traffic, creatures' light)")]
 			for m in MOODS:
 				rows.append(_row(m[1], "mood", m[0], "[b]Mood %.2f[/b]\n\n1 is the bright start; the way out falls to 0.6 at the coast; dusk and night come later." % m[0]))
+			var st := get_tree().get_first_node_in_group("storm") as Storm
+			if st != null:
+				rows.append(_header("The storm"))
+				rows.append(_row("Storm: %s" % ("on (turn off)" if st.intensity > 0.01 else "off (turn on)"), "storm_toggle", null, "[b]The storm[/b]\n\nRain, fog to ~60 m, lightning, gusts, a wet road."))
+				rows.append(_row("A full gust now", "storm_gust", 1.0, "[b]A full gust[/b]\n\nAcross the wind. It tips the van above ~45 km/h; under 25 km/h it never can."))
+				rows.append(_row("Lightning now", "storm_flash", null, "[b]Lightning[/b]\n\nA flash, thunder a moment later."))
 			return rows
 		"Gyms":
 			var rows: Array = [_row("The game world", "load", "", "[b]The game world[/b]\n\nReloads the world (the session starts over).")]
@@ -593,6 +599,19 @@ func run(action: String, arg = null) -> void:
 			for p in boot.players:
 				p.has_binoculars = true
 			_note = "Both have binoculars (hold RMB / LT)."
+		"storm_toggle", "storm_gust", "storm_flash":
+			var st := get_tree().get_first_node_in_group("storm") as Storm
+			if st != null:
+				match action:
+					"storm_toggle":
+						st.intensity = 0.0 if st.intensity > 0.01 else 1.0
+						_note = "The storm is %s." % ("on" if st.intensity > 0.01 else "off")
+					"storm_gust":
+						st.gust_now(float(arg))
+						_note = "A gust is coming."
+					"storm_flash":
+						st.lightning()
+						_note = "Lightning."
 		"mood":
 			var mood := get_tree().get_first_node_in_group("mood") as Mood
 			if mood != null:

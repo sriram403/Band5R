@@ -26,7 +26,7 @@ var headless := DisplayServer.get_name() == "headless"
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
 ## Gyms with their own scenarios (the base gym runs QUICK_GYM).
-const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"], "naresh": ["naresh"], "photo": ["photo_gym"]}
+const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traffic", "lorry"], "tagging": ["tagging"], "binoculars": ["binoculars"], "stealth": ["stealth", "taken", "hiding"], "creature": ["van"], "naresh": ["naresh"], "photo": ["photo_gym"], "storm": ["storm_gym"]}
 ## Smoke (tools/run_test.sh with no arguments, ~3 min): the controls in the
 ## base gym and one short world check per system. The long playthroughs are
 ## in the sets and in full (tools/test_plan.sh).
@@ -6434,6 +6434,269 @@ func t_beach() -> void:
 	check(headless or fps >= 110.0, "the lit promenade at dusk keeps the frame rate (%.0f fps)" % fps)
 	await shot("beach_dusk_split")
 	mood.set_now(0.62)
+
+
+## The storm gym (F1, design/RETURN.md). `GYM=storm tools/run_test.sh storm_gym`
+func storm() -> Storm:
+	return get_tree().get_first_node_in_group("storm") as Storm
+
+
+## Put the van at the west end of the straight, P1 driving, the engine on.
+func storm_start() -> void:
+	var c := camper()
+	c.repair_all()
+	c.linear_velocity = Vector3.ZERO
+	c.angular_velocity = Vector3.ZERO
+	c.global_transform = Transform3D(Basis.looking_at(Vector3(1, 0, 0), Vector3.UP), Vector3(-290, Landscape.ground(-290, 250) + 0.9, 250))
+	c.snap_visuals()
+	c.parking_brake = true
+	await wait(1.2)
+	await seat_p1_driver()
+	if not c.engine_on:
+		await tap(KEY_X)
+	await wait(0.3)
+
+
+func storm_roll() -> float:
+	return rad_to_deg(acos(clampf(camper().global_transform.basis.y.y, -1.0, 1.0)))
+
+
+## Drive the straight at `kmh_want`, let go of the wheel, blow one gust across
+## it. Returns [sideways m, most roll deg, tipped]. A tipped van is left lying.
+func storm_run(kmh_want: float, strength := 1.0) -> Array:
+	var c := camper()
+	var s := storm()
+	await storm_start()
+	var ad := AutoDriver.new(self, boot.builder.network.road("gym_straight"), c)
+	var t0 := Time.get_ticks_msec()
+	# up to speed on the line, steadied for 2 s
+	var steady := 0.0
+	while Time.get_ticks_msec() - t0 < 30000 and steady < 2.0:
+		await physics_frames(1)
+		ad.step(kmh_want)
+		if absf(kmh() - kmh_want) < 3.0 and absf(c.global_position.z - 250.0) < 0.4:
+			steady += 1.0 / 60.0
+	ad.release()
+	var z0 := c.global_position.z
+	var most := 0.0
+	var tipped := false
+	s.gust_now(strength, Vector3(0, 0, -1))
+	var tt := 0.0
+	while tt < 5.5:
+		await physics_frames(1)
+		tt += 1.0 / 60.0
+		# hold the speed with the throttle only, hands off the wheel
+		key(KEY_W, kmh() < kmh_want and not tipped)
+		most = maxf(most, storm_roll())
+		if storm_roll() > 60.0:
+			tipped = true
+	key(KEY_W, false)
+	var side := absf(c.global_position.z - z0)
+	var rest := -1.0
+	if tipped:
+		# where does it come to rest: on its side, or back on its wheels?
+		await until(func() -> bool: return c.linear_velocity.length() < 0.5 and c.angular_velocity.length() < 0.3, 6.0)
+		rest = storm_roll()
+		tipped = rest > 60.0
+	log_line("storm gust %.0f%% at %.0f km/h: pushed %.2f m sideways, most roll %.1f deg%s" % [strength * 100.0, kmh_want, side, most,
+		(", came to rest at %.0f deg: %s" % [rest, "ON ITS SIDE" if tipped else "back on its wheels"]) if rest >= 0.0 else ""])
+	if not tipped:
+		key(KEY_S, true)
+		await until(func() -> bool: return kmh() < 2.0, 8.0)
+		key(KEY_S, false)
+	return [side, most, tipped]
+
+
+func storm_leave() -> void:
+	var c := camper()
+	if c.global_transform.basis.y.y < 0.9:
+		c.recover()
+	p1().force_exit = true
+	p2().force_exit = true
+	await physics_frames(3)
+
+
+func t_storm_sweep() -> void:
+	storm().auto_gusts = false
+	storm().auto_flashes = false
+	for spec in [[42.0, 1.0], [45.0, 1.0], [50.0, 1.0], [55.0, 1.0], [60.0, 1.0], [50.0, 0.85], [60.0, 0.85]]:
+		await storm_run(spec[0], spec[1])
+		await storm_leave()
+
+
+func t_storm_gym() -> void:
+	var s := storm()
+	var c := camper()
+	check(s != null, "the storm gym has a storm")
+	if s == null:
+		return
+	s.auto_gusts = false
+	s.auto_flashes = false
+	await wait(0.5)
+
+	# the weather: the road wet, fog closing in, rain round each player
+	check(is_equal_approx(c.wet, 1.0) and absf(c._wheels[0].wheel_friction_slip - 3.1 * Camper.WET_GRIP) < 0.01, "the road is wet: the tyres grip %.0f%% of dry" % (Camper.WET_GRIP * 100.0))
+	var env := (boot.world.get_node("Environment") as WorldEnvironment).environment
+	log_line("storm fog: begin %.0f m, end %.0f m, density %.2f" % [env.fog_depth_begin, env.fog_depth_end, env.fog_density])
+	check(env.fog_depth_end <= 90.0 and env.fog_depth_begin <= 6.0, "the fog closes in (ends at %.0f m)" % env.fog_depth_end)
+	var rains := s.find_children("*", "GPUParticles3D", false, false)
+	check(rains.size() == 2 and (rains[0] as GPUParticles3D).emitting, "it rains round both players (%d emitters)" % rains.size())
+	check(c.get_node_or_null("RainShield") != null, "the van's body keeps the rain out of the cab")
+	check(s._hiss.target > 0.5 and s._wind.target > 0.1, "rain and wind are heard (rain %.2f, wind %.2f)" % [s._hiss.target, s._wind.target])
+
+	# what you can see: from 200 m short of the boards, looking along the road
+	await place_player(p1(), Vector3(-200, Landscape.ground(-200, 245) + 0.3, 245), -PI * 0.5)
+	await wait(0.6)
+	await shot("storm_boards")
+
+	# lightning: the land lit for a moment, thunder after
+	var amb0 := env.ambient_light_energy
+	s.lightning()
+	for _k in 6:
+		await get_tree().process_frame
+		log_line("  flash %.2f ambient %.2f" % [s.flash, env.ambient_light_energy])
+	var lit := env.ambient_light_energy
+	log_line("lightning: ambient %.2f -> %.2f, flash %.2f" % [amb0, lit, s.flash])
+	check(s.flash > 0.4 and lit > amb0 + 0.5, "lightning lights the land for a moment")
+	await shot("storm_flash")
+	await wait(1.0)
+	check(s.flash < 0.05, "the flash is over in a moment")
+
+	# windsocks: hanging in the calm, streaming out in a gust
+	var sock := boot.world.find_children("Windsock", "", true, false)[0] as Node3D
+	var swing := sock.get_node("Turn/Swing") as Node3D
+	var calm := rad_to_deg(swing.rotation.x)
+	await face_point(p1(), sock.global_position + Vector3(0, 3.9, 0), 9.0, Vector3(1, 0, -0.4).normalized())
+	await shot("storm_sock_calm")
+	s.gust_now(1.0, Vector3(0, 0, -1))
+	await wait(0.9)
+	var early := rad_to_deg(swing.rotation.x)
+	var early_gust := s.gust
+	await wait(1.4)
+	var full := rad_to_deg(swing.rotation.x)
+	var tip := (swing.global_transform * Vector3(0, 0, -1.5)) - swing.global_position
+	await shot("storm_sock_gust")
+	log_line("windsock: calm %.0f deg, 0.9 s into a gust %.0f, at full %.0f; points %s" % [calm, early, full, tip.normalized()])
+	check(calm < -55.0 and full > -15.0, "a windsock hangs in the calm and streams out in a gust")
+	check(early > calm + 15.0 and early_gust < 0.7, "it lifts before the gust's full strength: a warning (gust %.2f then)" % early_gust)
+	check(tip.z < -0.8, "it points where the wind blows")
+	await wait(3.0)
+
+	# the wipers: on in the rain with the engine running, parked when it stops
+	await storm_start()
+	await wait(0.4)
+	var a0: float = c._wipers[0].rotation_degrees.z
+	await wait(0.3)
+	var a1: float = c._wipers[0].rotation_degrees.z
+	check(c.wipers_on and absf(a1 - a0) > 5.0, "the wipers sweep in the rain with the engine on")
+	await shot("storm_wipers")
+	# the headlights in the rain: the road ahead lit to ~60 m
+	await tap(KEY_L)
+	await wait(0.4)
+	check(c.headlights_on, "L puts the headlights on")
+	await shot("storm_headlights")
+	await tap(KEY_L)
+	await tap(KEY_X)
+	await wait(1.6)
+	check(not c.wipers_on and absf(c._wipers[0].rotation_degrees.z - Camper.WIPE_REST) < 1.0, "engine off: they finish the sweep and park")
+
+	# the gusts by speed: never under 25 km/h, over at 45+
+	var r25 := await storm_run(25.0, 1.0)
+	check(not r25[2] and r25[1] < 8.0, "a full gust at 25 km/h can't tip the van (leans %.1f deg)" % r25[1])
+	await storm_leave()
+	var r40 := await storm_run(40.0, 1.0)
+	check(not r40[2], "at 40 km/h it leans hard but stays up (%.0f deg)" % r40[1])
+	await storm_leave()
+	var r70 := await storm_run(50.0, 0.7)
+	check(not r70[2] and r70[0] > 0.6 and r70[0] < 3.0, "a 70%% gust at 50 km/h shoves it %.1f m sideways" % r70[0])
+	await storm_leave()
+	var r50 := await storm_run(50.0, 1.0)
+	check(r50[2], "a full gust at 50 km/h tips it over")
+	# put it back on its wheels the player's way: R
+	await until(func() -> bool: return c.is_upset(), 6.0)
+	await wait(0.3)
+	await shot("storm_tipped")
+	check(c.is_upset() and p1().prompt_text.contains("Right the van"), "lying on its side: '%s'" % p1().prompt_text)
+	await tap(KEY_R)
+	await wait(1.5)
+	check(c.global_transform.basis.y.y > 0.95, "R puts it back on its wheels")
+	await storm_leave()
+
+	# careful driving gets through: 25 km/h, steering, a full gust every 5 s
+	await storm_start()
+	var ad := AutoDriver.new(self, boot.builder.network.road("gym_straight"), c)
+	var most := 0.0
+	var gt := 2.0
+	var t := 0.0
+	while c.global_position.x < 250.0 and t < 90.0:
+		await physics_frames(1)
+		t += 1.0 / 60.0
+		ad.step(25.0)
+		most = maxf(most, storm_roll())
+		gt -= 1.0 / 60.0
+		if gt <= 0.0:
+			gt = 5.0
+			s.gust_now(1.0, Vector3(0, 0, -1))
+	ad.release()
+	log_line("careful run: %d gusts, most roll %.1f deg, %.1f s off the road, most %.1f m off the line" % [s.gusts, most, ad.off_time, ad.max_off])
+	check(c.global_position.x >= 250.0 and most < 8.0 and ad.off_time < 0.5, "at 25 km/h a careful driver gets through every gust")
+
+	# stopping on the wet road from 50 km/h, against a dry one
+	var stops := []
+	for w in [0.0, 1.0]:
+		s.intensity = w
+		await physics_frames(2)
+		await storm_start()
+		var ad2 := AutoDriver.new(self, boot.builder.network.road("gym_straight"), c)
+		var t2 := 0.0
+		while kmh() < 50.0 and t2 < 20.0:
+			await physics_frames(1)
+			t2 += 1.0 / 60.0
+			ad2.step(55.0)
+		ad2.release()
+		var x0 := c.global_position.x
+		key(KEY_S, true)
+		await until(func() -> bool: return kmh() < 1.0, 10.0)
+		key(KEY_S, false)
+		stops.append(c.global_position.x - x0)
+	log_line("stopping from 50 km/h: dry %.1f m, wet %.1f m" % [stops[0], stops[1]])
+	check(stops[1] > stops[0] * 1.15, "it takes longer to stop on the wet road (%.0f m, dry %.0f m)" % [stops[1], stops[0]])
+	s.intensity = 1.0
+
+	# the frame rate in the storm, both views, driving
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	boot._set_layout(Boot.Layout.SIDE_BY_SIDE)
+	await storm_start()
+	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	s.auto_gusts = true
+	s.auto_flashes = true
+	var ad3 := AutoDriver.new(self, boot.builder.network.road("gym_straight"), c)
+	var t3 := 0.0
+	_frame_times.clear()
+	while t3 < 6.0:
+		await physics_frames(1)
+		t3 += 1.0 / 60.0
+		ad3.step(25.0)
+	ad3.release()
+	var avg := 0.0
+	for f in _frame_times:
+		avg += f
+	var fps := float(_frame_times.size()) / maxf(avg, 0.001)
+	log_line("fps in the storm, both views, driving: %.0f" % fps)
+	check(headless or fps >= 120.0, "the storm keeps the frame rate (%.0f fps)" % fps)
+	await shot("storm_split")
+	key(KEY_S, true)
+	await until(func() -> bool: return kmh() < 2.0, 6.0)
+	key(KEY_S, false)
+
+	# and off again: dry, clear, no rain
+	s.intensity = 0.0
+	await wait(0.5)
+	check(is_equal_approx(c.wet, 0.0) and env.fog_depth_end > 300.0 and not (rains[0] as GPUParticles3D).emitting, "the storm off: dry road, the fog lifts, no rain")
+	s.intensity = 1.0
+	boot._set_layout(Boot.Layout.SOLO)
+	await storm_leave()
 
 
 ## E3, the photo gym: two pairs of poles line up from one spot only; fixes
