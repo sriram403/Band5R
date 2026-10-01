@@ -68,3 +68,45 @@ What to report: anything above that didn't happen, plus how it felt.
 7. **A tipped van just lies there until R**: no damage, nothing falls out
    (for now).
 8. **On foot the wind doesn't push you** (for now).
+
+---
+
+## F2. The storm on the old road (the dead end)
+
+Start `Play.bat`, **New game**, **F1 → Story**, pick **"North on the coast
+road"** (the storm step, near the bottom), Enter. You're both by the van at
+the start of the coast road, Naresh in the back, the black storm bank over
+the Beach Road behind you.
+
+1. **Drive north a little way** up the coast road. **Expect:** no rain, no
+   gusts, dry road; the storm stays behind you, over the Beach Road.
+2. **Turn round and take the old way back:** the Beach Road towards the
+   ghat (south-west). **Expect:** as you reach it the rain, wind and fog
+   close in, the wipers start, the gusts begin (wind in off the sea, from
+   the left as you climb). Up the hairpins and down to J3. *Nothing from the
+   way out happens again (no burst hose, no creature attack on the ghat).*
+3. **On to the lift bridge** (Pump House Road from J3). **Expect:** the
+   leaf stands up again, swaying, the barriers back, every lamp along the
+   road dark; a message says the storm has the power line down and there's
+   no way across. The hut's panel says NO POWER; the levers do nothing.
+4. **Turn back.** About 300 m on, **Naresh:** "My friend said north."
+5. **F1 → Story**, jump back to an earlier Bessi step: **Expect:** the
+   bridge is down again (as you left it) and the lamps lit.
+
+Tip: F1 → Travel takes you both to the ghat pass or the bridge; F1 → Van
+brings the van.
+
+### Decisions to confirm (F2)
+
+1. **The storm hugs the old road:** full within 60 m of the Beach Road (from
+   the storm bank on), the ghat road, and Pump House Road from J3 to the
+   bridge; gone by 160 m. The coast road north (about 220 m from the Beach
+   Road at its closest) stays clear.
+2. **The wind blows in from the sea** (towards the west).
+3. **Why it's a dead end:** the storm brings the power line down, so the
+   bridge has no power and the gale has its leaf up again. It can't be
+   fixed; it's a world gate, not a puzzle.
+4. **His line comes once,** when you're ~300 m back from the bridge with him
+   in or by the van.
+5. **The coast watchtower's creature** is still there on the way back (as
+   before).

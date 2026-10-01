@@ -825,9 +825,22 @@ test before each push.
         scenarios: 0 failures. The storm gym is in set:gyms
   - [x] Merged into main; your test sheet `notes/TEST_MILESTONE_F.md` (F1)
   - [x] Your test: approved with its decisions (2026-10-01); pushed
-- [ ] F2. The storm over the ghat and the Beach Road (the old way); the dead
+- [~] F2. The storm over the ghat and the Beach Road (the old way); the dead
       end at J3 (the lift bridge swung open in the wind); "My friend said
       north"; the dark end of the mood curve; creatures drift to Naresh
+  - [x] `StormFront` makes the world's `Storm` (wind off the sea) with a
+        zone: full within 60 m of the Beach Road (from the bank), the ghat
+        road and Pump House Road J3 -> bridge, gone by 160 m (first 150/300 m
+        reached the coast road north, which runs ~220 m from the Beach Road)
+  - [x] The dead end: `PowerLine.storm_cut`, `LiftBridge.storm_blow` (leaf up,
+        swaying, barriers back, NO POWER); a message at the bridge; Naresh's
+        line ~300 m back; a jump back before the storm puts it all back
+  - [x] Found from the shots: after a Bessi jump the drive back burst the
+        hose and started the first ghat attack again; the jump now marks the
+        way out's one-offs done
+  - [x] `t_storm_road` (in set:bessi and full): 17 checks, 0 failures
+  - [~] set:bessi + bridge, power, save; then your test sheet (F2)
+  - [ ] Creatures drift to Naresh: moved to F3, where the return's creatures start
 - [ ] F3. Fishing village, R1 the decoy (fuel in the net shed, Naresh waits
       on the jetty); the scripted refuel mistake; the van dies past the village
 - [ ] F4. Salt pans, R2 red light / green light (dashes between heaps, the
