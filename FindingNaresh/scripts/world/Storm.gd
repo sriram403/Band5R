@@ -36,10 +36,15 @@ const RAIN_UP := 12.0                  ## m above the player the drops start
 
 ## 0..1, how stormy it is (the gym: 1 everywhere; the world: by place, F2)
 var intensity := 1.0
-## the world (F2): pos -> 0..1, how stormy it is there; the storm is as
-## strong as it is where anyone (or the van) is, eased in and out
+## the world (F2): pos -> 0..1, how stormy it is there. Each player and the
+## van get their own (eased in and out): your rain falls where you are, the
+## van's road is wet and gusty where the van is. `intensity` is then the
+## storm on screen (the fog, the sky, the sound): the strongest round a
+## player whose view is showing. (It was the strongest round anyone: P2 left
+## at J3 kept it raining on P1 up the coast road, gusts and all.)
 var zone_fn: Callable
 const ZONE_EASE := 0.25                ## per second
+var _here := {}                        ## node -> its eased storm
 ## the way the wind blows (towards), flat
 var wind_dir := Vector3(0, 0, -1)
 var auto_gusts := true                 ## tests switch the schedule off and call gust_now()
@@ -114,15 +119,30 @@ func gust_now(strength := 1.0, dir := Vector3.ZERO) -> void:
 	gusts += 1
 
 
+## How stormy it is round this player or van.
+func local(n: Node) -> float:
+	return float(_here.get(n, 0.0)) if zone_fn.is_valid() else intensity
+
+
 func _physics_process(delta: float) -> void:
+	var most := intensity
 	if zone_fn.is_valid():
-		var want := 0.0
+		var boot := get_tree().current_scene
+		var views = boot.get("views") if boot != null else null
+		var shown := 0.0
+		most = 0.0
 		for n in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("camper"):
-			want = maxf(want, float(zone_fn.call((n as Node3D).global_position)))
-		intensity = move_toward(intensity, want, ZONE_EASE * delta)
+			var v := move_toward(float(_here.get(n, 0.0)), float(zone_fn.call((n as Node3D).global_position)), ZONE_EASE * delta)
+			_here[n] = v
+			most = maxf(most, v)
+			if n is PlayerRig:
+				var i: int = (n as PlayerRig).index
+				if views == null or i >= views.size() or (views[i] as Control).visible:
+					shown = maxf(shown, v)
+		intensity = shown
 	for c in get_tree().get_nodes_in_group("camper"):
-		(c as Camper).set_wet(intensity)
-	if intensity <= 0.01:
+		(c as Camper).set_wet(local(c))
+	if most <= 0.01:
 		gust = 0.0
 		_g_t = -1.0
 		return
@@ -132,7 +152,7 @@ func _physics_process(delta: float) -> void:
 			_next = _rng.randf_range(GAP.x, GAP.y)
 			# mostly from one side, swinging a little
 			var d := wind_dir.rotated(Vector3.UP, _rng.randf_range(-0.35, 0.35))
-			gust_now(_rng.randf_range(STRENGTH.x, STRENGTH.y) * intensity, d)
+			gust_now(_rng.randf_range(STRENGTH.x, STRENGTH.y), d)
 	if _g_t >= 0.0:
 		_g_t += delta
 		gust = envelope(_g_t) * _g_strength
@@ -175,7 +195,7 @@ func _blow(c: Camper) -> void:
 	var fwd := Vector3(-b.z.x, 0, -b.z.z).normalized()
 	var across := _g_dir.dot(right)          # signed: + pushes it to its right
 	var v := absf(c.linear_velocity.dot(fwd))
-	var bite := gust * gust                  # the rise is the warning
+	var bite := gust * gust * local(c)       # the rise is the warning; none out of the storm
 	var push := PUSH * bite * across * (0.35 + 0.65 * v / PUSH_REF)
 	c.apply_central_force(right * push)
 	var over := maxf(0.0, v - SAFE_KMH / 3.6)
@@ -198,7 +218,7 @@ func _process(delta: float) -> void:
 	for c in get_tree().get_nodes_in_group("camper"):
 		_shield(c as Camper)
 	for p in get_tree().get_nodes_in_group("player"):
-		_rain_for(p as PlayerRig, on)
+		_rain_for(p as PlayerRig, local(p) > 0.01)
 	_windsocks(delta)
 	if not on:
 		return
@@ -235,7 +255,7 @@ func _rain_for(p: PlayerRig, on: bool) -> void:
 	node.emitting = on
 	if not on:
 		return
-	node.amount_ratio = clampf(intensity, 0.05, 1.0)
+	node.amount_ratio = clampf(local(p), 0.05, 1.0)
 	# lead the drops a little by how fast you go, so a van never outruns them
 	var vel: Vector3 = p.vehicle.linear_velocity if p.vehicle != null else p.velocity
 	node.global_position = p.global_position + Vector3(0, RAIN_UP, 0) + Vector3(vel.x, 0, vel.z) * 0.8

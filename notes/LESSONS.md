@@ -208,6 +208,13 @@ The engine-level details (exact Godot calls, numbers) are also in
   started at the gym's centre, 300 m from the van, in 60 m fog; the user
   couldn't find it. A gym starts you beside what you came to test, facing it.
 
+- **"Where is everyone" isn't one place (F2, the user's test):** the storm
+  took its strength from wherever *anyone* was, so P2 left standing at J3
+  (a player testing alone moves only P1) kept it raining, wet and gusty on
+  P1 and the van far up the coast road. Weather follows each player and the
+  van; shared things (fog, sound) follow the views on screen. Test with the
+  players split up, the way one person tests a two-player game.
+
 ## 4. Game design lessons (from the user's play)
 
 - **Give both players something to do, all the time.** The maze's hay dust

@@ -6604,6 +6604,22 @@ func t_storm_road() -> void:
 	check(not c.coolant_leak and st.flags.has("first_attack"), "the way out's one-offs don't happen again (no burst hose, no second first attack)")
 	check(get_tree().get_nodes_in_group("creature").filter(func(x): return (x as Node3D).global_position.distance_to(c.global_position) < 80.0).is_empty(), "no creature comes for the van on the ghat")
 	await shot("storm_ghat")
+	# P2 left in the storm at the bridge, P1 and the van up the coast road:
+	# only P2 gets the storm (it rained on P1, gusts and all)
+	p1().force_exit = true
+	await physics_frames(3)
+	await place_player(p2(), poi["bridge_barrier_near"] + Vector3(0, 0.5, 0), 0.0)
+	var north_at := coast.point(int(coast.nearest(1660.0, -600.0)["index"]))
+	await van_to(north_at)
+	await place_player(p1(), c.global_transform * Vector3(-3.2, 0, 0) + Vector3(0, 0.5, 0), 0.0)
+	boot._set_layout(Boot.Layout.SOLO)
+	await wait(6.0)
+	var rain1 := s._rain.get(p1(), []) as Array
+	var rain2 := s._rain.get(p2(), []) as Array
+	log_line("split up: P1 %.2f, P2 %.2f, the van %.2f, on screen %.2f; the van wet %.2f" % [s.local(p1()), s.local(p2()), s.local(c), s.intensity, c.wet])
+	check(s.local(p1()) < 0.05 and s.local(c) < 0.05 and c.wet < 0.05 and s.intensity < 0.05, "P2 left at the bridge: up the coast road P1 and the van are dry, no gusts")
+	check(rain1.is_empty() or not (rain1[0] as GPUParticles3D).emitting, "no rain on P1")
+	check(s.local(p2()) > 0.5 and not rain2.is_empty() and (rain2[0] as GPUParticles3D).emitting, "it still rains on P2 at the bridge")
 	# a jump back before the storm puts it all away
 	p1().force_exit = true
 	p2().force_exit = true
