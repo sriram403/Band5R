@@ -978,7 +978,14 @@ test before each push.
         decoy: "both drift to Naresh (1 of 2)", "dies 55 m up the road",
         "takes the full can off the rack", "the tank's filled"; saltpans:
         "across unseen", "on to the estuary bridge"; home: "0 dark" (the
-        maze / relay left done by an earlier test). Next: read
+        maze / relay left done by an earlier test). Final: 24 failures, no
+        script errors; the later ones are old way-out checks after the F
+        tests: way_out (both routes: the bridge didn't come down, the story
+        stuck at 'cross'), save (the lifted bridge / power line), routes
+        (coast road, ghat + beach road). Likely the F tests leave the storm
+        (`storm_on`: the bridge blown, the power cut, gusts) and the
+        return's state behind for the old tests after them. The log:
+        `appdata/playtest/runs/full_2026-10-01.log`. Next: read
         `appdata/playtest/runs/` logs, fix each, rerun those scenarios in
         the full order, then your test from F3 on
   - [ ] Your test (F3 on); push after it
