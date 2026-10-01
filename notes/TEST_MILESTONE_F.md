@@ -13,10 +13,10 @@ Note anything that feels wrong, slow, confusing or ugly, with the step number.
 ## F1. The storm (the storm gym)
 
 Start `Play.bat`, **New game**, then **F1** (developer menu) → **Gyms** tab →
-**storm**, Enter. You start on the flat test plain at dusk, in the storm:
-rain, wind, grey fog, lightning now and then. The van stands at the west end
-of a long straight road (the road runs off in front of the van); orange-and-white **windsocks** line the road on the
-windward side; four white **distance boards** (30, 60, 90, 120 m) stand
+**storm**, Enter. You both start **right beside the van, facing its driver
+door**, on a flat plain at dusk, in the storm: rain, wind, grey fog,
+lightning now and then. The road runs straight ahead of the van's nose;
+orange-and-white **windsocks** line it on the far side; four white **distance boards** (30, 60, 90, 120 m) stand
 beside the road a little way along. The wind blows across the road, from
 the windsocks' side.
 
