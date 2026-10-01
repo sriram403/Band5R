@@ -255,7 +255,7 @@ func _salt_pans() -> void:
 
 
 ## A whole road bridge where a road crosses the river (the estuary).
-func _road_bridge(road_name: String, key: String) -> void:
+func _road_bridge(road_name: String, key: String, swing := false) -> void:
 	var road := network.road(road_name)
 	var root := Node3D.new()
 	root.name = "Bridge_" + key
@@ -271,9 +271,12 @@ func _road_bridge(road_name: String, key: String) -> void:
 	if span.is_empty():
 		push_warning("%s never crosses the river" % road_name)
 		return
+	var mid_at := road.point(span[span.size() / 2])
 	for i in range(span[0] - 1, span[span.size() - 1] + 1):
 		var a := road.point(i)
 		var b := road.point(i + 1)
+		if swing and ((a + b) * 0.5).distance_to(mid_at) < SwingBridge.GAP_HALF:
+			continue          # the swing span goes here (F5)
 		var xf := Transform3D(Basis.looking_at(b - a, Vector3.UP), (a + b) * 0.5 + Vector3.UP * 0.02)
 		var sz := Vector3(Landscape.ROAD_HALF * 2.0 + 1.0, 0.4, a.distance_to(b) + 0.05)
 		var slab := Build.box(sz, deck_mat)
@@ -290,6 +293,11 @@ func _road_bridge(road_name: String, key: String) -> void:
 	for gi in [span[0] + 2, mid, span[span.size() - 1] - 2]:
 		root.add_child(Build.cyl(0.9, 9.0, deck_mat, road.point(gi) + Vector3.DOWN * 4.6, Vector3.ZERO, 10, "Pier"))
 	poi[key] = road.point(mid)
+	if swing:
+		var sb := SwingBridge.new()
+		sb.name = "SwingBridge_" + key
+		world.add_child(sb)
+		sb.setup(self, road, mid)
 
 
 ## Where a road runs through a tunnel: walls and a roof over its slot in the

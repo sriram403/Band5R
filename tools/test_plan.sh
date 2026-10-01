@@ -61,7 +61,7 @@ test_plan() {
 		echo "|bessi_save" ;;
 	set:return)
 		echo "storm|storm_gym"
-		echo "|storm_road,decoy,saltpans"
+		echo "|storm_road,decoy,saltpans,swing"
 		echo "|decoy_save" ;;
 	set:world_full)
 		echo "|full" ;;

@@ -381,7 +381,7 @@ func _landmarks() -> void:
 	pans.name = "SaltPansR2"
 	world.add_child(pans)
 	pans.setup(self)
-	_road_bridge("coast_road", "estuary_bridge")
+	_road_bridge("coast_road", "estuary_bridge", true)
 	_tunnel("coast_road")
 	_naresh_home()
 	_info_board("home_lane", 22, 9.0, "HOMESTEAD\nRoad to Bessi: the lane runs east\nthrough town, then north to the\nwindmill: VALLEY RD or RIDGE TRACK")

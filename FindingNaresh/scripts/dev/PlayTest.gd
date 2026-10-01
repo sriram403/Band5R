@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -6929,6 +6929,99 @@ func t_saltpans() -> void:
 	check(sp.seen, "straight across without stopping: it sees the van")
 	p1().force_exit = true
 	await physics_frames(3)
+
+
+## F5, the estuary bridge and R3 the three-hand swing bridge. `tools/run_test.sh swing`
+func t_swing() -> void:
+	var st: Story = boot.story
+	var sb := get_tree().get_first_node_in_group("swing_bridge") as SwingBridge
+	check(sb != null and sb.crank_a != null and sb.brake != null, "the estuary bridge: a swing span, two cranks, a brake lever, a tide gauge")
+	if sb == null:
+		return
+	var c := camper()
+	var p := p1()
+	var q := p2()
+	boot.dev_menu.run("jump", st.index_of("swing"))
+	await wait(1.0)
+	var n := nz()
+	check(st.current()["id"] == "swing" and absf(sb.angle - SwingBridge.OPEN_DEG) < 0.1 and sb.barriers.visible, "F1 jump: at the controls, the span swung open, the barriers up")
+	await look_at_point(p, sb.pivot + Vector3.UP * 2.0)
+	await shot("swing_open")
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	# the cranks alone, brake on: nothing
+	await place_player(p, sb.crank_a.stand_point() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, sb.crank_a.global_position)
+	await wait(0.2)
+	check(p.prompt_text.contains("turn the crank"), "at a crank: '%s'" % p.prompt_text)
+	key(KEY_E, true)
+	await wait(2.0)
+	check(sb.angle >= SwingBridge.OPEN_DEG - 0.1, "turning a crank with the brake on does nothing (%.0f deg)" % sb.angle)
+	# Naresh on the brake, P2 on the other crank (pad X)
+	n.global_position = sb.brake.stand_point() + Vector3(1.0, 0.2, 0)
+	n.reset_physics_interpolation()
+	await place_player(q, sb.crank_b.stand_point() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(q, sb.crank_b.global_position)
+	key(KEY_E, false)
+	await physics_frames(3)
+	var job_ok := await naresh_job(p, sb.brake.global_position, "hold")
+	var on := await until(func() -> bool: return sb.brake_off(), 15.0)
+	check(job_ok and on, "V on the lever, Hold the brake: Naresh holds it off")
+	await look_at_point(p, sb.crank_a.global_position)
+	key(KEY_E, true)
+	await wait(0.4)
+	var a0 := sb.angle
+	await wait(3.0)
+	var one_rate := (a0 - sb.angle) / 3.0
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.4)
+	var a1 := sb.angle
+	await wait(3.0)
+	var two_rate := (a1 - sb.angle) / 3.0
+	log_line("swing: one crank %.1f deg/s, two %.1f deg/s; now %.0f deg" % [one_rate, two_rate, sb.angle])
+	check(one_rate > 1.0 and two_rate > one_rate * 1.7, "one crank turns it slowly, both twice as fast")
+	await look_at_point(p, sb.pivot + Vector3.UP * 2.0)
+	await shot("swing_turning")
+	await look_at_point(p, sb.crank_a.global_position)
+	# half way he waves at a boat and lets go: it swings back
+	var waved := await until(func() -> bool: return st.flags.has("swing_waved"), 40.0)
+	await physics_frames(10)
+	var b0 := sb.angle
+	await wait(1.5)
+	log_line("he let go at %.0f deg; 1.5 s later %.0f deg" % [b0, sb.angle])
+	check(waved and not sb.brake_off() and sb.angle > b0 + 2.0, "half way Naresh lets go to wave at a boat: the span swings back open")
+	n.command(p, "hold", sb.brake)
+	var done := await until(func() -> bool: return sb.locked, 60.0)
+	key(KEY_E, false)
+	pad_button(JOY_BUTTON_X, false)
+	check(done and st.flags.has("swing_locked") and not sb.barriers.visible, "told again: round it comes, it bolts home, the barriers go")
+	await until(func() -> bool: return st.current()["id"] == "end_f5", 3.0)
+	check(st.current()["id"] == "end_f5", "on to the rail tunnel")
+	await look_at_point(p, sb.pivot + Vector3.UP * 2.0)
+	await shot("swing_closed")
+	# the van drives over it
+	await van_to(sb.pivot - (sb._fwd * 40.0))
+	await seat_p1_driver()
+	await engine_on()
+	var road: Route = boot.builder.network.road("coast_road")
+	var far := sb.pivot + sb._fwd * 40.0
+	await drive_until(road, int(road.nearest(far.x, far.z)["index"]), func() -> bool: return c.global_position.distance_to(far) < 8.0, 30.0, 30.0)
+	key(KEY_W, false)
+	log_line("over the bridge: the van %.1f m from the far side, at height %.1f" % [c.global_position.distance_to(far), c.global_position.y])
+	check(c.global_position.distance_to(far) < 12.0 and c.global_position.y > Landscape.SEA_Y + 1.0, "the van drives over the swung-back span")
+	# the tide: at the red mark the current pulls twice as hard
+	sb.match_story()
+	st.flags.erase("swing_locked")
+	sb.match_story()
+	sb.tide = 1.0
+	var c0 := sb.angle
+	sb.angle = 45.0
+	await wait(2.0)
+	log_line("at the red mark it swings open at %.1f deg/s" % ((sb.angle - 45.0) / 2.0))
+	check((sb.angle - 45.0) / 2.0 > SwingBridge.DRIFT * 1.6, "at the tide's red mark the current pulls it open twice as fast")
+	p.force_exit = true
+	await physics_frames(3)
+	boot._set_layout(Boot.Layout.SOLO)
 
 
 func t_storm_gym() -> void:

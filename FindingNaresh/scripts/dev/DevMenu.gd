@@ -639,6 +639,7 @@ const STEP_PLACES := {
 	"village": ["", "the van, just short of the fishing village, on its last litre"],
 	"fuel": ["shed_door", "the net shed, open"],
 	"salt_pans": ["", "the van, just short of the salt pans, Naresh in the back"],
+	"swing": ["swing_controls", "the swing bridge's controls, the van by the bridge"],
 }
 
 func go_to_step(id: String) -> String:
@@ -689,12 +690,12 @@ func go_to_step(id: String) -> String:
 	var nz: Naresh = boot.naresh
 	if id == "fuel":
 		c.fuel = FishingVillage.LOW_FUEL
-	if id in ["storm", "end_e", "village", "fuel", "salt_pans"]:
+	if id in ["storm", "end_e", "village", "fuel", "salt_pans", "swing"]:
 		# the return's dusk at once (it would ease down from the day over a minute)
 		var mood := get_tree().get_first_node_in_group("mood") as Mood
 		if mood != null:
 			mood.set_now(StormFront.MOOD)
-	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e", "village", "fuel", "salt_pans"]:
+	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e", "village", "fuel", "salt_pans", "swing"]:
 		var p1: PlayerRig = boot.players[0]
 		if nz.sitting:
 			nz.stand_from_seat(p1)
