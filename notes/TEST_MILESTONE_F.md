@@ -396,3 +396,51 @@ and three dishes, numbered 1-3; at its foot a desk with a **screen**, three
 5. **The screen** shows the last-turned dish's view (it redraws every 6th
    frame: measured 135 fps by it with both views, 144 without).
 6. **Two creatures** come for the generator's noise.
+
+---
+
+## F8. Naresh's home, the drive home, the end
+
+**Getting there.** **F1 → Story → "Down to the van, and take Naresh home"**.
+You're by the van on the coast road ~200 m short of Naresh's home (the
+pale house on the ridge), him with you. (Or come down from the mast.)
+
+1. **Take him home:** get him in the back, drive up to the house and stop.
+   **Expect:** he gets out and walks to the door. "The door opens before he
+   reaches it. His mother..." Then: "His sister ... looks past him, at the
+   empty space beside him on the path ... She says nothing." Naresh:
+   "Thanks for coming to get me. We'll be all right now." He goes in; "the
+   light is coming back".
+2. **The tracker** (hidden: nothing tells you about it). Only if you did the
+   barn maze, the lookout relay, found the flare gun in the tunnel and every
+   Memory Fragment: "his sister presses something small into your hand: a
+   tracker ... For next time."
+3. **The West Road home.** **Expect:** full sun, birds; the most beautiful
+   the game gets (block-out for now).
+4. **The ending watchtower** (by the West Road; its Tower Road branch goes to
+   P2's): climb it. **Expect:** a small warm light over every place the
+   journey went (windmill to mast); "Some lights out there are still dark"
+   if you skipped any optional one (maze, relay, flare gun): those stay dark.
+5. **Near home** (either home): both phones buzz: "Location sharing: Naresh
+   has left his house, heading to LiveStander." A few seconds later the end
+   screen: "End of part one ... Part two: LiveStander". E / A goes back to
+   the title.
+
+(F1 → Story → "Home along the West Road" starts you at his home with him
+already inside.)
+
+### Decisions to confirm (F8) (you test from F3 on once F is finished)
+
+1. **The scene is text only** (as agreed), with his mother and sister as
+   simple block-out figures at the door; ~24 s from the door to him going
+   in.
+2. **Naresh's last line:** "Thanks for coming to get me. We'll be all right
+   now." ("we": his friend, or his family; left open).
+3. **After he's home the creatures stop following and scatter;** the mood
+   goes to 0.7, then full sun 300 m down the road.
+4. **The tracker** is only a flag and a line for now (no item, no use yet:
+   part two).
+5. **The site lights** hang 40 m over each place, warm, through any haze;
+   13 of them, 3 optional (the barn maze, the lookout relay, the flare gun).
+6. **The end** comes within 250 m of either home, after the phones; a black
+   end screen ("End of part one / Part two: LiveStander").

@@ -26,7 +26,8 @@ being built and tested), so this always shows where the work is right now.
 - F4 the salt pans, F5 the estuary bridge: built (local, `../MPG_dev` branch `f4`).
 - F6 the rail tunnel: built (local).
 - F7 the radio mast: built (local).
-- [~] **F8 Naresh's home, the tracker, the drive home, the ending** next.
+- F8 Naresh's home and the ending: built (local).
+- [~] **F9: the whole return driven end to end, the full run**, then your test (from F3 on).
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -949,9 +950,18 @@ test before each push.
   - [x] `t_mast`: 0 failures; 135 fps by the screen with both views (144
         without). Found: tags reach only 200/400 m (far lights now taggable);
         the crank's standing spot was 1 m up; the labels were huge
-- [ ] F8. Naresh's home (mother and sister, silent), the hidden tracker
+- [x] F8. Naresh's home (mother and sister, silent), the hidden tracker
       (maze, relay, flare gun, fragments), the West Road in full sun, the
       ending watchtower's site lights, the LiveStander text, end screen
+      (built with my recommended answers; your test at the end of F)
+  - [x] `world/Homecoming.gd`: the arrival scene, the tracker rule
+        (`all_optional`), the mood back up, the site lights from the end
+        tower, the phones, the end screen (back to the title on E / A);
+        story `end_f7` / `drive_home` / `the_end`, F1 jumps
+  - [x] `t_home`: 0 failures (the scene 24 s; no tracker, then the tracker
+        with everything done; 3 lights dark). From the shots: his "wait"
+        made him say "I'll wait here" after his goodbye (gone); the site
+        lights were a pixel at 2-3 km (3x bigger)
 - [ ] F9. Full run (Bessi -> home, timed, about 29 min), `notes/TEST_MILESTONE_F.md`, push
 
 ## Milestone G: Finish
