@@ -52,6 +52,14 @@ answers it, then decide. Say "I haven't measured this" rather than guess.
 - Run the quick check that can fail first; the long confirmation after.
 - If waiting is the only option, say what is being waited for and roughly how
   long, and plan the next step meanwhile.
+- **Time is the scarcest thing, more than tokens or machine time (the user,
+  2026-10-01).** Test exactly the change in hand, with the smallest check
+  that answers it: a throwaway scenario of a few seconds, not a rerun of an
+  existing long test because it happens to cover it. Example of what not to
+  do: a two-line change to where players start in the storm gym was checked
+  by rerunning the whole 3-minute storm test, twice. A 5-second
+  "where do they stand, what do they see" check was the right size. Rerun
+  the long tests only once, before the hand-over or the push.
 
 ## 5. Measure, then decide
 

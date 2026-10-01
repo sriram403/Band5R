@@ -199,6 +199,15 @@ The engine-level details (exact Godot calls, numbers) are also in
   changes it put it back. Only the full order finds these, so run it before
   the push, not after.
 
+- **Size the test to the change (the user, 2026-10-01):** don't rerun a long
+  scenario because it happens to cover a small fix (the storm gym's spawn
+  point was checked with the whole 3-minute storm test, twice). Write a
+  throwaway scenario of a few seconds for the question in hand; the long
+  tests run once, before the hand-over. See `notes/PRINCIPLES.md` 4.
+- **Put the player where the thing is:** in the storm gym the players
+  started at the gym's centre, 300 m from the van, in 60 m fog; the user
+  couldn't find it. A gym starts you beside what you came to test, facing it.
+
 ## 4. Game design lessons (from the user's play)
 
 - **Give both players something to do, all the time.** The maze's hay dust

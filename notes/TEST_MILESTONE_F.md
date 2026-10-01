@@ -15,7 +15,7 @@ Note anything that feels wrong, slow, confusing or ugly, with the step number.
 Start `Play.bat`, **New game**, then **F1** (developer menu) → **Gyms** tab →
 **storm**, Enter. You start on the flat test plain at dusk, in the storm:
 rain, wind, grey fog, lightning now and then. The van stands at the west end
-of a long straight road; orange-and-white **windsocks** line the road on the
+of a long straight road (the road runs off in front of the van); orange-and-white **windsocks** line the road on the
 windward side; four white **distance boards** (30, 60, 90, 120 m) stand
 beside the road a little way along. The wind blows across the road, from
 the windsocks' side.

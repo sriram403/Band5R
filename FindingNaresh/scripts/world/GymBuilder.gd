@@ -648,4 +648,10 @@ func _gym_spawns() -> void:
 			pos = STEALTH_EYE + Vector3(-1.0 + k * 2.0, 0.25, 40.0)
 		if gym == "tagging" or gym == "binoculars":
 			pos = TAG_LANE + Vector3(-1.0 + k * 2.0, 0.25, 0)
+		if gym == "storm":
+			# by the van's driver door, facing it (the van is 300 m from the
+			# centre, lost in the fog); the road runs off to its front
+			pos = Vector3(-279.0 - k * 2.5, 0.25, 245.5)
+			player_spawns.append(Transform3D(Basis.looking_at(Vector3(0, 0, 1), Vector3.UP), pos))
+			continue
 		player_spawns.append(Transform3D(Basis.looking_at(Vector3(0, 0, -1), Vector3.UP), pos))

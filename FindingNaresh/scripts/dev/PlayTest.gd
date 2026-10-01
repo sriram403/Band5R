@@ -6544,6 +6544,9 @@ func t_storm_gym() -> void:
 	s.auto_gusts = false
 	s.auto_flashes = false
 	await wait(0.5)
+	var near := maxf(p1().global_position.distance_to(c.global_position), p2().global_position.distance_to(c.global_position))
+	check(near < 7.0, "both players start beside the van (%.1f m)" % near)
+	await shot("storm_start")
 
 	# the weather: the road wet, fog closing in, rain round each player
 	check(is_equal_approx(c.wet, 1.0) and absf(c._wheels[0].wheel_friction_slip - 3.1 * Camper.WET_GRIP) < 0.01, "the road is wet: the tyres grip %.0f%% of dry" % (Camper.WET_GRIP * 100.0))
