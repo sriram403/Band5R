@@ -969,7 +969,18 @@ test before each push.
         fall through the ground for ever (`Camper._safety_net`); the
         estuary bridge's deck edge was a step (ramps)
   - [x] The test sheet: how to test F3-F8 in one go, per part
-  - [~] The full run (in `MPG`, merged main, not pushed)
+  - [~] The full run (in `MPG`, merged main, not pushed), 2026-10-01 night:
+        finishing; **the fixes wait for the next session** (you, 2026-10-02).
+        Failures so far, all in the world segment (each passes alone, so
+        most likely test order: earlier tests leave state behind):
+        roof fragment / crate staircase / shed roof fragment (carry or
+        climb, old checks); "one sleeping bag and two mugs" (evidence);
+        decoy: "both drift to Naresh (1 of 2)", "dies 55 m up the road",
+        "takes the full can off the rack", "the tank's filled"; saltpans:
+        "across unseen", "on to the estuary bridge"; home: "0 dark" (the
+        maze / relay left done by an earlier test). Next: read
+        `appdata/playtest/runs/` logs, fix each, rerun those scenarios in
+        the full order, then your test from F3 on
   - [ ] Your test (F3 on); push after it
 
 ## Milestone G: Finish
