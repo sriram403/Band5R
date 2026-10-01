@@ -297,3 +297,50 @@ yellow knob) and a **brake lever** (red), and a sign. By the pier, a white
    twice as strong; no flooding, no fail.
 5. **The controls stand on the near (south) bank;** the span turns on the
    middle pier.
+
+---
+
+## F6. The old rail tunnel (the dark gallery, the flare gun, the push start)
+
+**Getting there.** **F1 → Story → "A flood gate is down across the road in
+the old rail tunnel"**. You're by the van inside the tunnel, ~25 m short of
+the gate, Naresh with you. (Or drive on from the estuary bridge: the coast
+road turns inland under Tunnel Hill; "OLD RAIL TUNNEL 1911" over the mouth.)
+
+1. **Inside it's dark** (headlights: L; torch: F). **Expect:** a steel
+   **FLOOD GATE** down across the road ahead; in the tunnel's right-hand wall
+   a doorway marked **SERVICE GALLERY** (one before the gate, one after).
+2. **The gallery:** narrow, pitch dark, and something walks it. **Expect:**
+   with the torch **off** it doesn't see you unless it's very close (it hears
+   your footsteps: crouch-walk); with the torch **on** it sees you from far
+   off. At each of the two **forks**, the way is painted on the wall
+   ("GATE >>"): you can only read it **with the torch on**. One fork is a
+   dead end.
+3. **The flare gun:** at the end of the second fork's dead end, a red case:
+   **E** picks up the flare gun. **G / LMB** (pad RB: the throw button)
+   fires a flare: red light, a bang, and every creature within 80 m runs and
+   keeps away for 90 s. Three flares (the prompt counts them).
+4. **The winch** is on the gallery wall by the gate: hold E to raise the gate
+   (it drops when you let go). One holds it, the other drives the van
+   through; or give it to Naresh (V on the winch, *Hold the gate winch*) and
+   then fetch him (he's alone in the dark...). Out through the far door.
+5. **The push start:** leave the headlights on with the engine off until the
+   battery's flat (or F1 → Van → "Flatten the battery"). **Expect:** the ignition only clicks
+   ("rolling over 10 km/h, it would bump-start"). Let the van roll down a
+   slope, handbrake off, and press X while it rolls: it catches.
+
+### Decisions to confirm (F6) (you test from F3 on once F is finished)
+
+1. **The tunnel is a puzzle, not just a road:** the flood gate, its winch in
+   a side gallery (~120 m door to door; the tunnel is ~360 m).
+2. **Dark underground:** the sky's light gone (even by day); creatures see
+   as at night (torch: 40 m; standing in the dark: 15 m).
+3. **The arrows are painted** (no outline): readable by torchlight, barely
+   at arm's length in the dark.
+4. **The gallery creature keeps to its patrol** (it doesn't go for Naresh
+   through the wall).
+5. **The flare gun:** fired with the throw button while held; 3 flares; an
+   80 m circle; 90 s. It stays an item you can carry, store on the rack or
+   hand over.
+6. **The push start:** rolling forwards over 10 km/h, the ignition works on
+   a flat battery.

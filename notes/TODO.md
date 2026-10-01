@@ -24,7 +24,8 @@ being built and tested), so this always shows where the work is right now.
   `notes/TEST_MILESTONE_F.md`); **your test comes once F is finished, from
   F3 onwards**. New parts stay local in main (not pushed) until that test.
 - F4 the salt pans, F5 the estuary bridge: built (local, `../MPG_dev` branch `f4`).
-- [~] **F6 the rail tunnel** (R4 torch relay, the flare gun, R5 push start) next.
+- F6 the rail tunnel: built (local).
+- [~] **F7 the radio mast finale** next.
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -920,8 +921,17 @@ test before each push.
         crank 1.6 deg/s, both 3.2; he let go at 48 deg; the van drove over;
         the red-mark current 5 deg/s. From the shots: the sign was huge
         (fixed)
-- [ ] F6. The rail tunnel, R4 the torch relay; the hidden flare gun (3
+- [x] F6. The rail tunnel, R4 the torch relay; the hidden flare gun (3
       flares, empties an 80 m circle); R5 push start if the battery died
+      (built with my recommended answers; your test at the end of F)
+  - [x] `world/RailTunnel.gd`: dark inside (`Mood.dark`), the flood gate,
+        the service gallery (doors left in the tunnel wall by `_tunnel`),
+        two forks with painted arrows, the winch, a creature that keeps its
+        post; `items/FlareGun.gd` (fired with the throw button,
+        `Creature.scare`); `Camper` bump start (`BUMP_START`)
+  - [x] `t_tunnel`: 16 checks, 0 failures. Found: the gallery was 330 m
+        (doors now 60 m either side of the gate); in the dark the arrows
+        were still legible (no outline now)
 - [ ] F7. The radio mast finale: the van's battery powers it, tag the three
       targets from the top (nearer return sites, chosen by a sightline test),
       three cranks with Naresh, the dish screens, the creatures come halfway;
