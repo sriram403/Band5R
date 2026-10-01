@@ -368,6 +368,7 @@ func _rows_for(t: int) -> Array:
 				_row("Tarp: %s" % ("on (take it off)" if c.attack.tarped else "off (put it on)"), "van_tarp", null, "[b]The tarp[/b]\n\nWhat hides the van from creatures."),
 				_row("Headlights: %s" % ("on" if c.headlights_on else "off"), "van_lights", null, "[b]Headlights[/b]"),
 				_row("Handbrake: %s" % ("on" if c.parking_brake else "off"), "van_brake", null, "[b]Handbrake[/b]"),
+				_row("Flatten the battery", "van_flat", null, "[b]A flat battery[/b]\n\nThe engine off, the battery dead: try a push start (roll it over 10 km/h, then X)."),
 			]
 		"Spawn":
 			return [
@@ -517,6 +518,10 @@ func run(action: String, arg = null) -> void:
 			boot.story.jump_to(int(arg))
 			var where := go_to_step(String(boot.story.current()["id"]))
 			_note = "Objective: " + boot.story.objective_text(0) + ("   (you're at %s)" % where if where != "" else "")
+		"van_flat":
+			c.engine_on = false
+			c.battery = 0.0
+			_note = "The battery's flat."
 		"van_here":
 			var fwd := -p1.global_transform.basis.z
 			fwd.y = 0.0
