@@ -336,6 +336,13 @@ func _tunnel(road_name: String) -> void:
 			var xf := Transform3D(Basis.looking_at(b - a, Vector3.UP), (a + b) * 0.5)
 			var seg_len := a.distance_to(b) + 0.3
 			for sd in [-1.0, 1.0]:
+				# F6: the right-hand wall is left open where the service gallery's
+				# doors go (RailTunnel builds the doorways)
+				var door := false
+				for d in RailTunnel.door_indices(road):
+					door = door or (sd > 0.0 and d >= i and d < j)
+				if door:
+					continue
 				var wx := xf.translated_local(Vector3(sd * (IN_W + 0.3), IN_H * 0.5, 0))
 				var w := Build.box(Vector3(0.6, IN_H, seg_len), concrete)
 				w.transform = wx

@@ -640,6 +640,7 @@ const STEP_PLACES := {
 	"fuel": ["shed_door", "the net shed, open"],
 	"salt_pans": ["", "the van, just short of the salt pans, Naresh in the back"],
 	"swing": ["swing_controls", "the swing bridge's controls, the van by the bridge"],
+	"tunnel": ["", "the van inside the rail tunnel, short of the flood gate"],
 }
 
 func go_to_step(id: String) -> String:
@@ -660,6 +661,14 @@ func go_to_step(id: String) -> String:
 		van_to(road.point(i0), atan2(-road.forward(i0).x, -road.forward(i0).z))
 		c.repair_all()
 		at = c.global_transform * Vector3(-3.2, 0, -1.0)
+	elif id == "tunnel":
+		# in the tunnel, ~25 m short of the gate, facing it
+		var road: Route = boot.builder.network.road("coast_road")
+		var gate: Vector3 = poi["tunnel_gate"]
+		var i0 := int(road.nearest(gate.x, gate.z)["index"]) - 13
+		van_to(road.point(i0), atan2(-road.forward(i0).x, -road.forward(i0).z))
+		c.repair_all()
+		at = c.global_transform * Vector3(-3.0, 0, -1.0)
 	elif id == "salt_pans":
 		# on the coast road ~100 m short of the open ground, facing it
 		var road: Route = boot.builder.network.road("coast_road")
@@ -690,12 +699,12 @@ func go_to_step(id: String) -> String:
 	var nz: Naresh = boot.naresh
 	if id == "fuel":
 		c.fuel = FishingVillage.LOW_FUEL
-	if id in ["storm", "end_e", "village", "fuel", "salt_pans", "swing"]:
+	if id in ["storm", "end_e", "village", "fuel", "salt_pans", "swing", "tunnel"]:
 		# the return's dusk at once (it would ease down from the day over a minute)
 		var mood := get_tree().get_first_node_in_group("mood") as Mood
 		if mood != null:
 			mood.set_now(StormFront.MOOD)
-	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e", "village", "fuel", "salt_pans", "swing"]:
+	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e", "village", "fuel", "salt_pans", "swing", "tunnel"]:
 		var p1: PlayerRig = boot.players[0]
 		if nz.sitting:
 			nz.stand_from_seat(p1)

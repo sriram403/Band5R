@@ -20,6 +20,9 @@ const STEER_RETURN := 5.2
 const IDLE_DRAG := 0.35
 ## Hitting someone on foot faster than this (m/s, towards them) knocks them flying.
 const KNOCK_SPEED := 2.5
+## A flat battery: rolling forwards faster than this (m/s), the ignition
+## bump-starts it (R5: roll it down a hill, F6)
+const BUMP_START := 2.8
 
 const FUEL_CAPACITY := 70.0
 const FUEL_PER_KM := 2.5           ## game-readable, not realistic: ~17 km of driving on a tank (4 x 4 km map)
@@ -1387,7 +1390,17 @@ func toggle_engine() -> void:
 		engine_on = false
 		return
 	if battery < 0.05:
-		_fail_start("Click... click. The battery is flat.")
+		# R5, the push start (F6): rolling fast enough, let the clutch out
+		var rolling := -global_transform.basis.z.dot(linear_velocity)
+		if rolling > BUMP_START and fuel > 0.0 and not heat_lockout:
+			engine_on = true
+			temp = maxf(temp, TEMP_AMBIENT + 1.0)
+			battery = maxf(battery, 0.06)
+			for pl in get_tree().get_nodes_in_group("player"):
+				if (pl as Node3D).global_position.distance_to(global_position) < 20.0:
+					pl.say("A jolt, a cough, and it catches: bump-started, rolling. Keep it running a while to charge the battery.", 6.0)
+			return
+		_fail_start("Click... click. The battery is flat. (Rolling over 10 km/h, it would bump-start.)")
 		return
 	if fuel <= 0.0:
 		_fail_start("The engine turns over but won't catch - no fuel.")

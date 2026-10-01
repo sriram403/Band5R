@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -7022,6 +7022,133 @@ func t_swing() -> void:
 	p.force_exit = true
 	await physics_frames(3)
 	boot._set_layout(Boot.Layout.SOLO)
+
+
+## F6, the old rail tunnel: the flood gate, the dark gallery, the flare gun,
+## the push start. `tools/run_test.sh tunnel`
+func t_tunnel() -> void:
+	var st: Story = boot.story
+	var rt := get_tree().get_first_node_in_group("rail_tunnel") as RailTunnel
+	check(rt != null and rt.doors.size() == 2 and rt.gate != null and rt.winch != null and rt.gun != null, "the rail tunnel: a flood gate, a gallery with two doors, a winch, the flare gun")
+	if rt == null or rt.doors.is_empty():
+		return
+	var poi: Dictionary = boot.builder.poi
+	var c := camper()
+	var p := p1()
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	boot.dev_menu.run("jump", st.index_of("tunnel"))
+	await wait(2.0)
+	var n := nz()
+	var gate_y: float = (poi["tunnel_gate"] as Vector3).y
+	check(st.current()["id"] == "tunnel" and rt.gate.global_position.y < gate_y + 0.2, "F1 jump: in the tunnel, the flood gate down ahead")
+	check(mood.dark > 0.8 and mood.light() == 2, "underground it's dark (%.2f): night for their eyes" % mood.dark)
+	log_line("tunnel: samples %d-%d, doors %s, gate %d" % [rt.run.x, rt.run.y, rt.doors, rt.gate_i])
+	await look_at_point(p, rt.gate.global_position + Vector3.UP * 2.0)
+	await shot("tunnel_gate_dark")
+	p.flashlight_seconds = 600.0
+	p.toggle_flashlight()
+	await wait(0.2)
+	await shot("tunnel_gate_torch")
+	p.toggle_flashlight()
+	# the creature out of the way while we look round the gallery
+	rt.watcher.dormant = true
+	rt.watcher.global_position = poi["gallery_far_door"] + Vector3(0, 0.2, 0)
+	# in through the first door, along to the first fork
+	var door: Vector3 = poi["gallery_door"]
+	await place_player(p, door - rt.road.right(rt.doors[0]) * 2.5 + Vector3(0, 0.3, 0), 0.0)
+	var r0 := rt.road.right(rt.doors[0])
+	var inside_door := rt.road.point(rt.doors[0]) + r0 * rt._off
+	var in_ok := await walk_to(p, inside_door, "the gallery door", 0.8)
+	check(in_ok, "through the door into the service gallery")
+	var fork: Vector3 = poi["gallery_fork_1"]
+	var to_fork := await walk_to(p, fork, "the first fork", 0.8, 40.0)
+	check(to_fork, "along the gallery to the first fork")
+	await look_at_point(p, fork - rt.road.right(rt.doors[0]) * 1.2 + Vector3.UP * 1.6)
+	await shot("gallery_fork_dark")
+	p.toggle_flashlight()
+	await wait(0.2)
+	await shot("gallery_fork_torch")
+	# the creature sees a torch from far off, not you in the dark
+	var cr := rt.watcher
+	cr.dormant = false
+	cr.patrol = PackedVector3Array()
+	var fi: int = rt.doors[0] + (rt.gate_i - rt.doors[0]) / 2 + 12      # ~24 m on from the first fork
+	var ahead := rt.road.point(fi) + rt.road.right(fi) * rt._off + Vector3.UP * 0.2
+	cr.global_position = ahead
+	cr.reset_physics_interpolation()
+	cr.suspicion = 0.0
+	var to_p := p.global_position - ahead
+	cr.rotation.y = atan2(-to_p.x, -to_p.z)
+	p.flashlight.visible = false
+	await wait(2.0)
+	var dark_s := cr.suspicion
+	p.flashlight.visible = true
+	await wait(1.5)
+	var lit_s := cr.suspicion
+	log_line("gallery creature %.0f m off: torch off suspicion %.2f, on %.2f" % [ahead.distance_to(p.global_position), dark_s, lit_s])
+	check(dark_s < 0.2 and lit_s > 0.3, "in the dark it doesn't see you %.0f m off; with the torch on it does" % ahead.distance_to(p.global_position))
+	p.flashlight.visible = false
+	calm_creature(cr, ahead)
+	cr.dormant = true
+	# the flare gun at the second fork's dead end
+	var gun_at: Vector3 = poi["flare_gun"]
+	await place_player(p, gun_at - rt.road.right(rt.gate_i) * 1.3 + Vector3(0, 0.2, 0), 0.0)
+	await look_at_point(p, gun_at)
+	await wait(0.2)
+	await shot("gallery_flare_gun")
+	await tap(KEY_E)
+	await physics_frames(3)
+	check(p.held == rt.gun, "the flare gun, in a red case at the dead end: picked up")
+	cr.dormant = false
+	var gi: int = rt.gate_i + (rt.doors[1] - rt.gate_i) / 2 - 10           # 20 m back along the gallery
+	cr.global_position = rt.road.point(gi) + rt.road.right(gi) * rt._off + Vector3.UP * 0.2
+	cr.reset_physics_interpolation()
+	await wait(0.3)
+	var near_before := cr.global_position.distance_to(p.global_position)
+	await tap(KEY_G)
+	await wait(1.0)
+	check(cr.scared_t > 0.0 and rt.gun.flares_left() == 2 and st.flags.get("flares_used", 0) == 1, "G / RB fires a flare: the creature runs (2 left)")
+	await wait(3.0)
+	await shot("gallery_flare")
+	var ran := cr.global_position.distance_to(p.global_position)
+	check(ran > near_before + 6.0, "it runs from the flare (%.0f m off, was %.0f)" % [ran, near_before])
+	p.drop_held()
+	cr.scared_t = 0.0
+	calm_creature(cr, ahead)
+	cr.dormant = true
+	# Naresh holds the winch, P1 drives through
+	var w: Vector3 = poi["gate_winch"]
+	n.global_position = w + rt.road.right(rt.gate_i) * 1.0 + Vector3(0, 0.2, 0)
+	n.reset_physics_interpolation()
+	await place_player(p, w + rt.road.right(rt.gate_i) * 2.0 - rt.road.forward(rt.gate_i) * 2.0 + Vector3(0, 0.2, 0), 0.0)
+	await physics_frames(5)
+	var job_ok := await naresh_job(p, rt.winch.global_position, "hold")
+	var up := await until(func() -> bool: return rt.gate.global_position.y > gate_y + 3.0, 12.0)
+	check(job_ok and up, "V on the winch, Hold the gate winch: Naresh holds the flood gate up")
+	await place_player(p, c.global_transform * Vector3(-3.0, 0, 0) + Vector3(0, 0.3, 0), 0.0)
+	await seat_p1_driver()
+	await engine_on()
+	await drive_until(rt.road, rt.gate_i + 20, func() -> bool: return st.flags.has("gate_through"), 40.0, 20.0)
+	key(KEY_W, false)
+	check(st.flags.has("gate_through"), "the van drives under the gate and on")
+	await until(func() -> bool: return st.current()["id"] == "end_f6", 3.0)
+	check(st.current()["id"] == "end_f6", "on to the radio mast")
+	# R5, the push start: a flat battery won't start; rolling, it does
+	await tap(KEY_X)                       # engine off
+	c.battery = 0.0
+	await wait(0.3)
+	await tap(KEY_X)
+	await wait(0.3)
+	check(not c.engine_on, "a flat battery: click, click")
+	c.parking_brake = false
+	c.linear_velocity = -c.global_transform.basis.z * 4.0
+	await physics_frames(2)
+	await tap(KEY_X)
+	await wait(0.3)
+	check(c.engine_on, "rolling at %.0f km/h: it bump-starts" % kmh())
+	p.force_exit = true
+	await physics_frames(3)
+	rt.watcher.dormant = false
 
 
 func t_storm_gym() -> void:

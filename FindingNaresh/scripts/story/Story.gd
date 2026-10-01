@@ -159,7 +159,14 @@ func setup(b: Node) -> void:
 		{"id": "swing", "text": "The estuary bridge is swung open. Turn it back across",
 			"hint": "On the near bank: two cranks and a brake lever. It only comes round while the brake is held off AND a crank is turned; let the brake go and the current swings it open again. Three pairs of hands: Naresh can hold the brake (V on the lever). Watch the tide gauge by the pier.",
 			"done": func(): return flags.has("swing_locked")},
-		{"id": "end_f5", "text": "Over the bridge and on, to the old rail tunnel (F6 comes next)",
+		{"id": "end_f5", "text": "Over the bridge and on, to the old rail tunnel",
+			"hint": "The coast road turns inland, under Tunnel Hill.",
+			"done": func(): return _van_near("tunnel_in", 70.0)},
+		# F6, the old rail tunnel (R4): the flood gate and the dark gallery
+		{"id": "tunnel", "text": "A flood gate is down across the road in the old rail tunnel",
+			"hint": "Its winch is in the service gallery: the doors in the tunnel's right-hand wall. It's pitch dark and something walks it: it hears footsteps and sees a torch from far off. The arrows at the forks are painted: you need a light to read them. One holds the winch, the other drives through.",
+			"done": func(): return flags.has("gate_through")},
+		{"id": "end_f6", "text": "Out of the tunnel, on to the radio mast (F7 comes next)",
 			"hint": "This is where the build ends for now.",
 			"done": func(): return false},
 	]
@@ -240,11 +247,11 @@ func jump_to(i: int) -> void:
 ## them puts it all away again, so the world matches the objective.
 ## Bessi and on (E, F3): a jump to one of these sets the flags of every step before it.
 const BESSI_STEPS := ["photo", "roses", "naresh", "look_around", "batteries", "drum", "storm", "end_e",
-	"village", "fuel", "drive_on", "stalled", "end_f3", "salt_pans", "end_f4", "swing", "end_f5"]
+	"village", "fuel", "drive_on", "stalled", "end_f3", "salt_pans", "end_f4", "swing", "end_f5", "tunnel", "end_f6"]
 const BESSI_FLAGS := ["photo_spot", "roses_up", "roses_open", "naresh_met", "packing", "packed",
 	"n1_slip", "batteries_got", "n2_wrong_done", "drum_free", "storm_on",
 	"fuel_low", "key_got", "shed_open", "mistake_done", "stalled", "stall_fixed",
-	"pans_seen", "pans_crossed", "swing_locked", "swing_waved"]
+	"pans_seen", "pans_crossed", "swing_locked", "swing_waved", "gate_through"]
 
 func _bessi_state_for(id: String) -> void:
 	var k := BESSI_STEPS.find(id)
@@ -286,6 +293,9 @@ func _bessi_state_for(id: String) -> void:
 		flags["shed_open"] = true
 	if k >= 14:                 # F4: across the salt pans
 		flags["pans_crossed"] = true
+	if k >= 16:                 # F5: the swing bridge shut
+		flags["swing_locked"] = true
+		flags["swing_waved"] = true
 	if k >= 12:                 # the village behind you: the mistake made and mended
 		flags["mistake_done"] = true
 		flags["stalled"] = true

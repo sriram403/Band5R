@@ -1092,6 +1092,9 @@ func drop_held() -> void:
 func throw_held() -> void:
 	if held == null:
 		return
+	if held.has_method("fire"):
+		held.fire(self)          # the flare gun: the throw button fires it
+		return
 	var it := held
 	held = null
 	_using = null

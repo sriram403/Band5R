@@ -50,6 +50,13 @@ const RETURN_DRIFT := 0.9         ## m/s
 ## A creature going for something inside walks to the entry first.
 static var funnels: Array = []
 var _following := false
+## Walks its patrol and never drifts to Naresh (one shut in the tunnel's
+## gallery would press against the wall towards him in the van).
+var keeps_post := false
+## A flare (FlareGun): it runs from it and keeps away, ignoring everything.
+var scared_t := 0.0
+var _scare_from := Vector3.ZERO
+const FLEE := 80.0                ## m from the flare it runs to
 const NARESH_ORBIT := 7.0         ## m; it circles him while he isn't alone
 const HEIGHT := 2.6
 const GRAVITY := 22.0
@@ -151,7 +158,38 @@ func _build() -> void:
 	add_child(_hum)
 
 
+## A flare went up at `from`: run, and stay away `seconds`.
+func scare(from: Vector3, seconds: float) -> void:
+	scared_t = seconds
+	_scare_from = from
+	suspicion = 0.0
+	target = null
+	van_interest = 0.0
+	state = State.WANDER
+	var tk := get_tree().get_nodes_in_group("taken")
+	for t in tk:
+		if t.has_method("cancel") and t.get("creature") == self:
+			t.cancel()
+
+
 func _physics_process(delta: float) -> void:
+	if scared_t > 0.0:
+		scared_t -= delta
+		suspicion = 0.0
+		target = null
+		van_interest = 0.0
+		naresh_drawn = false
+		var away := global_position - _scare_from
+		away.y = 0.0
+		var v := Vector3.ZERO
+		if away.length() < FLEE:
+			v = (away.normalized() if away.length() > 0.1 else Vector3.RIGHT) * float(SPEED[State.SEARCH])
+			rotation.y = lerp_angle(rotation.y, atan2(-v.x, -v.z), 1.0 - exp(-delta * 8.0))
+		velocity = Vector3(v.x, velocity.y - GRAVITY * delta if not is_on_floor() else 0.0, v.z)
+		move_and_slide()
+		_show(delta)
+		_heard_id = Hearing.last_id()
+		return
 	if dormant:
 		suspicion = 0.0
 		state = State.WANDER
@@ -377,7 +415,7 @@ func _move(delta: float) -> void:
 	naresh_drawn = false
 	match state:
 		State.WANDER:
-			var nz := _naresh() if not passive else null      # a watcher at its post stays put
+			var nz := _naresh() if not passive and not keeps_post else null      # a watcher at its post stays put
 			naresh_drawn = nz != null and _noticed_t >= ATTEND
 			if _noticed_t < ATTEND:
 				goal = global_position       # stop and look (below)

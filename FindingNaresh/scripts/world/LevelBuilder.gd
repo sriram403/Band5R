@@ -383,6 +383,10 @@ func _landmarks() -> void:
 	pans.setup(self)
 	_road_bridge("coast_road", "estuary_bridge", true)
 	_tunnel("coast_road")
+	var rail := RailTunnel.new()
+	rail.name = "RailTunnelR4"
+	world.add_child(rail)
+	rail.setup(self)
 	_naresh_home()
 	_info_board("home_lane", 22, 9.0, "HOMESTEAD\nRoad to Bessi: the lane runs east\nthrough town, then north to the\nwindmill: VALLEY RD or RIDGE TRACK")
 	_info_board("pump_house_road", 12, -9.0, "LAST FUEL - J2\nPump House Rd north to the\nwater works and the old bridge.\nBESSI is across the river.")
