@@ -468,7 +468,11 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
    "Decisions" section: storm road a dead end, the dishes point at nearer
    return sites, the family silent, the tracker without the batteries).
    F is split into F1-F9 in TODO.md (F1 the storm gym first), one part at
-   a time with the user's test before each push. Build the next part in `../MPG_dev` while the long runs
+   a time with the user's test before each push. **F1 (`world/Storm.gd`,
+   `--gym=storm`, `t_storm_gym`) is built, merged into main, not pushed:
+   waiting for the user's test (`notes/TEST_MILESTONE_F.md`).** Next F2
+   (the storm over the ghat, the dead end at J3) in `../MPG_dev` on a new
+   branch from main. Build the next part in `../MPG_dev` while the long runs
    go in `MPG`. Bessi ends with the flag `storm_on` and the objective
    `end_e` ("North on the coast road"): F starts from there. After all
    milestones, remind the user of `notes/POLISH.md`.

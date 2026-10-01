@@ -12,7 +12,8 @@ being built and tested), so this always shows where the work is right now.
   (2026-10-01): the storm road a brutal dead end; the dishes point at nearer
   return sites; the family silent; the tracker = maze, relay, flare gun,
   fragments. F split into F1-F9 below.
-- [~] **F1 the storm gym**, built in `../MPG_dev` (branch `f1`).
+- **F1 the storm gym: built, tested, merged into main (not pushed).
+  Waiting for your test** (`notes/TEST_MILESTONE_F.md`, section F1).
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -817,7 +818,11 @@ test before each push.
   - [x] The gym (`--gym=storm`: windward windsocks, distance boards), F1 World
         rows (storm on/off, a gust now, lightning now)
   - [x] `t_storm_gym`: 24 checks, 0 failures; 144 fps in the storm, both views
-  - [~] smoke + set:gyms after the van / mood changes; then your test sheet
+  - [x] smoke (1 failure, also on main: the mirrors test assumed two screens,
+        which a plugged-in controller used to give it; fixed) + set:gyms 22
+        scenarios: 0 failures. The storm gym is in set:gyms
+  - [x] Merged into main; your test sheet `notes/TEST_MILESTONE_F.md` (F1)
+  - [ ] Your test, then push
 - [ ] F2. The storm over the ghat and the Beach Road (the old way); the dead
       end at J3 (the lift bridge swung open in the wind); "My friend said
       north"; the dark end of the mood curve; creatures drift to Naresh
