@@ -8,13 +8,11 @@ being built and tested), so this always shows where the work is right now.
 ## Right now
 - Milestones A-E: done, each part tested and approved by you, full run
   clean, **pushed** (Milestone E finished 2026-09-29, main `8c18ef3`).
-  Test sheets and your decisions: `notes/TEST_MILESTONE_E.md`.
-- **Next: Milestone F, the return.** First discuss the open questions in
-  `design/RETURN.md` with you (no building before your answers), then split
-  F into parts (F1, F2, ... like E; the storm gym first), one part at a time,
-  your test before each push.
-- The second copy `../MPG_dev` is on branch `e7` (fully merged into main):
-  for F, make a new branch from main there (`git -C ../MPG_dev switch -c f1 main`).
+- **Milestone F, the return.** Your answers to `design/RETURN.md`
+  (2026-10-01): the storm road a brutal dead end; the dishes point at nearer
+  return sites; the family silent; the tracker = maze, relay, flare gun,
+  fragments. F split into F1-F9 below.
+- [~] **F1 the storm gym**, built in `../MPG_dev` (branch `f1`).
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -795,14 +793,31 @@ in `notes/TEST_MILESTONE_E.md`).
 - [x] E8. Full suite, `notes/TEST_MILESTONE_E.md`, push (2026-09-29)
 
 ## Milestone F: The return and the ending
-- [ ] Storm gym: gusts that can throw the van; driving carefully gets through
-- [ ] The different road home; the old road under the storm
-- [ ] Return puzzles using everything learnt; Naresh can solve them faster but chaotically
-- [ ] Creatures follow Naresh; Naresh taken if he goes alone (left within sight, far)
-- [ ] Dark, rain, eerie; brightening near Naresh's home
-- [ ] Naresh's home: mother and sister; hidden tracker for 100% optional puzzles
-- [ ] The drive home in full sun; watchtower view of every puzzle site
-- [ ] Phone notification: Naresh heading to LiveStander; end screen
+Design: `design/RETURN.md` (decisions 2026-10-01). One part at a time, your
+test before each push.
+- [~] F1. Storm gym (`--gym=storm`): a flat plain, a road, a gust schedule.
+      Gusts push the van 1-2 m sideways at 50 km/h, can tip it above ~45 km/h
+      in a crosswind, never under 25 km/h; rain and fog (~60 m); lightning
+      lights the scene; wipers and headlights help. `t_storm_gym`
+- [ ] F2. The storm over the ghat and the Beach Road (the old way); the dead
+      end at J3 (the lift bridge swung open in the wind); "My friend said
+      north"; the dark end of the mood curve; creatures drift to Naresh
+- [ ] F3. Fishing village, R1 the decoy (fuel in the net shed, Naresh waits
+      on the jetty); the scripted refuel mistake; the van dies past the village
+- [ ] F4. Salt pans, R2 red light / green light (dashes between heaps, the
+      spotter calls go / tarp)
+- [ ] F5. Estuary bridge, R3 the three-hand swing bridge (two cranks and a
+      held brake; the tide gauge is the clock; Naresh lets go to wave)
+- [ ] F6. The rail tunnel, R4 the torch relay; the hidden flare gun (3
+      flares, empties an 80 m circle); R5 push start if the battery died
+- [ ] F7. The radio mast finale: the van's battery powers it, tag the three
+      targets from the top (nearer return sites, chosen by a sightline test),
+      three cranks with Naresh, the dish screens, the creatures come halfway;
+      the clouds break over the West Road
+- [ ] F8. Naresh's home (mother and sister, silent), the hidden tracker
+      (maze, relay, flare gun, fragments), the West Road in full sun, the
+      ending watchtower's site lights, the LiveStander text, end screen
+- [ ] F9. Full run (Bessi -> home, timed, about 29 min), `notes/TEST_MILESTONE_F.md`, push
 
 ## Milestone G: Finish
 - [ ] The polish list (`notes/POLISH.md`): remind the user, agree the order, build it

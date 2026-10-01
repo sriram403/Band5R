@@ -72,8 +72,8 @@ and the rain stops there. That's the way out of the dark.
 ## The tracker (hidden 100% reward)
 
 "Every optional puzzle" means: the barn maze (W2), the lookout relay (W4), the
-Bessi stall shutter batteries (N1), the tunnel's flare gun, plus every Memory
-Fragment that belongs to a puzzle. Nothing on screen counts them (`DESIGN.md` 3).
+tunnel's flare gun, plus every Memory Fragment that belongs to a puzzle (the
+Bessi store batteries are a required step since E6; decision 4). Nothing on screen counts them (`DESIGN.md` 3).
 The end watchtower at most hints: "some lights out there are still dark", and the
 unlit sites are the ones you skipped.
 
@@ -99,7 +99,28 @@ end screen. Creatures and Naresh from their own pages.
   every optional puzzle done; the end watchtower lights match what was solved.
 - Full: Bessi -> home by auto-driver and scripted actions, timed (about 29 min).
 
-## Questions for you
+## Decisions (the user, 2026-10-01)
+
+1. **The storm road is a brutal dead end.** Passable slowly (gusts can't tip the
+   van under 25 km/h), but at J3 the lift bridge has swung open in the wind; you
+   turn back to the coast road. Naresh on the way back: "My friend said north."
+2. **The dishes point at nearer return sites, not the way-out landmarks.** The
+   mast is 1.5-2.3 km from the windmill, the water works and the coast tower
+   (draw distance 2.6 km, storm sight ~60 m), and there is no water tower in
+   the world. Candidates: the estuary bridge, the tunnel portal, Naresh's home;
+   the final three are picked by a sightline test from the mast top when it is
+   built. The look back at the whole journey stays at the ending watchtower.
+3. **His mother and sister say nothing about the friend.** The mother hugs him;
+   the sister looks at the empty space beside him. Ambiguous, as agreed.
+4. **The tracker counts:** the barn maze (W2), the lookout relay (W4), the
+   tunnel's flare gun, and every puzzle Memory Fragment. The Bessi store
+   batteries are dropped (a required step since E6).
+
+Found while checking the page against the built world: the scripted refuel
+mistake already exists (`Naresh.refuel_mistake`, E1); it only needs arming at
+the fishing village.
+
+## Questions for you (answered above)
 
 1. The storm road: a real but brutal dead end (the bridge swinging open), a real
    shortcut that skips the return puzzles (and the tracker), or something else?
