@@ -17,8 +17,9 @@ being built and tested), so this always shows where the work is right now.
 - F2 (the storm on the old road, the dead end at the bridge): **approved by
   you (2026-10-01, its 5 decisions) and pushed**, with the fix from your
   test (the rain followed P2 left at J3).
-- **F3 the fishing village (the decoy): built, tested, merged into main, not
-  pushed. Waiting for your test** (`notes/TEST_MILESTONE_F.md`, section F3).
+- F3 the fishing village (the decoy): **approved by you (2026-10-01, its 8
+  decisions) and pushed.**
+- Next: **F4 the salt pans** (R2 red light / green light).
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -854,7 +855,7 @@ test before each push.
         the fishing village you were thrown and spun round (likely a gust
         rolling the van into you, from the same bug; watch for it). Pushed
   - [ ] Creatures drift to Naresh: moved to F3, where the return's creatures start
-- [~] F3. Fishing village, R1 the decoy (fuel in the net shed, Naresh waits
+- [x] F3. Fishing village, R1 the decoy (fuel in the net shed, Naresh waits
       on the jetty); the scripted refuel mistake; the van dies past the village
       (design agreed 2026-10-01: `design/RETURN.md` decision 5)
   - [x] Creatures on the return (`Creature.on_return`, set by the storm):
@@ -882,7 +883,9 @@ test before each push.
   - [x] `t_decoy` 21 checks + `t_decoy_save` 5: 0 failures
   - [x] Regression: set:creatures 7, the Naresh gym, set:bessi 12, teleports,
         smoke 23: 0 failures, no script errors. Merged into main (not pushed)
-  - [ ] Your test (`notes/TEST_MILESTONE_F.md` F3), then push
+  - [x] Your test: approved with its decisions (2026-10-01). Found: Play.bat
+        showed a grey screen after the merge (a new class unknown until an
+        import); Play.bat now imports when scripts are newer. Pushed
 - [ ] F4. Salt pans, R2 red light / green light (dashes between heaps, the
       spotter calls go / tarp)
 - [ ] F5. Estuary bridge, R3 the three-hand swing bridge (two cranks and a

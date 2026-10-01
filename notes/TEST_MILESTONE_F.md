@@ -185,7 +185,7 @@ steps; up on its roof is a small blue boat.
 Try the other ways too: pour the heavy can yourself before he offers (then
 no mistake, no stall); stand in his way at the van (he says "Excuse me!").
 
-### Decisions to confirm (F3)
+### Decisions to confirm (F3): confirmed by you, 2026-10-01 (for now)
 
 1. **Why the fuel's low:** the storm road and the climb drank the Bessi drum;
    the lamp comes on 420 m short of the village, ~1 L left.
