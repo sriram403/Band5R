@@ -646,6 +646,7 @@ const STEP_PLACES := {
 	"salt_pans": ["", "the van, just short of the salt pans, Naresh in the back"],
 	"swing": ["swing_controls", "the swing bridge's controls, the van by the bridge"],
 	"tunnel": ["", "the van inside the rail tunnel, short of the flood gate"],
+	"mast": ["mast_foot", "the foot of the radio mast (the van on the road below)"],
 }
 
 func go_to_step(id: String) -> String:
@@ -695,6 +696,11 @@ func go_to_step(id: String) -> String:
 		c.repair_all()
 		c.fuel = FishingVillage.LOW_FUEL
 		at = c.global_transform * Vector3(-3.2, 0, -1.0)
+	elif id == "mast":
+		var road_at: Vector3 = poi["mast_road"]
+		van_to(van_spot(road_at), 0.0)
+		c.repair_all()
+		at = poi["mast_foot"]
 	else:
 		at = poi[spec[0]]
 		van_to(van_spot(at + Vector3(-18, 0, 6)), 0.0)
@@ -704,12 +710,12 @@ func go_to_step(id: String) -> String:
 	var nz: Naresh = boot.naresh
 	if id == "fuel":
 		c.fuel = FishingVillage.LOW_FUEL
-	if id in ["storm", "end_e", "village", "fuel", "salt_pans", "swing", "tunnel"]:
+	if id in ["storm", "end_e", "village", "fuel", "salt_pans", "swing", "tunnel", "mast"]:
 		# the return's dusk at once (it would ease down from the day over a minute)
 		var mood := get_tree().get_first_node_in_group("mood") as Mood
 		if mood != null:
 			mood.set_now(StormFront.MOOD)
-	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e", "village", "fuel", "salt_pans", "swing", "tunnel"]:
+	if nz != null and is_instance_valid(nz) and id in ["look_around", "batteries", "drum", "storm", "end_e", "village", "fuel", "salt_pans", "swing", "tunnel", "mast"]:
 		var p1: PlayerRig = boot.players[0]
 		if nz.sitting:
 			nz.stand_from_seat(p1)

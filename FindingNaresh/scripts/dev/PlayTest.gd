@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -7149,6 +7149,148 @@ func t_tunnel() -> void:
 	p.force_exit = true
 	await physics_frames(3)
 	rt.watcher.dormant = false
+
+
+## Hold E on a dish crank until the dish is within `tol` degrees of its
+## target, then let go (a player watching the screen).
+func mast_turn(m: RadioMast, k: int, tol := 1.2, max_s := 60.0) -> bool:
+	var t := 0.0
+	key(KEY_E, true)
+	while t < max_s:
+		await physics_frames(1)
+		t += 1.0 / 60.0
+		if absf(rad_to_deg(angle_difference(m.yaw[k], m._bearing(k)))) < tol:
+			break
+	key(KEY_E, false)
+	await wait(1.4)
+	return m.locked[k]
+
+
+## F7, the finale: point the dishes home. `tools/run_test.sh mast`
+func t_mast() -> void:
+	var st: Story = boot.story
+	var m := get_tree().get_first_node_in_group("radio_mast") as RadioMast
+	check(m != null and m.dishes.size() == 3 and m.cranks.size() == 3 and m.targets.size() == 3, "the mast: three dishes, three cranks, a generator, the screen")
+	if m == null:
+		return
+	var poi: Dictionary = boot.builder.poi
+	var p := p1()
+	var q := p2()
+	boot.dev_menu.run("jump", st.index_of("mast"))
+	await wait(1.0)
+	var n := nz()
+	log_line("mast at %s; the road below %.0f m off; targets %.0f / %.0f / %.0f m" % [m.foot, Vector2((poi["mast_road"] as Vector3).x - m.foot.x, (poi["mast_road"] as Vector3).z - m.foot.z).length(),
+		m.targets[0].distance_to(m.foot), m.targets[1].distance_to(m.foot), m.targets[2].distance_to(m.foot)])
+	check(st.current()["id"] == "mast" and not m.running, "F1 jump: at the foot of the mast, the generator off")
+	await look_at_point(p, m.foot + Vector3(0, 15, 0))
+	await shot("mast_foot")
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	# the cord alone splutters out
+	await place_player(p, m.cord.stand_point() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, m.cord.global_position)
+	await wait(0.2)
+	check(p.prompt_text.contains("pull the pull cord"), "at the generator: '%s'" % p.prompt_text)
+	await hold_physics(KEY_E, 1.6)
+	await wait(0.3)
+	check(not m.running and m.cord.has_meta("spluttered"), "the cord alone: it coughs and dies (someone must hold the choke)")
+	# P2 holds the choke (pad X), P1 pulls
+	await place_player(q, m.choke.stand_point() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(q, m.choke.global_position)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.8)
+	await hold_physics(KEY_E, 1.6)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.3)
+	check(m.running and st.flags.has("gen_running"), "the choke held, the cord pulled: the generator roars into life")
+	check(m._beacons[0].visible and m._beacons[2].visible, "far off, three red beacons blink on")
+	check(not m.creatures[0].dormant, "and its noise brings two of them")
+	for cr in m.creatures:
+		cr.dormant = true            # (out of the way for the rest of this test)
+	# up the ladder to the platform, tag the first target
+	var lad := boot.world.find_child("MastLadder", true, false) as Ladder
+	await place_player(p, lad.global_position + lad.global_transform.basis.z * 0.9 + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, lad.global_position + Vector3.UP * 1.2)
+	await tap(KEY_E)
+	key(KEY_W, true)
+	await until(func() -> bool: return p.global_position.y > m.foot.y + RadioMast.PLAT_Y - 0.5 and p.ladder == null, 20.0)
+	key(KEY_W, false)
+	await wait(0.4)
+	check(p.global_position.y > m.foot.y + RadioMast.PLAT_Y - 0.5, "up the ladder onto the platform, 20 m up")
+	await look_at_point(p, m.targets[0])
+	await shot("mast_view_tunnel")
+	await look_at_point(p, m.targets[2])
+	await shot("mast_view_tower")
+	await look_at_point(p, m.targets[0])
+	await tap(KEY_T)
+	await physics_frames(3)
+	var tg := TagMarker.of(0)
+	check(tg != null and tg.thing == "the tunnel mouth", "T on the far beacon: '%s'" % (tg.thing if tg else "no tag"))
+	# down again, the cranks
+	await place_player(p, m.cranks[0].stand_point() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, m.cranks[0].global_position)
+	await wait(0.2)
+	check(p.prompt_text.contains("dish 1 crank"), "at the desk: '%s'" % p.prompt_text)
+	var y0: float = m.yaw[0]
+	key(KEY_E, true)
+	await wait(1.0)
+	key(KEY_E, false)
+	var rate := rad_to_deg(angle_difference(y0, m.yaw[0]))
+	log_line("dish 1 turns %.1f deg/s" % rate)
+	check(absf(rate) > 6.0, "holding its crank turns dish 1")
+	var l1 := await mast_turn(m, 0)
+	check(l1 and st.flags.has("dish_1"), "on its beacon, let go: dish 1 locks, its lamp green")
+	await look_at_point(p, poi["dish_screen"])
+	await shot("mast_screen")
+	# Naresh on dish 2: backwards first, until he's told again
+	n.global_position = m.cranks[1].stand_point() + Vector3(0.6, 0.2, 0.6)
+	n.reset_physics_interpolation()
+	await place_player(p, m.cranks[2].stand_point() + Vector3(0, 0.3, 0), 0.0)
+	var job_ok := await naresh_job(p, m.cranks[1].global_position, "hold")
+	var y1: float = m.yaw[1]
+	await until(func() -> bool: return m.cranks[1].holding_now(), 10.0)
+	await wait(2.0)
+	var d1 := rad_to_deg(angle_difference(y1, m.yaw[1]))
+	check(job_ok and d1 < -3.0 and m._wrong == 1, "Naresh on dish 2: he turns it the wrong way (%.0f deg)" % d1)
+	n.command(p, "hold", m.cranks[1])
+	await wait(0.5)
+	var y2: float = m.yaw[1]
+	await wait(2.0)
+	var d2 := rad_to_deg(angle_difference(y2, m.yaw[1]))
+	check(d2 > 3.0 and m._wrong_done, "told again: 'The OTHER way.' (%.0f deg)" % d2)
+	var turned := await until(func() -> bool: return absf(rad_to_deg(angle_difference(m.yaw[1], m._bearing(1)))) < 1.2, 60.0)
+	n.command(p, "wait")
+	await wait(1.4)
+	check(turned and m.locked[1], "he brings it round; let go on the beacon, dish 2 locks")
+	# P1 on dish 3: done
+	await look_at_point(p, m.cranks[2].global_position)
+	var l3 := await mast_turn(m, 2)
+	await until(func() -> bool: return st.flags.has("mast_done"), 3.0)
+	check(l3 and st.flags.has("mast_done"), "the third locks: the mast hums, the clouds break over the West Road")
+	await until(func() -> bool: return st.current()["id"] == "end_f7", 3.0)
+	check(st.current()["id"] == "end_f7", "on to Naresh's home")
+	# the frame rate by the screen, both views
+	boot._set_layout(Boot.Layout.SIDE_BY_SIDE)
+	await place_player(q, poi["dish_screen"] + Vector3(1, -1.5, 2), 0.0)
+	await place_player(p, poi["dish_screen"] + Vector3(-1, -1.5, 2), 0.0)
+	await wait(1.0)
+	_frame_times.clear()
+	await wait(3.0)
+	var avg := 0.0
+	for f in _frame_times:
+		avg += f
+	var fps := float(_frame_times.size()) / maxf(avg, 0.001)
+	m.screen_on = false
+	_frame_times.clear()
+	await wait(3.0)
+	var avg2 := 0.0
+	for f in _frame_times:
+		avg2 += f
+	var fps_off := float(_frame_times.size()) / maxf(avg2, 0.001)
+	m.screen_on = true
+	log_line("fps by the dish screen, both views: %.0f (without the screen %.0f)" % [fps, fps_off])
+	check(headless or fps >= 110.0, "the dish screen keeps the frame rate (%.0f fps)" % fps)
+	boot._set_layout(Boot.Layout.SOLO)
 
 
 func t_storm_gym() -> void:

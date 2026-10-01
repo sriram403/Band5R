@@ -909,6 +909,18 @@ func tag_look() -> TagMarker:
 		ex.append(vehicle.get_rid())
 		for a in vehicle.find_children("*", "CollisionObject3D", true, false):
 			ex.append((a as CollisionObject3D).get_rid())
+	# a far light looked at straight on (the relay beacons, F7): taggable at
+	# any distance, if nothing stands in the way
+	var look := -xf.basis.z
+	for n in get_tree().get_nodes_in_group("far_tag"):
+		var fl := n as Node3D
+		if not fl.is_visible_in_tree():
+			continue
+		var d := fl.global_position - from
+		if look.angle_to(d) < deg_to_rad(0.6 if zoom > 2.0 else 1.2):
+			var qf := PhysicsRayQueryParameters3D.create(from, fl.global_position, 1, ex)
+			if space.intersect_ray(qf).is_empty():
+				return TagMarker.place(self, fl.global_position, fl)
 	var q := PhysicsRayQueryParameters3D.create(from, to, TagMarker.MASK & ~4, ex)
 	var hit := space.intersect_ray(q)
 	var qa := PhysicsRayQueryParameters3D.create(from, to, 4, ex)
