@@ -255,3 +255,45 @@ road.
    of road.
 5. **Seen = the usual van attack**, no fail; it gives up when you drive off.
 6. **Naresh's calls:** right two times in three.
+
+---
+
+## F5. The estuary bridge (the three-hand swing bridge)
+
+**Getting there.** **F1 → Story → "The estuary bridge is swung open. Turn
+it back across"**. You're at the bridge's controls on the near bank, the van
+close by, Naresh with you. (Or drive on north from the salt pans.)
+
+**What's there.** The road bridge over the river mouth; its middle span
+stands **swung open along the river** on its pier, red barriers either side
+of the gap. On the near bank by the road: **two cranks** (wheels with a
+yellow knob) and a **brake lever** (red), and a sign. By the pier, a white
+**tide gauge** with a red mark near the top and a yellow float.
+
+1. **Turn a crank alone** (hold E / pad X). **Expect:** nothing: the brake's
+   on (the sign says BRAKE ON).
+2. **Give Naresh the brake:** look at the lever, V / D-pad Up, *Hold the
+   brake*. **Expect:** he holds it off (BRAKE OFF). Now turn a crank:
+   **expect** the span to come round slowly; with both of you on the cranks,
+   twice as fast (~30 s from open to shut).
+3. **Half way, Naresh lets go** to wave at a boat ("Ooh, a boat! HELLO! ...
+   Oh. Was I holding something?"). **Expect:** the current swings the span
+   back open. Tell him again (V on the lever) or one of you grabs the brake.
+4. **Shut:** "The span swings home ... the bolts drop". The barriers go; drive
+   the van over. The objective: on to the rail tunnel.
+5. **The tide:** from when you arrive, the float rises; after ~4 min it's at
+   the red mark and the current pulls the span open twice as fast (a
+   message says so). Harder, never a fail.
+
+### Decisions to confirm (F5) (you test from F3 on once F is finished)
+
+1. **All three at once:** the span only moves while the brake is held off
+   *and* a crank turns; the brake let go, the current swings it open
+   (2.5 deg/s).
+2. **Speeds:** one crank 1.6 deg/s, both 3.2 (about 30 s from open to shut).
+3. **Naresh's slip:** once, with you both cranking and the span past half
+   way, after 4 s.
+4. **The tide is a soft clock:** 4 min to the red mark, then the current is
+   twice as strong; no flooding, no fail.
+5. **The controls stand on the near (south) bank;** the span turns on the
+   middle pier.

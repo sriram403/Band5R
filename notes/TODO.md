@@ -23,7 +23,8 @@ being built and tested), so this always shows where the work is right now.
   recommended answers (listed as "Decisions to confirm" in
   `notes/TEST_MILESTONE_F.md`); **your test comes once F is finished, from
   F3 onwards**. New parts stay local in main (not pushed) until that test.
-- F4 the salt pans: built (local, branch `f4`). [~] **F5 the estuary bridge** next.
+- F4 the salt pans, F5 the estuary bridge: built (local, `../MPG_dev` branch `f4`).
+- [~] **F6 the rail tunnel** (R4 torch relay, the flare gun, R5 push start) next.
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -908,8 +909,17 @@ test before each push.
         it); the heaps' cover was narrower than the van at first
   - [ ] Regression with F5 (the creature change: a watcher at its post
         ignores Naresh)
-- [ ] F5. Estuary bridge, R3 the three-hand swing bridge (two cranks and a
+- [x] F5. Estuary bridge, R3 the three-hand swing bridge (two cranks and a
       held brake; the tide gauge is the clock; Naresh lets go to wave)
+      (built with my recommended answers; your test at the end of F)
+  - [x] `puzzles/SwingBridge.gd`: the middle span (an AnimatableBody3D on
+        the pier; `_road_bridge(..., swing)` leaves its gap), barriers, two
+        cranks and a brake (Workables, "hold"), the sign, the tide gauge;
+        story `swing` / `end_f5`, F1 jump, `match_story` (load, jumps)
+  - [x] `t_swing` (P1 on E, P2 on pad X, Naresh told by V): 0 failures. One
+        crank 1.6 deg/s, both 3.2; he let go at 48 deg; the van drove over;
+        the red-mark current 5 deg/s. From the shots: the sign was huge
+        (fixed)
 - [ ] F6. The rail tunnel, R4 the torch relay; the hidden flare gun (3
       flares, empties an 80 m circle); R5 push start if the battery died
 - [ ] F7. The radio mast finale: the van's battery powers it, tag the three
