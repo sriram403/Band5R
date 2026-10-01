@@ -6,7 +6,7 @@ extends Node3D
 ## water (a babbling river or lapping lake shore).
 ## Set `target` 0..1 to fade it in and out; nothing is played while silent.
 
-enum Kind { POUR, STEAM, WIND, WATER, HUM, HORN }
+enum Kind { POUR, STEAM, WIND, WATER, HUM, HORN, RAIN }
 
 const MIX_RATE := 22050.0
 
@@ -86,6 +86,15 @@ func _process(delta: float) -> void:
 				if _rng.randf() < 0.0012:
 					_gurgle = _rng.randf_range(0.3, 0.9)
 				v = (_lp - _lp2) * (0.7 + 0.3 * sin(_phase * 5.3) * sin(_phase * 1.7) + _gurgle) * 1.4
+			Kind.RAIN:
+				# heavy rain: a steady mid-band hiss, with the patter of single
+				# drops on top
+				_lp = lerpf(_lp, n, 0.45)
+				_lp2 = lerpf(_lp2, _lp, 0.2)
+				_gurgle *= 0.92
+				if _rng.randf() < 0.004:
+					_gurgle = _rng.randf_range(0.3, 1.0) * signf(n)
+				v = (_lp - _lp2) * 1.1 + _gurgle * 0.35
 			Kind.HORN:
 				# an old van's two-note horn: two clipped tones a third apart
 				_phase += 1.0 / MIX_RATE

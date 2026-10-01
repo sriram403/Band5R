@@ -123,6 +123,17 @@ var _spare_mesh: Node3D
 const COOLANT_DRAIN := 0.03        ## per second through the split hose (engine running)
 const COOLANT_L := 4.0             ## litres to go from empty to full   ## rear rack positions; a stowed Carryable is the slot's child
 var _parked_t := 0.0
+## the road is wet (the storm sets it): grip times lerp(1, WET_GRIP, wet)
+var wet := 0.0
+const WET_GRIP := 0.6
+const WET_BRAKE := 0.7
+## the wipers run by themselves in the rain while the engine runs
+var wipers_on := false
+var _wipers: Array[Node3D] = []
+var _wipe_t := 0.0
+const WIPE_REST := -88.0
+const WIPE_UP := -6.0
+const WIPE_PERIOD := 1.3           ## s for one sweep there and back
 
 
 func _ready() -> void:
@@ -140,6 +151,7 @@ func _ready() -> void:
 	_build_collision()
 	_build_wheels()
 	_build_body()
+	_build_wipers()
 	_build_interior()
 	_build_seats()
 	_build_service()
@@ -276,7 +288,8 @@ func _build_body() -> void:
 		var sl := SpotLight3D.new()
 		sl.name = "Headlight"
 		sl.position = Vector3(hs * 0.78, 1.20, -3.82)
-		sl.rotation_degrees = Vector3(-3.0, 180, 0)
+		# a spot shines along its -Z: the nose is -Z (it pointed back into the cab)
+		sl.rotation_degrees = Vector3(-3.0, 0, 0)
 		sl.light_color = Color(1.0, 0.96, 0.86)
 		sl.light_energy = 7.0
 		sl.spot_range = 60.0
@@ -289,6 +302,36 @@ func _build_body() -> void:
 	for ts in [-1.0, 1.0]:
 		g.add_child(Build.box(Vector3(0.26, 0.14, 0.06), ToonMat.make(Color(0.75, 0.12, 0.14), 0.01, 0.3),
 			Vector3(ts * 0.88, 1.42, 2.96), Vector3.ZERO, "TailLight"))
+
+
+## Two wiper arms on the outside of the windscreen, parked flat along its foot.
+func _build_wipers() -> void:
+	var glass := Node3D.new()
+	glass.name = "Wipers"
+	glass.position = Vector3(0, 2.16, -2.98)
+	glass.rotation_degrees = Vector3(-18, 0, 0)
+	_body_root.add_child(glass)
+	var black := ToonMat.make(Color(0.08, 0.08, 0.09))
+	for x in [-0.62, 0.18]:
+		var pivot := Node3D.new()
+		pivot.name = "WiperPivot"
+		pivot.position = Vector3(x, -0.47, -0.05)
+		pivot.rotation_degrees.z = WIPE_REST
+		glass.add_child(pivot)
+		pivot.add_child(Build.box(Vector3(0.014, 0.80, 0.014), black, Vector3(0, 0.40, 0), Vector3.ZERO, "Arm"))
+		pivot.add_child(Build.box(Vector3(0.022, 0.72, 0.02), black, Vector3(0, 0.44, -0.015), Vector3.ZERO, "Blade"))
+		_wipers.append(pivot)
+
+
+func _update_wipers(delta: float) -> void:
+	wipers_on = engine_on and battery > 0.02 and wet > 0.2
+	if wipers_on or _wipe_t > 0.0:
+		_wipe_t += delta / WIPE_PERIOD
+		if _wipe_t >= 1.0:
+			_wipe_t = fmod(_wipe_t, 1.0) if wipers_on else 0.0
+	var a := lerpf(WIPE_REST, WIPE_UP, 0.5 - 0.5 * cos(_wipe_t * TAU))
+	for w in _wipers:
+		w.rotation_degrees.z = a
 
 
 func _build_interior() -> void:
@@ -585,7 +628,7 @@ func puncture() -> void:
 
 
 func refresh_tyre_visuals() -> void:
-	_wheels[0].wheel_friction_slip = 1.0 if tyre_flat else 3.1
+	_apply_grip()
 	_wheels[0].wheel_radius = WHEEL_RADIUS * (0.78 if tyre_flat else 1.0)
 	# from stage 5 the round spare is on the hub, the van still on the jack
 	_wheel_meshes[0].scale = Vector3(1.0, 0.76, 0.76) if tyre_flat and tyre_stage < 5 else Vector3.ONE
@@ -594,6 +637,24 @@ func refresh_tyre_visuals() -> void:
 	var jack := _body_root.get_node_or_null("WheelJack") as Node3D
 	if jack != null:
 		jack.visible = tyre_flat and tyre_stage >= 2
+
+
+## A wet road (the storm): every tyre grips less, so gusts shove the van
+## further and it takes longer to stop. 0 dry .. 1 soaked.
+func set_wet(w: float) -> void:
+	if absf(w - wet) < 0.01:
+		return
+	wet = w
+	_apply_grip()
+
+
+func _apply_grip() -> void:
+	var mul := lerpf(1.0, WET_GRIP, wet)
+	for i in _wheels.size():
+		var dry := 3.1 if i < 2 else 3.6
+		if i == 0 and tyre_flat:
+			dry = 1.0
+		_wheels[i].wheel_friction_slip = dry * mul
 
 
 ## The punctured wheel comes off as a real, carryable thing, dropped by the hub.
@@ -898,7 +959,8 @@ func _physics_process(delta: float) -> void:
 	# running it is reverse. With the engine off it is always the brake pedal,
 	# which is what stops a van rolling back after a stall on a hill.
 	if brake_in > 0.01 and (fwd_speed > 0.6 or not engine_on):
-		b = BRAKE_FORCE * brake_in
+		# on a wet road the tyres give up sooner: the pedal does less
+		b = BRAKE_FORCE * brake_in * lerpf(1.0, WET_BRAKE, wet)
 	if not engine_on or throttle_in < 0.01:
 		b += IDLE_DRAG
 	# Drive-away: pulling off (or reversing) with the engine running lets the
@@ -1011,6 +1073,7 @@ func _update_visuals(delta: float, speed: float, fwd_speed: float) -> void:
 			l.visible = lit
 	_set_lamp("lamp_park", parking_brake and battery > 0.02)
 
+	_update_wipers(delta)
 	_update_nav_screen(delta)
 	_nav_timer -= delta
 	var nav: Label3D = _needles.get("nav_label")

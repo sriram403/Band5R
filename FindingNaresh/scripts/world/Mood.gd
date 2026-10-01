@@ -30,6 +30,14 @@ const LOOKS := {
 
 var value := 1.0
 var fog_boost := 0.0             ## 0..1 local fog on top (the ghat hairpins), set by Ghat
+## 0..1 the storm on top (set by Storm): rain fog closing in to ~60 m, the
+## sun and sky gone grey-black; `flash` 0..1 is a lightning flash
+var storm := 0.0
+var flash := 0.0
+const STORM_FOG := [4.0, 85.0]        ## fog begin / end in the full storm
+const STORM_FOG_COL := Color(0.20, 0.22, 0.26)
+const FLASH_COL := Color(0.78, 0.82, 0.95)
+var _shown_storm := -1.0
 var target := 1.0
 var _env: Environment
 var _sky: ProceduralSkyMaterial
@@ -62,7 +70,7 @@ func _process(delta: float) -> void:
 		_check_t = 0.5
 		_way_out()
 	value = move_toward(value, target, EASE * delta)
-	if absf(value - _shown) > 0.002:
+	if absf(value - _shown) > 0.002 or absf(storm + flash * 3.0 - _shown_storm) > 0.002:
 		apply()
 
 
@@ -87,20 +95,31 @@ func _way_out() -> void:
 
 func apply() -> void:
 	_shown = value
+	_shown_storm = storm + flash * 3.0
 	if _sky != null:
-		_sky.sky_top_color = _blend("sky_top")
-		_sky.sky_horizon_color = _blend("sky_horizon")
-		_sky.ground_horizon_color = _blend("sky_horizon").darkened(0.25)
+		var dark := Color(0.12, 0.13, 0.16)
+		_sky.sky_top_color = (_blend("sky_top") as Color).lerp(dark, storm * 0.85).lerp(FLASH_COL, flash * 0.5)
+		var hz := (_blend("sky_horizon") as Color).lerp(STORM_FOG_COL, storm * 0.9).lerp(FLASH_COL, flash * 0.7)
+		_sky.sky_horizon_color = hz
+		_sky.ground_horizon_color = hz.darkened(0.25)
 	if _env != null:
 		_env.fog_light_color = _blend("fog")
 		_env.fog_depth_begin = lerpf(_blend("fog_begin"), 3.0, fog_boost)
 		_env.fog_depth_end = lerpf(_blend("fog_end"), 40.0, fog_boost)
 		if fog_boost > 0.0:
 			_env.fog_light_color = _blend("fog").lerp(Color(0.72, 0.74, 0.76), fog_boost)
-		_env.ambient_light_energy = _blend("ambient")
-		_env.adjustment_saturation = _blend("saturation")
+		if storm > 0.0:
+			_env.fog_depth_begin = lerpf(_env.fog_depth_begin, STORM_FOG[0], storm)
+			_env.fog_depth_end = minf(_env.fog_depth_end, lerpf(_env.fog_depth_end, STORM_FOG[1], storm))
+			_env.fog_light_color = _env.fog_light_color.lerp(STORM_FOG_COL, storm)
+		_env.fog_density = lerpf(0.55, 1.0, storm)
+		_env.fog_sky_affect = 0.85 * storm        # the sky melts into the rain
+		if flash > 0.0:
+			_env.fog_light_color = _env.fog_light_color.lerp(FLASH_COL, flash * 0.6)
+		_env.ambient_light_energy = _blend("ambient") * (1.0 - 0.35 * storm) + flash * 1.4
+		_env.adjustment_saturation = _blend("saturation") * (1.0 - 0.25 * storm)
 	if _sun != null:
-		_sun.light_energy = _blend("sun")
+		_sun.light_energy = _blend("sun") * (1.0 - 0.7 * storm)
 		_sun.light_color = _blend("sun_color")
 	var amb := get_parent().get_node_or_null("Ambience") as Ambience
 	if amb != null:

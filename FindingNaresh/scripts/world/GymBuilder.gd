@@ -12,7 +12,7 @@ extends LevelBuilder
 ## More gyms (tagging, hiding, creatures, Naresh, storm) are added as those
 ## mechanics are built; each one starts as a copy of `base`.
 
-const GYMS := ["base", "tyre", "house", "traffic", "tagging", "binoculars", "stealth", "creature", "naresh", "photo"]
+const GYMS := ["base", "tyre", "house", "traffic", "tagging", "binoculars", "stealth", "creature", "naresh", "photo", "storm"]
 ## Stealth gym: a creature at STEALTH_EYE facing the players' side (+Z), cover
 ## pieces between, the players' lane 30 m out.
 const STEALTH_EYE := Vector3(60, 0, -30)
@@ -103,6 +103,8 @@ func build() -> Node3D:
 		_naresh_gym()
 	if gym == "photo":
 		_photo_gym()
+	if gym == "storm":
+		_storm_gym()
 	_world_edge()
 	_gym_spawns()
 	return world
@@ -589,6 +591,33 @@ func _photo_gym() -> void:
 	poi["photo_gym_spot"] = mark
 
 
+## The storm gym (design/RETURN.md, F1): the base plain in the storm. The
+## straight (z = 250, along X) runs across the wind, which blows to -Z.
+var storm: Storm
+
+func _storm_gym() -> void:
+	var mood := Mood.new()
+	mood.name = "Mood"
+	world.add_child(mood)
+	mood.value = 0.3           # the return's dark: the storm is met at dusk
+	mood.target = 0.3
+	storm = Storm.new()
+	storm.name = "Storm"
+	world.add_child(storm)
+	poi["storm_start"] = Vector3(-280, 0, 250)
+	# windsocks on the windward verge of the straight, every 40 m
+	for k in 15:
+		var x := -280.0 + k * 40.0
+		world.add_child(Storm.make_windsock(Vector3(x, _h(x, 258.0), 258.0)))
+	# distance boards beside the road, to judge how far you can see
+	var offs := {30: -3.0, 60: 3.0, 90: -6.0, 120: 6.0}     # staggered, so none hides another
+	for d in [30, 60, 90, 120]:
+		var at := Vector3(-200.0 + d, 0, 245.0 + float(offs[d]))
+		at.y = _h(at.x, at.z)
+		world.add_child(Build.box(Vector3(2.0, 2.0, 0.1), ToonMat.make(Color(0.95, 0.94, 0.88)), at + Vector3(0, 1.6, 0), Vector3(0, 90, 0), "SeeBoard%d" % d))
+		world.add_child(Build.label3d("%d m" % d, at + Vector3(-0.08, 1.6, 0), Vector3(0, -90, 0), 0.9, Color(0.1, 0.1, 0.1)))
+
+
 ## A gate panel that slides up out of a doorway (its collider goes with it).
 func _gym_gate(nm: String, at: Vector3, size: Vector3, mat: Material) -> StaticBody3D:
 	var g := StaticBody3D.new()
@@ -607,6 +636,8 @@ func _gym_spawns() -> void:
 	camper_spawn = Transform3D(Basis(), Vector3(0, 0.8, 30))
 	if gym == "tyre":
 		camper_spawn = Transform3D(Basis.looking_at(Vector3(1, 0, 0), Vector3.UP), Vector3(-85, 0.8, 250))
+	if gym == "storm":
+		camper_spawn = Transform3D(Basis.looking_at(Vector3(1, 0, 0), Vector3.UP), Vector3(-280, 0.8, 250))
 	poi["camper_spawn"] = camper_spawn.origin
 	poi["homestead"] = Vector3(0, 0, 40)
 	for k in 2:
