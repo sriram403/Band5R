@@ -477,7 +477,11 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
    line down, `LiftBridge.storm_blow`, `t_storm_road`) is approved and pushed
    (2026-10-01).** F3 (`world/FishingVillage.gd`, R1 the decoy, the refuel
    mistake, `Creature.on_return`, `t_decoy`, `t_decoy_save`, `set:return`)
-   is **approved and pushed (2026-10-01)**. Then F4 (the salt pans) in
+   is pushed (2026-10-01) but **not yet tested by the user**.
+   **Mode for the rest of F (user, 2026-10-01):** build F4-F9 with the
+   recommended answers (each part's "Decisions to confirm" in
+   `notes/TEST_MILESTONE_F.md`); the user tests once F is finished, from F3
+   on; keep new parts local in main until then (no push). Then F4 (the salt pans) in
    `../MPG_dev` on a new branch from main. Build the next part in
    `../MPG_dev` while the long runs go in `MPG`. After all milestones,
    remind the user of `notes/POLISH.md`.

@@ -17,9 +17,13 @@ being built and tested), so this always shows where the work is right now.
 - F2 (the storm on the old road, the dead end at the bridge): **approved by
   you (2026-10-01, its 5 decisions) and pushed**, with the fix from your
   test (the rain followed P2 left at J3).
-- F3 the fishing village (the decoy): **approved by you (2026-10-01, its 8
-  decisions) and pushed.**
-- Next: **F4 the salt pans** (R2 red light / green light).
+- F3 the fishing village (the decoy): pushed (2026-10-01) on your "all good",
+  but **not tested by you yet** (you said so after the push).
+- **Working mode for the rest of F (you, 2026-10-01):** build F4-F9 with my
+  recommended answers (listed as "Decisions to confirm" in
+  `notes/TEST_MILESTONE_F.md`); **your test comes once F is finished, from
+  F3 onwards**. New parts stay local in main (not pushed) until that test.
+- [~] **F4 the salt pans** (R2 red light / green light), in `../MPG_dev`.
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -883,9 +887,10 @@ test before each push.
   - [x] `t_decoy` 21 checks + `t_decoy_save` 5: 0 failures
   - [x] Regression: set:creatures 7, the Naresh gym, set:bessi 12, teleports,
         smoke 23: 0 failures, no script errors. Merged into main (not pushed)
-  - [x] Your test: approved with its decisions (2026-10-01). Found: Play.bat
+  - [x] Pushed on your "all good" (2026-10-01). Found on your launch: Play.bat
         showed a grey screen after the merge (a new class unknown until an
-        import); Play.bat now imports when scripts are newer. Pushed
+        import); Play.bat now imports when scripts are newer
+  - [ ] Your test (at the end of F, from F3 on)
 - [ ] F4. Salt pans, R2 red light / green light (dashes between heaps, the
       spotter calls go / tarp)
 - [ ] F5. Estuary bridge, R3 the three-hand swing bridge (two cranks and a
