@@ -25,7 +25,8 @@ being built and tested), so this always shows where the work is right now.
   F3 onwards**. New parts stay local in main (not pushed) until that test.
 - F4 the salt pans, F5 the estuary bridge: built (local, `../MPG_dev` branch `f4`).
 - F6 the rail tunnel: built (local).
-- [~] **F7 the radio mast finale** next.
+- F7 the radio mast: built (local).
+- [~] **F8 Naresh's home, the tracker, the drive home, the ending** next.
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -932,10 +933,22 @@ test before each push.
   - [x] `t_tunnel`: 16 checks, 0 failures. Found: the gallery was 330 m
         (doors now 60 m either side of the gate); in the dark the arrows
         were still legible (no outline now)
-- [ ] F7. The radio mast finale: the van's battery powers it, tag the three
+- [x] F7. The radio mast finale: the van's battery powers it, tag the three
       targets from the top (nearer return sites, chosen by a sightline test),
       three cranks with Naresh, the dish screens, the creatures come halfway;
-      the clouds break over the West Road
+      the clouds break over the West Road (built with my recommended answers;
+      your test at the end of F)
+  - [x] Measured first: no road reaches the mast (230 m up from the coast
+        road), so the power is its own pull-start generator; the sightline
+        test picked the tunnel mouth (430 m), Naresh's home (1.1 km), the
+        ending watchtower (2.3 km)
+  - [x] `puzzles/RadioMast.gd`: platform + ladder, three dishes, cranks,
+        lamps, plaque, the screen (SubViewport, every 6th frame), the
+        generator (cord + choke), relay beacons (group `far_tag`: taggable at
+        any distance), two creatures for the noise; Naresh's backwards crank
+  - [x] `t_mast`: 0 failures; 135 fps by the screen with both views (144
+        without). Found: tags reach only 200/400 m (far lights now taggable);
+        the crank's standing spot was 1 m up; the labels were huge
 - [ ] F8. Naresh's home (mother and sister, silent), the hidden tracker
       (maze, relay, flare gun, fragments), the West Road in full sun, the
       ending watchtower's site lights, the LiveStander text, end screen

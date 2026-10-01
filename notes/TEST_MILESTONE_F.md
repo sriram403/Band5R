@@ -344,3 +344,55 @@ road turns inland under Tunnel Hill; "OLD RAIL TUNNEL 1911" over the mouth.)
    hand over.
 6. **The push start:** rolling forwards over 10 km/h, the ignition works on
    a flat battery.
+
+---
+
+## F7. The radio mast (the finale: point the dishes home)
+
+**Getting there.** **F1 → Story → "Point the mast's three dishes, as the
+plaque says"**. You're at the foot of the red-and-white mast on Radio Hill;
+the van is on the coast road below (about 230 m down: no road goes up).
+(Or drive out of the tunnel: the mast is on the hill above the road; park
+and walk up.)
+
+**What's there.** The mast with a platform 20 m up (a ladder up its side)
+and three dishes, numbered 1-3; at its foot a desk with a **screen**, three
+**cranks** (each with a lamp) and a **plaque**; by the hut a green
+**generator** with a pull cord and a choke.
+
+1. **Power.** One holds the **choke** (hold E / X), the other pulls the
+   **cord** (hold E). **Expect:** the cord alone splutters out; with the
+   choke held it roars into life. Far off, **three red beacons** blink on,
+   and the screen lights up. **It's loud: two creatures come for the noise**
+   (hide, keep still, or fire a flare).
+2. **The targets.** The plaque: DISH 1, the tunnel mouth; DISH 2, the house
+   on the ridge (Naresh's home); DISH 3, the watchtower on the West Road.
+   Climb the ladder: from the platform you can see all three beacons.
+   **T** on a beacon tags it (any distance, looked at straight on; the
+   binoculars help), so the one below sees where it is.
+3. **The dishes.** Hold E on a dish's crank: it turns (always the same way,
+   round and round, 8 deg/s); the screen shows what that dish sees. Let go
+   with it on its beacon: it **locks**, its lamp goes green.
+4. **Naresh** can take a crank (V on it: *Hold*): the first time he turns
+   it **backwards** ("Is it going the right way? It looks the right way.")
+   until you tell him again ("Oh! The OTHER way.").
+5. **All three locked:** "The mast hums ... away to the west the clouds
+   break over the West Road." The objective: on to Naresh's home.
+
+### Decisions to confirm (F7) (you test from F3 on once F is finished)
+
+1. **No van at the mast** (it's on a hill, no road up: measured 230 m from
+   the coast road). So the power is the mast's own generator,
+   pull-started by two (one on the choke), not the van's battery as
+   RETURN.md first said.
+2. **The three targets** (picked by a sightline test from the top): the
+   tunnel mouth (430 m), Naresh's home (1.1 km), the ending watchtower on
+   the West Road (2.3 km, "home"). Each gets a blinking red relay beacon
+   that shows through the dusk.
+3. **Tagging far lights:** a beacon looked at straight on can be tagged at
+   any distance (tags otherwise reach 200 m, 400 through binoculars).
+4. **The cranks turn one way only**, round and round (overshoot = go round
+   again).
+5. **The screen** shows the last-turned dish's view (it redraws every 6th
+   frame: measured 135 fps by it with both views, 144 without).
+6. **Two creatures** come for the generator's noise.
