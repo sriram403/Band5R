@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -6533,6 +6533,83 @@ func t_storm_sweep() -> void:
 	for spec in [[42.0, 1.0], [45.0, 1.0], [50.0, 1.0], [55.0, 1.0], [60.0, 1.0], [50.0, 0.85], [60.0, 0.85]]:
 		await storm_run(spec[0], spec[1])
 		await storm_leave()
+
+
+## F2, the storm on the old road (Bessi -> ghat -> J3 -> the bridge): where
+## it is, the dead end at the bridge, his line. `tools/run_test.sh storm_road`
+func t_storm_road() -> void:
+	var st: Story = boot.story
+	var front := boot.world.get_node("StormFront") as StormFront
+	var s := storm()
+	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+	var line := get_tree().get_first_node_in_group("power_line") as PowerLine
+	check(front != null and s != null and lift != null and line != null, "the world has the storm, the bridge and the power line")
+	if s == null:
+		return
+	var poi: Dictionary = boot.builder.poi
+	check(front.storm_at(poi["ghat_pass"]) == 0.0, "before the storm starts there is none")
+	boot.dev_menu.run("jump", st.index_of("storm"))
+	await wait(1.0)
+	check(front.started and st.flags.has("storm_on"), "the jump to the storm step starts it")
+	# where it is: the old way, not the way north
+	var on_way := []
+	for k in ["ghat_pass", "j3", "bridge"]:
+		on_way.append("%s %.2f" % [k, front.storm_at(poi[k])])
+	var coast: Route = boot.builder.network.road("coast_road")
+	var worst := 0.0
+	var roses: Vector3 = poi["roses"]
+	for i in range(0, coast.point_count(), 5):
+		var q := coast.point(i)
+		if Vector2(q.x - roses.x, q.z - roses.z).length() > 350.0:
+			if front.storm_at(q) > worst:
+				var near := INF
+				var at := Vector3.ZERO
+				for z in front._zone:
+					if Vector2(z.x - q.x, z.z - q.z).length() < near:
+						near = Vector2(z.x - q.x, z.z - q.z).length()
+						at = z
+				log_line("  coast %s (%.0f m from the roses): %.2f, %.0f m from the old way at %s" % [q, Vector2(q.x - roses.x, q.z - roses.z).length(), front.storm_at(q), near, at])
+			worst = maxf(worst, front.storm_at(q))
+	log_line("storm at: %s; worst on the coast road north (past 350 m): %.2f" % [", ".join(on_way), worst])
+	check(front.storm_at(poi["ghat_pass"]) > 0.99 and front.storm_at(poi["j3"]) > 0.99 and front.storm_at(poi["bridge"]) > 0.9, "the storm sits over the ghat, J3 and the bridge")
+	check(worst < 0.01, "the coast road north is clear of it")
+	check(s.intensity < 0.1, "at the start of the coast road it's not storming (%.2f)" % s.intensity)
+	# the bridge: up, dead, barred
+	await physics_frames(3)
+	check(lift.storm_blown and lift.angle > 60.0 and lift.barriers.visible, "the bridge's leaf is up again, the barriers back (%.0f deg)" % lift.angle)
+	check(line.cut and not line.hut_powered and lift.panel_label.text == "NO POWER", "the power line is down: the hut says NO POWER")
+	# drive in: the van at the bridge, everyone aboard
+	var c := camper()
+	c.repair_all()
+	await van_to(poi["bridge_barrier_near"])
+	await seat_p1_driver()
+	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	var n := nz()
+	n.global_position = c.global_position + Vector3(3, 0, 0)
+	await wait(0.5)
+	n.command(p1(), "get_in", c)
+	await until(func() -> bool: return n.state == Naresh.State.SEATED, 10.0)
+	await until(func() -> bool: return s.intensity > 0.95, 8.0)
+	check(s.intensity > 0.95 and c.wet > 0.9, "at the bridge it storms: the road is wet (%.2f)" % s.intensity)
+	check(front.at_bridge, "they're told: the leaf is up, the lamps dark, no way across")
+	await look_at_point(p1(), poi["lift_pivot"] + Vector3(0, 6, 0))
+	await shot("storm_bridge")
+	# back up the road: his line
+	await van_to(poi["ghat_pass"])
+	await wait(0.5)
+	check(front.said_north and n.state == Naresh.State.SEATED, "back on the ghat, Naresh: 'My friend said north.'")
+	check(not c.coolant_leak and st.flags.has("first_attack"), "the way out's one-offs don't happen again (no burst hose, no second first attack)")
+	check(get_tree().get_nodes_in_group("creature").filter(func(x): return (x as Node3D).global_position.distance_to(c.global_position) < 80.0).is_empty(), "no creature comes for the van on the ghat")
+	await shot("storm_ghat")
+	# a jump back before the storm puts it all away
+	p1().force_exit = true
+	p2().force_exit = true
+	await physics_frames(3)
+	boot.dev_menu.run("jump", st.index_of("drum"))
+	await wait(1.0)
+	await physics_frames(3)
+	check(not front.started and not lift.storm_blown and not line.cut, "a jump back before the storm: the bridge and the power as they were")
+	check(lift.locked == st.flags.has("bridge_down"), "the leaf as the story left it (locked %s)" % lift.locked)
 
 
 func t_storm_gym() -> void:

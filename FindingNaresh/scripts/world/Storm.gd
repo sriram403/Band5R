@@ -36,6 +36,10 @@ const RAIN_UP := 12.0                  ## m above the player the drops start
 
 ## 0..1, how stormy it is (the gym: 1 everywhere; the world: by place, F2)
 var intensity := 1.0
+## the world (F2): pos -> 0..1, how stormy it is there; the storm is as
+## strong as it is where anyone (or the van) is, eased in and out
+var zone_fn: Callable
+const ZONE_EASE := 0.25                ## per second
 ## the way the wind blows (towards), flat
 var wind_dir := Vector3(0, 0, -1)
 var auto_gusts := true                 ## tests switch the schedule off and call gust_now()
@@ -111,6 +115,11 @@ func gust_now(strength := 1.0, dir := Vector3.ZERO) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if zone_fn.is_valid():
+		var want := 0.0
+		for n in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("camper"):
+			want = maxf(want, float(zone_fn.call((n as Node3D).global_position)))
+		intensity = move_toward(intensity, want, ZONE_EASE * delta)
 	for c in get_tree().get_nodes_in_group("camper"):
 		(c as Camper).set_wet(intensity)
 	if intensity <= 0.01:

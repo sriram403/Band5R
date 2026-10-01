@@ -27,6 +27,17 @@ var _flash_light: DirectionalLight3D
 var _glow_mat: StandardMaterial3D
 var _thunder: AudioStreamPlayer
 var _thunder_in := -1.0
+## F2: the storm sits over the old way: the Beach Road from this front, the
+## ghat, and Pump House Road from J3 to the bridge. Samples of those roads,
+## every ~10 m; the storm is full within ZONE_IN m of one, gone by ZONE_OUT.
+const ZONE_IN := 60.0
+const ZONE_OUT := 160.0       ## the coast road north runs ~220 m from the Beach Road: it stays clear
+var _zone: PackedVector3Array = PackedVector3Array()
+var _roses := Vector3.ZERO
+var _bridge := Vector3.ZERO
+var _j3 := Vector3.ZERO
+var at_bridge := false              ## the van got to the blown bridge (tests)
+var said_north := false
 
 
 func setup(b) -> void:
@@ -41,6 +52,32 @@ func setup(b) -> void:
 	root.basis = Basis.looking_at(-dir, Vector3.UP)     # its face (+Z) towards Bessi
 	b.world.add_child(root)
 	b.poi["storm_front"] = root.position
+	_roses = roses
+	_bridge = b.poi["bridge"]
+	_j3 = b.poi["j3"]
+	var reach := Vector2(_bridge.x - _j3.x, _bridge.z - _j3.z).length() + 60.0
+	for spec in [["beach_road", "front"], ["ghat_road", "all"], ["pump_house_road", "j3"]]:
+		var r: Route = b.network.road(spec[0])
+		if r == null:
+			continue
+		var k := 0
+		while k < r.point_count():
+			var q := r.point(k)
+			var keep := true
+			if spec[1] == "front":
+				keep = Vector2(q.x - roses.x, q.z - roses.z).length() > DIST - 60.0
+			elif spec[1] == "j3":
+				keep = Vector2(q.x - _j3.x, q.z - _j3.z).length() < reach
+			if keep:
+				_zone.append(q)
+			k += 5
+	# the storm proper: gusts, rain, fog, wet road (world/Storm.gd)
+	var st := Storm.new()
+	st.name = "Storm"
+	st.intensity = 0.0
+	st.wind_dir = Vector3(-1, 0, 0)          # in off the sea
+	st.zone_fn = storm_at
+	b.world.add_child(st)
 	var cloud := StandardMaterial3D.new()
 	cloud.albedo_color = Color(0.10, 0.11, 0.14)
 	cloud.roughness = 1.0
@@ -94,10 +131,22 @@ func setup(b) -> void:
 	root.visible = false
 
 
+## How stormy it is at `pos` (0..1): on the old way, once the storm is on.
+func storm_at(pos: Vector3) -> float:
+	if not started:
+		return 0.0
+	var best := INF
+	for q in _zone:
+		best = minf(best, Vector2(q.x - pos.x, q.z - pos.z).length_squared())
+	return 1.0 - smoothstep(ZONE_IN, ZONE_OUT, sqrt(best))
+
+
 func _physics_process(delta: float) -> void:
 	var st := get_tree().get_first_node_in_group("story") as Story
 	if st == null or st.index_of("storm") < 0:
 		return
+	if started:
+		_dead_end()
 	if not started:
 		if st.flags.has("storm_on"):
 			start(st, false)
@@ -125,6 +174,7 @@ func start(st: Story, tell: bool) -> void:
 	started = true
 	st.flags["storm_on"] = true
 	root.visible = true
+	_blow(true)
 	_flash_t = 1.5
 	var ro := get_tree().get_first_node_in_group("roses") as Roses
 	if ro != null:
@@ -152,11 +202,46 @@ func _flash() -> void:
 	_thunder_in = randf_range(1.2, 2.2)       # 430 m away: the sound comes after
 
 
+## The storm takes the power line down and the lift bridge's leaf swings up:
+## the old road is a dead end (design/RETURN.md, decision 1).
+func _blow(on: bool) -> void:
+	var line := get_tree().get_first_node_in_group("power_line") as PowerLine
+	if line != null:
+		line.storm_cut(on)
+	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+	if lift != null:
+		lift.storm_blow(on)
+
+
+## The van at the blown bridge: told what they see; back on the ghat after
+## it, Naresh's tired joke (once).
+func _dead_end() -> void:
+	var boot := get_tree().current_scene
+	var van: Camper = boot.get("camper") if boot != null else null
+	if van == null:
+		return
+	var d := Vector2(van.global_position.x - _bridge.x, van.global_position.z - _bridge.z).length()
+	if not at_bridge and d < 70.0:
+		at_bridge = true
+		for n in get_tree().get_nodes_in_group("player"):
+			if (n as Node3D).global_position.distance_to(_bridge) < 120.0:
+				(n as PlayerRig).say("The bridge's leaf stands up in the gale again, swaying. Every lamp along the road is dark: the storm has the power line down. No way across.", 8.0)
+	elif at_bridge and not said_north and d > 300.0:
+		said_north = true
+		var nz: Naresh = boot.get("naresh")
+		if nz != null and is_instance_valid(nz) and nz.global_position.distance_to(van.global_position) < 15.0:
+			nz.say("My friend said north.")
+
+
 ## The story jumped back before the storm (F1): all put away.
 func match_story() -> void:
 	var st := get_tree().get_first_node_in_group("story") as Story
 	if st != null and st.flags.has("storm_on"):
 		return
+	if started:
+		_blow(false)
 	started = false
+	at_bridge = false
+	said_north = false
 	_t = 0.0
 	root.visible = false

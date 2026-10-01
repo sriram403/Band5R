@@ -56,7 +56,7 @@ test_plan() {
 		echo "|quick" ;;
 	set:bessi)
 		echo "photo|photo_gym"
-		echo "|beach,photo,roses,evidence,bessi_jumps,shutter,boat,storm,step_jumps"
+		echo "|beach,photo,roses,evidence,bessi_jumps,shutter,boat,storm,storm_road,step_jumps"
 		echo "|bessi_save" ;;
 	set:world_full)
 		echo "|full" ;;

@@ -30,6 +30,9 @@ const STEP_OK := 0.3             ## counterweight top within this of the floor: 
 var angle := UP_DEG
 var jammed := true
 var locked := false
+## F2: the storm has the power off and the gale has the leaf up again: a dead
+## end on the old road. Nothing in the hut works; the barriers are back.
+var storm_blown := false
 var cut_outs := 0
 var pull_work := 0.0
 var lowering := false            ## LOWER held this tick
@@ -264,6 +267,17 @@ func _build_mirror(xf: Transform3D) -> void:
 # --- running -------------------------------------------------------------------
 
 func _physics_process(delta: float) -> void:
+	if storm_blown:
+		# whatever a load set, it stays up, swaying in the wind
+		locked = false
+		_resetting = false
+		angle = UP_DEG - 4.0 + sin(Time.get_ticks_msec() * 0.0011) * 2.5
+		if barriers != null and not barriers.visible:
+			_close_road()
+		if _hum != null:
+			_hum.target = 0.0
+		_apply()
+		return
 	_raise_t -= delta
 	_lower_t -= delta
 	raising = _raise_t > 0.0 and not locked
@@ -379,6 +393,28 @@ func _lock() -> void:
 	var st = get_tree().current_scene.get("story")
 	if st != null:
 		st.flags["bridge_down"] = true
+
+
+## The storm (F2) or its end: up and dead, or back as the story left it.
+func storm_blow(on: bool) -> void:
+	storm_blown = on
+	if on:
+		_close_road()
+		return
+	var st = get_tree().current_scene.get("story")
+	if st != null and st.flags.has("bridge_down"):
+		locked = true
+		jammed = false
+		angle = 0.0
+		_open_road()
+	_apply()
+
+
+func _close_road() -> void:
+	if barriers != null:
+		barriers.visible = true
+		for c in barriers.find_children("*", "CollisionShape3D", true, false):
+			(c as CollisionShape3D).set_deferred("disabled", false)
 
 
 func _open_road() -> void:
