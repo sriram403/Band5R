@@ -23,7 +23,7 @@ being built and tested), so this always shows where the work is right now.
   recommended answers (listed as "Decisions to confirm" in
   `notes/TEST_MILESTONE_F.md`); **your test comes once F is finished, from
   F3 onwards**. New parts stay local in main (not pushed) until that test.
-- [~] **F4 the salt pans** (R2 red light / green light), in `../MPG_dev`.
+- F4 the salt pans: built (local, branch `f4`). [~] **F5 the estuary bridge** next.
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -891,8 +891,23 @@ test before each push.
         showed a grey screen after the merge (a new class unknown until an
         import); Play.bat now imports when scripts are newer
   - [ ] Your test (at the end of F, from F3 on)
-- [ ] F4. Salt pans, R2 red light / green light (dashes between heaps, the
-      spotter calls go / tarp)
+- [x] F4. Salt pans, R2 red light / green light (dashes between heaps, the
+      spotter calls go / tarp) (built with my recommended answers; your test
+      at the end of F)
+  - [x] `world/SaltPans.gd`: a gantry with a watcher (a passive `Creature`)
+        whose visible gaze stares 3 s, turns, and looks out to sea 4.5 s;
+        9 salt heaps (each hides the van along 10-23 m of road, measured);
+        seen when moving in its gaze or within 25 deg of it in the open, or
+        stopped in the open 2.5 s (not under the tarp): it climbs down and
+        goes for the van; Naresh calls, right 2 in 3
+  - [x] Story `salt_pans` / `end_f4`, F1 jump, `match_story` (load, jumps)
+  - [x] `t_saltpans`: 0 failures. A careful (scripted spotter) crossing got
+        across unseen in 75 s with 2 stops; straight across at 45 km/h is
+        seen. Tuning found on the way: with the gaze only on the road a
+        careful driver could hardly ever move (the look out to sea fixed
+        it); the heaps' cover was narrower than the van at first
+  - [ ] Regression with F5 (the creature change: a watcher at its post
+        ignores Naresh)
 - [ ] F5. Estuary bridge, R3 the three-hand swing bridge (two cranks and a
       held brake; the tide gauge is the clock; Naresh lets go to wave)
 - [ ] F6. The rail tunnel, R4 the torch relay; the hidden flare gun (3

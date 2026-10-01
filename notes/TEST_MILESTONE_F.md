@@ -205,3 +205,53 @@ no mistake, no stall); stand in his way at the van (he says "Excuse me!").
 7. **Where he's left if taken:** two new greybox high places near the
    village: "the old water tank" and "the rock stack".
 8. **The shed's door is wide (2.2 m)** so carried cans don't catch on it.
+
+---
+
+## F4. The salt pans (red light, green light)
+
+**Getting there.** **F1 → Story → "Open salt flats, and something on the
+old gantry watching the road"**. You're by the van on the coast road, about
+100 m short of the salt pans, Naresh with you. (Or drive on north from the
+fishing village.)
+
+**What's there.** The road crosses open white salt flats. In the middle of
+the pans, on an old wooden gantry, a creature stands watch. Its gaze is a
+**pale beam** you can see. White **salt heaps** line the seaward side of the
+road.
+
+1. **Watch it first** (from the van or on foot, out of its way). **Expect:**
+   it stares along the road one way for ~3 s, turns to the next, sweeping
+   across the road; after sweeping one way it **turns to look out to sea**
+   for ~4.5 s (its back to the road: your green light), then sweeps back.
+   The pattern repeats.
+2. **Cross in dashes.** Drive while it looks away (best: while it looks out
+   to sea); when it turns your way, **stop behind a salt heap** (the heap
+   between you and it). **Expect:** behind a heap you're hidden even in its
+   gaze. Naresh, in the back, calls out as it turns ("Stop! It's turning
+   this way!"), but one time in three he gets it wrong ("Go, go! It's not
+   looking!").
+3. **Get it wrong on purpose** (another go: F1 → Story again):
+   - driving through its gaze, or even near it (movement in the corner of
+     its eye makes it turn and look), **it sees the van**;
+   - stopped in the open, in its gaze for 2.5 s, **it sees the van** (not if
+     the tarp's on);
+   **Expect:** a message; it drops off the gantry and comes across the pans
+   for the van (the usual van trouble: leak, engine, tyre). Drive on and
+   it falls behind. Nothing is lost for good.
+4. Across the open ground: the objective moves on to the estuary bridge.
+
+### Decisions to confirm (F4) (you test from F3 on once F is finished)
+
+1. **Its gaze is visible** (a pale beam), so you can play it.
+2. **The pattern:** four stares along the road (~3 s each), then out to sea
+   (~4.5 s), then back the other way; the same every time (learnable).
+   Added after my test: without the look out to sea a careful player could
+   hardly ever move.
+3. **What gives you away:** moving in its gaze, or moving in the open within
+   25 deg of it (the corner of its eye: it turns and stares); stopped in
+   the open in its gaze for 2.5 s. Half behind a heap counts as hidden.
+4. **Cover:** 9 salt heaps, ~34 m apart, each hiding the van along 10-23 m
+   of road.
+5. **Seen = the usual van attack**, no fail; it gives up when you drive off.
+6. **Naresh's calls:** right two times in three.
