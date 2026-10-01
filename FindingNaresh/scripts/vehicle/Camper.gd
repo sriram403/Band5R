@@ -126,6 +126,14 @@ var _spare_mesh: Node3D
 const COOLANT_DRAIN := 0.03        ## per second through the split hose (engine running)
 const COOLANT_L := 4.0             ## litres to go from empty to full   ## rear rack positions; a stowed Carryable is the slot's child
 var _parked_t := 0.0
+## The safety net (F9): squeezed through the ground (reversing hard into a
+## house: the ground is only a surface), the van fell for ever. Where it last
+## stood safely on its wheels is kept; under the ground it goes back there.
+var _safe_xf := Transform3D()
+var _safe_t := 0.0
+var _has_safe := false
+const SAFE_EVERY := 1.0
+const FELL := 6.0                  ## m under the ground: it fell through
 ## the road is wet (the storm sets it): grip times lerp(1, WET_GRIP, wet)
 var wet := 0.0
 const WET_GRIP := 0.6
@@ -974,6 +982,7 @@ func _physics_process(delta: float) -> void:
 	if parking_brake:
 		b = maxf(b, HANDBRAKE_FORCE)
 	_update_parked(delta, speed)
+	_safety_net(delta)
 	brake = b
 
 	_update_condition(delta, speed, throttle_in)
@@ -1173,6 +1182,30 @@ func _update_parked(delta: float, speed: float) -> void:
 	var want := _parked_t > 0.6
 	if want != freeze:
 		freeze = want
+
+
+func _safety_net(delta: float) -> void:
+	var g := Landscape.ground(global_position.x, global_position.z)
+	if global_position.y < g - FELL or global_position.y < -150.0:
+		if _has_safe:
+			linear_velocity = Vector3.ZERO
+			angular_velocity = Vector3.ZERO
+			global_transform = _safe_xf
+			snap_visuals()
+			for pl in get_tree().get_nodes_in_group("player"):
+				if (pl as Node3D).global_position.distance_to(global_position) < 30.0 or pl.get("vehicle") == self:
+					pl.say("The van lurches and drops, and somehow it's back on solid ground where it was a moment ago.", 5.0)
+		return
+	_safe_t += delta
+	if _safe_t < SAFE_EVERY:
+		return
+	_safe_t = 0.0
+	var grounded := true
+	for w in _wheels:
+		grounded = grounded and w.is_in_contact()
+	if grounded and global_transform.basis.y.y > 0.9 and absf(global_position.y - g) < 3.0:
+		_safe_xf = global_transform
+		_has_safe = true
 
 
 ## The developer menu's "fix everything": fuel, heat, coolant, leaks, the

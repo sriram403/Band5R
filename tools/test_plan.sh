@@ -12,7 +12,8 @@
 #   set:driving     the base gym's driving, the long drives and the way out
 #   set:world       the world checks (the old Quick list)
 #   set:bessi       Bessi beach and the roses (Milestone E)
-#   set:return      the return (Milestone F): the storm gym, the old road, the village
+#   set:return      the return (Milestone F): the storm gym and every return place
+#                   (the whole return driven end to end, `return_run`, is in full)
 #   set:world_full  the world part of full alone (the long drives and every
 #                   world check), e.g. after a crash in it
 #   full            everything: before a push or a hand-over, and on GitHub
@@ -61,7 +62,7 @@ test_plan() {
 		echo "|bessi_save" ;;
 	set:return)
 		echo "storm|storm_gym"
-		echo "|storm_road,decoy,saltpans,swing,tunnel"
+		echo "|storm_road,decoy,saltpans,swing,tunnel,mast,home"
 		echo "|decoy_save" ;;
 	set:world_full)
 		echo "|full" ;;
@@ -71,6 +72,7 @@ test_plan() {
 		echo "|bessi_save"
 		echo "|decoy_save"
 		echo "|bessi_run"
+		echo "|return_run"
 		echo "|full" ;;
 	*)
 		echo "|$1" ;;

@@ -80,6 +80,16 @@ func build() -> Node3D:
 		var sp := lake + Vector3(cos(a), 0, sin(a)) * shore_r * 0.85
 		amb.add_water(Vector3(sp.x, Landscape.ground(sp.x, sp.z) + 1.0, sp.z), world)
 	_lap("landmarks", t)
+	# F7: the mast's finale (after every place its dishes point at exists)
+	var mast := RadioMast.new()
+	mast.name = "RadioMastFinale"
+	world.add_child(mast)
+	mast.setup(self)
+	# F8: Naresh's home, the tracker, the ending watchtower's lights, the end
+	var home := Homecoming.new()
+	home.name = "Homecoming"
+	world.add_child(home)
+	home.setup(self)
 	var mood := Mood.new()
 	mood.name = "Mood"
 	world.add_child(mood)

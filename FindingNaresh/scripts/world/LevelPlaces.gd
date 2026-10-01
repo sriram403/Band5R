@@ -289,6 +289,23 @@ func _road_bridge(road_name: String, key: String, swing := false) -> void:
 			r.transform = rx
 			root.add_child(r)
 			body.add_child(_box_shape(Vector3(0.2, 1.0, sz.z), rx))
+	# ramps up onto the deck at both ends: by the riverbank the ground sags
+	# under the slab's edge, and the van's wheels stopped dead on the step
+	# (the end-to-end return drive, F9)
+	for end in [[span[0] - 1, -1], [span[span.size() - 1] + 1, 1]]:
+		var ei: int = end[0]
+		var dir: int = end[1]
+		var top := road.point(ei)
+		top.y += 0.22
+		var out := road.point(ei + dir * 3)
+		out.y = minf(out.y, Landscape.ground(out.x, out.z)) + 0.02
+		var along := top - out
+		var rxf := Transform3D(Basis.looking_at(along, Vector3.UP), (top + out) * 0.5 + Basis.looking_at(along, Vector3.UP).y * -0.3)
+		var rsz := Vector3(Landscape.ROAD_HALF * 2.0 + 1.0, 0.6, along.length() + 0.4)
+		var ramp := Build.box(rsz, deck_mat)
+		ramp.transform = rxf
+		root.add_child(ramp)
+		body.add_child(_box_shape(rsz, rxf))
 	var mid := span[span.size() / 2]
 	for gi in [span[0] + 2, mid, span[span.size() - 1] - 2]:
 		root.add_child(Build.cyl(0.9, 9.0, deck_mat, road.point(gi) + Vector3.DOWN * 4.6, Vector3.ZERO, 10, "Pier"))

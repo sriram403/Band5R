@@ -235,6 +235,7 @@ func _naresh_waves(delta: float, boot: Node) -> void:
 func _lock(tell: bool) -> void:
 	locked = true
 	angle = 0.0
+	_apply()          # put it there now: locked from a load or a script it never moved otherwise
 	_story.flags["swing_locked"] = true
 	barriers.visible = false
 	for c in barriers.find_children("*", "CollisionShape3D", true, false):

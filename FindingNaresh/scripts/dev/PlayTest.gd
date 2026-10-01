@@ -249,7 +249,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -7149,6 +7149,348 @@ func t_tunnel() -> void:
 	p.force_exit = true
 	await physics_frames(3)
 	rt.watcher.dormant = false
+
+
+## Hold E on a dish crank until the dish is within `tol` degrees of its
+## target, then let go (a player watching the screen).
+func mast_turn(m: RadioMast, k: int, tol := 1.2, max_s := 60.0) -> bool:
+	var t := 0.0
+	key(KEY_E, true)
+	while t < max_s:
+		await physics_frames(1)
+		t += 1.0 / 60.0
+		if absf(rad_to_deg(angle_difference(m.yaw[k], m._bearing(k)))) < tol:
+			break
+	key(KEY_E, false)
+	await wait(1.4)
+	return m.locked[k]
+
+
+## F7, the finale: point the dishes home. `tools/run_test.sh mast`
+func t_mast() -> void:
+	var st: Story = boot.story
+	var m := get_tree().get_first_node_in_group("radio_mast") as RadioMast
+	check(m != null and m.dishes.size() == 3 and m.cranks.size() == 3 and m.targets.size() == 3, "the mast: three dishes, three cranks, a generator, the screen")
+	if m == null:
+		return
+	var poi: Dictionary = boot.builder.poi
+	var p := p1()
+	var q := p2()
+	boot.dev_menu.run("jump", st.index_of("mast"))
+	await wait(1.0)
+	var n := nz()
+	log_line("mast at %s; the road below %.0f m off; targets %.0f / %.0f / %.0f m" % [m.foot, Vector2((poi["mast_road"] as Vector3).x - m.foot.x, (poi["mast_road"] as Vector3).z - m.foot.z).length(),
+		m.targets[0].distance_to(m.foot), m.targets[1].distance_to(m.foot), m.targets[2].distance_to(m.foot)])
+	check(st.current()["id"] == "mast" and not m.running, "F1 jump: at the foot of the mast, the generator off")
+	await look_at_point(p, m.foot + Vector3(0, 15, 0))
+	await shot("mast_foot")
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	# the cord alone splutters out
+	await place_player(p, m.cord.stand_point() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, m.cord.global_position)
+	await wait(0.2)
+	check(p.prompt_text.contains("pull the pull cord"), "at the generator: '%s'" % p.prompt_text)
+	await hold_physics(KEY_E, 1.6)
+	await wait(0.3)
+	check(not m.running and m.cord.has_meta("spluttered"), "the cord alone: it coughs and dies (someone must hold the choke)")
+	# P2 holds the choke (pad X), P1 pulls
+	await place_player(q, m.choke.stand_point() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(q, m.choke.global_position)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.8)
+	await hold_physics(KEY_E, 1.6)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.3)
+	check(m.running and st.flags.has("gen_running"), "the choke held, the cord pulled: the generator roars into life")
+	check(m._beacons[0].visible and m._beacons[2].visible, "far off, three red beacons blink on")
+	check(not m.creatures[0].dormant, "and its noise brings two of them")
+	for cr in m.creatures:
+		cr.dormant = true            # (out of the way for the rest of this test)
+	# up the ladder to the platform, tag the first target
+	var lad := boot.world.find_child("MastLadder", true, false) as Ladder
+	await place_player(p, lad.global_position + lad.global_transform.basis.z * 0.9 + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, lad.global_position + Vector3.UP * 1.2)
+	await tap(KEY_E)
+	key(KEY_W, true)
+	await until(func() -> bool: return p.global_position.y > m.foot.y + RadioMast.PLAT_Y - 0.5 and p.ladder == null, 20.0)
+	key(KEY_W, false)
+	await wait(0.4)
+	check(p.global_position.y > m.foot.y + RadioMast.PLAT_Y - 0.5, "up the ladder onto the platform, 20 m up")
+	await look_at_point(p, m.targets[0])
+	await shot("mast_view_tunnel")
+	await look_at_point(p, m.targets[2])
+	await shot("mast_view_tower")
+	await look_at_point(p, m.targets[0])
+	await tap(KEY_T)
+	await physics_frames(3)
+	var tg := TagMarker.of(0)
+	check(tg != null and tg.thing == "the tunnel mouth", "T on the far beacon: '%s'" % (tg.thing if tg else "no tag"))
+	# down again, the cranks
+	await place_player(p, m.cranks[0].stand_point() + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, m.cranks[0].global_position)
+	await wait(0.2)
+	check(p.prompt_text.contains("dish 1 crank"), "at the desk: '%s'" % p.prompt_text)
+	var y0: float = m.yaw[0]
+	key(KEY_E, true)
+	await wait(1.0)
+	key(KEY_E, false)
+	var rate := rad_to_deg(angle_difference(y0, m.yaw[0]))
+	log_line("dish 1 turns %.1f deg/s" % rate)
+	check(absf(rate) > 6.0, "holding its crank turns dish 1")
+	var l1 := await mast_turn(m, 0)
+	check(l1 and st.flags.has("dish_1"), "on its beacon, let go: dish 1 locks, its lamp green")
+	await look_at_point(p, poi["dish_screen"])
+	await shot("mast_screen")
+	# Naresh on dish 2: backwards first, until he's told again
+	n.global_position = m.cranks[1].stand_point() + Vector3(0.6, 0.2, 0.6)
+	n.reset_physics_interpolation()
+	await place_player(p, m.cranks[2].stand_point() + Vector3(0, 0.3, 0), 0.0)
+	var job_ok := await naresh_job(p, m.cranks[1].global_position, "hold")
+	var y1: float = m.yaw[1]
+	await until(func() -> bool: return m.cranks[1].holding_now(), 10.0)
+	await wait(2.0)
+	var d1 := rad_to_deg(angle_difference(y1, m.yaw[1]))
+	check(job_ok and d1 < -3.0 and m._wrong == 1, "Naresh on dish 2: he turns it the wrong way (%.0f deg)" % d1)
+	n.command(p, "hold", m.cranks[1])
+	await wait(0.5)
+	var y2: float = m.yaw[1]
+	await wait(2.0)
+	var d2 := rad_to_deg(angle_difference(y2, m.yaw[1]))
+	check(d2 > 3.0 and m._wrong_done, "told again: 'The OTHER way.' (%.0f deg)" % d2)
+	var turned := await until(func() -> bool: return absf(rad_to_deg(angle_difference(m.yaw[1], m._bearing(1)))) < 1.2, 60.0)
+	n.command(p, "wait")
+	await wait(1.4)
+	check(turned and m.locked[1], "he brings it round; let go on the beacon, dish 2 locks")
+	# P1 on dish 3: done
+	await look_at_point(p, m.cranks[2].global_position)
+	var l3 := await mast_turn(m, 2)
+	await until(func() -> bool: return st.flags.has("mast_done"), 3.0)
+	check(l3 and st.flags.has("mast_done"), "the third locks: the mast hums, the clouds break over the West Road")
+	await until(func() -> bool: return st.current()["id"] == "end_f7", 3.0)
+	check(st.current()["id"] == "end_f7", "on to Naresh's home")
+	# the frame rate by the screen, both views
+	boot._set_layout(Boot.Layout.SIDE_BY_SIDE)
+	await place_player(q, poi["dish_screen"] + Vector3(1, -1.5, 2), 0.0)
+	await place_player(p, poi["dish_screen"] + Vector3(-1, -1.5, 2), 0.0)
+	await wait(1.0)
+	_frame_times.clear()
+	await wait(3.0)
+	var avg := 0.0
+	for f in _frame_times:
+		avg += f
+	var fps := float(_frame_times.size()) / maxf(avg, 0.001)
+	m.screen_on = false
+	_frame_times.clear()
+	await wait(3.0)
+	var avg2 := 0.0
+	for f in _frame_times:
+		avg2 += f
+	var fps_off := float(_frame_times.size()) / maxf(avg2, 0.001)
+	m.screen_on = true
+	log_line("fps by the dish screen, both views: %.0f (without the screen %.0f)" % [fps, fps_off])
+	check(headless or fps >= 110.0, "the dish screen keeps the frame rate (%.0f fps)" % fps)
+	boot._set_layout(Boot.Layout.SOLO)
+
+
+## Drive up to Naresh's home with him in the back and let the scene play.
+func home_arrive(hc: Homecoming) -> bool:
+	var st: Story = boot.story
+	var c := camper()
+	var n := nz()
+	await seat_p1_driver()
+	n.command(p1(), "get_in", c)
+	await until(func() -> bool: return n.state == Naresh.State.SEATED, 15.0)
+	await van_to(boot.builder.poi["naresh_home_road"])
+	await seat_p1_driver()
+	return await until(func() -> bool: return st.flags.has("naresh_home_done"), 70.0)
+
+
+## F8: Naresh's home, the tracker, the West Road, the watchtower's lights,
+## the end. `tools/run_test.sh home`
+func t_home() -> void:
+	var st: Story = boot.story
+	var hc := get_tree().get_first_node_in_group("homecoming") as Homecoming
+	check(hc != null and hc.lights.size() >= 10, "the homecoming: his family at the door, %d site lights" % (hc.lights.size() if hc else 0))
+	if hc == null:
+		return
+	var poi: Dictionary = boot.builder.poi
+	var c := camper()
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	boot.dev_menu.run("jump", st.index_of("end_f7"))
+	await wait(1.0)
+	check(st.current()["id"] == "end_f7" and not hc._mother.visible, "F1 jump: on the road to his home, him with you")
+	var t0 := Time.get_ticks_msec()
+	var home := await home_arrive(hc)
+	log_line("the scene took %.0f s" % ((Time.get_ticks_msec() - t0) / 1000.0))
+	check(home, "he walks to the door; his mother; his sister's look; he goes in")
+	check(not nz().visible and not Creature.on_return and mood.target >= Homecoming.HOME_MOOD - 0.01, "he's home: the creatures stop following, the light comes back")
+	check(not st.flags.has("tracker"), "the optional things not done: no tracker (and nobody says so)")
+	await until(func() -> bool: return st.current()["id"] == "drive_home", 3.0)
+	check(st.current()["id"] == "drive_home", "the objective: home along the West Road")
+	await look_at_point(p1(), hc.door + Vector3.UP * 1.5)
+	await shot("home_door")
+	# the West Road: full sun
+	var west: Route = boot.builder.network.road("west_road")
+	await van_to(west.point(west.point_count() / 2))
+	await wait(1.0)
+	check(mood.target >= Homecoming.SUN_MOOD - 0.01, "away down the West Road: full sun")
+	# the ending watchtower: the lights (the optional ones dark)
+	p1().force_exit = true
+	await physics_frames(3)
+	await place_player(p1(), poi["end_tower_deck"] + Vector3(0, 0.3, 0), 0.0)
+	await wait(0.5)
+	var dark := 0
+	for l in hc.lights:
+		if not l.visible:
+			dark += 1
+	check(st.flags.has("tower_view") and dark == 3, "from the watchtower: a light over every place, the 3 optional ones dark (%d dark)" % dark)
+	mood.set_now(1.0)
+	await look_at_point(p1(), poi["radio_mast"] + Vector3.UP * 40.0)
+	await shot("tower_lights")
+	# near home: the phones, then the end
+	var lane: Route = boot.builder.network.road("home_lane")
+	var hs: Vector3 = poi["homestead"]
+	var li := int(lane.nearest(hs.x, hs.z)["index"])
+	await van_to(lane.point(li + 40))
+	var ended := await until(func() -> bool: return st.flags.has("end_reached"), 5.0)
+	var msg: Dictionary = st.phone_threads[0][-1]
+	check(ended and String(msg["body"]).contains("LiveStander"), "near home, both phones: '%s'" % msg["body"])
+	await until(func() -> bool: return hc._end != null, 12.0)
+	await wait(5.5)
+	check(hc._end != null, "the end screen")
+	await shot("the_end")
+	hc._end.queue_free()
+	hc._end = null
+	hc._end_t = -1.0
+	# a second time with every optional thing done: the tracker
+	var maze := get_tree().get_first_node_in_group("barn_maze")
+	var relay := get_tree().get_first_node_in_group("lookout_relay")
+	maze.set("chest_open", true)
+	relay.set("opened", true)
+	for id in hc._fragments:
+		if not id in st.collected:
+			st.collected.append(id)
+	boot.dev_menu.run("jump", st.index_of("end_f7"))
+	await wait(1.0)
+	st.flags["flare_gun_found"] = true
+	check(hc.all_optional(), "every optional thing done (maze, relay, flare gun, %d fragments)" % hc._fragments.size())
+	var home2 := await home_arrive(hc)
+	check(home2 and st.flags.has("tracker"), "his sister: a tracker, 'For next time.'")
+	p1().force_exit = true
+	await physics_frames(3)
+
+
+## F9: the whole return in one drive, Bessi to home (Full only). The van
+## drives every road; the puzzles are done by script where the van gets to
+## them (each has its own test); the timings are logged against the beat
+## chart's ~29 min. `tools/run_test.sh return_run`
+func t_return_run() -> void:
+	var st: Story = boot.story
+	var b = boot.builder
+	var c := camper()
+	var fv := get_tree().get_first_node_in_group("fishing_village") as FishingVillage
+	var sp := get_tree().get_first_node_in_group("salt_pans") as SaltPans
+	var sb := get_tree().get_first_node_in_group("swing_bridge") as SwingBridge
+	var rt := get_tree().get_first_node_in_group("rail_tunnel") as RailTunnel
+	var hc := get_tree().get_first_node_in_group("homecoming") as Homecoming
+	boot.dev_menu.run("jump", st.index_of("storm"))
+	await wait(1.0)
+	var n := nz()
+	var path := (b.network as RoadNetwork).chain([["coast_road"], ["west_road"]])
+	var hs: Vector3 = b.poi["homestead"]
+	var stop_at := int(path.nearest(hs.x, hs.z)["index"])
+	var start_i := int(path.nearest(c.global_position.x, c.global_position.z)["index"])
+	log_line("return path: %d samples, %.1f km; from %d to %d" % [path.point_count(), path.total_length / 1000.0, start_i, stop_at])
+	# the van's safety net: pushed down through the ground, it comes back
+	await wait(2.5)
+	var safe := c.global_position
+	c.global_position = safe + Vector3(0, -12.0, 0)
+	await physics_frames(3)
+	check(c.global_position.distance_to(safe) < 1.5, "the van's safety net: under the ground, it's put back where it stood (%.1f m off)" % c.global_position.distance_to(safe))
+	n.command(p1(), "get_in", c)
+	await until(func() -> bool: return n.state == Naresh.State.SEATED, 15.0)
+	await seat_p1_driver()
+	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await engine_on()
+	c.parking_brake = false
+	var ad := AutoDriver.new(self, path, c)
+	ad.lane = -1.8
+	var t := 0.0
+	var stuck := 0.0
+	var marks := {}
+	var places := [["fishing_village", 90.0], ["salt_pans_start", 40.0], ["swing_near", 40.0], ["tunnel_in", 40.0], ["mast_road", 60.0], ["naresh_home_road", 40.0], ["end_tower", 300.0], ["homestead", 250.0]]
+	var stopped_home := false
+	while t < 2400.0 and not st.flags.has("end_reached"):
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		var hold := false
+		# Naresh's home: stop at the door and let the scene play
+		if not st.flags.has("naresh_home_done") and st.flags.has("mast_done") and c.global_position.distance_to(b.poi["naresh_home_road"]) < 18.0:
+			hold = true
+			if not stopped_home:
+				stopped_home = true
+				log_line("at Naresh's home after %.1f min" % (t / 60.0))
+		if hold:
+			# stopped at the door: brake, then the handbrake (S stopped is reverse)
+			ad.steer_only()
+			key(KEY_W, false)
+			key(KEY_S, kmh() > 0.5 and -c.global_transform.basis.z.dot(c.linear_velocity) > 0.0)
+			if kmh() < 0.5 and not c.parking_brake:
+				c.set_parking_brake(true)
+		else:
+			key(KEY_S, false)
+			ad.step(-1.0)
+		stuck = stuck + 1.0 / 60.0 if kmh() < 2.0 and not hold else 0.0
+		for pl in places:
+			if not b.poi.has(pl[0]):
+				continue
+			var at: Vector3 = b.poi[pl[0]]
+			if not marks.has(pl[0]) and Vector2(c.global_position.x - at.x, c.global_position.z - at.z).length() < float(pl[1]):
+				marks[pl[0]] = t
+		# the village (t_decoy): the fuel found and poured, no mistake
+		if st.flags.has("fuel_low") and not st.flags.has("stall_fixed"):
+			for f in ["key_got", "shed_open", "mistake_done", "stalled", "stall_fixed"]:
+				st.flags[f] = true
+			fv.match_story()
+			c.fuel = 50.0
+		# the salt pans (t_saltpans): it looks out to sea the whole time
+		if sp.auto_sweep:
+			sp.auto_sweep = false
+			sp.gaze = sp._base + PI
+		# the estuary (t_swing): swung back before the van gets there
+		if not sb.locked and c.global_position.distance_to(sb.pivot) < 150.0:
+			sb._lock(true)
+		# the tunnel (t_tunnel): someone holds the winch while the van goes by
+		if c.global_position.distance_to(rt.gate.global_position) < 70.0 and not st.flags.has("gate_through"):
+			rt.winch.work_by(p2(), 1.0 / 60.0)
+		# the mast (t_mast): done on the hill above while the van waits below
+		if not st.flags.has("mast_done") and marks.has("mast_road"):
+			for f in ["gen_running", "dish_1", "dish_2", "dish_3", "mast_done"]:
+				st.flags[f] = true
+			(get_tree().get_first_node_in_group("radio_mast") as RadioMast).match_story()
+			# (players walk up to the mast for real: here the story moves on)
+			if st.index < st.index_of("end_f7"):
+				st.index = st.index_of("end_f7")
+		if c.fuel < 8.0:
+			c.fuel = 40.0
+	ad.release()
+	key(KEY_W, false)
+	key(KEY_S, false)
+	var times := []
+	for pl in places:
+		times.append("%s %s" % [pl[0], ("%.1f" % (float(marks[pl[0]]) / 60.0)) if marks.has(pl[0]) else "-"])
+	log_line("RETURN: %s after %.1f min of driving; at (min): %s; objective '%s'" % ["home" if st.flags.has("end_reached") else "NOT home", t / 60.0, ", ".join(times), st.current()["id"]])
+	if not st.flags.has("end_reached"):
+		log_line("  stuck at %s, %.0f km/h, story '%s'" % [c.global_position, kmh(), st.current()["id"]])
+		await shot("return_stuck")
+	check(st.flags.has("naresh_home_done"), "the van drove Naresh home: the coast road, the pans, the swing bridge, the tunnel, past the mast")
+	check(st.flags.has("end_reached"), "and on home along the West Road to the end (%.1f min of driving)" % (t / 60.0))
+	await until(func() -> bool: return hc._end != null, 15.0)
+	check(hc._end != null, "the end screen")
+	if hc._end != null:
+		hc._end.queue_free()
+		hc._end = null
 
 
 func t_storm_gym() -> void:
