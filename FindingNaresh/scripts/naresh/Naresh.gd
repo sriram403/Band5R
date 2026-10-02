@@ -82,6 +82,7 @@ var _plan_vel := Vector2.ZERO
 var _path := PackedVector3Array()
 var _path_i := 0
 var _path_goal := Vector3(INF, INF, INF)
+var _path_partial := false      ## the path only goes part of the way: plan again at its end
 var _cells := {}
 var _stuck_t := 0.0
 var _stuck_mark := Vector3.ZERO
@@ -900,6 +901,10 @@ func _walk_to(goal: Vector3, speed: float, arrive: float, delta: float) -> bool:
 		if d.length() < 0.6 and _path_i < _path.size() - 1:
 			_path_i += 1
 			aim = _path[_path_i]
+		elif d.length() < 0.6 and _path_partial:
+			_plan(goal)                  # the end of a part-way path: on from here
+			if not _path.is_empty():
+				aim = _path[0]
 	var dir := aim - global_position
 	dir.y = 0.0
 	_face(global_position + dir, delta)
@@ -1038,9 +1043,19 @@ func _plan(goal: Vector3) -> void:
 	if not _force_grid and _clear(global_position, goal):
 		_path = PackedVector3Array([goal])
 		return
+	# a far goal: the search only covers PATH_RADIUS round the midpoint, so with
+	# the van 140 m off he wasn't even inside it and got no path at all (stuck
+	# in the net shed with the light can, the F3 watched run). Plan part of the
+	# way, towards it; at the end of that, plan again.
+	var target := goal
+	var flat := Vector2(goal.x - global_position.x, goal.z - global_position.z)
+	var far := flat.length() > PATH_RADIUS * 1.4
+	if far:
+		var step := flat.normalized() * PATH_RADIUS
+		target = global_position + Vector3(step.x, 0.0, step.y)
 	var start := _cell(global_position)
-	var end := _cell(goal)
-	var centre := (global_position + goal) * 0.5
+	var end := _cell(target)
+	var centre := (global_position + target) * 0.5
 	var came := {start: start}
 	var cost := {start: 0.0}
 	var heap: Array = [[0.0, start]]
@@ -1082,9 +1097,10 @@ func _plan(goal: Vector3) -> void:
 		pts.append(_world(k))
 		k = came[k]
 	pts.reverse()
-	if found:
+	if found and not far:
 		pts.append(goal)
 	_path = pts
+	_path_partial = far or not found
 
 
 func _cell(p: Vector3) -> Vector2i:
@@ -1235,7 +1251,7 @@ func _act_possible(id: String) -> bool:
 			return not seated and v != null and v.tyre_flat and v.linear_velocity.length() < 0.5 \
 				and v.global_position.distance_to(global_position) < 30.0
 		"wander":
-			return not seated and held == null and state != State.JOB
+			return not seated and held == null and state != State.JOB and _creature_near(60.0) == null
 		"honk":
 			return v != null and v.battery > 0.05 and (seated or v.global_position.distance_to(global_position) < 12.0)
 		"headlights":
@@ -1382,6 +1398,10 @@ func _act_back(line: String) -> void:
 func _do_act(delta: float) -> void:
 	_act_data["t"] = float(_act_data.get("t", 0.0)) + delta
 	var t: float = _act_data["t"]
+	var with: PlayerRig = _act_data.get("prev_leader")
+	if with != null and is_instance_valid(with) and with.seat != null and held == null:
+		_act_back("Wait for me!")
+		return
 	match act:
 		"wander":
 			var to: Vector3 = _act_data["to"]

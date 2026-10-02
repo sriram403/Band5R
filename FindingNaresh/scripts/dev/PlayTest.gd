@@ -193,6 +193,52 @@ func village() -> FishingVillage:
 	return get_tree().get_first_node_in_group("fishing_village") as FishingVillage
 
 
+## The rail tunnel, and points in its service gallery for the live line: the
+## gallery's middle line at road sample gate_i + k; a point down fork 1 / 2's
+## side passage, d m in; in front of door 0 / 1 in the tunnel.
+func tunnel() -> RailTunnel:
+	return get_tree().get_first_node_in_group("rail_tunnel") as RailTunnel
+
+
+func gallery_at(k: int) -> Vector3:
+	var rt := tunnel()
+	var i := rt.gate_i + k
+	return rt.road.point(i) + rt.road.right(i) * rt._off
+
+
+func gallery_fork(n: int, d: float) -> Vector3:
+	var rt := tunnel()
+	var fi: int = rt.doors[0] + (rt.gate_i - rt.doors[0]) / 2 if n == 1 else rt.gate_i + (rt.doors[1] - rt.gate_i) / 2
+	return rt.road.point(fi) + rt.road.right(fi) * (rt._off + RailTunnel.GAL_W * 0.5 + d)
+
+
+func gallery_door(n: int, inside: bool) -> Vector3:
+	var rt := tunnel()
+	var i: int = rt.doors[n]
+	return rt.road.point(i) + rt.road.right(i) * (rt._off if inside else RailTunnel.IN_W - 2.5)
+
+
+## Where the gallery's creature is, as a road sample offset from the gate
+## (negative: the door-0 side), and which way it walks (+1 towards door 1).
+func gallery_creature_k() -> float:
+	var rt := tunnel()
+	return float(rt.road.nearest(rt.watcher.global_position.x, rt.watcher.global_position.z)["index"] - rt.gate_i)
+
+
+func gallery_creature_dir() -> float:
+	var rt := tunnel()
+	return signf(rt.watcher.velocity.dot(rt.road.forward(rt.gate_i)))
+
+
+## The first road sample from `from_i` on where the next `ahead` samples drop
+## at least `drop` m: the top of a slope to roll the van down (a push start).
+func downhill_index(path: Route, from_i: int, ahead: int, drop: float) -> int:
+	for i in range(from_i, path.point_count() - ahead - 1):
+		if path.point(i).y - path.point(i + ahead).y >= drop:
+			return i
+	return -1
+
+
 func camper() -> Camper:
 	return boot.camper
 
@@ -6912,6 +6958,37 @@ func t_saltpans() -> void:
 	check(not sp.seen and sp.watcher.passive, "a jump back: it's up on its gantry again")
 	sp.auto_sweep = true
 	await seat_p1_driver()
+	await salt_careful_crossing()
+	var road: Route = boot.builder.network.road("coast_road")
+	check(st.flags.has("pans_crossed") and not sp.seen, "dashing between heaps, stopping behind them when it turns: across unseen")
+	await until(func() -> bool: return st.current()["id"] == "end_f4", 3.0)
+	check(st.current()["id"] == "end_f4", "on to the estuary bridge")
+	# reckless: straight across at speed gets seen
+	boot.dev_menu.run("jump", st.index_of("salt_pans"))
+	await wait(1.0)
+	await seat_p1_driver()
+	await engine_on()
+	var ad2 := AutoDriver.new(self, road, c)
+	ad2.lane = -1.8
+	var t1 := Time.get_ticks_msec()
+	while not sp.seen and not st.flags.has("pans_crossed") and (Time.get_ticks_msec() - t1) < 60000:
+		await physics_frames(1)
+		ad2.step(45.0)
+	ad2.release()
+	log_line("reckless crossing: %s (it glanced round %d times)" % ["seen" if sp.seen else "not seen", sp.glances])
+	check(sp.seen, "straight across without stopping: it sees the van")
+	p1().force_exit = true
+	await physics_frames(3)
+
+
+## The careful crossing of the salt pans (P1 driving): go while it looks
+## away; when it turns your way stop behind a heap, dash on if the next one
+## hides you in a moment, else freeze. True: across unseen. (Its own function
+## so the watched run can `call` it.)
+func salt_careful_crossing() -> bool:
+	var sp := get_tree().get_first_node_in_group("salt_pans") as SaltPans
+	var st: Story = boot.story
+	var c := camper()
 	await engine_on()
 	var road: Route = boot.builder.network.road("coast_road")
 	var ad := AutoDriver.new(self, road, c)
@@ -6958,25 +7035,7 @@ func t_saltpans() -> void:
 	var took := (Time.get_ticks_msec() - t0) / 1000.0
 	await shot("pans_careful_end")
 	log_line("careful crossing: %s after %.0f s, %d stops behind heaps" % ["crossed unseen" if st.flags.has("pans_crossed") and not sp.seen else ("SEEN" if sp.seen else "not across"), took, stops])
-	check(st.flags.has("pans_crossed") and not sp.seen, "dashing between heaps, stopping behind them when it turns: across unseen")
-	await until(func() -> bool: return st.current()["id"] == "end_f4", 3.0)
-	check(st.current()["id"] == "end_f4", "on to the estuary bridge")
-	# reckless: straight across at speed gets seen
-	boot.dev_menu.run("jump", st.index_of("salt_pans"))
-	await wait(1.0)
-	await seat_p1_driver()
-	await engine_on()
-	var ad2 := AutoDriver.new(self, road, c)
-	ad2.lane = -1.8
-	var t1 := Time.get_ticks_msec()
-	while not sp.seen and not st.flags.has("pans_crossed") and (Time.get_ticks_msec() - t1) < 60000:
-		await physics_frames(1)
-		ad2.step(45.0)
-	ad2.release()
-	log_line("reckless crossing: %s (it glanced round %d times)" % ["seen" if sp.seen else "not seen", sp.glances])
-	check(sp.seen, "straight across without stopping: it sees the van")
-	p1().force_exit = true
-	await physics_frames(3)
+	return st.flags.has("pans_crossed") and not sp.seen
 
 
 ## F5, the estuary bridge and R3 the three-hand swing bridge. `tools/run_test.sh swing`
@@ -7641,9 +7700,26 @@ func pad_walk_to(q: PlayerRig, target: Vector3, arrive := 0.8, max_s := 40.0) ->
 
 
 ## Walk up to the van's driver door and E (P1).
+## Round the van's nose first when you're on its other side (the straight-
+## line walkers walked into its side: P2 after a jump, the F4 watched run).
+func round_van(pl: PlayerRig, side: float, pad: bool) -> bool:
+	var c := camper()
+	var local := c.global_transform.affine_inverse() * pl.global_position
+	if signf(local.x) == signf(side) or absf(local.x) < 0.5 and local.z < -3.0:
+		return true
+	for corner in [Vector3(signf(local.x) * 3.6, 0.0, -5.6), Vector3(signf(side) * 3.6, 0.0, -5.6)]:
+		var at: Vector3 = c.global_transform * corner
+		var ok: bool = await pad_walk_to(pl, at, 1.0, 20.0) if pad else await walk_to(pl, at, "round the van", 1.0, 20.0)
+		if not ok:
+			return false
+	return true
+
+
 func walk_in_driver(p: PlayerRig) -> bool:
 	var c := camper()
 	var stand := c.global_transform * Vector3(-3.4, 0.0, -1.8)
+	if not await round_van(p, -1.0, false):
+		return false
 	if not await walk_to(p, stand, "the driver door", 0.8, 40.0):
 		return false
 	await look_at_point(p, c.global_transform * Vector3(-1.2, 1.4, -1.8))
@@ -7657,6 +7733,8 @@ func walk_in_driver(p: PlayerRig) -> bool:
 func pad_in_passenger(q: PlayerRig) -> bool:
 	var c := camper()
 	var stand := c.global_transform * Vector3(3.4, 0.0, -1.8)
+	if not await round_van(q, 1.0, true):
+		return false
 	if not await pad_walk_to(q, stand):
 		return false
 	await look_at_point(q, c.global_transform * Vector3(1.2, 1.4, -1.8))

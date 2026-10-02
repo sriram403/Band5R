@@ -38,11 +38,20 @@ def new_errors() -> list:
         pos = f.tell()
     with open(SEEN, "w") as f:
         f.write(str(pos))
+    # errors only, with the "at:" line that follows one (a WARNING's "at:"
+    # line, "possibly benign", stopped a whole run once)
     out = []
+    after_error = False
     for ln in lines:
-        if "ERROR" in ln or "at: " in ln:
+        if "ERROR" in ln:
+            after_error = True
             if not out or out[-1] != ln:
                 out.append(ln)
+        elif after_error and ln.strip().startswith("at: "):
+            out.append(ln)
+            after_error = False
+        else:
+            after_error = False
     return out[:12]
 
 

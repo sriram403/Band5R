@@ -1,0 +1,155 @@
+{
+ "name": "f4",
+ "setup": [
+  {
+   "do": "eval",
+   "expr": "boot._on_joy_changed(0, true)"
+  }
+ ],
+ "steps": [
+  {
+   "name": "F4.0 jump",
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Story",
+     "row": "Open salt flats"
+    }
+   ],
+   "expect": [
+    {
+     "name": "short of the pans, the watcher on its gantry",
+     "expr": "boot.story.current()['id'] == 'salt_pans' and get_tree().get_first_node_in_group('salt_pans').watcher.passive and not get_tree().get_first_node_in_group('salt_pans').seen",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "F4.1 watch it first",
+   "do": [
+    {
+     "do": "wait",
+     "s": 8
+    }
+   ],
+   "expect": [
+    {
+     "name": "it hasn't seen anyone watching from here",
+     "expr": "not get_tree().get_first_node_in_group('salt_pans').seen",
+     "within": 1
+    }
+   ]
+  },
+  {
+   "name": "F4.2 cross in dashes",
+   "max": 240,
+   "do": [
+    {
+     "do": "call",
+     "fn": "walk_in_driver",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "pad_in_passenger",
+     "args": [
+      "p2"
+     ]
+    },
+    {
+     "do": "until",
+     "expr": "boot.naresh.state == 5",
+     "max": 25
+    },
+    {
+     "do": "call",
+     "fn": "engine_on"
+    },
+    {
+     "do": "call",
+     "fn": "salt_careful_crossing"
+    }
+   ],
+   "expect": [
+    {
+     "name": "across unseen",
+     "expr": "boot.story.flags.has('pans_crossed') and not get_tree().get_first_node_in_group('salt_pans').seen",
+     "within": 2
+    },
+    {
+     "name": "on to the estuary bridge",
+     "expr": "boot.story.current()['id'] == 'end_f4'",
+     "within": 5
+    }
+   ]
+  },
+  {
+   "name": "F4.3 get it wrong on purpose",
+   "max": 200,
+   "do": [
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "menu",
+     "tab": "Story",
+     "row": "Open salt flats"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "call",
+     "fn": "walk_in_driver",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "pad_in_passenger",
+     "args": [
+      "p2"
+     ]
+    },
+    {
+     "do": "until",
+     "expr": "boot.naresh.state == 5",
+     "max": 25
+    },
+    {
+     "do": "call",
+     "fn": "engine_on"
+    },
+    {
+     "do": "drive",
+     "road": "coast_road",
+     "to": "expr:get_tree().get_first_node_in_group('salt_pans').road_end",
+     "until": "get_tree().get_first_node_in_group('salt_pans').seen",
+     "kmh": 45,
+     "max": 90
+    }
+   ],
+   "expect": [
+    {
+     "name": "straight across: it sees the van",
+     "expr": "get_tree().get_first_node_in_group('salt_pans').seen",
+     "within": 2
+    },
+    {
+     "name": "it drops off the gantry and comes for the van",
+     "expr": "not get_tree().get_first_node_in_group('salt_pans').watcher.passive and get_tree().get_first_node_in_group('salt_pans').watcher.state == 4",
+     "within": 5
+    }
+   ]
+  }
+ ]
+}

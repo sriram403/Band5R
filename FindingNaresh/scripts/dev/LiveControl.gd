@@ -210,6 +210,12 @@ func _do(c: Dictionary) -> Dictionary:
 			await pt.wait(float(c.get("s", 1.0)))
 			pt.pad_button(PAD[String(c["btn"])], false)
 			await pt.physics_frames(3)
+		"pad_down":
+			pt.pad_button(PAD[String(c["btn"])], true)
+			await pt.physics_frames(2)
+		"pad_up":
+			pt.pad_button(PAD[String(c["btn"])], false)
+			await pt.physics_frames(2)
 		"pad_axis":
 			pt.pad_axis(AXIS[String(c["axis"])], float(c.get("v", 0.0)))
 			await pt.physics_frames(2)
@@ -266,7 +272,8 @@ func _do(c: Dictionary) -> Dictionary:
 		"menu":
 			r["ok"] = await pt.menu_pick(String(c.get("tab", "Story")), String(c.get("row", "")))
 		"drive":
-			var road: Route = pt.boot.builder.network.road(String(c.get("road", "coast_road")))
+			var rn := String(c.get("road", "coast_road"))
+			var road: Route = pt.tunnel().road if rn == "tunnel" else pt.boot.builder.network.road(rn)
 			var to := _v3(c.get("to"))
 			var stop := road.point_count() - 2 if to == Vector3.INF else int(road.nearest(to.x, to.z)["index"])
 			var cond := String(c.get("until", "false"))
@@ -339,6 +346,8 @@ func _release() -> void:
 	pt.mouse_button(MOUSE_BUTTON_RIGHT, false)
 	for a in [JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y, JOY_AXIS_TRIGGER_LEFT, JOY_AXIS_TRIGGER_RIGHT]:
 		pt.pad_axis(a, 0.0)
+	for b in PAD.values():
+		pt.pad_button(b, false)
 
 
 func _failed(why: String) -> void:
@@ -372,25 +381,94 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 		var pp := "%s/points/%s_%d.json" % [dir, _walk_name, start]
 		if not FileAccess.file_exists(pp):
 			return {"ok": false, "fail": "no save point for %s (run the walk once from the start)" % from, "log": []}
-		SaveGame.apply(pt.boot, JSON.parse_string(FileAccess.get_file_as_string(pp)))
+		var point: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(pp))
+		SaveGame.apply(pt.boot, point)
+		# the creatures aren't in a game save: put them back where they were
+		# (after a resume they started elsewhere, which changed the situation)
+		var crs := pt.get_tree().get_nodes_in_group("creature")
+		var was: Array = point.get("live_creatures", [])
+		for k in mini(crs.size(), was.size()):
+			(crs[k] as Node3D).global_position = Vector3(float(was[k][0]), float(was[k][1]), float(was[k][2]))
+		var held: Array = point.get("live_held", [])
+		for k in mini(held.size(), pt.boot.players.size()):
+			if String(held[k]) == "":
+				continue
+			var item := pt.boot.world.find_child(String(held[k]), true, false) as Carryable
+			var pl: PlayerRig = pt.boot.players[k]
+			if item != null and pl.held == null:
+				pl.pick_up(item)
+		var ln: Dictionary = point.get("live_naresh", {})
+		var nz: Naresh = pt.boot.naresh
+		if not ln.is_empty() and nz != null:
+			# only the states a step starts from; a job or a ride isn't put back
+			var st0 := int(ln["state"])
+			if st0 in [Naresh.State.FOLLOW, Naresh.State.WAIT, Naresh.State.GO, Naresh.State.IDLE]:
+				if nz.state == Naresh.State.SEATED:
+					nz.command(null, "get_out")
+				nz.global_position = Vector3(float(ln["pos"][0]), float(ln["pos"][1]), float(ln["pos"][2]))
+				nz.reset_physics_interpolation()
+				var li := int(ln["leader"])
+				nz.leader = pt.boot.players[li] if li >= 0 else null
+				nz.go_point = Vector3(float(ln["go"][0]), float(ln["go"][1]), float(ln["go"][2]))
+				nz.state = st0
 		await pt.wait(1.0)
-		_say("resumed at %s from its save point" % from)
+		_say("resumed at %s from its save point (Naresh %s %s, creatures %s)" % [from, Naresh.State.keys()[pt.boot.naresh.state],
+			_f3(pt.boot.naresh.global_position), str(was.slice(0, 2))])
 	_watcher(ctx)
 	var i := start
 	while i < steps.size() and _fail == "":
+		if FileAccess.file_exists(dir + "/abort"):
+			_failed("the client saw in the log: " + FileAccess.get_file_as_string(dir + "/abort").strip_edges())
+			break
 		var st: Dictionary = steps[i]
 		var nm := String(st.get("name", "step %d" % i))
 		var f := FileAccess.open("%s/points/%s_%d.json" % [dir, _walk_name, i], FileAccess.WRITE)
-		f.store_string(JSON.stringify(SaveGame.collect(pt.boot)))
+		var point := SaveGame.collect(pt.boot)
+		var crs: Array = []
+		for cr in pt.get_tree().get_nodes_in_group("creature"):
+			var cp: Vector3 = (cr as Node3D).global_position
+			crs.append([cp.x, cp.y, cp.z])
+		point["live_creatures"] = crs
+		# a game save doesn't keep what's in hand or where Naresh stands and
+		# whom he follows (a resume put him at the van, P1's hands empty)
+		var held: Array = []
+		for pl in pt.boot.players:
+			held.append(String(pl.held.name) if pl.held != null else "")
+		point["live_held"] = held
+		var nz: Naresh = pt.boot.naresh
+		if nz != null and is_instance_valid(nz):
+			point["live_naresh"] = {"pos": [nz.global_position.x, nz.global_position.y, nz.global_position.z],
+				"state": int(nz.state), "leader": pt.boot.players.find(nz.leader) if nz.leader != null else -1,
+				"go": [nz.go_point.x, nz.go_point.y, nz.go_point.z]}
+		f.store_string(JSON.stringify(point))
 		f.close()
 		ctx["allow"] = st.get("allow", [])
 		# what this step needs from earlier watches
 		for need in st.get("needs", []):
+			var armed: bool = ctx["passed"].has(need)
+			for w in ctx["watches"]:
+				armed = armed or w["name"] == need
+			if not armed:
+				# a watch from a step before the resume point: arm it now (a
+				# resumed run waited 23 min for a watch nobody had armed)
+				var plan := {}
+				for st2 in steps:
+					for e2 in st2.get("expect", []):
+						if String(e2.get("name", "")) == need:
+							plan = e2
+				if plan.is_empty():
+					_failed("%s needs '%s', which no step expects" % [nm, need])
+					break
+				ctx["watches"].append({"name": need, "expr": String(plan.get("expr", "true")), "step": nm,
+					"until": Time.get_ticks_msec() + int(float(plan.get("within", 5.0)) * 1000.0), "from": Time.get_ticks_msec()})
+				_say("armed '%s' again (resumed past the step that set it)" % need)
 			while not ctx["passed"].has(need) and _fail == "":
 				await pt.wait(0.1)
 		if _fail != "":
 			break
 		_say("step %s (%.0f s)" % [nm, (Time.get_ticks_msec() - t0) / 1000.0])
+		ctx["step_until"] = Time.get_ticks_msec() + int(float(st.get("max", 300.0)) * 1000.0)
+		ctx["step_name"] = nm
 		for c in st.get("do", []):
 			if _fail != "":
 				break
@@ -417,7 +495,7 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 		if _fail == "":
 			i += 1
 	# the open watches still get their time once the steps are done
-	while _fail == "" and not ctx["watches"].is_empty():
+	while _fail == "" and not ctx["watches"].is_empty() and not FileAccess.file_exists(dir + "/abort"):
 		await pt.wait(0.1)
 	ctx["running"] = false
 	_release()
@@ -435,13 +513,23 @@ const GIVE_UP := ["I can't get there.", "I can't get any closer than this.", "Fo
 ## Alongside the steps, every 0.1 s: the open watches and the always-on rules.
 func _watcher(ctx: Dictionary) -> void:
 	_events.clear()
-	var n: Naresh = pt.boot.naresh
-	var mark := n.global_position
+	var mark := Vector3.INF
 	var still := 0.0
 	while bool(ctx["running"]) and _fail == "":
 		await pt.wait(0.1)
+		if FileAccess.file_exists(dir + "/abort"):
+			_failed("the client saw in the log: " + FileAccess.get_file_as_string(dir + "/abort").strip_edges())
+			break
+		# read fresh each tick: there's no Naresh before a jump, and a jump
+		# makes a new one (the first watcher read him once and died on it)
+		var n: Naresh = pt.boot.naresh
+		if n == null or not is_instance_valid(n):
+			continue
 		var allow: Array = ctx["allow"]
 		var watches: Array = ctx["watches"]
+		if ctx.has("step_until") and Time.get_ticks_msec() > int(ctx["step_until"]):
+			_failed("step %s took longer than its limit" % ctx["step_name"])
+			break
 		for w in watches.duplicate():
 			if bool(_eval(w["expr"])):
 				ctx["passed"][w["name"]] = true
@@ -456,15 +544,16 @@ func _watcher(ctx: Dictionary) -> void:
 			elif ev[1] == "sees" and t.begins_with("You wake up") and not "taken" in allow:
 				_failed("%s was taken: %s" % [ev[0], t])
 		_events.clear()
+		if n.state == Naresh.State.TAKEN and not "naresh_taken" in allow:
+			_failed("Naresh was taken (near %s)" % n.taken_near)
+			break
 		# Naresh should be moving: on his way somewhere, or following someone far off
 		var moving := n.state == Naresh.State.GO or (n.state == Naresh.State.FOLLOW and n.leader != null
 			and Vector2(n.leader.global_position.x - n.global_position.x, n.leader.global_position.z - n.global_position.z).length() > 4.0)
-		if moving and n.global_position.distance_to(mark) < 0.3:
+		if moving and mark != Vector3.INF and n.global_position.distance_to(mark) < 0.3:
 			still += 0.1
 			if still > 6.0 and not "naresh_still" in allow:
 				_failed("Naresh stuck for 6 s in %s at %s (job '%s')" % [Naresh.State.keys()[n.state], _f3(n.global_position), n.job])
 		else:
 			still = 0.0
 			mark = n.global_position
-		if FileAccess.file_exists(dir + "/abort"):
-			_failed("the client saw in the log: " + FileAccess.get_file_as_string(dir + "/abort").strip_edges())

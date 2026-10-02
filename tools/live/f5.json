@@ -1,0 +1,240 @@
+{
+ "name": "f5",
+ "setup": [
+  {
+   "do": "eval",
+   "expr": "boot._on_joy_changed(0, true)"
+  }
+ ],
+ "steps": [
+  {
+   "name": "F5.0 jump",
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Story",
+     "row": "The estuary bridge is swung open"
+    }
+   ],
+   "expect": [
+    {
+     "name": "at the controls, the span open, the barriers up",
+     "expr": "boot.story.current()['id'] == 'swing' and absf(get_tree().get_first_node_in_group('swing_bridge').angle - 90.0) < 0.1 and get_tree().get_first_node_in_group('swing_bridge').barriers.visible",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "F5.1 a crank alone",
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:get_tree().get_first_node_in_group('swing_bridge').crank_a.stand_point()",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('swing_bridge').crank_a.global_position"
+    },
+    {
+     "do": "hold",
+     "key": "E",
+     "s": 2.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the brake's on: nothing moves",
+     "expr": "get_tree().get_first_node_in_group('swing_bridge').angle >= 90.0 - 0.1",
+     "within": 1
+    }
+   ]
+  },
+  {
+   "name": "F5.2 Naresh on the brake",
+   "do": [
+    {
+     "do": "job",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('swing_bridge').brake.global_position",
+     "job": "hold"
+    }
+   ],
+   "expect": [
+    {
+     "name": "he holds it off",
+     "expr": "get_tree().get_first_node_in_group('swing_bridge').brake_off()",
+     "within": 15
+    }
+   ]
+  },
+  {
+   "name": "F5.2 both crank",
+   "max": 150,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:get_tree().get_first_node_in_group('swing_bridge').crank_b.stand_point()",
+     "arrive": 0.5,
+     "max": 40
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:get_tree().get_first_node_in_group('swing_bridge').crank_b.global_position"
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('swing_bridge').crank_a.global_position"
+    },
+    {
+     "do": "down",
+     "key": "E"
+    },
+    {
+     "do": "pad_down",
+     "btn": "X"
+    },
+    {
+     "do": "until",
+     "expr": "get_tree().get_first_node_in_group('swing_bridge').cranks_turning() == 2",
+     "max": 3
+    },
+    {
+     "do": "until",
+     "expr": "boot.story.flags.has('swing_waved')",
+     "max": 60
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "the span comes round",
+     "expr": "get_tree().get_first_node_in_group('swing_bridge').angle < 90.0 - 20.0",
+     "within": 1
+    },
+    {
+     "name": "he let go: the brake's on again",
+     "expr": "not get_tree().get_first_node_in_group('swing_bridge').brake_off()",
+     "within": 1
+    }
+   ]
+  },
+  {
+   "name": "F5.3 tell him again",
+   "max": 120,
+   "do": [
+    {
+     "do": "up",
+     "key": "E"
+    },
+    {
+     "do": "job",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('swing_bridge').brake.global_position",
+     "job": "hold"
+    },
+    {
+     "do": "until",
+     "expr": "get_tree().get_first_node_in_group('swing_bridge').brake_off()",
+     "max": 15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('swing_bridge').crank_a.global_position"
+    },
+    {
+     "do": "down",
+     "key": "E"
+    },
+    {
+     "do": "until",
+     "expr": "get_tree().get_first_node_in_group('swing_bridge').locked",
+     "max": 60
+    },
+    {
+     "do": "up",
+     "key": "E"
+    },
+    {
+     "do": "pad_up",
+     "btn": "X"
+    }
+   ],
+   "expect": [
+    {
+     "name": "it bolts home, the barriers go",
+     "expr": "get_tree().get_first_node_in_group('swing_bridge').locked and not get_tree().get_first_node_in_group('swing_bridge').barriers.visible",
+     "within": 2
+    },
+    {
+     "name": "on to the rail tunnel",
+     "expr": "boot.story.current()['id'] == 'end_f5'",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "F5.4 drive over",
+   "max": 150,
+   "do": [
+    {
+     "do": "call",
+     "fn": "walk_in_driver",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "pad_in_passenger",
+     "args": [
+      "p2"
+     ]
+    },
+    {
+     "do": "until",
+     "expr": "boot.naresh.state == 5",
+     "max": 25
+    },
+    {
+     "do": "call",
+     "fn": "engine_on"
+    },
+    {
+     "do": "hold",
+     "key": "S",
+     "s": 3.5
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "drive",
+     "road": "coast_road",
+     "to": "expr:get_tree().get_first_node_in_group('swing_bridge').pivot + get_tree().get_first_node_in_group('swing_bridge')._fwd * 40.0",
+     "until": "boot.camper.global_position.distance_to(get_tree().get_first_node_in_group('swing_bridge').pivot + get_tree().get_first_node_in_group('swing_bridge')._fwd * 40.0) < 8.0",
+     "kmh": 30,
+     "max": 60
+    }
+   ],
+   "expect": [
+    {
+     "name": "the van over the span",
+     "expr": "boot.camper.global_position.distance_to(get_tree().get_first_node_in_group('swing_bridge').pivot + get_tree().get_first_node_in_group('swing_bridge')._fwd * 40.0) < 12.0 and boot.camper.global_position.y > -1.0",
+     "within": 2
+    }
+   ]
+  }
+ ]
+}

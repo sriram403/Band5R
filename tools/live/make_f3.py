@@ -1,4 +1,7 @@
-"""The F3 sheet (notes/TEST_MILESTONE_F.md, the fishing village) as a planned
+"""(the shed side clear = both creatures out on the jetty: "none near the
+shed" alone passed at once after a resume, the creatures aren't in a save)
+
+The F3 sheet (notes/TEST_MILESTONE_F.md, the fishing village) as a planned
 walk for the watched run: python tools/live/make_f3.py -> tools/live/f3.json,
 then  python tools/live.py --walk tools/live/f3.json  [--from "F3.4 recall"].
 Every step says what must come true and by when; the positions the next
@@ -10,6 +13,9 @@ JETTY_END = [1833.96, -1.4, -584.0]
 EDGE_P1 = [1690, 0, -550]          # the village's edge, 149 m from the jetty end
 EDGE_P2 = [1693, 0, -552]
 BY_SHED = [1716, 0, -603.5]        # round the shed's west side, to the crates
+P2_HIDE = [1712, 0, -618]          # south-west of the shed: sees the jetty end past
+                                   # its south wall (122 m), Naresh's way back from the
+                                   # jetty to here passes 4 m from the light can
 SHED = "boot.builder.poi['net_shed']"
 FV = "village()"
 
@@ -38,9 +44,13 @@ walk = {
                 {"do": "job", "who": 1, "at": JETTY_END, "job": "go", "zoom": True},
                 {"do": "walk", "who": 2, "to": EDGE_P2, "arrive": 2, "max": 60}],
          "expect": [{"name": "Naresh at the jetty end", "expr": "boot.naresh.global_position.distance_to(Vector3(1833.96, -1.4, -584.0)) < 3.0", "within": 45, "watch": True},
-                    {"name": "the shed side clear", "expr": "creatures_near(%s, 25.0) == 0" % SHED, "within": 60, "watch": True}]},
+                    {"name": "the shed side clear", "expr": "creatures_near(%s, 25.0) == 0 and creatures_near(Vector3(1805, -1.4, -584), 40.0) == 2" % SHED, "within": 60, "watch": True}]},
         {"name": "F3.3 the key", "needs": ["the shed side clear"],
-         "do": [{"do": "walk", "who": 1, "to": BY_SHED, "arrive": 1, "max": 40},
+         # P2 into position first, then calls from there: crossing the open
+         # beach later, in front of the creatures trailing him, P2 was taken
+         "do": [{"do": "walk", "who": 2, "to": [1700, 0, -600], "arrive": 2, "max": 40},
+                {"do": "walk", "who": 2, "to": P2_HIDE, "arrive": 1.5, "max": 30},
+                {"do": "walk", "who": 1, "to": BY_SHED, "arrive": 1, "max": 40},
                 {"do": "walk", "who": 1, "to": "poi:net_shed_crates", "arrive": 0.6, "max": 20}] + climb +
                [{"do": "look", "who": 1, "at": "poi:net_shed_key"}, {"do": "wait", "s": 0.2},
                 {"do": "tap", "key": "E"}, {"do": "wait", "s": 0.4}],
@@ -68,16 +78,19 @@ walk = {
                 {"do": "tap", "key": "E"}, {"do": "wait", "s": 0.3}],
          "expect": [{"name": "the heavy can by the van", "expr": "p1().held == null and %s.can_full.global_position.distance_to(boot.camper.global_position) < 8.0" % FV, "within": 2}]},
         {"name": "F3.5 by the shed", "needs": ["Naresh off the jetty"],
-         "do": [{"do": "walk", "who": 2, "to": [1708, 0, -600], "arrive": 2, "max": 60}],
-         "expect": [{"name": "'There's two!'", "expr": "%s._helped" % FV, "within": 20}]},
+         # P2 stays out of sight behind the shed till he says it. With a
+         # creature near he may stop and stare first: watched, 60 s.
+         "do": [],
+         "expect": [{"name": "'There's two!'", "expr": "%s._helped" % FV, "within": 60}]},
         {"name": "F3.5 back to the van",
-         "do": [{"do": "walk", "who": 2, "to": "expr:boot.camper.global_transform * Vector3(3.0, 0, 1.0)", "arrive": 1.5, "max": 90}],
+         "do": [{"do": "walk", "who": 2, "to": [1700, 0, -600], "arrive": 2, "max": 30},
+                {"do": "walk", "who": 2, "to": "expr:boot.camper.global_transform * Vector3(3.0, 0, 1.0)", "arrive": 1.5, "max": 90}],
          "expect": [{"name": "his mistake: 'Done. I even checked it twice.'", "expr": "boot.story.flags.has('mistake_done') and %s.can_full.litres > 19.0" % FV, "within": 150}]},
         {"name": "F3.6 drive on north",
          "do": [{"do": "call", "fn": "walk_in_driver", "args": ["p1"]},
                 {"do": "call", "fn": "pad_in_passenger", "args": ["p2"]},
                 {"do": "until", "expr": "boot.naresh.state == 5", "max": 25},
-                {"do": "tap", "key": "X"}, {"do": "wait", "s": 0.5},
+                {"do": "call", "fn": "engine_on"},
                 {"do": "drive", "road": "coast_road", "to": [1640.0, 0, -900.0], "until": "boot.story.flags.has('stalled')", "kmh": 40, "max": 120},
                 {"do": "wait", "s": 1.5}],
          "expect": [{"name": "the engine dies", "expr": "boot.story.flags.has('stalled')", "within": 2},
