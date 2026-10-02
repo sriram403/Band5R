@@ -259,6 +259,19 @@ The engine-level details (exact Godot calls, numbers) are also in
   on some lines and speeds (one run got over it, the next didn't). Drive
   every structure end to end, more than once.
 
+- **Shared names collide silently** (F3, found by the full run): the
+  village's `poi["shed_roof"]` overwrote the water works shed's, so the
+  water works' Memory Fragment had moved onto the net shed and the old
+  climb test climbed the wrong shed. New places prefix their poi names
+  (`net_shed_...`); grep for a name before taking it.
+- **A new chapter's tests change what the old ones start from** (F, the full
+  run): the return left the storm on, so later way-out tests met a blown
+  bridge, cut power and gusts (24 failures). The runner now puts the return
+  away before any test that isn't one of its own (`_undo_return`).
+- **A puzzle's test that passes "sometimes" depends on a phase:** the salt
+  pans crossing passed alone and failed in order, because the watcher's
+  pattern started somewhere else. A jump restarts the pattern.
+
 ## 4. Game design lessons (from the user's play)
 
 - **Give both players something to do, all the time.** The maze's hay dust

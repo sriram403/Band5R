@@ -985,9 +985,16 @@ test before each push.
         (coast road, ghat + beach road). Likely the F tests leave the storm
         (`storm_on`: the bridge blown, the power cut, gusts) and the
         return's state behind for the old tests after them. The log:
-        `appdata/playtest/runs/full_2026-10-01.log`. Next: read
-        `appdata/playtest/runs/` logs, fix each, rerun those scenarios in
-        the full order, then your test from F3 on
+        `appdata/playtest/runs/full_2026-10-01.log`.
+  - [x] Causes found (2026-10-02): the village's `shed_roof` poi overwrote
+        the water works shed's (its fragment had moved to the net shed: a
+        real bug; renamed `net_shed_*`); the return's state left on for the
+        old tests (`_undo_return` before each); the stall's distance
+        depended on what was left in the tank (now ~250 m always); the
+        salt pans pattern's phase (a jump restarts it); the watchtower test
+        expected 3 dark when earlier tests had done the maze / relay
+  - [~] Rerun in the full order (two runs: the old tests after the return's,
+        then the save after it)
   - [ ] Your test (F3 on); push after it
 
 ## Milestone G: Finish
