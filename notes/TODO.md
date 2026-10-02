@@ -27,7 +27,20 @@ being built and tested), so this always shows where the work is right now.
 - F6 the rail tunnel: built (local).
 - F7 the radio mast: built (local).
 - F8 Naresh's home and the ending: built (local).
-- **F9 done:** the whole return drives end to end (7.5 min of roads); the full run's 24 failures fixed and rerun clean (2026-10-02). **Waiting for your test, from F3 on** (`notes/TEST_MILESTONE_F.md`); push after it.
+- **F9 done:** the whole return drives end to end (7.5 min of roads); the full run's 24 failures fixed and rerun clean (2026-10-02). 
+- [~] **Before your test: I walk the test sheet F3-F8 blind** (you, 2026-10-02:
+  you found the binoculars missing after the F3 jump; my test had given them
+  in code). Real keys and pad only, nothing set in code. Then you test.
+  - [x] Fixed: F1 jumps to Bessi / return steps give the binoculars; the
+        flare gun's prompt says "Fire a flare"
+  - [x] First blind walk of F3 (scripted, open loop): it got to "Go and
+        wait there" on the jetty end; Naresh never reached it; everything
+        after failed for that reason
+  - [~] **New way of testing (agreed 2026-10-02):** a live control line into
+        the running game (one action at a time, result + state + screenshot
+        back at once), fail-fast scripted runs that keep the game open, a
+        walked part saved as its regression (`notes/ROUGH_NOTES.md`)
+  - [ ] Walk F3-F8 live with it, fixing as I go; then your test from F3 on
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling

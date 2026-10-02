@@ -494,6 +494,10 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
    estuary bridge's ramps). Tests: `set:return`, `return_run` in full.
    **Waiting for the user's test from F3 on** (`notes/TEST_MILESTONE_F.md`),
    then push; then Milestone G (remind the user of `notes/POLISH.md`).
+   **Before that (user, 2026-10-02): walk the test sheet F3-F8 blind**
+   (real input only, nothing set in code) with the new closed-loop way of
+   testing: a live control line into the running game (`notes/ROUGH_NOTES.md`,
+   `notes/TODO.md`). Every learning goes into `notes/ROUGH_NOTES.md` at once.
    **Mode for the rest of F (user, 2026-10-01):** build F4-F9 with the
    recommended answers (each part's "Decisions to confirm" in
    `notes/TEST_MILESTONE_F.md`); the user tests once F is finished, from F3
