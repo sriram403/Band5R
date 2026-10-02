@@ -56,7 +56,25 @@ raw stream.
 - The flare gun's held prompt said "Throw": it says "Fire a flare" now.
 - F3 walk (2026-10-02): from the beach, "Go and wait there" on the jetty's
   far end through the binoculars was accepted (82 m), but Naresh never got
-  to the end of the jetty: to look into live (next).
+  to the end of the jetty. Found live: he planned round the jetty through
+  the shallows, because his path checks didn't see the world edge (moved
+  to layer 64 in F3 so eyes see through it): his masks include 64 now.
+- Found live: the open world had no drop points for taken players (only
+  the gyms), so since Milestone D a taken player woke where they stood
+  ("by here"). Drop points at 20 named places now.
+- Found live: the sheet's F3 "walk in with Naresh ... keep your distance"
+  can't be done: the creatures drift to Naresh, who follows you, so they
+  come to you. The sheet must say to send him from the village's edge.
+
+## The live control line (built 2026-10-02)
+
+- `--playtest=live` (`tools/run_test.sh live` in the background) starts the
+  world and waits; `python tools/live.py '<json command list>'` sends one
+  step and prints the result, the messages and the state at once
+  (`dev/LiveControl.gd` lists the commands: state, eval, wait, tap / hold,
+  pad_tap / pad_hold / pad_axis, mouse, look, walk, job, menu, drive, shot).
+  Positions: [x,y,z], "poi:<name>", or "expr:<expression on PlayTest>".
+- In its first three steps it found three bugs a scripted run had buried.
 
 ## The game / code (found on the way)
 
