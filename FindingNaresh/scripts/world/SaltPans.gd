@@ -359,4 +359,12 @@ func match_story() -> void:
 		watcher.global_position = centre + Vector3(0, GANTRY_H + 0.15, 0)
 		watcher.reset_physics_interpolation()
 	in_beam_s = 0.0
+	# its pattern from the start (a jump plays the same every time)
+	_seq = 0
+	_t = 0.0
+	_from = _base
+	_to = _base
+	_turn_now = TURN
+	gaze = _base
+	auto_sweep = true
 	_aim_beam()

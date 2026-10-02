@@ -119,7 +119,7 @@ func _shed(b) -> void:
 	var sc := Vector3(stop_x, low + stop.y * 0.5, hz + 0.45)
 	stairs.add_child(Build.box(stop, crate, sc, Vector3.ZERO, "Crates"))
 	stairs.add_child(b._box_shape(stop, Transform3D(Basis(), sc)))
-	b.poi["shed_crates"] = shed.transform * Vector3(-hx - 0.4, 0.2, hz + 0.45)
+	b.poi["net_shed_crates"] = shed.transform * Vector3(-hx - 0.4, 0.2, hz + 0.45)
 	# the boat on the roof, the key in it (tied to a cork float)
 	var roof := SHED.y
 	var boat := StaticBody3D.new()
@@ -142,9 +142,9 @@ func _shed(b) -> void:
 	key_node.set_meta("callback", func(p): _take_key(p, true))
 	key_node.set_meta("tag_name", "the boat on the roof")
 	shed.add_child(key_node)
-	b.poi["shed_key"] = shed.transform * key_node.position
-	b.poi["shed_roof"] = shed.transform * Vector3(-1.6, roof + 0.2, 1.2)
-	b.poi["shed_door"] = shed.transform * Vector3(-hx - 1.2, 0.2, 0)
+	b.poi["net_shed_key"] = shed.transform * key_node.position
+	b.poi["net_shed_roof"] = shed.transform * Vector3(-1.6, roof + 0.2, 1.2)
+	b.poi["net_shed_door"] = shed.transform * Vector3(-hx - 1.2, 0.2, 0)
 	b.poi["net_shed"] = at
 	# inside: a full can, and an old empty one
 	can_full = b._place_can(shed.transform * Vector3(2.2, 0, 1.2), FuelCan.CAPACITY, "village_full")
@@ -322,7 +322,9 @@ func _physics_process(_delta: float) -> void:
 		# his job is over: he "filled" it from the empty can
 		_story.flags["mistake_done"] = true
 		_mistake_at = van.global_position
-		van.fuel = minf(van.fuel, DIES_AFTER / 1000.0 * Camper.FUEL_PER_KM * 1.2)
+		# what is left: enough for ~250 m (a long dawdle in the village had
+		# it die within reach of the village creatures)
+		van.fuel = DIES_AFTER / 1000.0 * Camper.FUEL_PER_KM * 1.2
 	# the van dies on the open road, and they come (they follow him)
 	if _flag("mistake_done") and not _flag("stalled") and van.fuel <= 0.0:
 		_story.flags["stalled"] = true

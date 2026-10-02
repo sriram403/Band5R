@@ -642,7 +642,7 @@ const STEP_PLACES := {
 	"storm": ["", "the van, at the start of the coast road, pointing north; the storm is behind it"],
 	"end_e": ["", "the van, at the start of the coast road, pointing north; the storm is behind it"],
 	"village": ["", "the van, just short of the fishing village, on its last litre"],
-	"fuel": ["shed_door", "the net shed, open"],
+	"fuel": ["net_shed_door", "the net shed, open"],
 	"salt_pans": ["", "the van, just short of the salt pans, Naresh in the back"],
 	"swing": ["swing_controls", "the swing bridge's controls, the van by the bridge"],
 	"tunnel": ["", "the van inside the rail tunnel, short of the flood gate"],

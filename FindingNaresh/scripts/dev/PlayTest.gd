@@ -288,6 +288,11 @@ func _run() -> void:
 				_failures.append(f + "  (earlier run)")
 			continue
 		log_line("---- %s ----" % s)
+		# a test after the return's tests starts on the way out: the storm,
+		# the blown bridge, the cut power, creatures after Naresh, him at home
+		# put away (the full run's old tests inherited all of it, 2026-10-01)
+		if boot.gym == "" and not s in RETURN_SCENARIOS and boot.story != null and boot.story.flags.has("storm_on"):
+			_undo_return()
 		# memory as the run goes on: the long runs have crashed in the graphics
 		# driver after 35+ minutes; a steady climb here would say why
 		log_line("mem: video %d MB, textures %d MB, static %d MB, objects %d" % [
@@ -4153,6 +4158,11 @@ func t_traffic_world() -> void:
 	check(cars.size() == 4, "four cars patrol the town part of Homestead Lane")
 	if cars.size() < 4:
 		return
+	# someone near the town (cars stand still with nobody within 600 m), off
+	# the road so they don't stop for you
+	var near := int(lane.nearest(cars[0].global_position.x, cars[0].global_position.z)["index"])
+	await place_player(p1(), lane.point(near) + lane.right(near) * 30.0 + Vector3.UP * 0.5, 0.0)
+	await wait(0.5)
 	for car in cars:
 		if car._turn >= 0.0:
 			continue      # mid U-turn at a patrol end, crossing between lanes
@@ -5198,10 +5208,18 @@ func t_routes() -> void:
 		var temp_max := c.temp
 		var fuel0 := c.fuel
 		var flipped := false
+		var swing := get_tree().get_first_node_in_group("swing_bridge") as SwingBridge
+		var rail := get_tree().get_first_node_in_group("rail_tunnel") as RailTunnel
 		while t < 900.0:
 			await get_tree().physics_frame
 			t += 1.0 / 60.0
 			ad.step(-1.0)
+			# the return's gates (F5, F6), opened by script as the van gets there
+			# (their own tests do them for real)
+			if swing != null and not swing.locked and c.global_position.distance_to(swing.pivot) < 150.0:
+				swing._lock(false)
+			if rail != null and rail.gate != null and c.global_position.distance_to(rail.gate.global_position) < 70.0:
+				rail.winch.work_by(p2(), 1.0 / 60.0)
 			temp_max = maxf(temp_max, c.temp)
 			flipped = flipped or c.global_transform.basis.y.y < 0.4
 			stuck = stuck + 1.0 / 60.0 if kmh() < 2.0 else 0.0
@@ -6656,11 +6674,15 @@ func t_decoy() -> void:
 	n.global_position = edge + Vector3(1.5, 0, 1.5)
 	n.reset_physics_interpolation()
 	n.command(p, "wait")
-	await wait(4.0)
 	var drawn := 0
-	for cr in fv.creatures:
-		if cr.naresh_drawn:
-			drawn += 1
+	var t_draw := 0.0
+	while t_draw < 10.0 and drawn < 2:
+		await wait(0.5)
+		t_draw += 0.5
+		drawn = 0
+		for cr in fv.creatures:
+			if cr.naresh_drawn:
+				drawn += 1
 	check(drawn == 2, "both turn and drift towards Naresh (%d of 2)" % drawn)
 	await look_at_point(p, fv.centre + Vector3(10, 2, 10))
 	await shot("decoy_village")
@@ -6694,8 +6716,8 @@ func t_decoy() -> void:
 	var clear_s := (Time.get_ticks_msec() - t0) / 1000.0
 	check(clear, "they leave the shed for him (clear after %.0f s)" % clear_s)
 	# up the fish crates with the real keys: W and jumps
-	var foot: Vector3 = poi["shed_crates"]
-	var roof_y: float = (poi["shed_roof"] as Vector3).y
+	var foot: Vector3 = poi["net_shed_crates"]
+	var roof_y: float = (poi["net_shed_roof"] as Vector3).y
 	await place_player(p, foot + Vector3(0, 0.3, 0), -PI * 0.5)     # facing +X, along the steps
 	await shot("decoy_crates")
 	key(KEY_W, true)
@@ -6713,14 +6735,14 @@ func t_decoy() -> void:
 	await wait(0.4)
 	log_line("climb: P1 at y %.2f, the roof at %.2f" % [p.global_position.y, roof_y])
 	check(p.global_position.y > roof_y - 0.4, "up the stacked fish crates onto the shed roof")
-	await look_at_point(p, poi["shed_key"])
+	await look_at_point(p, poi["net_shed_key"])
 	await wait(0.2)
 	await shot("decoy_roof")
 	check(p.prompt_text.contains("Take the key"), "the boat on the roof: '%s'" % p.prompt_text)
 	await tap(KEY_E)
 	await physics_frames(3)
 	check(st.flags.has("key_got"), "the key, tied to a cork float")
-	await place_player(p, poi["shed_door"], 0.0)
+	await place_player(p, poi["net_shed_door"], 0.0)
 	await look_at_point(p, fv.door.global_position)
 	await wait(0.2)
 	check(p.prompt_text.contains("Unlock"), "at the door: '%s'" % p.prompt_text)
@@ -6766,7 +6788,7 @@ func t_decoy() -> void:
 	p.drop_held()
 	await physics_frames(5)
 	# Naresh at the shed: "there's two!" and he takes the light one to the van
-	n.global_position = poi["shed_door"] + Vector3(-2, 0, 1)
+	n.global_position = poi["net_shed_door"] + Vector3(-2, 0, 1)
 	n.reset_physics_interpolation()
 	var helped := await until(func() -> bool: return fv._helped, 5.0)
 	check(helped and n.refuel_mistake, "Naresh: 'There's two! I'll take this one to the van.'")
@@ -7344,7 +7366,11 @@ func t_home() -> void:
 	for l in hc.lights:
 		if not l.visible:
 			dark += 1
-	check(st.flags.has("tower_view") and dark == 3, "from the watchtower: a light over every place, the 3 optional ones dark (%d dark)" % dark)
+	# the optional ones dark unless an earlier test did them for real
+	var maze0 := get_tree().get_first_node_in_group("barn_maze")
+	var relay0 := get_tree().get_first_node_in_group("lookout_relay")
+	var want_dark := int(not bool(maze0.get("chest_open"))) + int(not bool(relay0.get("opened"))) + int(not st.flags.has("flare_gun_found"))
+	check(st.flags.has("tower_view") and dark == want_dark, "from the watchtower: a light over every place, the optional ones not done dark (%d dark, %d expected)" % [dark, want_dark])
 	mood.set_now(1.0)
 	await look_at_point(p1(), poi["radio_mast"] + Vector3.UP * 40.0)
 	await shot("tower_lights")
@@ -7491,6 +7517,29 @@ func t_return_run() -> void:
 	if hc._end != null:
 		hc._end.queue_free()
 		hc._end = null
+
+
+## The scenarios that start on the return themselves (they jump there).
+const RETURN_SCENARIOS := ["storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps",
+	"bessi_jumps", "return_run", "bessi_run", "decoy_save", "decoy_save_verify", "bessi_save", "bessi_save_verify"]
+
+
+## Back to before the storm: every Bessi / return flag off, everything that
+## follows the flags put back.
+func _undo_return() -> void:
+	var st: Story = boot.story
+	for f in Story.BESSI_FLAGS:
+		st.flags.erase(f)
+	for f in ["flare_gun_found", "flares_used"]:
+		st.flags.erase(f)
+	for g in ["storm_front", "roses", "evidence", "bessi_tasks", "fishing_village", "salt_pans", "swing_bridge", "radio_mast", "homecoming"]:
+		get_tree().call_group(g, "match_story")
+	Creature.on_return = false
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	if mood != null:
+		mood.dark = 0.0
+		mood.storm = 0.0
+	log_line("(the return put away for this test)")
 
 
 func t_storm_gym() -> void:
