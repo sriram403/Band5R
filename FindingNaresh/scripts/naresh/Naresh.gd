@@ -854,6 +854,29 @@ func hold_point(item: Carryable) -> Vector3:
 
 ## Walk towards `goal` (round things in the way). True once within `arrive`.
 func _walk_to(goal: Vector3, speed: float, arrive: float, delta: float) -> bool:
+	# a place reached only one way (the village jetty, Creature.funnels): to
+	# its entry first. His short planner otherwise settled in the shallows
+	# outside the jetty's railing, against the sea wall (the F3 sheet walk).
+	for f in Creature.funnels:
+		var box: AABB = f["box"]
+		var entry: Vector3 = f["entry"]
+		# the entry is inside the box too: walking to it is the plain walk
+		# on it means on its deck, not just in the box (wider than the deck:
+		# he'd stand on the sand or in the water outside the railing "inside" it)
+		var on_it := false
+		for d in f.get("deck", [box]):
+			on_it = on_it or (d as AABB).has_point(global_position)
+		var to_entry := Vector2(entry.x - global_position.x, entry.z - global_position.z).length()
+		if box.has_point(goal) and not on_it and goal.distance_to(entry) > 0.5:
+			if to_entry > 1.0:
+				_walk_to(entry, speed, 0.8, delta)
+				return false
+		# and off it the same way: back along the deck to its mouth first
+		# (heading for someone on the beach he planned into the railing and
+		# was stuck till "Found a way round!", the F3 walk)
+		elif on_it and not box.has_point(goal) and to_entry > 1.0:
+			_walk_to(entry, speed, 0.8, delta)
+			return false
 	var to := goal - global_position
 	to.y = 0.0
 	if to.length() <= arrive:
@@ -910,7 +933,7 @@ var _force_grid := false
 func _stuck_long(goal: Vector3) -> void:
 	# someone's standing in his way: he asks, and waits (never gives up on it)
 	var p := _nearest_player()
-	if p != null and p.global_position.distance_to(global_position) < 1.4:
+	if p != null and p.global_position.distance_to(global_position) < 2.0:   # a doorway: 1.4 let him give up as you came in (F3)
 		_stuck_count = 0
 		if Time.get_ticks_msec() - _excuse_ms > 5000:
 			_excuse_ms = Time.get_ticks_msec()
@@ -1001,7 +1024,7 @@ func _clear(a: Vector3, b: Vector3) -> bool:
 	for off in [Vector3(0, 0.45, 0), Vector3(0, 1.3, 0), side + Vector3(0, 0.8, 0), -side + Vector3(0, 0.8, 0)]:
 		var from: Vector3 = a + off
 		var to: Vector3 = Vector3(b.x, a.y, b.z) + off
-		var q := PhysicsRayQueryParameters3D.create(from, to, 1 | 8, ex)
+		var q := PhysicsRayQueryParameters3D.create(from, to, 1 | 8 | 64, ex)     # 64: the world edge (the sea wall) too
 		if not space.intersect_ray(q).is_empty():
 			return false
 	return true
@@ -1084,7 +1107,7 @@ func _blocked(c: Vector2i) -> bool:
 	var q := PhysicsShapeQueryParameters3D.new()
 	q.shape = sh
 	q.transform = Transform3D(Basis(), at + Vector3.UP * 1.0)
-	q.collision_mask = 1 | 8
+	q.collision_mask = 1 | 8 | 64      # the world edge too: he planned round the jetty through the sea wall
 	q.exclude = [get_rid()]
 	var b := not get_world_3d().direct_space_state.intersect_shape(q, 1).is_empty()
 	_cells[c] = b

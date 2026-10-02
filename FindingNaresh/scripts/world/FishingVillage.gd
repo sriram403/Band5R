@@ -39,6 +39,7 @@ var jetty_start := Vector3.ZERO
 var creatures: Array[Creature] = []
 var _story: Story
 var _helped := false                    ## he's taken the empty can to the van
+var _retry_t := 0.0                     ## his trip with it failed: he tries again after a moment
 var _offered := false                   ## he's offered to do the fuel
 var _mistake_at := Vector3.ZERO         ## where the van was when he "filled" it
 
@@ -202,11 +203,18 @@ func _jetty(b) -> void:
 	# or walks round it through the gap left in the sea wall
 	var deep := Landscape.SEA_Y - 16.0
 	var fence_h: float = top + 1.0 - deep
+	# on the world edge's layer: they stop bodies, not eyes. Aimed at the
+	# jetty's end through the binoculars, the look hit the near rail and sent
+	# Naresh to a spot just outside it, over deep water (the F3 sheet walk)
+	var fence := StaticBody3D.new()
+	fence.name = "JettyRails"
+	fence.collision_layer = LevelBuilder.EDGE_LAYER
+	b.world.add_child(fence)
 	var rail := func(a: Vector3, bb: Vector3) -> void:
 		var mid := (a + bb) * 0.5
 		var l := a.distance_to(bb)
 		var xf := Transform3D(Basis.looking_at(bb - a, Vector3.UP), Vector3(mid.x, deep + fence_h * 0.5, mid.z))
-		body.add_child(b._box_shape(Vector3(0.12, fence_h, l), xf))
+		fence.add_child(b._box_shape(Vector3(0.12, fence_h, l), xf))
 		body.add_child(Build.node(_box_mesh(Vector3(0.08, 0.08, l)), dark, Transform3D(xf.basis, Vector3(mid.x, top + 0.95, mid.z)), "Rail"))
 	var hw := JETTY_W * 0.5 + 0.05
 	rail.call(Vector3(x0, 0, z - hw), Vector3(x1, 0, z - hw))
@@ -231,7 +239,13 @@ func _jetty(b) -> void:
 	b.poi["jetty_end"] = jetty_end
 	# a creature heading for someone out on it walks round by its start
 	# (the entry is just inside the box: once there it heads straight along the deck)
-	Creature.funnels.append({"box": AABB(Vector3(x0 - 1.0, top - 3.0, z - 3.5), Vector3(x1 + 10.0 - x0, 8.0, 7.0)), "entry": Vector3(x0, top, z)})
+	# "deck": where you're really on it (the box is wider than the walkway, and
+	# the sand beside its start is as high as the deck: Naresh "on it" there
+	# walked straight on and ended in the water outside the rail, the F3 walk)
+	Creature.funnels.append({"box": AABB(Vector3(x0 - 1.0, top - 3.0, z - 3.5), Vector3(x1 + 10.0 - x0, 8.0, 7.0)),
+		"entry": Vector3(x0, top, z),     # inside the box: a creature stops 0.3 m short of it (x0 - 0.8 left them waiting outside)
+		"deck": [AABB(Vector3(x0 - 0.5, top - 0.6, z - JETTY_W * 0.5), Vector3(x1 + 0.5 - x0, 3.0, JETTY_W)),
+			AABB(Vector3(x1, top - 0.6, z - 3.0), Vector3(6.0, 3.0, 6.0))]})
 
 
 static func _box_mesh(size: Vector3) -> BoxMesh:
@@ -282,7 +296,7 @@ func _flag(f: String) -> bool:
 	return _story != null and _story.flags.has(f)
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if _story == null:
 		_story = get_tree().get_first_node_in_group("story") as Story
 		if _story == null:
@@ -311,6 +325,18 @@ func _physics_process(_delta: float) -> void:
 		nz.refuel_mistake = true
 		nz.say("There's two! I'll take this one to the van.")
 		nz.command(_leader(nz), "store", can_empty)
+	# his trip failed (someone in the doorway as he carried it out, the F3
+	# sheet walk): the can's down, not in the van; he tries again, or the
+	# decoy's mistake never comes
+	if _helped and can_empty.stowed_in == null and can_empty.holders.is_empty() and nz.job != "store" 			and nz.state in [Naresh.State.FOLLOW, Naresh.State.WAIT, Naresh.State.IDLE] 			and nz.global_position.distance_to(can_empty.global_position) < 25.0:
+		_retry_t += delta
+		if _retry_t > 3.0:
+			_retry_t = 0.0
+			nz.refuel_mistake = true
+			nz.say("Hang on. The light one, to the van.")
+			nz.command(_leader(nz), "store", can_empty)
+	else:
+		_retry_t = 0.0
 	# the full can at the van too: he does the fuel himself, with the empty one
 	if _helped and not _offered and not _flag("mistake_done") and can_empty.stowed_in != null and is_instance_valid(can_full) and can_full.holders.is_empty() \
 			and can_full.global_position.distance_to(van.global_position) < 8.0 and can_full.litres > 1.0 \

@@ -171,6 +171,28 @@ func p2() -> PlayerRig:
 	return boot.players[1]
 
 
+## The nearest creature to Naresh, m (the live line's `until`: Expression has no lambdas).
+func creature_to_naresh() -> float:
+	var d := INF
+	for cr in get_tree().get_nodes_in_group("creature"):
+		d = minf(d, (cr as Node3D).global_position.distance_to(boot.naresh.global_position))
+	return d
+
+
+## How many creatures are within r m of a point (the live line).
+func creatures_near(at: Vector3, r: float) -> int:
+	var k := 0
+	for cr in get_tree().get_nodes_in_group("creature"):
+		if (cr as Node3D).global_position.distance_to(at) < r:
+			k += 1
+	return k
+
+
+## The fishing village (the live line's expressions).
+func village() -> FishingVillage:
+	return get_tree().get_first_node_in_group("fishing_village") as FishingVillage
+
+
 func camper() -> Camper:
 	return boot.camper
 
@@ -235,6 +257,10 @@ func _run() -> void:
 		"%s at %s" % [DisplayServer.window_get_size(), DisplayServer.window_get_position()],
 		str(Input.get_connected_joypads())])
 	log_line("route length %.0f m, %d samples" % [boot.builder.route.total_length, boot.builder.route.point_count()])
+	# the live control line: no scenarios, wait for commands (tools/live.py)
+	if only == "live":
+		await LiveControl.new(self).run()
+		return
 
 	# After a load test reloaded the scene, only finish that check.
 	if PlayTest.resume != "":

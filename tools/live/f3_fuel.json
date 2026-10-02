@@ -1,0 +1,11 @@
+[
+ {"do": "walk", "who": 1, "to": "poi:net_shed_door", "arrive": 0.8, "max": 20},
+ {"do": "walk", "who": 1, "to": "expr:get_tree().get_first_node_in_group('fishing_village').can_full.global_position + (get_tree().get_first_node_in_group('fishing_village').door.global_position - get_tree().get_first_node_in_group('fishing_village').can_full.global_position).normalized() * 1.2", "arrive": 0.5, "max": 20},
+ {"do": "look", "who": 1, "at": "expr:get_tree().get_first_node_in_group('fishing_village').can_full.global_position"}, {"do": "wait", "s": 0.1},
+ {"do": "tap", "key": "E"},
+ {"do": "until", "expr": "p1().held == get_tree().get_first_node_in_group('fishing_village').can_full", "max": 1},
+ {"do": "walk", "who": 1, "to": "poi:net_shed_door", "arrive": 0.8, "max": 20},
+ {"do": "walk", "who": 1, "to": "expr:boot.camper.global_transform * Vector3(-3.0, 0, 1.0)", "arrive": 1.0, "max": 90},
+ {"do": "tap", "key": "E"}, {"do": "wait", "s": 0.3},
+ {"do": "until", "expr": "p1().held == null and get_tree().get_first_node_in_group('fishing_village').can_full.global_position.distance_to(boot.camper.global_position) < 8.0", "max": 1}
+]
