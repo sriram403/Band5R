@@ -651,6 +651,9 @@ const STEP_PLACES := {
 	"drive_home": ["", "the van at Naresh's home, him at home, the West Road ahead"],
 }
 
+const BINOCULAR_STEPS := ["photo", "roses", "naresh", "look_around", "batteries", "drum", "storm", "end_e",
+	"village", "fuel", "salt_pans", "swing", "tunnel", "mast", "end_f7", "drive_home"]
+
 func go_to_step(id: String) -> String:
 	if boot.gym != "" or not STEP_PLACES.has(id):
 		return ""
@@ -717,6 +720,11 @@ func go_to_step(id: String) -> String:
 		van_to(van_spot(at + Vector3(-18, 0, 6)), 0.0)
 		c.repair_all()
 	teleport(at)
+	# by Bessi you'd have the binoculars (Last Fuel / the ridge lookout): a
+	# jump there hands them over (the F3 decoy needs them from the beach)
+	if id in BINOCULAR_STEPS:
+		for p in boot.players:
+			(p as PlayerRig).has_binoculars = true
 	# Naresh with you from the evidence on (before that he's in the rose, or not yet found)
 	var nz: Naresh = boot.naresh
 	if id == "fuel":

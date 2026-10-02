@@ -1007,6 +1007,8 @@ func _scan_holding() -> void:
 		text = "[%s]  %s" % [dev.glyph("interact"), ctx_text]
 	else:
 		text = "%s     [%s]  Drop     [%s]  Throw" % [held.label().capitalize(), dev.glyph("interact"), dev.glyph("throw")]
+		if held.has_method("fire"):
+			text = "%s     [%s]  Drop     [%s]  Fire a flare" % [held.label().capitalize(), dev.glyph("interact"), dev.glyph("throw")]
 		if held is CardboardBox:
 			text = "Cardboard box     [%s]  Get under it     [%s]  Throw" % [dev.glyph("interact"), dev.glyph("throw")]
 		if held is BatteryPack:
