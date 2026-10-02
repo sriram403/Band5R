@@ -27,7 +27,7 @@ being built and tested), so this always shows where the work is right now.
 - F6 the rail tunnel: built (local).
 - F7 the radio mast: built (local).
 - F8 Naresh's home and the ending: built (local).
-- [~] **F9:** the whole return drives end to end (7.5 min of roads); the full run is going; then **your test, from F3 on** (`notes/TEST_MILESTONE_F.md`).
+- **F9 done:** the whole return drives end to end (7.5 min of roads); the full run's 24 failures fixed and rerun clean (2026-10-02). **Waiting for your test, from F3 on** (`notes/TEST_MILESTONE_F.md`); push after it.
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
@@ -969,7 +969,7 @@ test before each push.
         fall through the ground for ever (`Camper._safety_net`); the
         estuary bridge's deck edge was a step (ramps)
   - [x] The test sheet: how to test F3-F8 in one go, per part
-  - [~] The full run (in `MPG`, merged main, not pushed), 2026-10-01 night:
+  - [x] The full run (in `MPG`, merged main, not pushed), 2026-10-01 night:
         finishing; **the fixes wait for the next session** (you, 2026-10-02).
         Failures so far, all in the world segment (each passes alone, so
         most likely test order: earlier tests leave state behind):
@@ -993,8 +993,12 @@ test before each push.
         depended on what was left in the tank (now ~250 m always); the
         salt pans pattern's phase (a jump restarts it); the watchtower test
         expected 3 dark when earlier tests had done the maze / relay
-  - [~] Rerun in the full order (two runs: the old tests after the return's,
-        then the save after it)
+  - [x] Rerun in the full order: water works + every return test + every old
+        world test after them: 2 left (the road drive met the swing bridge
+        and the flood gate shut: it opens them by script now; the town cars
+        stood still with nobody near: the test puts someone there), then
+        those rerun: 0 failures; save after the return: 0; decoy_save: 0;
+        the beach alone 143 fps (its 108 was with a second game running)
   - [ ] Your test (F3 on); push after it
 
 ## Milestone G: Finish
