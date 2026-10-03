@@ -48,8 +48,12 @@ they/them.
 
 ---
 
-## 2. Status right now (2026-09-29; latest at the top, 2026-10-03)
+## 2. Status right now (2026-09-29; latest at the top, 2026-10-04)
 
+- **2026-10-04: hand-over to a new thread.** The test sheet F3-F8 is
+  rewritten in plain words; everything proven and merged locally, not
+  pushed; **waiting for the user's test** (section 6). The user starts the
+  new thread by sending this file.
 - **2026-10-03: Milestone F (the return) built (F1-F9); F1, F2 approved and
   pushed; F3-F8 each proven as a watched run** (`notes/TESTING_METHOD.md`,
   `tools/live/make_f*.py`, `tools/live_all.sh`): every step of the user's
@@ -492,47 +496,52 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 6. What to do next
 
-**Milestones A-E are approved and pushed. Next, in this order:**
+**Where it stands (hand-over 2026-10-04):** Milestones A-E approved and
+pushed. **Milestone F (the return), F1-F9, is built.** F1 and F2 are
+approved and pushed. F3-F8 are proven: each part of the user's test sheet
+was played start to finish by a watched run with real keys and pad only
+(`tools/live/make_f3.py` ... `make_f8.py`, all six back to back with
+`tools/live_all.sh`: pass, 24 min). The older suite passes too (72 world
+scenarios; frame-rate checks pass alone at 144 fps). The sheet
+`notes/TEST_MILESTONE_F.md` was rewritten in plain words (the user's ask,
+2026-10-04): per step what + why, optional *Exactly how*, **You should
+see**. Everything is merged into `main` **locally, not pushed**
+(`MPG_dev` is on branch `f4`, same code).
 
-0. **Milestone F, the return** (`notes/TODO.md`, `design/RETURN.md`,
-   `DESIGN.md`). RETURN.md's questions were answered on 2026-10-01 (its
-   "Decisions" section: storm road a dead end, the dishes point at nearer
-   return sites, the family silent, the tracker without the batteries).
-   F is split into F1-F9 in TODO.md (F1 the storm gym first), one part at
-   a time with the user's test before each push. **F1 (`world/Storm.gd`,
-   `--gym=storm`, `t_storm_gym`) is approved and pushed (2026-10-01).
-   F2 (the storm on the old road: `StormFront` zone + `Storm`, the power
-   line down, `LiftBridge.storm_blow`, `t_storm_road`) is approved and pushed
-   (2026-10-01).** F3 (`world/FishingVillage.gd`, R1 the decoy, the refuel
-   mistake, `Creature.on_return`, `t_decoy`, `t_decoy_save`, `set:return`)
-   is pushed (2026-10-01) but **not yet tested by the user**. F4-F9 are
-   built and merged into main locally (not pushed): F4 `world/SaltPans.gd`,
-   F5 `puzzles/SwingBridge.gd`, F6 `world/RailTunnel.gd` +
-   `items/FlareGun.gd` + the van's bump start, F7 `puzzles/RadioMast.gd`,
-   F8 `world/Homecoming.gd`, F9 `t_return_run` (+ `Camper._safety_net`, the
-   estuary bridge's ramps). Tests: `set:return`, `return_run` in full.
-   **Waiting for the user's test from F3 on** (`notes/TEST_MILESTONE_F.md`),
-   then push; then Milestone G (remind the user of `notes/POLISH.md`).
-   **Before that (user, 2026-10-02): walk the test sheet F3-F8 blind**
-   (real input only, nothing set in code) with the new closed-loop way of
-   testing: a live control line into the running game (`notes/ROUGH_NOTES.md`,
-   `notes/TODO.md`). Every learning goes into `notes/ROUGH_NOTES.md` at once.
-   **Mode for the rest of F (user, 2026-10-01):** build F4-F9 with the
-   recommended answers (each part's "Decisions to confirm" in
-   `notes/TEST_MILESTONE_F.md`); the user tests once F is finished, from F3
-   on; keep new parts local in main until then (no push). Then F4 (the salt pans) in
-   `../MPG_dev` on a new branch from main. Build the next part in
-   `../MPG_dev` while the long runs go in `MPG`. After all milestones,
-   remind the user of `notes/POLISH.md`.
-   (Old note: `../MPG_dev` was on branch `e7` at the start of F: start F
-   there on a new branch from main (`git -C ../MPG_dev switch -c f1 main`).
-1. Then Milestone G (`notes/TODO.md`, `DESIGN.md`). New mechanics each get
-   a gym first. The design pages (`design/*.md`) are proposals until their
-   open questions are answered by the user; the answered ones have a
-   "Decisions" section (WAY_OUT, CREATURES, BESSI, NARESH).
-2. At the end of every milestone: the full run, push, then ask the user
-   "continue in this thread, or shall I prepare the hand-over notes for a
-   new one?"
+**Next, in this order:**
+
+1. **Wait for the user's test from F3 on.** They follow
+   `notes/TEST_MILESTONE_F.md` (F3 to F8), two players (P1 keyboard,
+   P2 pad), and report per part. **Don't start anything else**: answer
+   their questions, fix what they find (in `../MPG_dev`, a quick check for
+   the change first), keep the sheet in plain words (memory
+   `mpg-plain-test-sheets`), and update the notes as you go.
+   - If a sheet step confuses them: rewrite it (one goal per step, lines in
+     the order you act, fallbacks after the steps, only names visible on
+     screen, P1 / P2 for who).
+   - If something in the game is wrong: reproduce it with the live line
+     (`tools/live_restart.sh`, `python tools/live.py ...`) or the part's
+     walk (`python tools/live.py --walk tools/live/fN.json --from "<step>"`),
+     fix, rerun the walk, then tell them.
+   - Their "Decisions to confirm" answers go into `design/RETURN.md` and
+     the sheet.
+2. **After their OK:** merge `f4` into main if needed, push **as
+   sriram403** (never lexbolt; no AI attribution in commits), then
+   Milestone G (`notes/TODO.md`, `DESIGN.md`), and remind the user of
+   `notes/POLISH.md` (it now also has "screenshots in the test sheets").
+3. **Open questions to keep an eye on** (`notes/ROUGH_NOTES.md`, end):
+   P2's binocular recall once didn't take in the old decoy test (it now
+   logs why); a village creature once ended up inside the shed's crate
+   stack (a safety hop frees it); after the stall the full can was once
+   not on the rack, only late in the long run (the test logs the rack).
+
+**How we test now (the user's method, `notes/TESTING_METHOD.md` v4):** a
+planned walk per sheet part, expected outcomes checked in parallel inside
+the game, stop at the first failure, fix, resume from that step's save
+point. Long runs in the background (they get stopped at a time limit:
+`tools/run_test.sh resume` carries on). Every learning into
+`notes/ROUGH_NOTES.md` at once, mistakes as *assumed -> reality -> fix ->
+habit*; read that list before similar work.
 
 ## 7. Hard-won technical lessons (don't relearn these)
 
@@ -760,6 +769,17 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 ---
 
 ## 8. Resuming in a new thread
+
+**The user starts a new thread by sending this file** (they asked for short
+threads with good notes instead of one long one, 2026-10-04). Then:
+
+1. Read this file, `CLAUDE.md`, `notes/TODO.md` ("Right now"),
+   `notes/TEST_MILESTONE_F.md`, the end of `notes/ROUGH_NOTES.md` (the
+   mistake log and the open questions) and `notes/TESTING_METHOD.md`.
+2. Check `git status` and `git log -3` in `MPG` and `../MPG_dev`.
+3. Tell the user in two or three plain lines where things stand, and that
+   you're **waiting for their test results** (section 6, step 1). Then wait:
+   don't start new work unasked.
 
 Read the files listed at the top, check `git status` / `git log -3` (and `git diff` if
 anything is uncommitted: that is the last thread's unfinished work), read

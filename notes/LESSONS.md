@@ -23,6 +23,11 @@ missing. Short entries: what happened, why, what to do instead.
 - Every wait gets a deadline; the watcher must not be the only thing that
   can stop a run.
 - Check the tool before blaming the game, and make tools fail loudly.
+- **Short threads with good notes beat one long thread** (the user,
+  2026-10-04): every message resends the whole conversation, so a long
+  thread gets slow and costly, and its compaction drops detail by chance.
+  Keep the notes current, and at a natural break hand over: the next thread
+  starts by reading `notes/MASTER_PROMPT.md` (section 8).
 
 **Also (user, 2026-10-02):** every time an assumption meets a different
 reality, add *assumed -> reality -> fix -> habit* to the mistake log in

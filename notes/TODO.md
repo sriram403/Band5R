@@ -61,7 +61,11 @@ being built and tested), so this always shows where the work is right now.
         frame-rate checks rerun alone: 144 fps; the decoy test after the
         creature fixes; the lightning check made robust). Merged into main
         locally, **not pushed**.
-  - [ ] Your test from F3 on (the sheet updated with what the walks found)
+  - [x] The sheet F3-F8 rewritten in plain words (2026-10-04): per step what +
+        why, optional *Exactly how*, **You should see**; fallbacks after the
+        steps; screenshots per step later (POLISH)
+  - [ ] **Your test from F3 on** (2026-10-04 or later, in a new thread: send
+        `notes/MASTER_PROMPT.md`), then push as sriram403, then Milestone G
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
