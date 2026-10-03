@@ -170,6 +170,22 @@ func _build() -> void:
 	add_child(_hum)
 
 
+## Back to nothing on its mind, as at the start (a story jump or load puts
+## it back at its post: FishingVillage.match_story).
+func calm() -> void:
+	suspicion = 0.0
+	state = State.WANDER
+	target = null
+	van_interest = 0.0
+	scared_t = 0.0
+	_noticed_t = 99.0
+	last_noticed = global_position
+	naresh_drawn = false
+	_pi = 0
+	_detour_t = 0.0
+	_stuck_mark = Vector3.INF
+
+
 ## A flare went up at `from`: run, and stay away `seconds`.
 func scare(from: Vector3, seconds: float) -> void:
 	scared_t = seconds

@@ -402,3 +402,13 @@ func match_story() -> void:
 		(c as CollisionShape3D).set_deferred("disabled", open)
 	_helped = can_empty.stowed_in != null      # he's taken the light can to the van already
 	_offered = _flag("mistake_done")
+	# a jump (or a load) to arriving at the village: its two at their posts,
+	# calm. Left wherever earlier play put them, one was 34 m off and never
+	# drawn to Naresh (the full test run, 2026-10-03)
+	if String(_story.current()["id"]) == "village":
+		for cr in creatures:
+			if is_instance_valid(cr) and cr.patrol.size() > 0:
+				cr.global_position = cr.patrol[0] + Vector3(0, 0.2, 0)
+				cr.velocity = Vector3.ZERO
+				cr.reset_physics_interpolation()
+				cr.calm()
