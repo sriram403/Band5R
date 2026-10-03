@@ -10,6 +10,13 @@ can be compacted or stop at any time and the detail is lost. Before moving to
 a new milestone or a new thread, read through what you did and add anything
 missing. Short entries: what happened, why, what to do instead.
 
+**Also (user, 2026-10-02):** every time an assumption meets a different
+reality, add *assumed -> reality -> fix -> habit* to the mistake log in
+`notes/ROUGH_NOTES.md`, and read that log before starting something similar
+(we simulate learning from mistakes, which models can't do on their own).
+"Update the md files" means every file listed in `CLAUDE.md` / `AGENTS.md`
+that the change touches.
+
 The engine-level details (exact Godot calls, numbers) are also in
 `MASTER_PROMPT.md` section 7; this file is the why and the habits.
 

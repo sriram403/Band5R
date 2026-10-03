@@ -22,6 +22,12 @@ below has its steps and its "Decisions to confirm". Either:
 
 Report per part (F3, F4, ...), and say which decisions you'd change.
 
+**Every jump, the same way:** F1 opens the developer menu; arrow keys to the
+tab and the row; Enter jumps there; **then F1 (or Esc) to close the menu**
+(it stays open after Enter). A jump gives you both the binoculars.
+**Binoculars: hold RMB (P1) / hold LT (P2).** (Pad B is crouch.) Through them
+you can give Naresh jobs up to 150 m away; 60 m by eye.
+
 ---
 
 ## F1. The storm (the storm gym)
@@ -166,26 +172,37 @@ wooden **jetty** out into the sea (railed both sides), and the **net shed**
 the huts and the shed. Fish crates are stacked up one side of the shed like
 steps; up on its roof is a small blue boat.
 
-1. **Walk in with Naresh.** **Expect:** the creatures stop and turn towards
-   *him*, then drift his way, slowly. (Keep your distance: if they see you,
-   they come for you.)
-2. **Send him to the end of the jetty:** look at the far end of the jetty,
-   hold V (pad: D-pad Up), *Go and wait there*. From the beach it's far:
-   with the binoculars (hold RMB / LT) you can give him jobs up to 150 m
-   away (60 m by eye). **Expect:** he walks out to the end; the creatures
-   follow him out along the jetty (about 20 s later the shed side is clear);
-   they need over a minute to reach him.
+1. **Don't walk in.** Walk north up the beach to the village's edge, about
+   150 m short of the jetty's far end (the huts ahead of you, the jetty off
+   to your right), and stop there, both of you. (Walking in doesn't work:
+   the creatures drift towards Naresh, and he follows you, so they come to
+   you.)
+2. **Send him to the end of the jetty from there:** hold RMB (P2: LT) for
+   the binoculars, look at the far end of the jetty, hold V (pad: D-pad Up),
+   *Go and wait there*. **Expect:** he walks onto the jetty and out to its
+   end; the creatures turn and follow him out along it (within a minute the
+   shed side is clear); they need over a minute to reach him.
 3. **One of you: the key.** Climb the fish crates (W and jump, step by step;
    at the top, turn onto the roof). In the blue boat: **E: Take the key**.
    Down again, the shed door: **E: Unlock the shed**. Inside: two cans, one
    heavy, one light.
-4. **The other: watch him** through the binoculars. Before a creature reaches
-   him, look at him and V / D-pad Up: *Follow me*, even from the beach.
+4. **The other: watch him** from **behind the shed**: once the creatures
+   are out on the jetty, go round to the shed's south-west corner (the side
+   away from the jetty; from there you still see the jetty's end past the
+   shed's south wall). Through the binoculars, before a creature reaches
+   him, look at him and V / D-pad Up: *Follow me*. Stay there: his way back
+   to you passes the shed. (Waiting out on the open beach, or by the door,
+   the creatures trailing him back see you and take you.)
    (If he's taken: he's left high up on the old water tank or the rock
-   stack, shouting; go and fetch him. Nothing lost but time.)
-5. **The fuel.** Take the heavy can to the van. **Expect:** when Naresh comes
-   by the shed he says "There's two! I'll take this one to the van" and puts
-   the *light* can on the rack. Once the heavy can is at the van too:
+   stack, shouting; walk under it and he climbs down to you. But the
+   creatures are back by the shed by then: send him out on the jetty again
+   before you go back in.)
+5. **The fuel.** Be quick: the decoy only buys the time out and back (when
+   he comes back the creatures follow him in). The one with the key: take
+   the heavy can to the van while he's still out there. **Expect:** when
+   Naresh comes by the shed (to you, behind it) he says "There's two! I'll
+   take this one to the van", carries the *light* can out and puts it on the
+   rack. Then go to the van yourself, round the shed's west side. Once the heavy can is at the van too:
    "Leave the fuel to me! I know how." Let him. **Expect:** "Done. I even
    checked it twice." (Watch the fuel gauge: it doesn't move.)
 6. **Drive on north.** **Expect:** after a couple of hundred metres the
@@ -389,7 +406,9 @@ and three dishes, numbered 1-3; at its foot a desk with a **screen**, three
    with it on its beacon: it **locks**, its lamp goes green.
 4. **Naresh** can take a crank (V on it: *Hold*): the first time he turns
    it **backwards** ("Is it going the right way? It looks the right way.")
-   until you tell him again ("Oh! The OTHER way.").
+   until you tell him again: V on the crank, *Let go of it* ("Oh! The OTHER
+   way."), then V, *Hold* again: now he turns it the right way. When it's on
+   its beacon: V on him, *Wait here*, and it locks.
 5. **All three locked:** "The mast hums ... away to the west the clouds
    break over the West Road." The objective: on to Naresh's home.
 

@@ -73,6 +73,26 @@ Whoever builds a part tests it, looks at the screenshots, reads the logs and
 writes down what was learnt (`notes/LESSONS.md`). No "that's the test's
 problem"; no green test believed without looking.
 
+## 7. Remember your mistakes (the user, 2026-10-02)
+
+A person remembers a mistake made on one problem and is careful on the next.
+Models don't learn while working (the weights don't change), so we simulate
+it: every time an assumption meets a different reality, write *assumed ->
+reality -> fix -> habit* in `notes/ROUGH_NOTES.md` ("Assumed -> reality ->
+fix"), at once, and read that list before starting something similar.
+
+- *Example:* a patch written through a bash heredoc broke on quotes; the
+  lesson was written, then the same thing broke again because nobody read
+  it before reaching for the same tool. Writing it down is half; reading it
+  first is the other half.
+
+## 8. Don't check every step that worked (the user, 2026-10-02)
+
+A human tester plays on and stops only when something that should have
+happened didn't. Plan the expected outcome of each step, check them in
+parallel, stop on the first failure, fix, carry on from there
+(`notes/TESTING_METHOD.md`).
+
 ## Sources
 
 - Walter Isaacson, *Elon Musk* (2023): "the algorithm"; summaries at

@@ -1,6 +1,6 @@
-# Finding Naresh: instructions for Claude
+# Finding Naresh: instructions for AI models (GPT, Codex and others)
 
-Start with `notes/MASTER_PROMPT.md` (how to resume, the user's rules, the
+The same as `CLAUDE.md` (keep the two in step). Start with `notes/MASTER_PROMPT.md` (how to resume, the user's rules, the
 architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
 
 ## How to work (the user's principles, `notes/PRINCIPLES.md`)

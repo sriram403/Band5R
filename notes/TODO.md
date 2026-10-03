@@ -40,7 +40,15 @@ being built and tested), so this always shows where the work is right now.
         the running game (one action at a time, result + state + screenshot
         back at once), fail-fast scripted runs that keep the game open, a
         walked part saved as its regression (`notes/ROUGH_NOTES.md`)
-  - [ ] Walk F3-F8 live with it, fixing as I go; then your test from F3 on
+  - [x] F3 walked live: ~10 bugs fixed (the jetty rails caught the aim,
+        Naresh's way on / off the jetty, world drop points, the light-can
+        trip retried, ...); the sheet's F3 steps rewritten
+  - [~] **The watched run (v4, agreed 2026-10-02, `notes/TESTING_METHOD.md`)**:
+        planned steps with expected outcomes, checked in parallel in the
+        game, stop on the first failure, resume from that step's save point.
+        F3 as `tools/live/f3.json` (made by `tools/live/make_f3.py`)
+  - [ ] F3 clean as a watched run; then F4-F8 the same way; then your test
+        from F3 on
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling

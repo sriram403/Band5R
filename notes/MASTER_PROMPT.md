@@ -289,6 +289,18 @@ they/them.
     when the user gives a task, first give a quick recommendation (from how
     much of this thread's context is used and how big the task is) on
     whether to do it here or in a new thread, to save their tokens.
+19. **Remember mistakes (user, 2026-10-02):** every time an assumption meets
+    a different reality, write *assumed -> reality -> fix -> habit* in the
+    mistake log in `notes/ROUGH_NOTES.md` at once; read it before starting
+    something similar. Every learning goes in the rough notes as it happens.
+20. **"Update the md files" (user, 2026-10-02)** means every file listed in
+    `CLAUDE.md` / `AGENTS.md` ("Remember mistakes...") that the change
+    touches, including the user's skill `first-principles-solving` (general
+    lessons only) and `AGENTS.md` for GPT and other models.
+21. **Test by the watched run (user, 2026-10-02):** planned steps with
+    expected outcomes, checked in parallel inside the game, stop on the first
+    failure, resume from that step's save point; don't stop to check steps
+    that worked (`notes/TESTING_METHOD.md`).
 
 ---
 
