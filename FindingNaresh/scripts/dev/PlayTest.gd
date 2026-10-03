@@ -8002,12 +8002,16 @@ func t_storm_gym() -> void:
 	# lightning: the land lit for a moment, thunder after
 	var amb0 := env.ambient_light_energy
 	s.lightning()
-	for _k in 6:
+	# the brightest moment: the flash flickers, and the sixth frame alone
+	# sometimes landed in a dip (0.22-0.34) and failed
+	var lit := amb0
+	var peak := 0.0
+	for _k in 20:
 		await get_tree().process_frame
-		log_line("  flash %.2f ambient %.2f" % [s.flash, env.ambient_light_energy])
-	var lit := env.ambient_light_energy
-	log_line("lightning: ambient %.2f -> %.2f, flash %.2f" % [amb0, lit, s.flash])
-	check(s.flash > 0.4 and lit > amb0 + 0.5, "lightning lights the land for a moment")
+		lit = maxf(lit, env.ambient_light_energy)
+		peak = maxf(peak, s.flash)
+	log_line("lightning: ambient %.2f -> %.2f at its brightest, flash %.2f" % [amb0, lit, peak])
+	check(peak > 0.4 and lit > amb0 + 0.5, "lightning lights the land for a moment")
 	await shot("storm_flash")
 	await wait(1.0)
 	check(s.flash < 0.05, "the flash is over in a moment")
