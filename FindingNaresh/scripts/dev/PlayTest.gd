@@ -6954,6 +6954,15 @@ func t_decoy() -> void:
 	await look_at_point(p, fv.can_full.global_position)
 	await tap(KEY_E)
 	await physics_frames(3)
+	if p.held != fv.can_full:
+		# what the rack held, where the can was (it failed only late in the full
+		# run: something left on the rack by earlier tests?)
+		var on_rack: Array = []
+		for sl in c.storage_slots:
+			var it: Carryable = c.stowed_item(sl)
+			on_rack.append("%s: %s" % [sl.name, it.name if it != null else "-"])
+		log_line("the rack: %s; the full can at %s (stowed %s), %.1f m from the rack" % [on_rack, fv.can_full.global_position,
+			fv.can_full.stowed_in != null, fv.can_full.global_position.distance_to(c.rack_stand())])
 	check(p.held == fv.can_full, "P1 takes the full can off the rack")
 	await place_player(p, c.filler_stand() + Vector3(0, 0.3, 0), 0.0)
 	await look_at_point(p, c.filler_point())
