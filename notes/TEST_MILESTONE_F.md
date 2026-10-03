@@ -203,25 +203,23 @@ side like steps, and a small blue boat on its roof.
    - **You should see:** "The padlock gives ... two jerrycans at the back: one
      heavy, one light." Pick up the **heavy** one (E) and carry it to the back
      of the van.
-4. **P2: hide by the shed, keep an eye on Naresh, and call him back to you
-   before the creatures reach him.** Calling him from a hiding spot next to
-   the shed means he comes back past the shed (that matters in step 5).
+4. **P2: hide next to the shed, then call Naresh back to you** (out on the
+   jetty he's the bait; now you bring him home). This is the last thing
+   anyone tells him in this part.
    - *Exactly how:* go to the shed door and stand with your back to it. Walk
      straight ahead about 10 steps, then turn right and walk about 10 more.
-     Turn round: past the corner of the shed you can see the jetty with
-     Naresh at its end. Hold **LT** (binoculars). When a creature is getting
-     close to him, look at him, **D-pad Up**, **"Follow me"**. Then **don't
-     move**: he walks back to you.
-   - **Why hide:** the creatures follow him back. Standing in the open, or
-     right at the shed door, they'd see you and take you.
-   - **If he's taken anyway:** you'll hear him shouting from somewhere high
-     (an old water tank or a rock stack). Walk to it and he climbs down to
-     you. The creatures will be back at the shed by then, so send him out on
-     the jetty again before you go near it.
-5. **Naresh and the fuel.** Coming back past the shed, he notices the cans.
+     Turn round: past the corner of the shed you can see the jetty, with
+     Naresh at its far end. Hold **LT** (binoculars) and watch. When a
+     creature is getting close **to Naresh**, look at him, **D-pad Up**, and
+     pick **"Follow me"**. Then stay where you are and wait for him.
+   - **You should see:** he leaves the jetty end and walks back towards you.
+   - **Why hide:** the creatures follow him back. If you waited out in the
+     open, or right at the shed door, they'd see you and take you.
+5. **On his way back to you, Naresh walks past the shed and spots the fuel.**
+   You don't tell him anything; he does this by himself.
    - **You should see / hear:** "There's two! I'll take this one to the van."
-     He carries the **light** can to the van himself. Now P2 walks to the van
-     too (go back past the shed door, not the crate side).
+     He carries the **light** can to the van on his own. P2: now walk to the
+     van too (back past the shed door, not round the crate side).
    - At the van he offers: "Leave the fuel to me! I know how." **Let him.**
    - **You should see:** "Done. I even checked it twice." But the fuel gauge
      **doesn't move**: he poured from the empty can.
@@ -235,6 +233,12 @@ side like steps, and a small blue boat on its roof.
      look at it and **hold E** until it's full.
    - **You should see:** the tank fills; the goal changes to "on to the salt
      pans".
+
+**If something goes wrong in F3:** if a creature catches Naresh before you
+call him back, you'll hear him shouting from somewhere high (an old water
+tank or a rock stack). Walk to it and he climbs down to you. The creatures
+will be back at the shed by then, so start again from step 2: send him out
+to the jetty end, and so on.
 
 **Also try:** pour the heavy can in yourself before he offers (then there's
 no mistake and no breakdown); stand in his way at the van ("Excuse me!").
