@@ -301,7 +301,11 @@ func _look(dt: float) -> void:
 ## further off it takes lights or movement to catch its eye.
 func _look_van(space: PhysicsDirectSpaceState3D, eye: Vector3, fwd: Vector3) -> void:
 	var v := _van()
-	if v == null or v.attack.tarped:
+	# one at its post (the rail tunnel's gallery) doesn't go for the van: from
+	# close by the van is "simply there" with no sight line, so it sensed the
+	# van through the gallery wall, went for it and stood against the wall
+	# for good (the F6 watched run)
+	if v == null or v.attack.tarped or keeps_post:
 		return
 	var d := _flat_dist(v.global_position)
 	var reach := VanAttack.NEAR

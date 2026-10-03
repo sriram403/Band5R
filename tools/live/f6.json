@@ -149,9 +149,13 @@
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:gallery_fork(2, 6.5)",
-     "arrive": 0.8,
+     "to": "expr:gallery_fork(2, 7.3)",
+     "arrive": 0.5,
      "max": 30
+    },
+    {
+     "do": "pad_tap",
+     "btn": "Y"
     },
     {
      "do": "look",
@@ -160,7 +164,7 @@
     },
     {
      "do": "wait",
-     "s": 0.2
+     "s": 0.3
     },
     {
      "do": "pad_tap",
@@ -169,6 +173,10 @@
     {
      "do": "wait",
      "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "Y"
     }
    ],
    "expect": [

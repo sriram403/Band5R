@@ -53,9 +53,13 @@ walk = {
          "expect": [{"name": "it walked by: not seen", "expr": "%s.watcher.state == 0" % RT, "within": 1}]},
         {"name": "F6.3 the flare gun", "max": 150,
          "do": [p2("expr:gallery_at(15)", 0.8, 80),
-                p2("expr:gallery_fork(2, 6.5)", 0.8, 30),
-                {"do": "look", "who": 2, "at": "expr:%s.gun.global_position" % RT}, {"do": "wait", "s": 0.2},
-                {"do": "pad_tap", "btn": "X"}, {"do": "wait", "s": 0.3}],
+                # to the dead end; the torch on to find it (the sheet: seen only
+                # by torchlight); 6.5 m in left it 2.2 m off, out of reach
+                p2("expr:gallery_fork(2, 7.3)", 0.5, 30),
+                {"do": "pad_tap", "btn": "Y"},
+                {"do": "look", "who": 2, "at": "expr:%s.gun.global_position" % RT}, {"do": "wait", "s": 0.3},
+                {"do": "pad_tap", "btn": "X"}, {"do": "wait", "s": 0.3},
+                {"do": "pad_tap", "btn": "Y"}],
          "expect": [{"name": "P2 has the flare gun", "expr": "p2().held == %s.gun" % RT, "within": 2}]},
         {"name": "F6.3 fire a flare",
          "do": [p2("expr:gallery_at(15)", 0.8, 30),

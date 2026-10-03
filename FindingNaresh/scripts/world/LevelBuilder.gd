@@ -209,7 +209,8 @@ func _build_roads() -> void:
 	rv.make_monotonic_descending()
 	river = rv
 	Landscape.setup(network, river, PONDS, MOUNDS)
-	Landscape.set_pads(PADS)
+	# + flat ground for the rail tunnel gallery's side passages (they reach past the tunnel's slot)
+	Landscape.set_pads(PADS + RailTunnel.fork_pads(network.road("coast_road")))
 
 	poi["j1"] = Vector3(J1.x, j1h, J1.y)
 	poi["j2"] = Vector3(J2.x, j2h, J2.y)

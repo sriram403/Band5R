@@ -230,6 +230,16 @@ func gallery_creature_dir() -> float:
 	return signf(rt.watcher.velocity.dot(rt.road.forward(rt.gate_i)))
 
 
+## Probes for the live line (Expression can't build a ray query): what a
+## ray from `from` to `to` hits ("name @ position, normal"), or "".
+func ray_hit(from: Vector3, to: Vector3) -> String:
+	var q := PhysicsRayQueryParameters3D.create(from, to, 1 | 8 | 16 | 64, [p1().get_rid(), p2().get_rid()])
+	var h := get_viewport().world_3d.direct_space_state.intersect_ray(q)
+	if h.is_empty():
+		return ""
+	return "%s @ %s, normal %s" % [(h["collider"] as Node).name, h["position"], h["normal"]]
+
+
 ## The first road sample from `from_i` on where the next `ahead` samples drop
 ## at least `drop` m: the top of a slope to roll the van down (a push start).
 func downhill_index(path: Route, from_i: int, ahead: int, drop: float) -> int:
