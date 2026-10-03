@@ -4691,7 +4691,9 @@ func look_at_point(p: PlayerRig, target: Vector3) -> void:
 	var d := target - p.global_position
 	p.yaw = atan2(-d.x, -d.z)
 	p.rotation.y = p.yaw
-	var eye := p.global_position + Vector3.UP * (PlayerRig.STAND_HEIGHT - 0.16)
+	# from where the eyes are: crouched they're ~0.7 m lower, and aiming from
+	# standing height looked over the flare gun (the F6 watched run)
+	var eye := p.global_position + Vector3.UP * ((PlayerRig.CROUCH_HEIGHT if p.crouching else PlayerRig.STAND_HEIGHT) - 0.16)
 	p.pitch = atan2(target.y - eye.y, Vector2(target.x - eye.x, target.z - eye.z).length())
 	await physics_frames(4)
 
