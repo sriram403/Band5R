@@ -350,7 +350,10 @@ func _physics_process(delta: float) -> void:
 		_mistake_at = van.global_position
 		# what is left: enough for ~250 m (a long dawdle in the village had
 		# it die within reach of the village creatures)
-		van.fuel = DIES_AFTER / 1000.0 * Camper.FUEL_PER_KM * 1.2
+		# enough for DIES_AFTER m of driving plus ~20 s ticking over while you
+		# all get in: without the idle it died 128 m up the road, short of the
+		# "couple of hundred metres" (the decoy test, 2026-10-03)
+		van.fuel = DIES_AFTER / 1000.0 * Camper.FUEL_PER_KM * 1.2 + Camper.FUEL_IDLE_PER_S * 20.0
 	# the van dies on the open road, and they come (they follow him)
 	if _flag("mistake_done") and not _flag("stalled") and van.fuel <= 0.0:
 		_story.flags["stalled"] = true
