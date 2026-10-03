@@ -466,3 +466,19 @@ happened, the fix, and the habit to keep.
   proven to work isn't the same as understandable: the walk proves the
   game, not the words. **Habit:** read each step as someone who has never
   seen the code: can they find every thing it names on the screen?
+- The user read F3 step 4 as "send him back out to the jetty" because the
+  "if he's taken, send him out again" fallback sat inside the step: the
+  last command in a step reads as *the* command. Fallbacks now live in
+  their own "If something goes wrong" note after the steps.
+- Reviewing F4-F8 the same way found: F6 told you to flatten the battery
+  *before* driving to the slope (a flat battery can't drive there); F6's
+  "the second side passage (past the gate)" named something you can't see
+  from inside the passage (now: past the FLOOD GATE WINCH sign); F5 didn't
+  say to let go of the wheel before asking Naresh again; F7 didn't say
+  what to do if you let go of a dish off its light (hold again: it comes
+  round); F8's "Tower Road" isn't signposted (now: a side road on your
+  left towards a tall wooden tower). Every "who does it" now says P1 / P2.
+- **Habit, for any instructions:** one step = one goal; the order of the
+  lines = the order you act; fallbacks after, never inside; name only
+  what's on screen; check each step is possible in the state the previous
+  step leaves you in (the battery!).
