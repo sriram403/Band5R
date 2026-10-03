@@ -1,0 +1,374 @@
+{
+ "name": "f7",
+ "setup": [
+  {
+   "do": "eval",
+   "expr": "boot._on_joy_changed(0, true)"
+  }
+ ],
+ "steps": [
+  {
+   "name": "F7.0 jump",
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Story",
+     "row": "Point the mast's three dishes"
+    }
+   ],
+   "expect": [
+    {
+     "name": "at the mast's foot, the generator off",
+     "expr": "boot.story.current()['id'] == 'mast' and not get_tree().get_first_node_in_group('radio_mast').running",
+     "within": 3
+    },
+    {
+     "name": "P2 has the flare gun (as after the tunnel)",
+     "expr": "p2().held == tunnel().gun",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F7.1 the cord alone",
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:get_tree().get_first_node_in_group('radio_mast').cord.stand_point()",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('radio_mast').cord.global_position"
+    },
+    {
+     "do": "hold",
+     "key": "E",
+     "s": 3.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "it splutters out",
+     "expr": "not get_tree().get_first_node_in_group('radio_mast').running and get_tree().get_first_node_in_group('radio_mast').cord.has_meta('spluttered')",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F7.1 the choke held, the cord pulled",
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:get_tree().get_first_node_in_group('radio_mast').choke.stand_point()",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:get_tree().get_first_node_in_group('radio_mast').choke.global_position"
+    },
+    {
+     "do": "pad_down",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('radio_mast').cord.global_position"
+    },
+    {
+     "do": "hold",
+     "key": "E",
+     "s": 3.0
+    },
+    {
+     "do": "pad_up",
+     "btn": "X"
+    }
+   ],
+   "expect": [
+    {
+     "name": "it roars into life, the beacons on",
+     "expr": "get_tree().get_first_node_in_group('radio_mast').running and get_tree().get_first_node_in_group('radio_mast')._beacons[0].visible",
+     "within": 2
+    },
+    {
+     "name": "its noise brings two of them",
+     "expr": "not get_tree().get_first_node_in_group('radio_mast').creatures[0].dormant",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F7.1 P2 on guard",
+   "do": [
+    {
+     "do": "spawn",
+     "fn": "flare_guard",
+     "args": [
+      25.0,
+      "mast_done"
+     ]
+    }
+   ],
+   "expect": []
+  },
+  {
+   "name": "F7.2 up the ladder, tag the tunnel mouth",
+   "max": 120,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.world.find_child('MastLadder', true, false).global_position + boot.world.find_child('MastLadder', true, false).global_transform.basis.z * 0.9",
+     "arrive": 0.4,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:boot.world.find_child('MastLadder', true, false).global_position + Vector3(0, 1.2, 0)"
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "down",
+     "key": "W"
+    },
+    {
+     "do": "until",
+     "expr": "p1().global_position.y > get_tree().get_first_node_in_group('radio_mast').foot.y + 19.5 and p1().ladder == null",
+     "max": 30
+    },
+    {
+     "do": "up",
+     "key": "W"
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('radio_mast').targets[0]"
+    },
+    {
+     "do": "tap",
+     "key": "T"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    }
+   ],
+   "expect": [
+    {
+     "name": "T on the far beacon: the tunnel mouth",
+     "expr": "tag_thing(0) == 'the tunnel mouth'",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F7.2 down the ladder",
+   "max": 90,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:get_tree().get_first_node_in_group('radio_mast').foot + Vector3(0, 20.1, 2.0)",
+     "arrive": 0.4,
+     "max": 15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('radio_mast').foot + Vector3(0, 19.6, 2.62)"
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "until",
+     "expr": "p1().ladder != null",
+     "max": 2
+    },
+    {
+     "do": "down",
+     "key": "S"
+    },
+    {
+     "do": "until",
+     "expr": "p1().global_position.y < get_tree().get_first_node_in_group('radio_mast').foot.y + 1.0 and p1().ladder == null",
+     "max": 40
+    },
+    {
+     "do": "up",
+     "key": "S"
+    }
+   ],
+   "expect": [
+    {
+     "name": "back on the ground",
+     "expr": "p1().global_position.y < get_tree().get_first_node_in_group('radio_mast').foot.y + 1.0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F7.3 dish 1",
+   "max": 120,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:get_tree().get_first_node_in_group('radio_mast').cranks[0].stand_point()",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('radio_mast').cranks[0].global_position"
+    },
+    {
+     "do": "call",
+     "fn": "mast_turn",
+     "args": [
+      "expr:get_tree().get_first_node_in_group('radio_mast')",
+      0
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "name": "dish 1 locks",
+     "expr": "get_tree().get_first_node_in_group('radio_mast').locked[0]",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F7.4 Naresh on dish 2",
+   "max": 150,
+   "do": [
+    {
+     "do": "job",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('radio_mast').cranks[1].global_position",
+     "job": "hold"
+    },
+    {
+     "do": "until",
+     "expr": "get_tree().get_first_node_in_group('radio_mast').cranks[1].holding_now()",
+     "max": 15
+    },
+    {
+     "do": "until",
+     "expr": "get_tree().get_first_node_in_group('radio_mast')._wrong == 1",
+     "max": 6
+    },
+    {
+     "do": "job",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('radio_mast').cranks[1].global_position",
+     "job": "let_go"
+    },
+    {
+     "do": "until",
+     "expr": "get_tree().get_first_node_in_group('radio_mast')._wrong_done",
+     "max": 6
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "job",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('radio_mast').cranks[1].global_position",
+     "job": "hold"
+    },
+    {
+     "do": "until",
+     "expr": "get_tree().get_first_node_in_group('radio_mast').cranks[1].holding_now()",
+     "max": 15
+    },
+    {
+     "do": "until",
+     "expr": "absf(rad_to_deg(angle_difference(get_tree().get_first_node_in_group('radio_mast').yaw[1], get_tree().get_first_node_in_group('radio_mast')._bearing(1)))) < 1.2",
+     "max": 60
+    },
+    {
+     "do": "job",
+     "who": 1,
+     "at": "expr:boot.naresh.global_position + Vector3(0, 1.1, 0)",
+     "job": "wait"
+    },
+    {
+     "do": "wait",
+     "s": 1.4
+    }
+   ],
+   "expect": [
+    {
+     "name": "he turned it the wrong way first, then round: dish 2 locks",
+     "expr": "get_tree().get_first_node_in_group('radio_mast').locked[1]",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "F7.3 dish 3",
+   "max": 120,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:get_tree().get_first_node_in_group('radio_mast').cranks[2].stand_point()",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:get_tree().get_first_node_in_group('radio_mast').cranks[2].global_position"
+    },
+    {
+     "do": "call",
+     "fn": "mast_turn",
+     "args": [
+      "expr:get_tree().get_first_node_in_group('radio_mast')",
+      2
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "name": "the mast hums, the clouds break",
+     "expr": "boot.story.flags.has('mast_done')",
+     "within": 3
+    },
+    {
+     "name": "on to Naresh's home",
+     "expr": "boot.story.current()['id'] == 'end_f7'",
+     "within": 3
+    }
+   ]
+  }
+ ]
+}

@@ -653,6 +653,11 @@ const STEP_PLACES := {
 
 const BINOCULAR_STEPS := ["photo", "roses", "naresh", "look_around", "batteries", "drum", "storm", "end_e",
 	"village", "fuel", "salt_pans", "swing", "tunnel", "mast", "end_f7", "drive_home"]
+## Past the rail tunnel you'd have the flare gun (its gallery): a jump there
+## hands it to P2, as it does the binoculars (the F7 sheet says "fire a
+## flare" when the generator's noise brings two of them; after a jump there
+## was none, the F7 walk plan)
+const FLARE_STEPS := ["end_f6", "mast", "end_f7", "drive_home"]
 
 func go_to_step(id: String) -> String:
 	if boot.gym != "" or not STEP_PLACES.has(id):
@@ -725,6 +730,12 @@ func go_to_step(id: String) -> String:
 	if id in BINOCULAR_STEPS:
 		for p in boot.players:
 			(p as PlayerRig).has_binoculars = true
+	if id in FLARE_STEPS:
+		var rt := get_tree().get_first_node_in_group("rail_tunnel") as RailTunnel
+		var q := boot.players[1] as PlayerRig
+		if rt != null and rt.gun != null and is_instance_valid(rt.gun) and rt.gun.holders.is_empty() and q.held == null:
+			rt.gun.global_position = q.global_position + Vector3.UP
+			q.pick_up(rt.gun)
 	# Naresh with you from the evidence on (before that he's in the rose, or not yet found)
 	var nz: Naresh = boot.naresh
 	if id == "fuel":

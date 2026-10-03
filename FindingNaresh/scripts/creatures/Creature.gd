@@ -74,6 +74,7 @@ var _item_ms := -99999               ## when and where the last item it heard la
 var passive := false                 ## only walks its patrol and shows itself (a glimpse)
 var dormant := false                 ## switched off (the Naresh gym's creature switch)
 var naresh_drawn := false            ## drifting towards Naresh right now (tests read this)
+var goal_now := Vector3.ZERO          ## where it's heading this frame (the live line shows it)
 var van_interest := 0.0              ## s left of wanting to be at the van
 var _van_memory := randf_range(VAN_MEMORY.x, VAN_MEMORY.y)   ## this one's patience with the van
 var _item_at := Vector3.ZERO
@@ -469,6 +470,7 @@ func _move(delta: float) -> void:
 		var box: AABB = f["box"]
 		if box.has_point(goal) and not box.has_point(global_position):
 			goal = f["entry"]
+	goal_now = goal
 	var to := goal - global_position
 	to.y = 0.0
 	var v := Vector3.ZERO

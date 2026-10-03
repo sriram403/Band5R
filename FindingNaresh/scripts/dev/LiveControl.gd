@@ -172,12 +172,18 @@ func _do(c: Dictionary) -> Dictionary:
 					args.append(pt.p2())
 				elif a is String and String(a).begins_with("expr:"):
 					args.append(_eval(String(a).substr(5)))
+				elif a is float and is_equal_approx(a, roundf(a)):
+					args.append(int(a))          # JSON has no ints: 0 came as 0.0 for an int parameter
 				else:
 					args.append(a)
 			var v = await pt.callv(String(c.get("fn", "")), args)
 			if v is bool:
 				r["ok"] = v
 			r["value"] = str(v)
+		"spawn":
+			# a PlayTest helper started alongside, not waited for (a second
+			# player's job: P2 on guard with the flare gun)
+			pt.callv(String(c.get("fn", "")), c.get("args", []))
 		"until":
 			# wait in the game till an expression is true (checked every 0.1 s):
 			# a shell loop round the client broke on a missing tool (bc) and
@@ -314,6 +320,7 @@ func state() -> Dictionary:
 			near = minf(near, (p as Node3D).global_position.distance_to(cr.global_position))
 		if near < 150.0:
 			cs.append({"pos": _f3(cr.global_position), "state": Creature.State.keys()[cr.state],
+				"to_goal": snappedf(Vector2(cr.goal_now.x - cr.global_position.x, cr.goal_now.z - cr.global_position.z).length(), 0.1),
 				"to_naresh": snappedf(cr.global_position.distance_to(n.global_position), 0.1) if n != null else -1.0})
 	d["creatures"] = cs
 	var c: Camper = b.camper

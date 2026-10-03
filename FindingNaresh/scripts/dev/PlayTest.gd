@@ -230,6 +230,40 @@ func gallery_creature_dir() -> float:
 	return signf(rt.watcher.velocity.dot(rt.road.forward(rt.gate_i)))
 
 
+## P2 standing guard with the flare gun, alongside the other steps (the live
+## line's `spawn`): a creature within `near` m of either player and not
+## already scared, P2 looks at it and fires (RB). Until the story flag is set,
+## the flares run out, or `max_s`. As a second player would.
+func flare_guard(near: float, flag: String, max_s: float = 600.0) -> void:
+	var q := p2()
+	var t := 0.0
+	while t < max_s and not boot.story.flags.has(flag):
+		await wait(0.2)
+		t += 0.2
+		var gun := q.held as FlareGun
+		if gun == null or gun.flares_left() <= 0:
+			return
+		for cr in get_tree().get_nodes_in_group("creature"):
+			var c := cr as Creature
+			if c.dormant or c.passive or c.scared_t > 0.0:
+				continue
+			var d := minf(c.global_position.distance_to(p1().global_position), c.global_position.distance_to(q.global_position))
+			if d < near:
+				log_line("flare guard: a creature %.0f m off, fire (%d left)" % [d, gun.flares_left()])
+				await look_at_point(q, c.global_position + Vector3.UP * 1.0)
+				pad_button(JOY_BUTTON_RIGHT_SHOULDER, true)
+				await physics_frames(5)
+				pad_button(JOY_BUTTON_RIGHT_SHOULDER, false)
+				await wait(1.0)
+				break
+
+
+## What player i's tag marks ("" for none): the live line can't call statics.
+func tag_thing(i: int) -> String:
+	var tg := TagMarker.of(i)
+	return tg.thing if tg != null else ""
+
+
 ## Probes for the live line (Expression can't build a ray query): what a
 ## ray from `from` to `to` hits ("name @ position, normal"), or "".
 func ray_hit(from: Vector3, to: Vector3) -> String:

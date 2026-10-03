@@ -1,0 +1,208 @@
+{
+ "name": "f8",
+ "setup": [
+  {
+   "do": "eval",
+   "expr": "boot._on_joy_changed(0, true)"
+  }
+ ],
+ "steps": [
+  {
+   "name": "F8.0 jump",
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Story",
+     "row": "Down to the van, and take Naresh home"
+    }
+   ],
+   "expect": [
+    {
+     "name": "on the road to his home, him with you",
+     "expr": "boot.story.current()['id'] == 'end_f7' and not get_tree().get_first_node_in_group('homecoming')._mother.visible",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "F8.1 take him home",
+   "max": 200,
+   "do": [
+    {
+     "do": "call",
+     "fn": "walk_in_driver",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "pad_in_passenger",
+     "args": [
+      "p2"
+     ]
+    },
+    {
+     "do": "until",
+     "expr": "boot.naresh.state == 5",
+     "max": 25
+    },
+    {
+     "do": "call",
+     "fn": "engine_on"
+    },
+    {
+     "do": "drive",
+     "road": "coast_road",
+     "to": "poi:naresh_home_road",
+     "until": "false",
+     "kmh": 30,
+     "max": 90
+    }
+   ],
+   "expect": [
+    {
+     "name": "his mother at the door; his sister's look; he goes in",
+     "expr": "boot.story.flags.has('naresh_home_done')",
+     "within": 70
+    },
+    {
+     "name": "no tracker (the optional things not done; nobody says so)",
+     "expr": "not boot.story.flags.has('tracker')",
+     "within": 1
+    },
+    {
+     "name": "the objective: home along the West Road",
+     "expr": "boot.story.current()['id'] == 'drive_home'",
+     "within": 5
+    }
+   ]
+  },
+  {
+   "name": "F8.3 the West Road",
+   "max": 300,
+   "do": [
+    {
+     "do": "call",
+     "fn": "engine_on"
+    },
+    {
+     "do": "drive",
+     "road": "coast_road",
+     "until": "false",
+     "kmh": 40,
+     "max": 60
+    },
+    {
+     "do": "call",
+     "fn": "engine_on"
+    },
+    {
+     "do": "drive",
+     "road": "west_road",
+     "to": "expr:boot.builder.network.road('tower_road').point(0)",
+     "until": "false",
+     "kmh": 60,
+     "max": 200
+    }
+   ],
+   "expect": [
+    {
+     "name": "full sun on the West Road",
+     "expr": "get_tree().get_first_node_in_group('mood').target >= 0.99",
+     "within": 5
+    }
+   ]
+  },
+  {
+   "name": "F8.4 to the old watchtower",
+   "max": 240,
+   "do": [
+    {
+     "do": "call",
+     "fn": "engine_on"
+    },
+    {
+     "do": "drive",
+     "road": "tower_road",
+     "to": "poi:end_tower",
+     "until": "false",
+     "kmh": 50,
+     "max": 150
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.world.find_child('EndTower', true, false).transform * Vector3(0, 0, 47.0)",
+     "arrive": 2.0,
+     "max": 90
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.world.find_child('EndTower', true, false).transform * Vector3(0, 0, 0)",
+     "arrive": 1.5,
+     "max": 60
+    }
+   ],
+   "expect": [
+    {
+     "name": "from the watchtower: a light over every place",
+     "expr": "boot.story.flags.has('tower_view')",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "F8.5 near home: the phones, the end",
+   "max": 300,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.world.find_child('EndTower', true, false).transform * Vector3(0, 0, 47.0)",
+     "arrive": 2.0,
+     "max": 60
+    },
+    {
+     "do": "call",
+     "fn": "walk_in_driver",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "engine_on"
+    },
+    {
+     "do": "drive",
+     "road": "tower_road",
+     "until": "boot.story.flags.has('end_reached')",
+     "kmh": 60,
+     "max": 200
+    }
+   ],
+   "expect": [
+    {
+     "name": "both phones: Naresh has left his house, heading to LiveStander",
+     "expr": "boot.story.flags.has('end_reached')",
+     "within": 5
+    },
+    {
+     "name": "the end screen",
+     "expr": "get_tree().get_first_node_in_group('homecoming')._end != null",
+     "within": 15
+    }
+   ]
+  }
+ ]
+}
