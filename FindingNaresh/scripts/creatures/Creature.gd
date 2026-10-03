@@ -86,6 +86,7 @@ var _stuck_t := 0.0
 var _detour := Vector3.ZERO
 var _detour_t := 0.0
 var _detour_side := 1.0
+var _detours := 0                     ## sidesteps in a row that didn't free it
 var van_interest := 0.0              ## s left of wanting to be at the van
 var _van_memory := randf_range(VAN_MEMORY.x, VAN_MEMORY.y)   ## this one's patience with the van
 var _item_at := Vector3.ZERO
@@ -183,6 +184,7 @@ func calm() -> void:
 	naresh_drawn = false
 	_pi = 0
 	_detour_t = 0.0
+	_detours = 0
 	_stuck_mark = Vector3.INF
 
 
@@ -529,11 +531,21 @@ func _unstick(v: Vector3, delta: float) -> Vector3:
 	if _stuck_mark == Vector3.INF or global_position.distance_to(_stuck_mark) > 0.4:
 		_stuck_mark = global_position
 		_stuck_t = 0.0
+		_detours = 0
 		return v
 	_stuck_t += delta
 	if _stuck_t < STUCK_S:
 		return v
 	_stuck_t = 0.0
+	_detours += 1
+	if _detours > 3:
+		# sidesteps don't free it: it's caught in something (one stood frozen
+		# in the shed's crate stack in a long test run, no direction free):
+		# a hop back the way it came, out of it
+		_detours = 0
+		global_position += -v.normalized() * 1.2 + Vector3.UP * 0.2
+		reset_physics_interpolation()
+		return Vector3.ZERO
 	_detour_side = -_detour_side
 	var side := Vector3(-v.z, 0.0, v.x).normalized() * _detour_side
 	_detour = (side + v.normalized() * 0.3).normalized()
