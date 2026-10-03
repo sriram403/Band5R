@@ -59,4 +59,7 @@ this thread or a new one.
   - the user's skills: `D:\mine\Agentics\Skills\skills\first-principles-solving\SKILL.md`
     and its copy `C:\Users\srira\.claude\skills\first-principles-solving\SKILL.md`
     (general, not game-specific, lessons only)
+  - the project guide `D:\mine\Agentics\Skills\project-guides\finding-naresh\`
+    (copies of CLAUDE.md, AGENTS.md, notes/PRINCIPLES.md, LESSONS.md,
+    TESTING_METHOD.md, MASTER_PROMPT.md): copy them over after updating
   - Claude's memory (`memory/`), for rules about how to work
