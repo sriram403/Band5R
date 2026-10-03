@@ -10,6 +10,20 @@ can be compacted or stop at any time and the detail is lost. Before moving to
 a new milestone or a new thread, read through what you did and add anything
 missing. Short entries: what happened, why, what to do instead.
 
+**From the watched runs (2026-10-02/03), the sorted ones:**
+- A test that turns a hazard off, places a player by code or hands over an
+  item to get past a step hides every bug in how that step really plays
+  (the gallery creature vs the van, the buried flare gun, the gun lost at
+  the van door: all behind `dormant`, `place_player`, given items).
+- When the same failure repeats after resumes, the cause is upstream: go
+  back to the step that set the situation up.
+- Look at the input before fixing what consumes it (Naresh's path "bug"
+  was the aim landing over deep water).
+- A shape cut into a grid needs a cell (better its diagonal) of margin.
+- Every wait gets a deadline; the watcher must not be the only thing that
+  can stop a run.
+- Check the tool before blaming the game, and make tools fail loudly.
+
 **Also (user, 2026-10-02):** every time an assumption meets a different
 reality, add *assumed -> reality -> fix -> habit* to the mistake log in
 `notes/ROUGH_NOTES.md`, and read that log before starting something similar

@@ -48,8 +48,15 @@ they/them.
 
 ---
 
-## 2. Status right now (2026-09-29)
+## 2. Status right now (2026-09-29; latest at the top, 2026-10-03)
 
+- **2026-10-03: Milestone F (the return) built (F1-F9); F1, F2 approved and
+  pushed; F3-F8 each proven as a watched run** (`notes/TESTING_METHOD.md`,
+  `tools/live/make_f*.py`, `tools/live_all.sh`): every step of the user's
+  test sheet played with real keys and pad, bugs fixed on the way (list in
+  `notes/TODO.md`). Merged into main locally, **not pushed**: the user tests
+  from F3 on first. Then push (as sriram403), then Milestone G (remind the
+  user of `notes/POLISH.md`).
 - **Stage 1** (prototype + feel pass) and **Milestone A** (homestead -> road trip ->
   water works -> broken bridge): done, approved, pushed.
 - **Design agreed and pushed** in `DESIGN.md`: two homes + split tutorial, the way out

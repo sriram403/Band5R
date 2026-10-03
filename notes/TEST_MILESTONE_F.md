@@ -350,7 +350,9 @@ road turns inland under Tunnel Hill; "OLD RAIL TUNNEL 1911" over the mouth.)
 3. **The flare gun:** at the end of the second fork's dead end, a red case:
    **E** picks up the flare gun. **G / LMB** (pad RB: the throw button)
    fires a flare: red light, a bang, and every creature within 80 m runs and
-   keeps away for 90 s. Three flares (the prompt counts them).
+   keeps away for 90 s. Three flares (the prompt counts them). Getting into
+   the van with it in hand puts it on the van's rear rack (the door says so);
+   take it off at the back (E) when you need it.
 4. **The winch** is on the gallery wall by the gate: hold E to raise the gate
    (it drops when you let go). One holds it, the other drives the van
    through; or give it to Naresh (V on the winch, *Hold the gate winch*) and
@@ -395,7 +397,8 @@ and three dishes, numbered 1-3; at its foot a desk with a **screen**, three
    **cord** (hold E). **Expect:** the cord alone splutters out; with the
    choke held it roars into life. Far off, **three red beacons** blink on,
    and the screen lights up. **It's loud: two creatures come for the noise**
-   (hide, keep still, or fire a flare).
+   (hide, keep still, or fire a flare: the flare gun is on the van's rear
+   rack if you brought it; after an F1 jump P2 holds it).
 2. **The targets.** The plaque: DISH 1, the tunnel mouth; DISH 2, the house
    on the ridge (Naresh's home); DISH 3, the watchtower on the West Road.
    Climb the ladder: from the platform you can see all three beacons.

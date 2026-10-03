@@ -386,3 +386,44 @@ happened, the fix, and the habit to keep.
   would. **Habit:** an item that must last across chapters needs a test
   that carries it across a chapter's ordinary actions (boarding, jumping),
   not one that hands it over at each step.
+- **Assumed** (a third time) a Windows path with backslashes would survive a
+  Python snippet in a bash heredoc. **Reality:** `\U` in "C:\Users" is a
+  unicode escape: a syntax error. The log already had this one twice.
+  **Fix:** the file tools (Write a .py file, or the edit tool). **Habit:**
+  any text with backslashes goes through a file, never inline; this one is
+  now in the memory note too, where it's read at every start.
+- The user's skills folder moved (2026-10-03): the skill is at
+  `D:\mine\Agentics\Skills\skills\first-principles-solving\SKILL.md`, and
+  `D:\mine\Agentics\Skills\project-guides\finding-naresh\` keeps copies
+  of CLAUDE.md, AGENTS.md and four notes (listed in "update the md files").
+- **Assumed** a step that passed after a resume would pass in a run from
+  the start. **Reality:** F6's flare gun failed in the back-to-back run: P2
+  came from the gallery still crouched, and my `look_at_point` aims from
+  standing eye height, so it looked over the gun (no prompt). The resume
+  had started uncrouched, so it passed. **Fix:** the helper aims from the
+  real eye height. **Habit:** a resume proves the step, not the way into
+  it; the run from the start is the proof. State a resume doesn't carry
+  (crouch, held buttons, a running engine) is exactly where it lies.
+- The back-to-back run (`tools/live_all.sh`) passed F3 (clean from its
+  start at last), F4 and F5 on the first try.
+- The full suite after the walks' fixes: 381 checks passed through the
+  whole-return drive; the world part failed in two older tests:
+  - t_tunnel: the flare gun "not picked up". Not the game: the test aimed
+    while P1 was still dropping from `place_player`, the view settled low,
+    and the now-solid case caught the look (before, the low look found the
+    gun lying inside the case). Wait to land, aim at the gun where it is.
+  - t_decoy: a real game bug: a creature stood wedged against the shed's
+    crate stack for good (it walks straight, no path planning), so the shed
+    side never cleared. Logging every creature's spot / state / goal every
+    10 s in the test showed it at once. **Fix:** creatures that want to
+    move but haven't for 1.5 s step aside for 1.6 s, alternating sides.
+  - t_decoy: after Naresh's mistake the van died 128 m up the road (wanted
+    "a couple of hundred"): the fuel left allowed no idling while everyone
+    gets in. **Fix:** + 20 s of idle fuel (it now dies ~185 m on).
+  - Open question: once in three runs P2's D-pad recall through the
+    binoculars didn't take (he stayed in WAIT, the look was on him). Twice
+    since it passed; the test now logs the wheel, the jobs, the commands
+    given and whether P2 had landed, so the next miss explains itself.
+- **Habit (again):** when an old test fails after a change, ask first
+  whether the test leaned on the old behaviour (placing, aiming while
+  falling) or the game broke; both happened here, one of each kind.

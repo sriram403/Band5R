@@ -47,8 +47,19 @@ being built and tested), so this always shows where the work is right now.
         planned steps with expected outcomes, checked in parallel in the
         game, stop on the first failure, resume from that step's save point.
         F3 as `tools/live/f3.json` (made by `tools/live/make_f3.py`)
-  - [ ] F3 clean as a watched run; then F4-F8 the same way; then your test
-        from F3 on
+  - [x] F3-F8 each walked as a watched run, every step passing (2026-10-03).
+        Game bugs they found and fixed: Naresh couldn't plan beyond ~60 m
+        (walked into walls; now in stages); he wandered off / kept acting
+        with creatures near as you got in the van; the tunnel gallery's
+        creature went for the van through the wall; the hill filled the
+        gallery's side passages (flare gun buried); the flare case wasn't
+        solid; getting into the van with the flare gun dropped it on the
+        road; jumps past the tunnel gave no flare gun; the F7 sheet's "tell
+        him again" didn't say how. All in `notes/ROUGH_NOTES.md`.
+  - [~] Before your test: every walk back to back (`tools/live_all.sh`, in
+        MPG_dev) and the full suite (`tools/run_test.sh full`, in MPG,
+        f4 merged into main locally, not pushed)
+  - [ ] Your test from F3 on (the sheet updated with what the walks found)
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling
