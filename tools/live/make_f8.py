@@ -24,7 +24,8 @@ walk = {
          "expect": [{"name": "on the road to his home, him with you", "expr": "boot.story.current()['id'] == 'end_f7' and not %s._mother.visible" % HC, "within": 3}]},
         {"name": "F8.1 take him home", "max": 200,
          "do": BOARD + [{"do": "drive", "road": "coast_road", "to": "poi:naresh_home_road", "until": "false", "kmh": 30, "max": 90}],
-         "expect": [{"name": "his mother at the door; his sister's look; he goes in", "expr": "boot.story.flags.has('naresh_home_done')", "within": 70},
+         "expect": [{"name": "P2 got in holding the flare gun: it went on the rack", "expr": "tunnel().gun.stowed_in != null", "within": 2},
+                    {"name": "his mother at the door; his sister's look; he goes in", "expr": "boot.story.flags.has('naresh_home_done')", "within": 70},
                     {"name": "no tracker (the optional things not done; nobody says so)", "expr": "not boot.story.flags.has('tracker')", "within": 1},
                     {"name": "the objective: home along the West Road", "expr": "boot.story.current()['id'] == 'drive_home'", "within": 5}]},
         {"name": "F8.3 the West Road", "max": 300,
@@ -39,8 +40,13 @@ walk = {
                 {"do": "drive", "road": "tower_road", "to": "poi:end_tower", "until": "false", "kmh": 50, "max": 150},
                 {"do": "tap", "key": "E"}, {"do": "wait", "s": 0.5},
                 # round to the ramp's foot (it runs out from the tower's back), then up it
-                {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 47.0)" % TOWER, "arrive": 2.0, "max": 90},
-                {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 0)" % TOWER, "arrive": 1.5, "max": 60}],
+                # lined up on the ramp's middle at its foot, then straight up
+                # it (a rough arrival cut across beside the 1.8 m ramp and
+                # ended under the deck)
+                {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 50.0)" % TOWER, "arrive": 1.5, "max": 90},
+                {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 46.0)" % TOWER, "arrive": 0.4, "max": 20},
+                {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 20.0)" % TOWER, "arrive": 0.6, "max": 40},
+                {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 0)" % TOWER, "arrive": 1.5, "max": 30}],
          "expect": [{"name": "from the watchtower: a light over every place", "expr": "boot.story.flags.has('tower_view')", "within": 3}]},
         {"name": "F8.5 near home: the phones, the end", "max": 300,
          "do": [{"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 47.0)" % TOWER, "arrive": 2.0, "max": 60},

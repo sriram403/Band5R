@@ -482,6 +482,16 @@ func _build_seats() -> void:
 			# under the tarp you can still get in and hide
 			var taken: PlayerRig = driver if role == "driver" else passenger
 			return "" if taken == null else "Seat taken - P%d is in it" % (taken.index + 1))
+		# holding the flare gun, E / X at the door still gets you in (it goes on
+		# the rack); before, it meant "drop" and the gun stayed on the road
+		area.set_meta("held_prompt_fn", func(_p, item) -> String:
+			var taken: PlayerRig = driver if role == "driver" else passenger
+			if not (item is FlareGun) or taken != null:
+				return ""
+			return "Sit in the %s seat (the flare gun on the rack)" % ("driver's" if role == "driver" else "passenger"))
+		area.set_meta("held_action", func(p, item, _dt: float, first: bool):
+			if first and item is FlareGun:
+				_try_seat(p, role))
 		_body_root.add_child(area)
 	# the bunk in the back is his bench (hips 0.14 below the marker, as the seats)
 	bench = Node3D.new()

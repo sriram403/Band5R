@@ -7766,10 +7766,15 @@ func walk_in_driver(p: PlayerRig) -> bool:
 		return false
 	if not await walk_to(p, stand, "the driver door", 0.8, 40.0):
 		return false
-	await look_at_point(p, c.global_transform * Vector3(-1.2, 1.4, -1.8))
-	await physics_frames(3)
-	await tap(KEY_E)
-	await physics_frames(4)
+	# a press that didn't take (still settling from the walk): press again,
+	# as a person would (the F8 watched run's first X did nothing)
+	for _k in 3:
+		await look_at_point(p, c.global_transform * Vector3(-1.2, 1.4, -1.8))
+		await physics_frames(3)
+		await tap(KEY_E)
+		await physics_frames(6)
+		if p.seat != null:
+			break
 	return p.seat != null
 
 
@@ -7781,10 +7786,13 @@ func pad_in_passenger(q: PlayerRig) -> bool:
 		return false
 	if not await pad_walk_to(q, stand):
 		return false
-	await look_at_point(q, c.global_transform * Vector3(1.2, 1.4, -1.8))
-	await physics_frames(3)
-	await pad_tap(JOY_BUTTON_X)
-	await physics_frames(4)
+	for _k in 3:
+		await look_at_point(q, c.global_transform * Vector3(1.2, 1.4, -1.8))
+		await physics_frames(3)
+		await pad_tap(JOY_BUTTON_X)
+		await physics_frames(6)
+		if q.seat != null:
+			break
 	return q.seat != null
 
 

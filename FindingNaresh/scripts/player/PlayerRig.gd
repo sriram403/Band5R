@@ -1221,6 +1221,15 @@ func _find_interactable(col: Object) -> Node:
 func enter_seat(v, seat_node: Node3D, role: String) -> void:
 	if seat != null:
 		return
+	# the flare gun comes along: onto the van's rack (its "any item" slot), not
+	# dropped on the road. Getting in with it left it behind at every boarding
+	# (the F8 watched run), so after the tunnel you had none for the mast
+	if held is FlareGun and v is Camper:
+		var slot: Node3D = (v as Camper).free_slot_for(held)
+		if slot != null:
+			var gun := held
+			gun.stow(slot)
+			message.emit("The flare gun goes on the van's rack (take it off at the back).", 3.0)
 	drop_held()
 	Sfx.play3d("door_close", global_position, -4.0)
 	vehicle = v
