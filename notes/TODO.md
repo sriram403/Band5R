@@ -56,9 +56,11 @@ being built and tested), so this always shows where the work is right now.
         solid; getting into the van with the flare gun dropped it on the
         road; jumps past the tunnel gave no flare gun; the F7 sheet's "tell
         him again" didn't say how. All in `notes/ROUGH_NOTES.md`.
-  - [~] Before your test: every walk back to back (`tools/live_all.sh`, in
-        MPG_dev) and the full suite (`tools/run_test.sh full`, in MPG,
-        f4 merged into main locally, not pushed)
+  - [x] Before your test (2026-10-03): every walk F3-F8 back to back
+        passes (24 min); the full suite's 72 world scenarios pass (the
+        frame-rate checks rerun alone: 144 fps; the decoy test after the
+        creature fixes; the lightning check made robust). Merged into main
+        locally, **not pushed**.
   - [ ] Your test from F3 on (the sheet updated with what the walks found)
 - Command key (Naresh): **V** / **D-pad Up**.
 

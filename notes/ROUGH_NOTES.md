@@ -427,3 +427,27 @@ happened, the fix, and the habit to keep.
 - **Habit (again):** when an old test fails after a change, ask first
   whether the test leaned on the old behaviour (placing, aiming while
   falling) or the game broke; both happened here, one of each kind.
+- All six walks passed back to back in one go (F3-F8, 24 min) with every
+  fix in (2026-10-03).
+- The decoy test passed alone every time but failed inside the long world
+  run: the village creatures were wherever earlier tests left them (one
+  34 m off, nothing noticed for 1553 s) and an F1 jump didn't put them
+  back, so one was never drawn to Naresh. The user hits this too if they
+  jump to F3 after playing elsewhere. **Fix:** a jump or load to the
+  village step puts its two back at their posts, calm (`Creature.calm`).
+  Open: after the stall, the full can wasn't on the rack in the long run
+  only; the test now logs the rack's contents when that happens.
+- **Habit:** a test that passes alone and fails in a sequence is telling
+  you about state that outlives a scene change; that state usually also
+  outlives a player's own jump or load. Fix it in the game, not the order.
+- The background tool stops a task after its time limit: the long world
+  run gets stopped part way; `tools/run_test.sh resume` carries on from
+  where it broke off. Plan long runs as resumable segments.
+- After the earlier scenarios (jumps, boat, storm, storm road) a village
+  creature stood frozen at the foot of the shed's crate stack (x 1722.6,
+  the same spot twice) and even the sidestep didn't free it: no direction
+  free, so it was caught inside the crate's collider. **Fix (a safety net,
+  as Naresh's "Found a way round"):** three sidesteps that don't free it,
+  it hops 1.2 m back out. The sequence passes now (clear after 24 s).
+  **Open:** how it got inside the crates (a jump moving it? the stacked
+  crates' shape?); the safety net covers the player either way.
