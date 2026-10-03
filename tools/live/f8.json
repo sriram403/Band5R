@@ -146,14 +146,14 @@
     {
      "do": "walk",
      "who": 1,
-     "to": "expr:boot.world.find_child('EndTower', true, false).transform * Vector3(0, 0, 50.0)",
+     "to": "expr:boot.world.find_child('EndTower', true, false).transform * Vector3(0, 0, 68.0)",
      "arrive": 1.5,
      "max": 90
     },
     {
      "do": "walk",
      "who": 1,
-     "to": "expr:boot.world.find_child('EndTower', true, false).transform * Vector3(0, 0, 46.0)",
+     "to": "expr:boot.world.find_child('EndTower', true, false).transform * Vector3(0, 0, 65.0)",
      "arrive": 0.4,
      "max": 20
     },
@@ -187,9 +187,9 @@
     {
      "do": "walk",
      "who": 1,
-     "to": "expr:boot.world.find_child('EndTower', true, false).transform * Vector3(0, 0, 47.0)",
+     "to": "expr:boot.world.find_child('EndTower', true, false).transform * Vector3(0, 0, 68.0)",
      "arrive": 2.0,
-     "max": 60
+     "max": 90
     },
     {
      "do": "call",

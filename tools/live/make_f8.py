@@ -40,16 +40,17 @@ walk = {
                 {"do": "drive", "road": "tower_road", "to": "poi:end_tower", "until": "false", "kmh": 50, "max": 150},
                 {"do": "tap", "key": "E"}, {"do": "wait", "s": 0.5},
                 # round to the ramp's foot (it runs out from the tower's back), then up it
-                # lined up on the ramp's middle at its foot, then straight up
+                # lined up on the ramp's middle at its foot (64 m out: the hill falls
+                # away behind the tower, probed with ray_hit), then straight up
                 # it (a rough arrival cut across beside the 1.8 m ramp and
                 # ended under the deck)
-                {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 50.0)" % TOWER, "arrive": 1.5, "max": 90},
-                {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 46.0)" % TOWER, "arrive": 0.4, "max": 20},
+                {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 68.0)" % TOWER, "arrive": 1.5, "max": 90},
+                {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 65.0)" % TOWER, "arrive": 0.4, "max": 20},
                 {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 20.0)" % TOWER, "arrive": 0.6, "max": 40},
                 {"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 0)" % TOWER, "arrive": 1.5, "max": 30}],
          "expect": [{"name": "from the watchtower: a light over every place", "expr": "boot.story.flags.has('tower_view')", "within": 3}]},
         {"name": "F8.5 near home: the phones, the end", "max": 300,
-         "do": [{"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 47.0)" % TOWER, "arrive": 2.0, "max": 60},
+         "do": [{"do": "walk", "who": 1, "to": "expr:%s.transform * Vector3(0, 0, 68.0)" % TOWER, "arrive": 2.0, "max": 90},
                 {"do": "call", "fn": "walk_in_driver", "args": ["p1"]},
                 {"do": "call", "fn": "engine_on"},
                 {"do": "drive", "road": "tower_road", "until": "boot.story.flags.has('end_reached')", "kmh": 60, "max": 200}],
