@@ -85,6 +85,22 @@ func build() -> Node3D:
 	mast.name = "RadioMastFinale"
 	world.add_child(mast)
 	mast.setup(self)
+	# where a creature leaves someone it took (Taken: 150-400 m off): the
+	# world never had any, so taken players woke where they stood ("by
+	# here"), found walking the F test sheet (2026-10-02). By named places,
+	# on the ground 8 m off each.
+	var drops := [["windmill", "the windmill"], ["barn", "the old barn"], ["lookout_deck", "the ridge lookout"], ["j2", "Last Fuel"],
+		["facility", "the water works"], ["bridge", "the old bridge"], ["j3", "the foot of the ghat"], ["ghat_pass", "the pass"],
+		["coast_tower", "the coast watchtower"], ["roses", "the Five Roses"], ["fishing_village", "the fishing village"],
+		["salt_gantry", "the salt works gantry"], ["estuary_bridge", "the estuary bridge"], ["tunnel_portal", "the tunnel mouth"],
+		["radio_mast", "the radio mast"], ["naresh_home", "Naresh's house"], ["end_tower", "the old watchtower"],
+		["p2_home", "P2's house"], ["town_fuel", "the town fuel station"], ["homestead", "the homestead"]]
+	for d in drops:
+		if not poi.has(d[0]):
+			continue
+		var at: Vector3 = poi[d[0]] + Vector3(8, 0, 8)
+		at.y = _h(at.x, at.z)
+		drop_points.append({"pos": at, "near": d[1]})
 	# F8: Naresh's home, the tracker, the ending watchtower's lights, the end
 	var home := Homecoming.new()
 	home.name = "Homecoming"
@@ -193,7 +209,8 @@ func _build_roads() -> void:
 	rv.make_monotonic_descending()
 	river = rv
 	Landscape.setup(network, river, PONDS, MOUNDS)
-	Landscape.set_pads(PADS)
+	# + flat ground for the rail tunnel gallery's side passages (they reach past the tunnel's slot)
+	Landscape.set_pads(PADS + RailTunnel.fork_pads(network.road("coast_road")))
 
 	poi["j1"] = Vector3(J1.x, j1h, J1.y)
 	poi["j2"] = Vector3(J2.x, j2h, J2.y)

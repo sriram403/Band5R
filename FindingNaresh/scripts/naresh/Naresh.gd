@@ -82,6 +82,7 @@ var _plan_vel := Vector2.ZERO
 var _path := PackedVector3Array()
 var _path_i := 0
 var _path_goal := Vector3(INF, INF, INF)
+var _path_partial := false      ## the path only goes part of the way: plan again at its end
 var _cells := {}
 var _stuck_t := 0.0
 var _stuck_mark := Vector3.ZERO
@@ -854,6 +855,29 @@ func hold_point(item: Carryable) -> Vector3:
 
 ## Walk towards `goal` (round things in the way). True once within `arrive`.
 func _walk_to(goal: Vector3, speed: float, arrive: float, delta: float) -> bool:
+	# a place reached only one way (the village jetty, Creature.funnels): to
+	# its entry first. His short planner otherwise settled in the shallows
+	# outside the jetty's railing, against the sea wall (the F3 sheet walk).
+	for f in Creature.funnels:
+		var box: AABB = f["box"]
+		var entry: Vector3 = f["entry"]
+		# the entry is inside the box too: walking to it is the plain walk
+		# on it means on its deck, not just in the box (wider than the deck:
+		# he'd stand on the sand or in the water outside the railing "inside" it)
+		var on_it := false
+		for d in f.get("deck", [box]):
+			on_it = on_it or (d as AABB).has_point(global_position)
+		var to_entry := Vector2(entry.x - global_position.x, entry.z - global_position.z).length()
+		if box.has_point(goal) and not on_it and goal.distance_to(entry) > 0.5:
+			if to_entry > 1.0:
+				_walk_to(entry, speed, 0.8, delta)
+				return false
+		# and off it the same way: back along the deck to its mouth first
+		# (heading for someone on the beach he planned into the railing and
+		# was stuck till "Found a way round!", the F3 walk)
+		elif on_it and not box.has_point(goal) and to_entry > 1.0:
+			_walk_to(entry, speed, 0.8, delta)
+			return false
 	var to := goal - global_position
 	to.y = 0.0
 	if to.length() <= arrive:
@@ -877,6 +901,10 @@ func _walk_to(goal: Vector3, speed: float, arrive: float, delta: float) -> bool:
 		if d.length() < 0.6 and _path_i < _path.size() - 1:
 			_path_i += 1
 			aim = _path[_path_i]
+		elif d.length() < 0.6 and _path_partial:
+			_plan(goal)                  # the end of a part-way path: on from here
+			if not _path.is_empty():
+				aim = _path[0]
 	var dir := aim - global_position
 	dir.y = 0.0
 	_face(global_position + dir, delta)
@@ -910,7 +938,7 @@ var _force_grid := false
 func _stuck_long(goal: Vector3) -> void:
 	# someone's standing in his way: he asks, and waits (never gives up on it)
 	var p := _nearest_player()
-	if p != null and p.global_position.distance_to(global_position) < 1.4:
+	if p != null and p.global_position.distance_to(global_position) < 2.0:   # a doorway: 1.4 let him give up as you came in (F3)
 		_stuck_count = 0
 		if Time.get_ticks_msec() - _excuse_ms > 5000:
 			_excuse_ms = Time.get_ticks_msec()
@@ -1001,7 +1029,7 @@ func _clear(a: Vector3, b: Vector3) -> bool:
 	for off in [Vector3(0, 0.45, 0), Vector3(0, 1.3, 0), side + Vector3(0, 0.8, 0), -side + Vector3(0, 0.8, 0)]:
 		var from: Vector3 = a + off
 		var to: Vector3 = Vector3(b.x, a.y, b.z) + off
-		var q := PhysicsRayQueryParameters3D.create(from, to, 1 | 8, ex)
+		var q := PhysicsRayQueryParameters3D.create(from, to, 1 | 8 | 64, ex)     # 64: the world edge (the sea wall) too
 		if not space.intersect_ray(q).is_empty():
 			return false
 	return true
@@ -1015,9 +1043,19 @@ func _plan(goal: Vector3) -> void:
 	if not _force_grid and _clear(global_position, goal):
 		_path = PackedVector3Array([goal])
 		return
+	# a far goal: the search only covers PATH_RADIUS round the midpoint, so with
+	# the van 140 m off he wasn't even inside it and got no path at all (stuck
+	# in the net shed with the light can, the F3 watched run). Plan part of the
+	# way, towards it; at the end of that, plan again.
+	var target := goal
+	var flat := Vector2(goal.x - global_position.x, goal.z - global_position.z)
+	var far := flat.length() > PATH_RADIUS * 1.4
+	if far:
+		var step := flat.normalized() * PATH_RADIUS
+		target = global_position + Vector3(step.x, 0.0, step.y)
 	var start := _cell(global_position)
-	var end := _cell(goal)
-	var centre := (global_position + goal) * 0.5
+	var end := _cell(target)
+	var centre := (global_position + target) * 0.5
 	var came := {start: start}
 	var cost := {start: 0.0}
 	var heap: Array = [[0.0, start]]
@@ -1059,9 +1097,10 @@ func _plan(goal: Vector3) -> void:
 		pts.append(_world(k))
 		k = came[k]
 	pts.reverse()
-	if found:
+	if found and not far:
 		pts.append(goal)
 	_path = pts
+	_path_partial = far or not found
 
 
 func _cell(p: Vector3) -> Vector2i:
@@ -1084,7 +1123,7 @@ func _blocked(c: Vector2i) -> bool:
 	var q := PhysicsShapeQueryParameters3D.new()
 	q.shape = sh
 	q.transform = Transform3D(Basis(), at + Vector3.UP * 1.0)
-	q.collision_mask = 1 | 8
+	q.collision_mask = 1 | 8 | 64      # the world edge too: he planned round the jetty through the sea wall
 	q.exclude = [get_rid()]
 	var b := not get_world_3d().direct_space_state.intersect_shape(q, 1).is_empty()
 	_cells[c] = b
@@ -1212,7 +1251,7 @@ func _act_possible(id: String) -> bool:
 			return not seated and v != null and v.tyre_flat and v.linear_velocity.length() < 0.5 \
 				and v.global_position.distance_to(global_position) < 30.0
 		"wander":
-			return not seated and held == null and state != State.JOB
+			return not seated and held == null and state != State.JOB and _creature_near(60.0) == null
 		"honk":
 			return v != null and v.battery > 0.05 and (seated or v.global_position.distance_to(global_position) < 12.0)
 		"headlights":
@@ -1359,6 +1398,10 @@ func _act_back(line: String) -> void:
 func _do_act(delta: float) -> void:
 	_act_data["t"] = float(_act_data.get("t", 0.0)) + delta
 	var t: float = _act_data["t"]
+	var with: PlayerRig = _act_data.get("prev_leader")
+	if with != null and is_instance_valid(with) and with.seat != null and held == null:
+		_act_back("Wait for me!")
+		return
 	match act:
 		"wander":
 			var to: Vector3 = _act_data["to"]

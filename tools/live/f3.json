@@ -1,0 +1,644 @@
+{
+ "name": "f3",
+ "setup": [
+  {
+   "do": "eval",
+   "expr": "boot._on_joy_changed(0, true)"
+  }
+ ],
+ "steps": [
+  {
+   "name": "F3.0 jump",
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Story",
+     "row": "Nearly out of fuel"
+    }
+   ],
+   "expect": [
+    {
+     "name": "at the village, fuel low",
+     "expr": "boot.story.current()['id'] == 'village' and boot.camper.fuel < 3.0",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "F3.2 send him out",
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": [
+      1690,
+      0,
+      -550
+     ],
+     "arrive": 2,
+     "max": 60
+    },
+    {
+     "do": "job",
+     "who": 1,
+     "at": [
+      1833.96,
+      -1.4,
+      -584.0
+     ],
+     "job": "go",
+     "zoom": true
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": [
+      1693,
+      0,
+      -552
+     ],
+     "arrive": 2,
+     "max": 60
+    }
+   ],
+   "expect": [
+    {
+     "name": "Naresh at the jetty end",
+     "expr": "boot.naresh.global_position.distance_to(Vector3(1833.96, -1.4, -584.0)) < 3.0",
+     "within": 45,
+     "watch": true
+    },
+    {
+     "name": "the shed side clear",
+     "expr": "creatures_near(boot.builder.poi['net_shed'], 25.0) == 0 and creatures_near(Vector3(1805, -1.4, -584), 40.0) == 2",
+     "within": 60,
+     "watch": true
+    }
+   ]
+  },
+  {
+   "name": "F3.3 the key",
+   "needs": [
+    "the shed side clear"
+   ],
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": [
+      1700,
+      0,
+      -600
+     ],
+     "arrive": 2,
+     "max": 40
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": [
+      1712,
+      0,
+      -618
+     ],
+     "arrive": 1.5,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": [
+      1716,
+      0,
+      -603.5
+     ],
+     "arrive": 1,
+     "max": 40
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "poi:net_shed_crates",
+     "arrive": 0.6,
+     "max": 20
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:p1().global_position + Vector3(20,1,0)"
+    },
+    {
+     "do": "down",
+     "key": "W"
+    },
+    {
+     "do": "tap",
+     "key": "SPACE"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "up",
+     "key": "W"
+    },
+    {
+     "do": "wait",
+     "s": 0.15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:p1().global_position + Vector3(20,1,0)"
+    },
+    {
+     "do": "down",
+     "key": "W"
+    },
+    {
+     "do": "tap",
+     "key": "SPACE"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "up",
+     "key": "W"
+    },
+    {
+     "do": "wait",
+     "s": 0.15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:p1().global_position + Vector3(20,1,0)"
+    },
+    {
+     "do": "down",
+     "key": "W"
+    },
+    {
+     "do": "tap",
+     "key": "SPACE"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "up",
+     "key": "W"
+    },
+    {
+     "do": "wait",
+     "s": 0.15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:p1().global_position + Vector3(20,1,0)"
+    },
+    {
+     "do": "down",
+     "key": "W"
+    },
+    {
+     "do": "tap",
+     "key": "SPACE"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "up",
+     "key": "W"
+    },
+    {
+     "do": "wait",
+     "s": 0.15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:p1().global_position + Vector3(20,1,0)"
+    },
+    {
+     "do": "down",
+     "key": "W"
+    },
+    {
+     "do": "tap",
+     "key": "SPACE"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "up",
+     "key": "W"
+    },
+    {
+     "do": "wait",
+     "s": 0.15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:p1().global_position + Vector3(20,1,0)"
+    },
+    {
+     "do": "down",
+     "key": "W"
+    },
+    {
+     "do": "tap",
+     "key": "SPACE"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "up",
+     "key": "W"
+    },
+    {
+     "do": "wait",
+     "s": 0.15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:p1().global_position + Vector3(20,1,0)"
+    },
+    {
+     "do": "down",
+     "key": "W"
+    },
+    {
+     "do": "tap",
+     "key": "SPACE"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "up",
+     "key": "W"
+    },
+    {
+     "do": "wait",
+     "s": 0.15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:p1().global_position + Vector3(0,1.5,-20)"
+    },
+    {
+     "do": "hold",
+     "key": "W",
+     "s": 0.8
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "poi:net_shed_key"
+    },
+    {
+     "do": "wait",
+     "s": 0.2
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    }
+   ],
+   "expect": [
+    {
+     "name": "the key",
+     "expr": "boot.story.flags.has('key_got')",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F3.3 the door",
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.builder.poi['net_shed_door'] + Vector3(-4,0,6)",
+     "arrive": 1,
+     "max": 20
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "poi:net_shed_door",
+     "arrive": 0.6,
+     "max": 20
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:village().door.global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.2
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "the shed open",
+     "expr": "boot.story.flags.has('shed_open')",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F3.5 the heavy can",
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:village().can_full.global_position + (village().door.global_position - village().can_full.global_position).normalized() * 1.2",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:village().can_full.global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.1
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.2
+    }
+   ],
+   "expect": [
+    {
+     "name": "P1 holds the heavy can",
+     "expr": "p1().held == village().can_full",
+     "within": 1
+    }
+   ]
+  },
+  {
+   "name": "F3.4 recall",
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "poi:net_shed_door",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "until",
+     "expr": "creature_to_naresh() < 14.0",
+     "max": 150
+    },
+    {
+     "do": "job",
+     "who": 2,
+     "at": "expr:boot.naresh.global_position + Vector3(0,1.1,0)",
+     "zoom": true
+    }
+   ],
+   "expect": [
+    {
+     "name": "Naresh follows P2",
+     "expr": "boot.naresh.leader == p2()",
+     "within": 3
+    },
+    {
+     "name": "Naresh off the jetty",
+     "expr": "boot.naresh.global_position.x < 1758.0",
+     "within": 120,
+     "watch": true
+    }
+   ]
+  },
+  {
+   "name": "F3.5 the can to the van",
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.camper.global_transform * Vector3(-3.0, 0, 1.0)",
+     "arrive": 1.0,
+     "max": 90
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    }
+   ],
+   "expect": [
+    {
+     "name": "the heavy can by the van",
+     "expr": "p1().held == null and village().can_full.global_position.distance_to(boot.camper.global_position) < 8.0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F3.5 by the shed",
+   "needs": [
+    "Naresh off the jetty"
+   ],
+   "do": [],
+   "expect": [
+    {
+     "name": "'There's two!'",
+     "expr": "village()._helped",
+     "within": 60
+    }
+   ]
+  },
+  {
+   "name": "F3.5 back to the van",
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": [
+      1700,
+      0,
+      -600
+     ],
+     "arrive": 2,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.camper.global_transform * Vector3(3.0, 0, 1.0)",
+     "arrive": 1.5,
+     "max": 90
+    }
+   ],
+   "expect": [
+    {
+     "name": "his mistake: 'Done. I even checked it twice.'",
+     "expr": "boot.story.flags.has('mistake_done') and village().can_full.litres > 19.0",
+     "within": 150
+    }
+   ]
+  },
+  {
+   "name": "F3.6 drive on north",
+   "do": [
+    {
+     "do": "call",
+     "fn": "walk_in_driver",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "pad_in_passenger",
+     "args": [
+      "p2"
+     ]
+    },
+    {
+     "do": "until",
+     "expr": "boot.naresh.state == 5",
+     "max": 25
+    },
+    {
+     "do": "call",
+     "fn": "engine_on"
+    },
+    {
+     "do": "drive",
+     "road": "coast_road",
+     "to": [
+      1640.0,
+      0,
+      -900.0
+     ],
+     "until": "boot.story.flags.has('stalled')",
+     "kmh": 40,
+     "max": 120
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "the engine dies",
+     "expr": "boot.story.flags.has('stalled')",
+     "within": 2
+    },
+    {
+     "name": "a creature steps out",
+     "expr": "boot.world.get_node_or_null('StallCreature') != null",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "F3.7 pour it yourself",
+   "do": [
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.2
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.camper.rack_stand()",
+     "arrive": 0.6,
+     "max": 20
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:village().can_full.global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.1
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.2
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.camper.filler_stand()",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:boot.camper.filler_point()"
+    },
+    {
+     "do": "hold",
+     "key": "E",
+     "s": 5.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the tank full; on to the salt pans",
+     "expr": "boot.camper.fuel > 15.0 and boot.story.current()['id'] == 'end_f3'",
+     "within": 4
+    }
+   ]
+  }
+ ]
+}

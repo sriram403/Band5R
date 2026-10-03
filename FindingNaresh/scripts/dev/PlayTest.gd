@@ -171,6 +171,118 @@ func p2() -> PlayerRig:
 	return boot.players[1]
 
 
+## The nearest creature to Naresh, m (the live line's `until`: Expression has no lambdas).
+func creature_to_naresh() -> float:
+	var d := INF
+	for cr in get_tree().get_nodes_in_group("creature"):
+		d = minf(d, (cr as Node3D).global_position.distance_to(boot.naresh.global_position))
+	return d
+
+
+## How many creatures are within r m of a point (the live line).
+func creatures_near(at: Vector3, r: float) -> int:
+	var k := 0
+	for cr in get_tree().get_nodes_in_group("creature"):
+		if (cr as Node3D).global_position.distance_to(at) < r:
+			k += 1
+	return k
+
+
+## The fishing village (the live line's expressions).
+func village() -> FishingVillage:
+	return get_tree().get_first_node_in_group("fishing_village") as FishingVillage
+
+
+## The rail tunnel, and points in its service gallery for the live line: the
+## gallery's middle line at road sample gate_i + k; a point down fork 1 / 2's
+## side passage, d m in; in front of door 0 / 1 in the tunnel.
+func tunnel() -> RailTunnel:
+	return get_tree().get_first_node_in_group("rail_tunnel") as RailTunnel
+
+
+func gallery_at(k: int) -> Vector3:
+	var rt := tunnel()
+	var i := rt.gate_i + k
+	return rt.road.point(i) + rt.road.right(i) * rt._off
+
+
+func gallery_fork(n: int, d: float) -> Vector3:
+	var rt := tunnel()
+	var fi: int = rt.doors[0] + (rt.gate_i - rt.doors[0]) / 2 if n == 1 else rt.gate_i + (rt.doors[1] - rt.gate_i) / 2
+	return rt.road.point(fi) + rt.road.right(fi) * (rt._off + RailTunnel.GAL_W * 0.5 + d)
+
+
+func gallery_door(n: int, inside: bool) -> Vector3:
+	var rt := tunnel()
+	var i: int = rt.doors[n]
+	return rt.road.point(i) + rt.road.right(i) * (rt._off if inside else RailTunnel.IN_W - 2.5)
+
+
+## Where the gallery's creature is, as a road sample offset from the gate
+## (negative: the door-0 side), and which way it walks (+1 towards door 1).
+func gallery_creature_k() -> float:
+	var rt := tunnel()
+	return float(rt.road.nearest(rt.watcher.global_position.x, rt.watcher.global_position.z)["index"] - rt.gate_i)
+
+
+func gallery_creature_dir() -> float:
+	var rt := tunnel()
+	return signf(rt.watcher.velocity.dot(rt.road.forward(rt.gate_i)))
+
+
+## P2 standing guard with the flare gun, alongside the other steps (the live
+## line's `spawn`): a creature within `near` m of either player and not
+## already scared, P2 looks at it and fires (RB). Until the story flag is set,
+## the flares run out, or `max_s`. As a second player would.
+func flare_guard(near: float, flag: String, max_s: float = 600.0) -> void:
+	var q := p2()
+	var t := 0.0
+	while t < max_s and not boot.story.flags.has(flag):
+		await wait(0.2)
+		t += 0.2
+		var gun := q.held as FlareGun
+		if gun == null or gun.flares_left() <= 0:
+			return
+		for cr in get_tree().get_nodes_in_group("creature"):
+			var c := cr as Creature
+			if c.dormant or c.passive or c.scared_t > 0.0:
+				continue
+			var d := minf(c.global_position.distance_to(p1().global_position), c.global_position.distance_to(q.global_position))
+			if d < near:
+				log_line("flare guard: a creature %.0f m off, fire (%d left)" % [d, gun.flares_left()])
+				await look_at_point(q, c.global_position + Vector3.UP * 1.0)
+				pad_button(JOY_BUTTON_RIGHT_SHOULDER, true)
+				await physics_frames(5)
+				pad_button(JOY_BUTTON_RIGHT_SHOULDER, false)
+				await wait(1.0)
+				break
+
+
+## What player i's tag marks ("" for none): the live line can't call statics.
+func tag_thing(i: int) -> String:
+	var tg := TagMarker.of(i)
+	return tg.thing if tg != null else ""
+
+
+## Probes for the live line (Expression can't build a ray query): what a
+## ray from `from` to `to` hits ("name @ position, normal"), or "".
+func ray_hit(from: Vector3, to: Vector3) -> String:
+	var q := PhysicsRayQueryParameters3D.create(from, to, 1 | 8 | 16 | 64, [p1().get_rid(), p2().get_rid()])
+	var h := get_viewport().world_3d.direct_space_state.intersect_ray(q)
+	if h.is_empty():
+		return ""
+	return "%s @ %s, normal %s" % [(h["collider"] as Node).name, h["position"], h["normal"]]
+
+
+## The first road sample from `from_i` on where the next `ahead` samples drop
+## at least `drop` m: the top of a slope to roll the van down (a push start).
+func downhill_index(path: Route, from_i: int, ahead: int, drop: float) -> int:
+	for i in range(from_i, path.point_count() - ahead - 1):
+		if path.point(i).y - path.point(i + ahead).y >= drop:
+			return i
+	return -1
+
+
 func camper() -> Camper:
 	return boot.camper
 
@@ -235,6 +347,10 @@ func _run() -> void:
 		"%s at %s" % [DisplayServer.window_get_size(), DisplayServer.window_get_position()],
 		str(Input.get_connected_joypads())])
 	log_line("route length %.0f m, %d samples" % [boot.builder.route.total_length, boot.builder.route.point_count()])
+	# the live control line: no scenarios, wait for commands (tools/live.py)
+	if only == "live":
+		await LiveControl.new(self).run()
+		return
 
 	# After a load test reloaded the scene, only finish that check.
 	if PlayTest.resume != "":
@@ -6886,6 +7002,37 @@ func t_saltpans() -> void:
 	check(not sp.seen and sp.watcher.passive, "a jump back: it's up on its gantry again")
 	sp.auto_sweep = true
 	await seat_p1_driver()
+	await salt_careful_crossing()
+	var road: Route = boot.builder.network.road("coast_road")
+	check(st.flags.has("pans_crossed") and not sp.seen, "dashing between heaps, stopping behind them when it turns: across unseen")
+	await until(func() -> bool: return st.current()["id"] == "end_f4", 3.0)
+	check(st.current()["id"] == "end_f4", "on to the estuary bridge")
+	# reckless: straight across at speed gets seen
+	boot.dev_menu.run("jump", st.index_of("salt_pans"))
+	await wait(1.0)
+	await seat_p1_driver()
+	await engine_on()
+	var ad2 := AutoDriver.new(self, road, c)
+	ad2.lane = -1.8
+	var t1 := Time.get_ticks_msec()
+	while not sp.seen and not st.flags.has("pans_crossed") and (Time.get_ticks_msec() - t1) < 60000:
+		await physics_frames(1)
+		ad2.step(45.0)
+	ad2.release()
+	log_line("reckless crossing: %s (it glanced round %d times)" % ["seen" if sp.seen else "not seen", sp.glances])
+	check(sp.seen, "straight across without stopping: it sees the van")
+	p1().force_exit = true
+	await physics_frames(3)
+
+
+## The careful crossing of the salt pans (P1 driving): go while it looks
+## away; when it turns your way stop behind a heap, dash on if the next one
+## hides you in a moment, else freeze. True: across unseen. (Its own function
+## so the watched run can `call` it.)
+func salt_careful_crossing() -> bool:
+	var sp := get_tree().get_first_node_in_group("salt_pans") as SaltPans
+	var st: Story = boot.story
+	var c := camper()
 	await engine_on()
 	var road: Route = boot.builder.network.road("coast_road")
 	var ad := AutoDriver.new(self, road, c)
@@ -6932,25 +7079,7 @@ func t_saltpans() -> void:
 	var took := (Time.get_ticks_msec() - t0) / 1000.0
 	await shot("pans_careful_end")
 	log_line("careful crossing: %s after %.0f s, %d stops behind heaps" % ["crossed unseen" if st.flags.has("pans_crossed") and not sp.seen else ("SEEN" if sp.seen else "not across"), took, stops])
-	check(st.flags.has("pans_crossed") and not sp.seen, "dashing between heaps, stopping behind them when it turns: across unseen")
-	await until(func() -> bool: return st.current()["id"] == "end_f4", 3.0)
-	check(st.current()["id"] == "end_f4", "on to the estuary bridge")
-	# reckless: straight across at speed gets seen
-	boot.dev_menu.run("jump", st.index_of("salt_pans"))
-	await wait(1.0)
-	await seat_p1_driver()
-	await engine_on()
-	var ad2 := AutoDriver.new(self, road, c)
-	ad2.lane = -1.8
-	var t1 := Time.get_ticks_msec()
-	while not sp.seen and not st.flags.has("pans_crossed") and (Time.get_ticks_msec() - t1) < 60000:
-		await physics_frames(1)
-		ad2.step(45.0)
-	ad2.release()
-	log_line("reckless crossing: %s (it glanced round %d times)" % ["seen" if sp.seen else "not seen", sp.glances])
-	check(sp.seen, "straight across without stopping: it sees the van")
-	p1().force_exit = true
-	await physics_frames(3)
+	return st.flags.has("pans_crossed") and not sp.seen
 
 
 ## F5, the estuary bridge and R3 the three-hand swing bridge. `tools/run_test.sh swing`
@@ -7540,6 +7669,281 @@ func _undo_return() -> void:
 		mood.dark = 0.0
 		mood.storm = 0.0
 	log_line("(the return put away for this test)")
+
+
+# --- the test sheet, walked as written (notes/TEST_MILESTONE_F.md) ---------------
+# Only what a player can do: keys, mouse, pad; the F1 menu by its keys; no
+# state set in code, no teleports the sheet doesn't ask for. A step that
+# can't be done as written is a SHEET BLOCKER.
+
+func sheet_step(ok: bool, what: String) -> bool:
+	if not ok:
+		log_line("SHEET BLOCKER: " + what)
+	check(ok, "sheet " + what)
+	return ok
+
+
+## F1 → <tab> → the row whose text contains `part`, Enter, F1 to close.
+func menu_pick(tab_name: String, part: String) -> bool:
+	var dm: DevMenu = boot.dev_menu
+	if not dm.open:
+		await tap(KEY_F1)
+		await physics_frames(3)
+	var want := DevMenu.TABS.find(tab_name)
+	var guard := 0
+	while dm.tab != want and guard < 10:
+		await tap(KEY_RIGHT)
+		await physics_frames(2)
+		guard += 1
+	var row := -1
+	for i in dm._rows.size():
+		if not dm._rows[i]["header"] and String(dm._rows[i]["text"]).contains(part):
+			row = i
+			break
+	if row < 0:
+		log_line("menu: no row '%s' on %s" % [part, tab_name])
+		await tap(KEY_F1)
+		return false
+	guard = 0
+	while int(dm._sel.get(dm.tab, -1)) != row and guard < 200:
+		await tap(KEY_DOWN if int(dm._sel.get(dm.tab, -1)) < row else KEY_UP)
+		await physics_frames(1)
+		guard += 1
+	await tap(KEY_ENTER)
+	await physics_frames(5)
+	log_line("menu: %s → '%s' (%s)" % [tab_name, dm._rows[row]["text"], dm._note])
+	await tap(KEY_F1)
+	await wait(0.6)
+	return true
+
+
+## P2 walks with the left stick, facing where it goes.
+func pad_walk_to(q: PlayerRig, target: Vector3, arrive := 0.8, max_s := 40.0) -> bool:
+	var t := 0.0
+	var mark := q.global_position
+	var mark_t := 0.0
+	while t < max_s:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		var d := target - q.global_position
+		d.y = 0.0
+		if d.length() < arrive:
+			pad_axis(JOY_AXIS_LEFT_Y, 0.0)
+			return true
+		q.yaw = atan2(-d.x, -d.z)
+		q.rotation.y = q.yaw
+		pad_axis(JOY_AXIS_LEFT_Y, -1.0)
+		if t - mark_t > 2.0:
+			if q.global_position.distance_to(mark) < 0.3:
+				break
+			mark = q.global_position
+			mark_t = t
+	pad_axis(JOY_AXIS_LEFT_Y, 0.0)
+	log_line("PAD WALK STUCK at %s, %.1f m short" % [q.global_position, Vector2(target.x - q.global_position.x, target.z - q.global_position.z).length()])
+	return false
+
+
+## Walk up to the van's driver door and E (P1).
+## Round the van's nose first when you're on its other side (the straight-
+## line walkers walked into its side: P2 after a jump, the F4 watched run).
+func round_van(pl: PlayerRig, side: float, pad: bool) -> bool:
+	var c := camper()
+	var local := c.global_transform.affine_inverse() * pl.global_position
+	if signf(local.x) == signf(side) or absf(local.x) < 0.5 and local.z < -3.0:
+		return true
+	for corner in [Vector3(signf(local.x) * 3.6, 0.0, -5.6), Vector3(signf(side) * 3.6, 0.0, -5.6)]:
+		var at: Vector3 = c.global_transform * corner
+		var ok: bool = await pad_walk_to(pl, at, 1.0, 20.0) if pad else await walk_to(pl, at, "round the van", 1.0, 20.0)
+		if not ok:
+			return false
+	return true
+
+
+func walk_in_driver(p: PlayerRig) -> bool:
+	var c := camper()
+	var stand := c.global_transform * Vector3(-3.4, 0.0, -1.8)
+	if not await round_van(p, -1.0, false):
+		return false
+	if not await walk_to(p, stand, "the driver door", 0.8, 40.0):
+		return false
+	# a press that didn't take (still settling from the walk): press again,
+	# as a person would (the F8 watched run's first X did nothing)
+	for _k in 3:
+		await look_at_point(p, c.global_transform * Vector3(-1.2, 1.4, -1.8))
+		await physics_frames(3)
+		await tap(KEY_E)
+		await physics_frames(6)
+		if p.seat != null:
+			break
+	return p.seat != null
+
+
+## P2 walks to the passenger door and presses X.
+func pad_in_passenger(q: PlayerRig) -> bool:
+	var c := camper()
+	var stand := c.global_transform * Vector3(3.4, 0.0, -1.8)
+	if not await round_van(q, 1.0, true):
+		return false
+	if not await pad_walk_to(q, stand):
+		return false
+	for _k in 3:
+		await look_at_point(q, c.global_transform * Vector3(1.2, 1.4, -1.8))
+		await physics_frames(3)
+		await pad_tap(JOY_BUTTON_X)
+		await physics_frames(6)
+		if q.seat != null:
+			break
+	return q.seat != null
+
+
+## F3, the fishing village, step by step as the sheet says.
+func t_sheet_f3() -> void:
+	var st: Story = boot.story
+	var poi: Dictionary = boot.builder.poi
+	var fv := get_tree().get_first_node_in_group("fishing_village") as FishingVillage
+	var c := camper()
+	var p := p1()
+	var q := p2()
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	# Getting there
+	var picked := await menu_pick("Story", "Nearly out of fuel")
+	var n := nz()
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	sheet_step(picked and st.current()["id"] == "village", "F3 getting there: F1 → Story → 'Nearly out of fuel...', Enter")
+	sheet_step(p.global_position.distance_to(c.global_position) < 8.0 and n != null and n.global_position.distance_to(p.global_position) < 8.0,
+		"F3: you both stand by the van, Naresh with you")
+	sheet_step(c.fuel < 1.6 and mood.value < 0.4, "F3: the fuel lamp on (%.1f L), dusk (mood %.2f)" % [c.fuel, mood.value])
+	# 1. walk in with Naresh (keep your distance)
+	var edge := fv.centre + Vector3(-25, 0, 70)
+	var walked := await walk_to(p, edge, "the village edge", 2.0, 60.0)
+	var drawn := 0
+	var tw := 0.0
+	while tw < 12.0 and drawn < 2:
+		await wait(0.5)
+		tw += 0.5
+		drawn = 0
+		for cr in fv.creatures:
+			drawn += int(cr.naresh_drawn)
+	sheet_step(walked and drawn == 2, "F3.1 walk in with Naresh: the creatures turn towards him and drift his way (%d of 2)" % drawn)
+	# 2. send him to the end of the jetty, with the binoculars from the beach
+	var beach := fv.jetty_start + Vector3(-6, 0, 14)
+	var to_beach := await walk_to(p, beach, "the beach by the jetty", 1.5, 60.0)
+	sheet_step(to_beach, "F3.2 walk to the beach by the jetty")
+	sheet_step(p.has_binoculars, "F3.2 the binoculars (hold RMB): P1 has them")
+	mouse_button(MOUSE_BUTTON_RIGHT, true)
+	await wait(0.6)
+	var sent := await naresh_job(p, fv.jetty_end, "go")
+	mouse_button(MOUSE_BUTTON_RIGHT, false)
+	sheet_step(sent, "F3.2 look at the far end, hold V: 'Go and wait there' (%.0f m, through the binoculars)" % p.global_position.distance_to(fv.jetty_end))
+	var out := await until(func() -> bool: return n.global_position.distance_to(fv.jetty_end) < 4.0, 90.0)
+	sheet_step(out, "F3.2 he walks out to the end of the jetty")
+	var clear := await until(func() -> bool:
+		for cr in fv.creatures:
+			if cr.global_position.distance_to(poi["net_shed"]) < 25.0:
+				return false
+		return true, 60.0)
+	sheet_step(clear, "F3.2 the creatures follow him out; the shed side clears")
+	# 3. one of you: the key (P1)
+	var foot: Vector3 = poi["net_shed_crates"]
+	var at_crates := await walk_to(p, foot, "the fish crates", 0.6, 40.0)
+	var roof_y: float = (poi["net_shed_roof"] as Vector3).y
+	p.yaw = -PI * 0.5
+	p.rotation.y = p.yaw
+	key(KEY_W, true)
+	for _k in 7:
+		await tap(KEY_SPACE)
+		await wait(0.45)
+	key(KEY_W, false)
+	p.yaw = 0.0
+	p.rotation.y = 0.0
+	key(KEY_W, true)
+	await tap(KEY_SPACE)
+	await wait(0.8)
+	key(KEY_W, false)
+	await wait(0.3)
+	sheet_step(at_crates and p.global_position.y > roof_y - 0.4, "F3.3 climb the fish crates (W and jump; at the top turn onto the roof)")
+	await look_at_point(p, poi["net_shed_key"])
+	await wait(0.2)
+	var key_prompt := p.prompt_text
+	await tap(KEY_E)
+	await physics_frames(3)
+	sheet_step(st.flags.has("key_got"), "F3.3 in the blue boat: E Take the key ('%s')" % key_prompt)
+	# down again: walk off the roof's land side, round to the door
+	var down := await walk_to(p, (poi["net_shed_door"] as Vector3) + Vector3(-4, 0, 6), "off the roof", 1.0, 20.0)
+	await wait(0.6)
+	var at_door := await walk_to(p, poi["net_shed_door"], "the shed door", 0.6, 20.0)
+	await look_at_point(p, fv.door.global_position)
+	await wait(0.2)
+	var door_prompt := p.prompt_text
+	await tap(KEY_E)
+	await physics_frames(3)
+	sheet_step(down and at_door and st.flags.has("shed_open"), "F3.3 down again, the shed door: E Unlock the shed ('%s')" % door_prompt)
+	# 4. the other: watch him, call him back from the beach (P2, pad)
+	var p2_spot := beach + Vector3(-3, 0, 3)
+	var p2_there := await pad_walk_to(q, p2_spot, 1.5, 90.0)
+	var closest := 999.0
+	for cr in fv.creatures:
+		closest = minf(closest, cr.global_position.distance_to(n.global_position))
+	sheet_step(p2_there and n.state != Naresh.State.TAKEN, "F3.4 P2 on the beach in time (nearest creature %.0f m from him)" % closest)
+	await look_at_point(q, n.global_position + Vector3.UP * 1.1)
+	pad_axis(JOY_AXIS_TRIGGER_LEFT, 1.0)
+	await wait(0.6)
+	pad_button(JOY_BUTTON_DPAD_UP, true)
+	await physics_frames(5)
+	pad_button(JOY_BUTTON_DPAD_UP, false)
+	await physics_frames(4)
+	pad_axis(JOY_AXIS_TRIGGER_LEFT, 0.0)
+	sheet_step(n.state == Naresh.State.FOLLOW and n.leader == q, "F3.4 through the binoculars (LT), D-pad Up: 'Follow me' (%.0f m)" % q.global_position.distance_to(n.global_position))
+	# 5. the fuel: P1 takes the heavy can to the van; P2 brings Naresh by the shed
+	var heavy_at := fv.can_full.global_position
+	var to_can := await walk_to(p, heavy_at + (fv.door.global_position - heavy_at).normalized() * 1.2, "the heavy can", 0.5, 20.0)
+	await look_at_point(p, fv.can_full.global_position)
+	await physics_frames(3)
+	await tap(KEY_E)
+	await physics_frames(3)
+	sheet_step(to_can and p.held == fv.can_full, "F3.5 pick up the heavy can")
+	var van_side := c.global_transform * Vector3(-3.0, 0, 1.0)
+	var carried := await walk_to(p, van_side, "the van, with the can", 1.0, 90.0)
+	await tap(KEY_E)               # E: drop
+	await physics_frames(5)
+	sheet_step(carried and p.held == null and fv.can_full.global_position.distance_to(c.global_position) < 8.0, "F3.5 carry it to the van and put it down (E)")
+	var p2_shed := await pad_walk_to(q, (poi["net_shed_door"] as Vector3) + Vector3(-3, 0, 2), 1.5, 90.0)
+	var helped := await until(func() -> bool: return fv._helped, 15.0)
+	sheet_step(p2_shed and helped, "F3.5 Naresh by the shed: 'There's two! I'll take this one to the van.'")
+	var mist := await until(func() -> bool: return st.flags.has("mistake_done"), 120.0)
+	sheet_step(mist and fv.can_full.litres > 19.0, "F3.5 'Leave the fuel to me!' ... 'Done. I even checked it twice.' (the gauge doesn't move: %.1f L)" % c.fuel)
+	# 6. drive on north
+	var in1 := await walk_in_driver(p)
+	var in2 := await pad_in_passenger(q)
+	var aboard := await until(func() -> bool: return n.state == Naresh.State.SEATED, 25.0)
+	sheet_step(in1 and in2 and aboard, "F3.6 get in (E / X); Naresh follows you into the back")
+	await tap(KEY_X)
+	await wait(0.5)
+	var north: Route = boot.builder.network.road("coast_road")
+	var x0 := c.global_position
+	await drive_until(north, int(north.nearest(1640.0, -900.0)["index"]), func() -> bool: return st.flags.has("stalled"), 120.0, 40.0)
+	key(KEY_W, false)
+	var went := c.global_position.distance_to(x0)
+	await wait(1.5)
+	sheet_step(st.flags.has("stalled") and went > 120.0, "F3.6 drive on north: the engine dies %.0f m up the road" % went)
+	sheet_step(boot.world.get_node_or_null("StallCreature") != null, "F3.6 up the road a creature steps out")
+	# 7. pour it yourself
+	await tap(KEY_E)                    # out of the van
+	await physics_frames(5)
+	var rack := c.rack_stand()
+	var at_rack := await walk_to(p, rack, "the van's rack", 0.6, 20.0)
+	await look_at_point(p, fv.can_full.global_position)
+	await physics_frames(3)
+	await tap(KEY_E)
+	await physics_frames(3)
+	sheet_step(at_rack and p.held == fv.can_full, "F3.7 the heavy can off the rack (E)")
+	var at_filler := await walk_to(p, c.filler_stand(), "the filler", 0.5, 20.0)
+	await look_at_point(p, c.filler_point())
+	await hold_physics(KEY_E, 5.0)
+	await until(func() -> bool: return st.current()["id"] == "end_f3", 3.0)
+	sheet_step(at_filler and c.fuel > 15.0 and st.current()["id"] == "end_f3", "F3.7 hold E at the filler: the tank fills (%.0f L); on to the salt pans" % c.fuel)
+	boot._set_layout(Boot.Layout.SOLO)
 
 
 func t_storm_gym() -> void:

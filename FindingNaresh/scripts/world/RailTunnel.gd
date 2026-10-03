@@ -42,6 +42,28 @@ var _concrete: Material
 var _dark_mat: Material
 
 
+## Flat ground where the gallery's two side passages run: they reach 9 m out
+## past the gallery, into the hill beyond the tunnel's slot (flat only to
+## TUNNEL_FLAT), and the hill filled their far ends: P2 walked up onto the
+## terrain inside fork 1, and fork 2's flare gun sat in it (the F6 watched
+## run; the old test put the player beside the gun by code). Handed to the
+## terrain with the other pads, before it's built.
+static func fork_pads(r: Route) -> Array:
+	var d := door_indices(r)
+	if d.is_empty():
+		return []
+	var rr := tunnel_run(r)
+	var g := (rr.x + rr.y) / 2
+	var out := IN_W + WALL + GAL_W + BRANCH * 0.5          # the passage's middle, m from the road's
+	var list: Array = []
+	for fi in [int(d[0]) + (g - int(d[0])) / 2, g + (int(d[1]) - g) / 2]:
+		# a cell's diagonal past the passage: the terrain is a 5 m grid, and with
+		# the pad just covering it a cell corner outside it still raised a 2 m
+		# ridge across the passage (its triangles slope between the corners)
+		list.append({"pos": r.point(fi) + r.right(fi) * out, "radius": BRANCH * 0.5 + Landscape.STEP * 1.5, "blend": 3.0})
+	return list
+
+
 ## Where the gallery's two doors are (road sample indices), for the tunnel
 ## builder too: DOOR_OUT samples either side of the gate (the tunnel's middle),
 ## so the gallery is ~120 m (the tunnel itself is ~360 m).
@@ -202,6 +224,9 @@ func _gallery(b, body: StaticBody3D) -> void:
 			var case_at := base + r * (BRANCH - 1.0)
 			case_at.y = p.y + 0.05
 			b.world.add_child(Build.box(Vector3(0.5, 0.3, 0.35), ToonMat.make(Color(0.6, 0.15, 0.12)), case_at + Vector3(0, 0.15, 0), Vector3.ZERO, "FlareCase"))
+			# solid, so the gun rests on it: without, the gun fell through the
+			# lid and lay hidden inside the case's box (the F6 watched run)
+			body.add_child(b._box_shape(Vector3(0.5, 0.3, 0.35), Transform3D(Basis(), case_at + Vector3(0, 0.15, 0))))
 			gun = FlareGun.new()
 			gun.name = "FlareGun"
 			b.world.add_child(gun)

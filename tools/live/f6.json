@@ -1,0 +1,407 @@
+{
+ "name": "f6",
+ "setup": [
+  {
+   "do": "eval",
+   "expr": "boot._on_joy_changed(0, true)"
+  }
+ ],
+ "steps": [
+  {
+   "name": "F6.0 jump",
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Story",
+     "row": "A flood gate is down"
+    }
+   ],
+   "expect": [
+    {
+     "name": "in the tunnel, the gate down ahead",
+     "expr": "boot.story.current()['id'] == 'tunnel' and tunnel().gate.global_position.y < tunnel().road.point(tunnel().gate_i).y + 0.2",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "F6.1 dark: the torch",
+   "do": [
+    {
+     "do": "tap",
+     "key": "F"
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    }
+   ],
+   "expect": [
+    {
+     "name": "P1's torch on",
+     "expr": "p1().flashlight.visible",
+     "within": 1
+    }
+   ]
+  },
+  {
+   "name": "F6.2 into the gallery (P2)",
+   "max": 200,
+   "do": [
+    {
+     "do": "tap",
+     "key": "F"
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:gallery_door(0, false)",
+     "arrive": 1.0,
+     "max": 40
+    },
+    {
+     "do": "until",
+     "expr": "gallery_creature_dir() > 0 and gallery_creature_k() > 2.0",
+     "max": 120
+    },
+    {
+     "do": "pad_down",
+     "btn": "B"
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:gallery_door(0, true)",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:gallery_at(-15)",
+     "arrive": 0.8,
+     "max": 60
+    },
+    {
+     "do": "pad_tap",
+     "btn": "Y"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "pad_tap",
+     "btn": "Y"
+    }
+   ],
+   "expect": [
+    {
+     "name": "P2 at fork 1, torch off again",
+     "expr": "p2().global_position.distance_to(gallery_at(-15)) < 2.0 and not p2().flashlight.visible",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F6.2 let it pass (fork 1's passage)",
+   "max": 200,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:gallery_fork(1, 7.0)",
+     "arrive": 0.8,
+     "max": 30
+    },
+    {
+     "do": "until",
+     "expr": "gallery_creature_dir() < 0 and gallery_creature_k() < -18.0",
+     "max": 150
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:gallery_at(-15)",
+     "arrive": 0.8,
+     "max": 30
+    }
+   ],
+   "expect": [
+    {
+     "name": "it walked by: not seen",
+     "expr": "tunnel().watcher.state == 0",
+     "within": 1
+    }
+   ]
+  },
+  {
+   "name": "F6.3 the flare gun",
+   "max": 150,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:gallery_at(15)",
+     "arrive": 0.8,
+     "max": 80
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:gallery_fork(2, 7.3)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "pad_tap",
+     "btn": "Y"
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:tunnel().gun.global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "Y"
+    }
+   ],
+   "expect": [
+    {
+     "name": "P2 has the flare gun",
+     "expr": "p2().held == tunnel().gun",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F6.3 fire a flare",
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:gallery_at(15)",
+     "arrive": 0.8,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:gallery_at(0) + Vector3(0, 1, 0)"
+    },
+    {
+     "do": "pad_tap",
+     "btn": "RB"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "it runs, 2 flares left",
+     "expr": "tunnel().watcher.scared_t > 0.0 and tunnel().gun.flares_left() == 2",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F6.4 the winch (P2) and the van under the gate (P1)",
+   "max": 150,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:tunnel().winch.stand_point()",
+     "arrive": 0.6,
+     "max": 40
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:tunnel().winch.global_position"
+    },
+    {
+     "do": "pad_down",
+     "btn": "X"
+    },
+    {
+     "do": "until",
+     "expr": "tunnel().gate.global_position.y > tunnel().road.point(tunnel().gate_i).y + 3.0",
+     "max": 8
+    },
+    {
+     "do": "call",
+     "fn": "walk_in_driver",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "until",
+     "expr": "boot.naresh.state == 5",
+     "max": 25
+    },
+    {
+     "do": "call",
+     "fn": "engine_on"
+    },
+    {
+     "do": "drive",
+     "road": "tunnel",
+     "to": "expr:tunnel().road.point(tunnel().gate_i + 20)",
+     "until": "boot.story.flags.has('gate_through')",
+     "kmh": 20,
+     "max": 40
+    },
+    {
+     "do": "pad_up",
+     "btn": "X"
+    }
+   ],
+   "expect": [
+    {
+     "name": "the van under the gate and on",
+     "expr": "boot.story.flags.has('gate_through')",
+     "within": 2
+    },
+    {
+     "name": "on to the radio mast",
+     "expr": "boot.story.current()['id'] == 'end_f6'",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "F6.4 P2 out by the far door",
+   "max": 120,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:gallery_at(28)",
+     "arrive": 0.8,
+     "max": 60
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:gallery_door(1, true)",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:gallery_door(1, false)",
+     "arrive": 1.0,
+     "max": 20
+    },
+    {
+     "do": "pad_up",
+     "btn": "B"
+    },
+    {
+     "do": "call",
+     "fn": "pad_in_passenger",
+     "args": [
+      "p2"
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "name": "P2 in the van",
+     "expr": "p2().seat != null",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "F6.5 the push start",
+   "max": 150,
+   "do": [
+    {
+     "do": "drive",
+     "road": "tunnel",
+     "to": "expr:tunnel().road.point(downhill_index(tunnel().road, tunnel().run.y + 12, 40, 6.0))",
+     "until": "false",
+     "kmh": 30,
+     "max": 90
+    },
+    {
+     "do": "tap",
+     "key": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "menu",
+     "tab": "Van",
+     "row": "Flatten the battery"
+    },
+    {
+     "do": "tap",
+     "key": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "a flat battery: click, click",
+     "expr": "not boot.camper.engine_on and boot.camper.battery < 0.05",
+     "within": 1
+    }
+   ]
+  },
+  {
+   "name": "F6.5 roll it, X",
+   "max": 60,
+   "do": [
+    {
+     "do": "tap",
+     "key": "SPACE"
+    },
+    {
+     "do": "until",
+     "expr": "boot.camper.linear_velocity.length() * 3.6 > 11.0",
+     "max": 30
+    },
+    {
+     "do": "tap",
+     "key": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "rolling over 10 km/h: it bump-starts",
+     "expr": "boot.camper.engine_on",
+     "within": 1
+    }
+   ]
+  }
+ ]
+}
