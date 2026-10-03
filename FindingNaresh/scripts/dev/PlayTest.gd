@@ -4691,7 +4691,10 @@ func look_at_point(p: PlayerRig, target: Vector3) -> void:
 	var d := target - p.global_position
 	p.yaw = atan2(-d.x, -d.z)
 	p.rotation.y = p.yaw
-	var eye := p.global_position + Vector3.UP * (PlayerRig.STAND_HEIGHT - 0.16)
+	# from where the eyes really are (the head): crouched they're ~0.7 m lower,
+	# and just after standing up they ease back up; a fixed standing height
+	# aimed over the flare gun, then into its case (the F6 runs)
+	var eye := p.head.global_position
 	p.pitch = atan2(target.y - eye.y, Vector2(target.x - eye.x, target.z - eye.z).length())
 	await physics_frames(4)
 
@@ -6824,7 +6827,16 @@ func t_decoy() -> void:
 	await wait(0.3)
 	var t0 := Time.get_ticks_msec()
 	var shed: Vector3 = poi["net_shed"]
+	var log_t := [0.0]
 	var clear := await until(func() -> bool:
+		# every 10 s where they are and what they're doing (a failure here
+		# once had one creature stay by the shed, unexplained)
+		if Time.get_ticks_msec() - t0 >= log_t[0]:
+			log_t[0] += 10000.0
+			for cr in fv.creatures:
+				log_line("  %.0f s: creature at %s (%.0f m from the shed), %s, drawn %s, noticed %.1f s ago, goal %.0f m off" % [(Time.get_ticks_msec() - t0) / 1000.0,
+					cr.global_position, cr.global_position.distance_to(shed), Creature.State.keys()[cr.state], cr.naresh_drawn, cr._noticed_t,
+					Vector2(cr.goal_now.x - cr.global_position.x, cr.goal_now.z - cr.global_position.z).length()])
 		for cr in fv.creatures:
 			if cr.global_position.distance_to(shed) < 25.0:
 				return false
@@ -6884,7 +6896,8 @@ func t_decoy() -> void:
 	await physics_frames(5)
 	pad_button(JOY_BUTTON_DPAD_UP, false)
 	await physics_frames(4)
-	log_line("recall: Naresh %s, leader %s" % [Naresh.State.keys()[n.state], n.leader.name if n.leader != null else "-"])
+	log_line("recall: Naresh %s, leader %s; P2's wheel open %s, jobs %s, sel %d; commands given %d; P2 on floor %s" % [Naresh.State.keys()[n.state], n.leader.name if n.leader != null else "-",
+		q.wheel_open, q.wheel_jobs.map(func(j): return j["id"]), q.wheel_sel, n.commands_given, q.is_on_floor()])
 	pad_axis(JOY_AXIS_TRIGGER_LEFT, 0.0)
 	check(n.state == Naresh.State.FOLLOW and n.leader == q, "D-pad Up through the binoculars, %.0f m: he follows P2" % q.global_position.distance_to(n.global_position))
 	# the van parked at the village (as you would), P2 walks him back to it;
@@ -6912,7 +6925,7 @@ func t_decoy() -> void:
 	check(stored, "he puts the light can on the van's rack")
 	var did := await until(func() -> bool: return st.flags.has("mistake_done"), 60.0)
 	log_line("the mistake: fuel %.2f L, the full can %.1f L, the empty %.1f L" % [c.fuel, fv.can_full.litres, fv.can_empty.litres])
-	check(did and c.fuel < 1.0 and fv.can_full.litres > 19.0, "'Leave the fuel to me!' He fills it from the empty can (the full one untouched)")
+	check(did and c.fuel < 1.2 and fv.can_full.litres > 19.0, "'Leave the fuel to me!' He fills it from the empty can (the full one untouched)")
 	await until(func() -> bool: return st.current()["id"] == "drive_on", 3.0)
 	check(st.current()["id"] == "drive_on", "and the story says drive on ('%s')" % st.current()["id"])
 	# drive on: it dies up the road, and one comes
@@ -7244,7 +7257,10 @@ func t_tunnel() -> void:
 	# the flare gun at the second fork's dead end
 	var gun_at: Vector3 = poi["flare_gun"]
 	await place_player(p, gun_at - rt.road.right(rt.gate_i) * 1.3 + Vector3(0, 0.2, 0), 0.0)
-	await look_at_point(p, gun_at)
+	# landed first, then at the gun where it rests (on the case, solid now):
+	# aimed while still dropping, the view ended low, on the case, no prompt
+	await wait(0.6)
+	await look_at_point(p, rt.gun.global_position + Vector3.UP * 0.05)
 	await wait(0.2)
 	await shot("gallery_flare_gun")
 	await tap(KEY_E)

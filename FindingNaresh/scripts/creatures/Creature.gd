@@ -75,6 +75,17 @@ var passive := false                 ## only walks its patrol and shows itself (
 var dormant := false                 ## switched off (the Naresh gym's creature switch)
 var naresh_drawn := false            ## drifting towards Naresh right now (tests read this)
 var goal_now := Vector3.ZERO          ## where it's heading this frame (the live line shows it)
+## Stuck against something on its straight line (it has no path planning):
+## wanting to move but not moving for STUCK_S, it steps aside for DETOUR_S,
+## then heads on. One stood wedged by the net shed's crate stack for good,
+## so the shed side never cleared (the decoy test, 2026-10-03).
+const STUCK_S := 1.5
+const DETOUR_S := 1.6
+var _stuck_mark := Vector3.INF
+var _stuck_t := 0.0
+var _detour := Vector3.ZERO
+var _detour_t := 0.0
+var _detour_side := 1.0
 var van_interest := 0.0              ## s left of wanting to be at the van
 var _van_memory := randf_range(VAN_MEMORY.x, VAN_MEMORY.y)   ## this one's patience with the van
 var _item_at := Vector3.ZERO
@@ -480,7 +491,8 @@ func _move(delta: float) -> void:
 		if naresh_drawn and state == State.WANDER and on_return:
 			spd = RETURN_DRIFT
 		v = to.normalized() * spd
-		var want := atan2(-to.x, -to.z)
+		v = _unstick(v, delta)
+		var want := atan2(-v.x, -v.z) if v.length() > 0.05 else atan2(-to.x, -to.z)
 		rotation.y = lerp_angle(rotation.y, want, 1.0 - exp(-delta * (10.0 if state == State.TAKE else 4.0)))
 	elif (state != State.WANDER or _noticed_t < ATTEND) and last_noticed != global_position:
 		var look := last_noticed - global_position
@@ -490,6 +502,27 @@ func _move(delta: float) -> void:
 	velocity.z = v.z
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 	move_and_slide()
+
+
+## Straight at the goal unless that has stopped working: then sideways (the
+## other side each time) for a moment, round whatever is in the way.
+func _unstick(v: Vector3, delta: float) -> Vector3:
+	if _detour_t > 0.0:
+		_detour_t -= delta
+		return _detour * v.length()
+	if _stuck_mark == Vector3.INF or global_position.distance_to(_stuck_mark) > 0.4:
+		_stuck_mark = global_position
+		_stuck_t = 0.0
+		return v
+	_stuck_t += delta
+	if _stuck_t < STUCK_S:
+		return v
+	_stuck_t = 0.0
+	_detour_side = -_detour_side
+	var side := Vector3(-v.z, 0.0, v.x).normalized() * _detour_side
+	_detour = (side + v.normalized() * 0.3).normalized()
+	_detour_t = DETOUR_S
+	return _detour * v.length()
 
 
 func _flat_dist(p: Vector3) -> float:
