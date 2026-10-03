@@ -22,6 +22,11 @@ below has its steps and its "Decisions to confirm". Either:
 
 Report per part (F3, F4, ...), and say which decisions you'd change.
 
+**How each step reads (2026-10-04, your ask):** a plain sentence of what to
+do and why; under it *Exactly how* (optional, the buttons and where to
+stand) and **You should see** (what tells you it worked). Later: a
+screenshot for each "you should see" (noted in `notes/POLISH.md`).
+
 **Every jump, the same way:** F1 opens the developer menu; arrow keys to the
 tab and the row; Enter jumps there; **then F1 (or Esc) to close the menu**
 (it stays open after Enter). A jump gives you both the binoculars.
@@ -159,62 +164,80 @@ from there (step 3). Or Travel → "The pass" to start at the top.
 
 ## F3. The fishing village (the decoy)
 
-**Getting there.** `Play.bat`, **New game**, **F1 → Story**, pick **"Nearly
-out of fuel. The fishing village: the fuel's in the net shed"**, Enter. You
-both stand by the van on the coast road, a short walk south of the village,
-Naresh with you, the fuel lamp on (about a litre left). It's dusk.
-(Or drive there from "North on the coast road": about 420 m before the
-village the lamp comes on and a message says you'll only just make it.)
+**Getting there.** `Play.bat`, **New game**, **F1**, the **Story** tab, the row
+**"Nearly out of fuel. The fishing village: the fuel's in the net shed"**,
+Enter, then **F1** to close the menu. You're both by the van on the road, a
+short walk from the village, Naresh with you, nearly out of fuel. It's dusk.
 
-**What's there.** A few huts, nets on poles, boats on the sand, a long
-wooden **jetty** out into the sea (railed both sides), and the **net shed**
-(brown, flat roof, "NETS - PRIVATE"), padlocked. Two creatures pace between
-the huts and the shed. Fish crates are stacked up one side of the shed like
-steps; up on its roof is a small blue boat.
+**The idea.** The fuel is locked in a shed in the village, and two creatures
+hang around it. You can't just walk in: they'll come for Naresh. So you use
+him as **bait**: send him to the far end of the long jetty, the creatures
+follow him out there, and while they're away you grab the fuel. Then you call
+him back before they catch him.
 
-1. **Don't walk in.** Walk north up the beach to the village's edge, about
-   150 m short of the jetty's far end (the huts ahead of you, the jetty off
-   to your right), and stop there, both of you. (Walking in doesn't work:
-   the creatures drift towards Naresh, and he follows you, so they come to
-   you.)
-2. **Send him to the end of the jetty from there:** hold RMB (P2: LT) for
-   the binoculars, look at the far end of the jetty, hold V (pad: D-pad Up),
-   *Go and wait there*. **Expect:** he walks onto the jetty and out to its
-   end; the creatures turn and follow him out along it (within a minute the
-   shed side is clear); they need over a minute to reach him.
-3. **One of you: the key.** Climb the fish crates (W and jump, step by step;
-   at the top, turn onto the roof). In the blue boat: **E: Take the key**.
-   Down again, the shed door: **E: Unlock the shed**. Inside: two cans, one
-   heavy, one light.
-4. **The other: watch him** from **behind the shed**: once the creatures
-   are out on the jetty, go round to the shed's south-west corner (the side
-   away from the jetty; from there you still see the jetty's end past the
-   shed's south wall). Through the binoculars, before a creature reaches
-   him, look at him and V / D-pad Up: *Follow me*. Stay there: his way back
-   to you passes the shed. (Waiting out on the open beach, or by the door,
-   the creatures trailing him back see you and take you.)
-   (If he's taken: he's left high up on the old water tank or the rock
-   stack, shouting; walk under it and he climbs down to you. But the
-   creatures are back by the shed by then: send him out on the jetty again
-   before you go back in.)
-5. **The fuel.** Be quick: the decoy only buys the time out and back (when
-   he comes back the creatures follow him in). The one with the key: take
-   the heavy can to the van while he's still out there. **Expect:** when
-   Naresh comes by the shed (to you, behind it) he says "There's two! I'll
-   take this one to the van", carries the *light* can out and puts it on the
-   rack. Then go to the van yourself, round the shed's west side. Once the heavy can is at the van too:
-   "Leave the fuel to me! I know how." Let him. **Expect:** "Done. I even
-   checked it twice." (Watch the fuel gauge: it doesn't move.)
-6. **Drive on north.** **Expect:** after a couple of hundred metres the
-   engine coughs and dies; "The full can is still on the rack"; Naresh:
-   "Then imagine how much fuel I put in." Up the road a creature steps out
-   and turns towards you.
-7. **Pour it yourself:** the heavy can off the rack, hold E at the filler.
-   **Expect:** the tank fills; the objective: on to the salt pans (the end
-   of the build for now).
+**What's there.** Huts, nets on poles, boats on the sand, a long wooden
+**jetty** out into the sea, and the **net shed**: brown, flat roof, a sign
+**"NETS - PRIVATE"** over its door, a padlock, fish crates stacked up one
+side like steps, and a small blue boat on its roof.
 
-Try the other ways too: pour the heavy can yourself before he offers (then
-no mistake, no stall); stand in his way at the van (he says "Excuse me!").
+1. **Walk towards the village with Naresh, but stop about halfway** between
+   the van and the first huts. Don't go in.
+   - *Exactly how (optional):* walk from the van towards the huts; stop about
+     halfway. You'll see the long jetty out to sea on your right.
+   - **You should see:** two creatures pacing near the shed in the village.
+2. **Send Naresh to the far end of the jetty.**
+   - *Exactly how:* hold **RMB** (P2: **LT**) for the binoculars, look at the
+     very end of the jetty, press **V** (P2: **D-pad Up**) and pick **"Go and
+     wait there"**.
+   - **You should see:** he walks out along the jetty to its end, and the two
+     creatures slowly follow him out there. Within about a minute nobody is
+     left by the shed. They're slow: it takes them over a minute to reach
+     him, and that's your time.
+3. **P1: get the key and open the shed.** The key is in the blue boat on the
+   shed's roof.
+   - *Exactly how:* walk to the shed, round to the side with the crates.
+     Jump up the crates one at a time (W + Space, wait to land, again). At
+     the top, turn towards the roof and step on. Look into the boat:
+     **E "Take the key"**. Walk back down off the roof, go to the shed door:
+     **E "Unlock the shed"**.
+   - **You should see:** "The padlock gives ... two jerrycans at the back: one
+     heavy, one light." Pick up the **heavy** one (E) and carry it to the back
+     of the van.
+4. **P2: hide by the shed, keep an eye on Naresh, and call him back to you
+   before the creatures reach him.** Calling him from a hiding spot next to
+   the shed means he comes back past the shed (that matters in step 5).
+   - *Exactly how:* go to the shed door and stand with your back to it. Walk
+     straight ahead about 10 steps, then turn right and walk about 10 more.
+     Turn round: past the corner of the shed you can see the jetty with
+     Naresh at its end. Hold **LT** (binoculars). When a creature is getting
+     close to him, look at him, **D-pad Up**, **"Follow me"**. Then **don't
+     move**: he walks back to you.
+   - **Why hide:** the creatures follow him back. Standing in the open, or
+     right at the shed door, they'd see you and take you.
+   - **If he's taken anyway:** you'll hear him shouting from somewhere high
+     (an old water tank or a rock stack). Walk to it and he climbs down to
+     you. The creatures will be back at the shed by then, so send him out on
+     the jetty again before you go near it.
+5. **Naresh and the fuel.** Coming back past the shed, he notices the cans.
+   - **You should see / hear:** "There's two! I'll take this one to the van."
+     He carries the **light** can to the van himself. Now P2 walks to the van
+     too (go back past the shed door, not the crate side).
+   - At the van he offers: "Leave the fuel to me! I know how." **Let him.**
+   - **You should see:** "Done. I even checked it twice." But the fuel gauge
+     **doesn't move**: he poured from the empty can.
+6. **Get in and drive on along the road.**
+   - **You should see:** a couple of hundred metres on, the engine coughs and
+     dies. "The full can is still on the rack." Naresh: "Then imagine how much
+     fuel I put in." Up the road, a creature steps out and turns towards you.
+7. **Fill it up yourself, quickly.**
+   - *Exactly how:* get out (E). At the back of the van, take the heavy can
+     off the rack (E). The fuel cap is on the driver's side, near the back:
+     look at it and **hold E** until it's full.
+   - **You should see:** the tank fills; the goal changes to "on to the salt
+     pans".
+
+**Also try:** pour the heavy can in yourself before he offers (then there's
+no mistake and no breakdown); stand in his way at the van ("Excuse me!").
 
 ### Decisions to confirm (F3) (not yet tested: you test from F3 on once F is finished)
 
@@ -242,35 +265,33 @@ no mistake, no stall); stand in his way at the van (he says "Excuse me!").
 ## F4. The salt pans (red light, green light)
 
 **Getting there.** **F1 → Story → "Open salt flats, and something on the
-old gantry watching the road"**. You're by the van on the coast road, about
-100 m short of the salt pans, Naresh with you. (Or drive on north from the
-fishing village.)
+old gantry watching the road"**, Enter, **F1**. You're by the van about 100 m
+before the salt flats, Naresh with you.
 
-**What's there.** The road crosses open white salt flats. In the middle of
-the pans, on an old wooden gantry, a creature stands watch. Its gaze is a
-**pale beam** you can see. White **salt heaps** line the seaward side of the
-road.
+**The idea.** A creature stands on a tall wooden frame in the middle of the
+white salt flats, watching the road like a lighthouse. Its gaze is a pale
+beam you can see. Drive while it looks away; stop behind a salt heap when it
+looks your way. (Red light, green light.)
 
-1. **Watch it first** (from the van or on foot, out of its way). **Expect:**
-   it stares along the road one way for ~3 s, turns to the next, sweeping
-   across the road; after sweeping one way it **turns to look out to sea**
-   for ~4.5 s (its back to the road: your green light), then sweeps back.
-   The pattern repeats.
-2. **Cross in dashes.** Drive while it looks away (best: while it looks out
-   to sea); when it turns your way, **stop behind a salt heap** (the heap
-   between you and it). **Expect:** behind a heap you're hidden even in its
-   gaze. Naresh, in the back, calls out as it turns ("Stop! It's turning
-   this way!"), but one time in three he gets it wrong ("Go, go! It's not
-   looking!").
-3. **Get it wrong on purpose** (another go: F1 → Story again):
-   - driving through its gaze, or even near it (movement in the corner of
-     its eye makes it turn and look), **it sees the van**;
-   - stopped in the open, in its gaze for 2.5 s, **it sees the van** (not if
-     the tarp's on);
-   **Expect:** a message; it drops off the gantry and comes across the pans
-   for the van (the usual van trouble: leak, engine, tyre). Drive on and
-   it falls behind. Nothing is lost for good.
-4. Across the open ground: the objective moves on to the estuary bridge.
+1. **Watch it for a bit first**, from where you are.
+   - **You should see:** it stares along the road, turns, stares again, a
+     few times; then it turns right round and **looks out to sea** for a few
+     seconds (that's your best moment to go), then back. Always the same
+     pattern.
+2. **Everyone in the van, then cross in short dashes.**
+   - *Exactly how:* drive while the beam points away from you; when it starts
+     turning towards you, stop **behind one of the big white salt heaps**
+     next to the road (the heap between you and it).
+   - **You should see:** behind a heap you're safe even when the beam passes
+     over you. Naresh shouts "Stop! It's turning this way!", but about one
+     time in three he gets it wrong ("Go, go! It's not looking!").
+   - Once you're past the flats, the goal changes to the estuary bridge.
+3. **Get it wrong on purpose** (jump back here with F1 → Story again): drive
+   straight across without stopping, or stop in the open where the beam can
+   see you.
+   - **You should see:** a message; it jumps down and comes across the salt
+     for the van (the usual van trouble). Drive on and it falls behind.
+     Nothing is lost.
 
 ### Decisions to confirm (F4) (you test from F3 on once F is finished)
 
@@ -292,29 +313,36 @@ road.
 ## F5. The estuary bridge (the three-hand swing bridge)
 
 **Getting there.** **F1 → Story → "The estuary bridge is swung open. Turn
-it back across"**. You're at the bridge's controls on the near bank, the van
-close by, Naresh with you. (Or drive on north from the salt pans.)
+it back across"**, Enter, **F1**. You're next to the bridge's controls, the van
+close by, Naresh with you.
 
-**What's there.** The road bridge over the river mouth; its middle span
-stands **swung open along the river** on its pier, red barriers either side
-of the gap. On the near bank by the road: **two cranks** (wheels with a
-yellow knob) and a **brake lever** (red), and a sign. By the pier, a white
-**tide gauge** with a red mark near the top and a yellow float.
+**The idea.** The middle of the road bridge has been swung round, so there's
+a gap. To swing it back you need three hands at once: someone holding the
+**red brake lever** off, and someone turning a **wheel**. Two people on the
+two wheels is twice as fast.
 
-1. **Turn a crank alone** (hold E / pad X). **Expect:** nothing: the brake's
-   on (the sign says BRAKE ON).
-2. **Give Naresh the brake:** look at the lever, V / D-pad Up, *Hold the
-   brake*. **Expect:** he holds it off (BRAKE OFF). Now turn a crank:
-   **expect** the span to come round slowly; with both of you on the cranks,
-   twice as fast (~30 s from open to shut).
-3. **Half way, Naresh lets go** to wave at a boat ("Ooh, a boat! HELLO! ...
-   Oh. Was I holding something?"). **Expect:** the current swings the span
-   back open. Tell him again (V on the lever) or one of you grabs the brake.
-4. **Shut:** "The span swings home ... the bolts drop". The barriers go; drive
-   the van over. The objective: on to the rail tunnel.
-5. **The tide:** from when you arrive, the float rises; after ~4 min it's at
-   the red mark and the current pulls the span open twice as fast (a
-   message says so). Harder, never a fail.
+**What's there.** By the road: **two wheels** (with a yellow knob), a **red
+lever**, a sign that says BRAKE ON or OFF. In the river, a white post with a
+yellow float (the tide).
+
+1. **Try one wheel on your own.**
+   - *Exactly how:* look at a wheel, **hold E** (P2: **hold X**).
+   - **You should see:** nothing moves; the sign says BRAKE ON.
+2. **Ask Naresh to hold the brake, then both turn a wheel.**
+   - *Exactly how:* look at the red lever, **V** (P2: D-pad Up), **"Hold the
+     brake"**. Then P1 holds E on one wheel and P2 holds X on the other.
+   - **You should see:** BRAKE OFF; the bridge swings slowly back towards
+     the road (about 30 s with both of you).
+3. **Half way, Naresh lets go to wave at a boat.**
+   - **You should see / hear:** "Ooh, a boat! HELLO! ... Oh. Was I holding
+     something?" The bridge swings back open. Ask him again (look at the red
+     lever, V, "Hold the brake") and keep turning.
+4. **It bolts home.**
+   - **You should see:** "The span swings home ... the bolts drop", the red
+     barriers go away. Drive across. The goal: the old rail tunnel.
+5. **The tide (just watch):** the yellow float rises the longer you take;
+   after about 4 minutes the current pulls twice as hard. It only makes it
+   harder, never a fail.
 
 ### Decisions to confirm (F5) (you test from F3 on once F is finished)
 
@@ -334,33 +362,48 @@ yellow knob) and a **brake lever** (red), and a sign. By the pier, a white
 ## F6. The old rail tunnel (the dark gallery, the flare gun, the push start)
 
 **Getting there.** **F1 → Story → "A flood gate is down across the road in
-the old rail tunnel"**. You're by the van inside the tunnel, ~25 m short of
-the gate, Naresh with you. (Or drive on from the estuary bridge: the coast
-road turns inland under Tunnel Hill; "OLD RAIL TUNNEL 1911" over the mouth.)
+the old rail tunnel"**, Enter, **F1**. You're by the van inside a dark tunnel,
+just before a closed steel gate, Naresh with you.
 
-1. **Inside it's dark** (headlights: L; torch: F). **Expect:** a steel
-   **FLOOD GATE** down across the road ahead; in the tunnel's right-hand wall
-   a doorway marked **SERVICE GALLERY** (one before the gate, one after).
-2. **The gallery:** narrow, pitch dark, and something walks it. **Expect:**
-   with the torch **off** it doesn't see you unless it's very close (it hears
-   your footsteps: crouch-walk); with the torch **on** it sees you from far
-   off. At each of the two **forks**, the way is painted on the wall
-   ("GATE >>"): you can only read it **with the torch on**. One fork is a
-   dead end.
-3. **The flare gun:** at the end of the second fork's dead end, a red case:
-   **E** picks up the flare gun. **G / LMB** (pad RB: the throw button)
-   fires a flare: red light, a bang, and every creature within 80 m runs and
-   keeps away for 90 s. Three flares (the prompt counts them). Getting into
-   the van with it in hand puts it on the van's rear rack (the door says so);
-   take it off at the back (E) when you need it.
-4. **The winch** is on the gallery wall by the gate: hold E to raise the gate
-   (it drops when you let go). One holds it, the other drives the van
-   through; or give it to Naresh (V on the winch, *Hold the gate winch*) and
-   then fetch him (he's alone in the dark...). Out through the far door.
-5. **The push start:** leave the headlights on with the engine off until the
-   battery's flat (or F1 → Van → "Flatten the battery"). **Expect:** the ignition only clicks
-   ("rolling over 10 km/h, it would bump-start"). Let the van roll down a
-   slope, handbrake off, and press X while it rolls: it catches.
+**The idea.** A steel **flood gate** blocks the road. Its winch is in a
+narrow, pitch-dark **service passage** that runs alongside the tunnel, and a
+creature walks up and down in there. One of you sneaks in, holds the gate
+up, and the other drives the van through. In the passage there's also a
+**flare gun** to find.
+
+1. **Lights on.** Van headlights: **L**; your torch: **F** (P2: **Y**).
+   - **You should see:** the steel gate ahead; in the tunnel wall on your
+     right, just before the gate, a doorway marked **SERVICE GALLERY**.
+2. **P2: sneak into the passage.** P1 stays at the van with Naresh.
+   - **How it works:** in the dark, with your torch **off**, the creature only
+     notices you if you're very close; it hears footsteps, so **crouch**
+     (hold **B**). With the torch **on** it sees you from far away.
+   - *Exactly how:* torch off, hold B, walk in. Every so often there's a short
+     dead-end side passage on your right: duck into one to let the creature
+     walk past. At the side passages a painted arrow on the opposite wall
+     shows the way ("GATE >>"): flick the torch on for a second to read it.
+3. **P2: find the flare gun.** It's in a red case at the end of the second
+   side passage (the one past the gate).
+   - *Exactly how:* torch on for a moment to see it, **X** to pick it up,
+     torch off.
+   - **RB fires a flare:** red light and a bang; every creature nearby runs
+     off and stays away for about a minute and a half. Three flares.
+4. **P2 holds the gate up, P1 drives through.**
+   - *Exactly how:* the winch is a wheel on the passage wall, level with the
+     gate. P2: look at it, **hold X** (the gate rises while you hold). P1:
+     get in and drive under the gate. Then P2 lets go, walks on to the next
+     doorway out of the passage, and back to the van.
+   - **You should see:** the gate rising; the goal changes to the radio mast.
+   - (You can also ask Naresh to hold the winch: V on it, "Hold the gate
+     winch". Then you have to go back in and fetch him.)
+   - **Getting in the van holding the flare gun** puts it on the van's rack
+     at the back (the door tells you). Take it off at the back (E) later.
+5. **The push start.** A flat battery: you start the van by rolling it.
+   - *Exactly how:* **F1 → Van → "Flatten the battery"**, F1. Press X: it only
+     clicks. Drive out of the tunnel (or roll) to where the road goes
+     downhill, let the handbrake off (**Space**) and let the van roll; once
+     it's rolling, press **X**.
+   - **You should see:** it starts.
 
 ### Decisions to confirm (F6) (you test from F3 on once F is finished)
 
@@ -383,37 +426,45 @@ road turns inland under Tunnel Hill; "OLD RAIL TUNNEL 1911" over the mouth.)
 ## F7. The radio mast (the finale: point the dishes home)
 
 **Getting there.** **F1 → Story → "Point the mast's three dishes, as the
-plaque says"**. You're at the foot of the red-and-white mast on Radio Hill;
-the van is on the coast road below (about 230 m down: no road goes up).
-(Or drive out of the tunnel: the mast is on the hill above the road; park
-and walk up.)
+plaque says"**, Enter, **F1**. You're at the bottom of the tall red-and-white
+radio mast on a hill (the van is down on the road below). After a jump, P2
+holds the flare gun.
 
-**What's there.** The mast with a platform 20 m up (a ladder up its side)
-and three dishes, numbered 1-3; at its foot a desk with a **screen**, three
-**cranks** (each with a lamp) and a **plaque**; by the hut a green
-**generator** with a pull cord and a choke.
+**The idea.** Start the mast's generator, then turn its three dishes to
+point at three far-away red lights. That calls for help. The generator is
+loud and brings creatures, so keep the flare gun handy.
 
-1. **Power.** One holds the **choke** (hold E / X), the other pulls the
-   **cord** (hold E). **Expect:** the cord alone splutters out; with the
-   choke held it roars into life. Far off, **three red beacons** blink on,
-   and the screen lights up. **It's loud: two creatures come for the noise**
-   (hide, keep still, or fire a flare: the flare gun is on the van's rear
-   rack if you brought it; after an F1 jump P2 holds it).
-2. **The targets.** The plaque: DISH 1, the tunnel mouth; DISH 2, the house
-   on the ridge (Naresh's home); DISH 3, the watchtower on the West Road.
-   Climb the ladder: from the platform you can see all three beacons.
-   **T** on a beacon tags it (any distance, looked at straight on; the
-   binoculars help), so the one below sees where it is.
-3. **The dishes.** Hold E on a dish's crank: it turns (always the same way,
-   round and round, 8 deg/s); the screen shows what that dish sees. Let go
-   with it on its beacon: it **locks**, its lamp goes green.
-4. **Naresh** can take a crank (V on it: *Hold*): the first time he turns
-   it **backwards** ("Is it going the right way? It looks the right way.")
-   until you tell him again: V on the crank, *Let go of it* ("Oh! The OTHER
-   way."), then V, *Hold* again: now he turns it the right way. When it's on
-   its beacon: V on him, *Wait here*, and it locks.
-5. **All three locked:** "The mast hums ... away to the west the clouds
-   break over the West Road." The objective: on to Naresh's home.
+**What's there.** The mast, with a platform at the top (a ladder up its
+side) and three dishes numbered 1-3. At its foot: a desk with a **screen**,
+three **crank handles** (each with a lamp) and a **plaque**. By the hut: a
+green **generator** with a pull cord and a choke.
+
+1. **Start the generator: P2 holds the choke, P1 pulls the cord.**
+   - *Exactly how:* P1 first tries alone: look at the pull cord, **hold E**:
+     it splutters and dies. Then P2 looks at the choke, **holds X**, and P1
+     **holds E** on the cord again.
+   - **You should see:** it roars into life; far away **three red lights**
+     start blinking; the screen lights up. Two creatures start coming for
+     the noise. P2: if one gets close, look at it and press **RB** (flare).
+2. **Optional: climb up and look.** The plaque says which light is which.
+   - *Exactly how:* at the ladder **E**, then **W** to climb; at the top
+     **T** on a red light marks it for the other player. To get down: stand
+     where the ladder comes up through the railing, **E**, then **S**.
+3. **Turn dish 1 yourself.**
+   - *Exactly how:* at the desk look at crank 1, **hold E**: the dish turns
+     and the screen shows what it sees. **Let go** when its red light is in
+     the middle of the screen.
+   - **You should see:** it locks, its lamp turns green.
+4. **Let Naresh turn dish 2** (he gets it wrong first).
+   - *Exactly how:* look at crank 2, **V**, **"Hold"**. He turns it the
+     **wrong way** ("Is it going the right way? It looks the right way.").
+     Tell him: look at the crank, **V**, **"Let go of it"** ("Oh! The OTHER
+     way."), then **V**, **"Hold"** again. When the screen shows its red light
+     in the middle, look at him, **V**, **"Wait here"**.
+   - **You should see:** dish 2 locks, lamp green.
+5. **Turn dish 3 yourself** (as dish 1).
+   - **You should see:** "The mast hums ... away to the west the clouds break
+     over the West Road." The goal: take Naresh home.
 
 ### Decisions to confirm (F7) (you test from F3 on once F is finished)
 
@@ -437,33 +488,38 @@ and three dishes, numbered 1-3; at its foot a desk with a **screen**, three
 
 ## F8. Naresh's home, the drive home, the end
 
-**Getting there.** **F1 → Story → "Down to the van, and take Naresh home"**.
-You're by the van on the coast road ~200 m short of Naresh's home (the
-pale house on the ridge), him with you. (Or come down from the mast.)
+**Getting there.** **F1 → Story → "Down to the van, and take Naresh home"**,
+Enter, **F1**. You're by the van on the road, a couple of hundred metres from
+Naresh's home (the pale house up on the ridge), him with you.
 
-1. **Take him home:** get him in the back, drive up to the house and stop.
-   **Expect:** he gets out and walks to the door. "The door opens before he
-   reaches it. His mother..." Then: "His sister ... looks past him, at the
-   empty space beside him on the path ... She says nothing." Naresh:
-   "Thanks for coming to get me. We'll be all right now." He goes in; "the
-   light is coming back".
-2. **The tracker** (hidden: nothing tells you about it). Only if you did the
-   barn maze, the lookout relay, found the flare gun in the tunnel and every
-   Memory Fragment: "his sister presses something small into your hand: a
-   tracker ... For next time."
-3. **The West Road home.** **Expect:** full sun, birds; the most beautiful
-   the game gets (block-out for now).
-4. **The ending watchtower** (by the West Road; its Tower Road branch goes to
-   P2's): climb it. **Expect:** a small warm light over every place the
-   journey went (windmill to mast); "Some lights out there are still dark"
-   if you skipped any optional one (maze, relay, flare gun): those stay dark.
-5. **Near home** (either home): both phones buzz: "Location sharing: Naresh
-   has left his house, heading to LiveStander." A few seconds later the end
-   screen: "End of part one ... Part two: LiveStander". E / A goes back to
-   the title.
+1. **Take him home.** Everyone in the van (he climbs in the back by
+   himself), drive along the road to the pale house and stop next to it.
+   - **You should see:** he gets out and walks to the door. "The door opens
+     before he reaches it. His mother ..." His sister "looks past him, at the
+     empty space beside him on the path ... She says nothing." Naresh:
+     "Thanks for coming to get me. We'll be all right now." He goes in, and
+     the light comes back.
+2. **The secret tracker** (nothing tells you about it): only if you did the
+   barn maze, the lookout relay, picked up the flare gun in the tunnel and
+   found every Memory Fragment, his sister gives you "a tracker ... For next
+   time." (After a jump you won't get it: that's expected.)
+3. **Drive home along the West Road** (the road carries on past his house).
+   - **You should see:** full sun and birds.
+4. **The old watchtower:** a tall wooden tower by a side road (Tower Road)
+   off the West Road. Park near it and walk up its long ramp at the back.
+   - **You should see:** a small warm light over every place your journey
+     went, from the windmill to the mast. Any optional thing you skipped
+     (maze, relay, flare gun) stays dark ("Some lights out there are still
+     dark").
+5. **Drive on to either home** (Tower Road goes on to P2's house; the West
+   Road to the homestead).
+   - **You should see:** both phones buzz: "Location sharing: Naresh has
+     left his house, heading to LiveStander." A few seconds later the end
+     screen: "End of part one ... Part two: LiveStander". E (A) goes back to
+     the title.
 
-(F1 → Story → "Home along the West Road" starts you at his home with him
-already inside.)
+(F1 → Story → "Home along the West Road" starts you at his home, him already
+inside.)
 
 ### Decisions to confirm (F8) (you test from F3 on once F is finished)
 

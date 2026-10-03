@@ -451,3 +451,18 @@ happened, the fix, and the habit to keep.
   it hops 1.2 m back out. The sequence passes now (clear after 24 s).
   **Open:** how it got inside the crates (a jump moving it? the stacked
   crates' shape?); the safety net covers the player either way.
+- **The test sheet must read like a friend telling you** (the user,
+  2026-10-04): "south-west corner", "away from the jetty", and "Follow me" +
+  "stay there" in one step made no sense to them. Now each step is one
+  plain sentence of what and why ("hide by the shed and call him back to
+  you before the creatures reach him"), then *Exactly how* (optional:
+  buttons, steps from a landmark: "back to the shed door, 10 steps ahead,
+  10 to the right") and **You should see**. Landmarks they can see (the
+  van, the huts, the shed door, the crates, the jetty), left / right from
+  where they stand, never compass points. Two players, as the game is
+  meant; no solo version needed. Later: a screenshot per "you should see"
+  (POLISH).
+- **Assumed** a sheet I'd proven step by step was followable. **Reality:**
+  proven to work isn't the same as understandable: the walk proves the
+  game, not the words. **Habit:** read each step as someone who has never
+  seen the code: can they find every thing it names on the screen?
