@@ -64,8 +64,8 @@
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:get_tree().get_first_node_in_group('radio_mast').choke.stand_point()",
-     "arrive": 0.5,
+     "to": "expr:get_tree().get_first_node_in_group('radio_mast').choke.stand_point() + (get_tree().get_first_node_in_group('radio_mast').choke.global_position - get_tree().get_first_node_in_group('radio_mast').cord.global_position).normalized() * 0.6",
+     "arrive": 0.4,
      "max": 30
     },
     {

@@ -34,7 +34,10 @@ walk = {
                 {"do": "hold", "key": "E", "s": 3.0}],
          "expect": [{"name": "it splutters out", "expr": "not %s.running and %s.cord.has_meta('spluttered')" % (M, M), "within": 2}]},
         {"name": "F7.1 the choke held, the cord pulled",
-         "do": [{"do": "walk", "who": 2, "to": "expr:%s.choke.stand_point()" % M, "arrive": 0.5, "max": 30},
+         # P2 a little to the choke's side, away from P1 at the cord: from the
+         # plain stand point P1's body was in P2's line to the choke (the
+         # recorded run, 2026-10-04)
+         "do": [{"do": "walk", "who": 2, "to": "expr:%s.choke.stand_point() + (%s.choke.global_position - %s.cord.global_position).normalized() * 0.6" % (M, M, M), "arrive": 0.4, "max": 30},
                 {"do": "look", "who": 2, "at": "expr:%s.choke.global_position" % M},
                 {"do": "pad_down", "btn": "X"},
                 {"do": "wait", "s": 0.5},
