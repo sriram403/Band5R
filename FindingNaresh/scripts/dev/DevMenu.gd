@@ -570,6 +570,7 @@ func run(action: String, arg = null) -> void:
 			_note = "A crate in front of P1."
 		"spawn_creature":
 			var cr := Creature.new()
+			cr.one_off = true
 			boot.world.add_child(cr)
 			cr.global_position = _in_front(p1, 25.0)
 			cr.rotation.y = p1.yaw
@@ -664,6 +665,11 @@ func go_to_step(id: String) -> String:
 		return ""
 	var spec: Array = STEP_PLACES[id]
 	var poi: Dictionary = boot.builder.poi
+	# every creature back at its post, calm, and one-off ones gone: whatever
+	# earlier play left them doing (the stall's creature came for the van
+	# after a jump back to the village, the user's F3 play, 2026-10-04)
+	for cr in get_tree().get_nodes_in_group("creature"):
+		(cr as Creature).back_to_post()
 	var c: Camper = boot.camper
 	var at: Vector3
 	if id in ["storm", "end_e"]:

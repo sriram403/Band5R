@@ -8923,6 +8923,24 @@ func t_step_jumps() -> void:
 	await wait(0.3)
 	await shot("f1_story_storm")
 	dm.toggle()
+	# a jump puts every creature back at its post, calm, and removes one-off
+	# ones: the stall's creature left on the road came for the van after the
+	# user jumped back to the village (2026-10-04)
+	dm.run("jump", st.index_of("village"))
+	await wait(0.6)
+	var fv := get_tree().get_first_node_in_group("fishing_village") as FishingVillage
+	fv._stall_creature(c)
+	await wait(8.0)
+	var stall_was := boot.world.get_node_or_null("StallCreature") != null
+	dm.run("jump", st.index_of("village"))
+	await wait(0.6)
+	var calm_all := true
+	for cr in get_tree().get_nodes_in_group("creature"):
+		var k := cr as Creature
+		if k.state != Creature.State.WANDER or k.van_interest > 0.0 or k.naresh_drawn:
+			calm_all = false
+	check(stall_was and boot.world.get_node_or_null("StallCreature") == null and calm_all \
+		and creatures_near(poi["net_shed"], 40.0) == 2, "a jump back to the village: the stall's creature gone, every creature calm, the village's two at the shed")
 
 
 

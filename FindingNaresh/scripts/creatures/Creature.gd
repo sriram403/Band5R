@@ -88,6 +88,12 @@ var _detour_t := 0.0
 var _detour_side := 1.0
 var _detours := 0                     ## sidesteps in a row that didn't free it
 var van_interest := 0.0              ## s left of wanting to be at the van
+## Where it stands at the start (its first tick): a story jump puts it back
+## here, calm (`back_to_post`). One-off creatures (the stall's, the developer
+## menu's) are removed by a jump instead: one left on the road after a stall
+## came for the van when the user jumped back to the village (2026-10-04).
+var home := Vector3.INF
+var one_off := false
 var _van_memory := randf_range(VAN_MEMORY.x, VAN_MEMORY.y)   ## this one's patience with the van
 var _item_at := Vector3.ZERO
 var _pi := 0
@@ -188,6 +194,21 @@ func calm() -> void:
 	_stuck_mark = Vector3.INF
 
 
+## A story jump: back where it started (its patrol's first point, or where it
+## stood), with nothing on its mind; one-off creatures go.
+func back_to_post() -> void:
+	if one_off:
+		remove_from_group("creature")
+		queue_free()
+		return
+	var at := patrol[0] if patrol.size() > 0 else home
+	if at != Vector3.INF:
+		global_position = at + Vector3(0, 0.2, 0)
+	velocity = Vector3.ZERO
+	reset_physics_interpolation()
+	calm()
+
+
 ## A flare went up at `from`: run, and stay away `seconds`.
 func scare(from: Vector3, seconds: float) -> void:
 	scared_t = seconds
@@ -203,6 +224,8 @@ func scare(from: Vector3, seconds: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if home == Vector3.INF:
+		home = global_position
 	if scared_t > 0.0:
 		scared_t -= delta
 		suspicion = 0.0
