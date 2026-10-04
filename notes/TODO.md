@@ -74,8 +74,12 @@ being built and tested), so this always shows where the work is right now.
     - [ ] Your two reports from your F3 play: P1 flung across the map after
           getting out to refuel (spinning, no white flash, landed by the
           coast watchtower); after an F1 jump back to F3 the creatures were
-          already after the van (the jump should reset them). Not fixed yet
+          already after the van (the jump should reset them).
+          Second one **fixed** (every jump puts each creature back at its
+          post, calm; the stall's creature removed). First one not
+          reproduced; knocks and takes are now logged; questions to you
           (`notes/ROUGH_NOTES.md`, "Open")
+    - [ ] Record F4 the same way (`tools/record_walk.sh f4`)
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling

@@ -183,6 +183,28 @@ read it before starting something similar.**
   player knocks: log them. (2) After an F1 → Story jump back to F3 the
   creatures were already after the van: the jump doesn't reset their
   interest in the van (`VanAttack`) or creatures away from their posts.
+  - (2) **fixed** (2026-10-04): the cause was the stall's creature (it has
+    no patrol, so the village's reset skipped it; left ~200 m up the road
+    it was drawn to Naresh and came for the van). Now every jump puts each
+    creature back at its post, calm (`Creature.back_to_post`, `home` =
+    where it stood at its first tick), and one-off ones (`one_off`: the
+    stall's, the F1 spawn) are removed. The van's damage was already reset
+    by `repair_all`. Checked in `step_jumps`.
+  - (1) **not reproduced yet.** Ruled out, measured: a take (a taken player
+    wakes 150-400 m away; the coast watchtower is 706 m from the stall
+    spot, and the fishing village's drop point is ~152 m from it, so a
+    take there lands you in the village); getting out of a rolling van
+    (doors stay shut above 2.5 m/s, the van only knocks at 2.5 m/s or
+    more; tried 5.7, 9.7, 14.8 m/s: no exit, no knock); the van rolling
+    away at the stall (flat there: 0.0001 m/s after 16 s, handbrake off);
+    the pour with the handbrake off and P1 hugging the van (3 tries, no
+    knock). Only the van can knock a player (`Camper._check_pedestrians`
+    -> `PlayerRig.knock`); the knock's tumble is the "spinning". Now
+    logged: `[knock] P1 thrown X m/s ... van Y m/s` and `[taken] P1 at
+    ... by ...`, so the next time it happens the log says which. The
+    user's log for the session ("TAKEN -> KNOCKED" for Naresh) is two
+    state changes in one tick (fetched, then knocked by the driven van):
+    the print only shows the first and last state of a tick.
 - Recording a run (the user, 2026-10-04: "do F3 and capture a video, I'll
   review that"): Godot's Movie Maker, `--write-movie x.avi --fixed-fps 25`
   before the `--`. Measured: 30 fps recorded at 26.4 fps of wall time (88 %
