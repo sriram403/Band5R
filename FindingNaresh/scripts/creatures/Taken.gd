@@ -38,6 +38,7 @@ static func take(p: PlayerRig, creature: Node3D = null) -> Taken:
 	t.player = p
 	t.by = creature
 	t.from = p.global_position
+	print("[taken] P%d at %s by %s" % [p.index + 1, t.from, creature.name if creature != null else "-"])
 	root.add_child(t)
 	t.global_position = t.from
 	return t

@@ -373,6 +373,7 @@ func _stall_creature(van: Camper) -> void:
 	var ahead := road.point(i + 35) + road.right(i + 35) * 9.0       # ~70 m on, off the verge
 	var cr := Creature.new()
 	cr.name = "StallCreature"
+	cr.one_off = true
 	get_tree().current_scene.get("world").add_child(cr)
 	cr.global_position = ahead + Vector3(0, 0.3, 0)
 	creatures.append(cr)

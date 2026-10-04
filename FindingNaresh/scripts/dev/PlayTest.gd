@@ -48,8 +48,11 @@ func _ready() -> void:
 	# without taking focus. The user can click it (or its taskbar button) to watch
 	# and hear it; clicking elsewhere sends it back. Muted unless it has focus.
 	# Pass --show (after the --) for a plain window in front.
+	# Recording (--write-movie) plays no sound through the speakers (the movie
+	# writer's own audio driver), so it isn't muted: the video keeps its sound.
 	if not OS.get_cmdline_user_args().has("--show"):
-		AudioServer.set_bus_mute(0, true)
+		if not _recording():
+			AudioServer.set_bus_mute(0, true)
 		_send_window_behind()
 	_run.call_deferred()
 
@@ -57,8 +60,12 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		AudioServer.set_bus_mute(0, false)
-	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT and not OS.get_cmdline_user_args().has("--show"):
+	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT and not OS.get_cmdline_user_args().has("--show") and not _recording():
 		AudioServer.set_bus_mute(0, true)
+
+
+func _recording() -> bool:
+	return Engine.get_write_movie_path() != ""
 
 
 ## Windows only, via a hidden PowerShell: give focus back to the window the user
@@ -8916,6 +8923,24 @@ func t_step_jumps() -> void:
 	await wait(0.3)
 	await shot("f1_story_storm")
 	dm.toggle()
+	# a jump puts every creature back at its post, calm, and removes one-off
+	# ones: the stall's creature left on the road came for the van after the
+	# user jumped back to the village (2026-10-04)
+	dm.run("jump", st.index_of("village"))
+	await wait(0.6)
+	var fv := get_tree().get_first_node_in_group("fishing_village") as FishingVillage
+	fv._stall_creature(c)
+	await wait(8.0)
+	var stall_was := boot.world.get_node_or_null("StallCreature") != null
+	dm.run("jump", st.index_of("village"))
+	await wait(0.6)
+	var calm_all := true
+	for cr in get_tree().get_nodes_in_group("creature"):
+		var k := cr as Creature
+		if k.state != Creature.State.WANDER or k.van_interest > 0.0 or k.naresh_drawn:
+			calm_all = false
+	check(stall_was and boot.world.get_node_or_null("StallCreature") == null and calm_all \
+		and creatures_near(poi["net_shed"], 40.0) == 2, "a jump back to the village: the stall's creature gone, every creature calm, the village's two at the shed")
 
 
 

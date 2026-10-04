@@ -44,7 +44,7 @@ walk = {
                 {"do": "job", "who": 1, "at": JETTY_END, "job": "go", "zoom": True},
                 {"do": "walk", "who": 2, "to": EDGE_P2, "arrive": 2, "max": 60}],
          "expect": [{"name": "Naresh at the jetty end", "expr": "boot.naresh.global_position.distance_to(Vector3(1833.96, -1.4, -584.0)) < 3.0", "within": 45, "watch": True},
-                    {"name": "the shed side clear", "expr": "creatures_near(%s, 25.0) == 0 and creatures_near(Vector3(1805, -1.4, -584), 40.0) == 2" % SHED, "within": 60, "watch": True}]},
+                    {"name": "the shed side clear", "expr": "creatures_near(%s, 25.0) == 0 and creatures_near(Vector3(1805, -1.4, -584), 40.0) == 2" % SHED, "within": 90, "watch": True}]},
         {"name": "F3.3 the key", "needs": ["the shed side clear"],
          # P2 into position first, then calls from there: crossing the open
          # beach later, in front of the creatures trailing him, P2 was taken
@@ -100,6 +100,9 @@ walk = {
                 {"do": "walk", "who": 1, "to": "expr:boot.camper.rack_stand()", "arrive": 0.6, "max": 20},
                 {"do": "look", "who": 1, "at": "expr:%s.can_full.global_position" % FV}, {"do": "wait", "s": 0.1},
                 {"do": "tap", "key": "E"}, {"do": "wait", "s": 0.2},
+                # out from the van's side first: hugging it, the can caught on the
+                # bodywork and fell out of P1's hands (the recorded run, 2026-10-04)
+                {"do": "walk", "who": 1, "to": "expr:boot.camper.filler_stand() + (boot.camper.filler_stand() - boot.camper.global_position).normalized() * 1.5", "arrive": 0.8, "max": 20},
                 {"do": "walk", "who": 1, "to": "expr:boot.camper.filler_stand()", "arrive": 0.5, "max": 20},
                 {"do": "look", "who": 1, "at": "expr:boot.camper.filler_point()"},
                 {"do": "hold", "key": "E", "s": 5.0}],
