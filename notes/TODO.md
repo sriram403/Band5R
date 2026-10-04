@@ -66,6 +66,16 @@ being built and tested), so this always shows where the work is right now.
         steps; screenshots per step later (POLISH)
   - [ ] **Your test from F3 on** (2026-10-04 or later, in a new thread: send
         `notes/MASTER_PROMPT.md`), then push as sriram403, then Milestone G
+    - [~] (2026-10-04, your ask) I play F3 and record it as a video for you
+          to review instead (`tools/record_walk.sh f3` ->
+          `../MPG_dev/appdata/videos/f3.mp4`, Godot's Movie Maker + ffmpeg).
+          First try: everything up to the pour; the can caught on the van's
+          side (my walk's route), fixed; recording again
+    - [ ] Your two reports from your F3 play: P1 flung across the map after
+          getting out to refuel (spinning, no white flash, landed by the
+          coast watchtower); after an F1 jump back to F3 the creatures were
+          already after the van (the jump should reset them). Not fixed yet
+          (`notes/ROUGH_NOTES.md`, "Open")
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling

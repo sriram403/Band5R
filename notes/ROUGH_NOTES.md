@@ -174,6 +174,40 @@ read it before starting something similar.**
 - Scripted drivers: S on a stopped van is reverse; hold with the handbrake.
 - A new chapter's tests change what old tests start from: the runner puts
   the return away before older tests (`_undo_return`).
+- **Open, from the user's F3 play (2026-10-04), not fixed yet:**
+  (1) P1 got out of the van to fill it, and moments later was flung across
+  the map, spinning, no white flash (not a creature take), landing by the
+  coast watchtower's creature near the beach. Suspects: a van knock
+  (`Camper._check_pedestrians` -> `PlayerRig.knock`) with a huge impulse,
+  or the exit spot inside the van's collider. The game log doesn't record
+  player knocks: log them. (2) After an F1 → Story jump back to F3 the
+  creatures were already after the van: the jump doesn't reset their
+  interest in the van (`VanAttack`) or creatures away from their posts.
+- Recording a run (the user, 2026-10-04: "do F3 and capture a video, I'll
+  review that"): Godot's Movie Maker, `--write-movie x.avi --fixed-fps 25`
+  before the `--`. Measured: 30 fps recorded at 26.4 fps of wall time (88 %
+  real speed); 25 keeps up. The watched run's deadlines and `Hearing`'s
+  memory are in real time, so a recording must run at real speed.
+  `Expression` can't reach `Engine` (eval "Engine..." errors).
+  `tools/record_walk.sh <walk>` records a walk to `appdata/videos/<walk>.mp4`.
+- **Assumed** the first recorded F3 failed ("the shed side clear" not in
+  60 s) because recording slowed the game; then, from video length vs my
+  guess of the wall time, that it ran *faster* than real time. **Reality:**
+  Godot prints it when the movie ends: "recorded in 5:51 ... 84% of
+  real-time speed" (encoding ~11 ms a frame); my wall-time guess left out
+  the start-up. So the walk's real-time deadlines give ~16 % less game
+  time, and the 60 s was tight anyway (0.9 m/s creatures, ~a minute by
+  design). **Fix:** 90 s in `make_f3.py`. **Habit:** read the tool's own
+  numbers (the movie summary in the log) before naming a cause; never
+  tell the user a cause I haven't checked (I told them twice, wrong once
+  each way).
+- **Assumed** the recorded run's last step failed like the user's bug.
+  **Reality:** P1 walked to the fuel cap hugging the van's side; the full
+  can caught on the bodywork, fell out of the hands (`Carryable`
+  SNAG_DISTANCE, by design) and the pour had nothing to pour. From the
+  step's save point it passed (P1 started elsewhere). **Fix:** the walk
+  goes 1.5 m out from the van first. Found by frames from the video at
+  4 fps (`ffmpeg ... fps=4,tile=4x4`): the video is the best evidence.
 
 ## Assumed -> reality -> fix (my mistakes, so I don't make them twice)
 
