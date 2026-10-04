@@ -78,7 +78,12 @@ being built and tested), so this always shows where the work is right now.
           Second one **fixed** (every jump puts each creature back at its
           post, calm; the stall's creature removed). First one not
           reproduced; knocks and takes are now logged; questions to you
-          (`notes/ROUGH_NOTES.md`, "Open")
+          (`notes/ROUGH_NOTES.md`, "Open"). **Parked (you, 2026-10-04):**
+          if it happens in your own session, you tell me after closing the
+          game and I read that session's log: `appdata/FindingNaresh/logs/`
+          (`godot.log` = the latest session, older ones by date), look for
+          `[knock]` / `[taken]` lines. Merged into main locally so your game
+          has the logging
     - [ ] Record F4 the same way (`tools/record_walk.sh f4`)
 - Command key (Naresh): **V** / **D-pad Up**.
 
