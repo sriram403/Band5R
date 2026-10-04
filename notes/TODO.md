@@ -84,7 +84,9 @@ being built and tested), so this always shows where the work is right now.
           (`godot.log` = the latest session, older ones by date), look for
           `[knock]` / `[taken]` lines. Merged into main locally so your game
           has the logging
-    - [ ] Record F4 the same way (`tools/record_walk.sh f4`)
+    - [x] F3-F8 recorded, every walk passing (2026-10-05), sent to you;
+          F7 needed P2 beside the choke (P1 blocked the handle). Your
+          review of the videos next
 - Command key (Naresh): **V** / **D-pad Up**.
 
 ## Tooling

@@ -230,6 +230,17 @@ read it before starting something similar.**
   step's save point it passed (P1 started elsewhere). **Fix:** the walk
   goes 1.5 m out from the van first. Found by frames from the video at
   4 fps (`ffmpeg ... fps=4,tile=4x4`): the video is the best evidence.
+- **Recorded F3-F8 (2026-10-04/05)**, all pass, videos in
+  `appdata/videos/f3..f8.mp4` (game at 68-87 % of real time while
+  recording). F7's first take failed at the generator: P1 at the cord
+  stood in P2's line to the choke (the handles are ~1 m apart), so P2's X
+  never reached it. Earlier passes were luck of where P1 stood. Fix: P2
+  stands 0.6 m to the choke's side. **Habit:** two players at one machine:
+  check each one's line to their handle isn't through the other. Things
+  for the user to judge, seen only in the videos: the F6 gallery is
+  nearly black with the torch off (too dark to follow?); in F8 the
+  homecoming (his mother, his sister) is text only while both sit in the
+  van facing the road.
 
 ## Assumed -> reality -> fix (my mistakes, so I don't make them twice)
 
