@@ -71,7 +71,7 @@
     {
      "name": "the shed side clear",
      "expr": "creatures_near(boot.builder.poi['net_shed'], 25.0) == 0 and creatures_near(Vector3(1805, -1.4, -584), 40.0) == 2",
-     "within": 60,
+     "within": 90,
      "watch": true
     }
    ]
@@ -613,6 +613,13 @@
     {
      "do": "wait",
      "s": 0.2
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.camper.filler_stand() + (boot.camper.filler_stand() - boot.camper.global_position).normalized() * 1.5",
+     "arrive": 0.8,
+     "max": 20
     },
     {
      "do": "walk",

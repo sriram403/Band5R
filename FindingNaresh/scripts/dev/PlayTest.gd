@@ -48,8 +48,11 @@ func _ready() -> void:
 	# without taking focus. The user can click it (or its taskbar button) to watch
 	# and hear it; clicking elsewhere sends it back. Muted unless it has focus.
 	# Pass --show (after the --) for a plain window in front.
+	# Recording (--write-movie) plays no sound through the speakers (the movie
+	# writer's own audio driver), so it isn't muted: the video keeps its sound.
 	if not OS.get_cmdline_user_args().has("--show"):
-		AudioServer.set_bus_mute(0, true)
+		if not _recording():
+			AudioServer.set_bus_mute(0, true)
 		_send_window_behind()
 	_run.call_deferred()
 
@@ -57,8 +60,12 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		AudioServer.set_bus_mute(0, false)
-	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT and not OS.get_cmdline_user_args().has("--show"):
+	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT and not OS.get_cmdline_user_args().has("--show") and not _recording():
 		AudioServer.set_bus_mute(0, true)
+
+
+func _recording() -> bool:
+	return Engine.get_write_movie_path() != ""
 
 
 ## Windows only, via a hidden PowerShell: give focus back to the window the user
