@@ -433,6 +433,9 @@ func _seated(_delta: float) -> void:
 func knock(impulse: Vector3, van: PhysicsBody3D = null) -> void:
 	if seat != null or knocked_t > 0.0:
 		return
+	# in the log: a throw the user saw (2026-10-04) left no trace to explain it
+	print("[knock] P%d thrown %.1f m/s (%s) at %s, van %.1f m/s" % [index + 1, impulse.length(), impulse,
+		global_position, (van as RigidBody3D).linear_velocity.length() if van is RigidBody3D else 0.0])
 	leave_box(false)
 	ladder = null
 	drop_held()
