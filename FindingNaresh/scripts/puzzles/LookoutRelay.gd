@@ -24,6 +24,7 @@ var boards: Array[Node3D] = []
 var _dial_faces: Array[Node3D] = []
 var _lid: Node3D
 var _box_at := Vector3.ZERO
+var _reward: Node = null
 
 
 ## `deck`: the lookout's deck (global), `board_xz`: where the boards stand
@@ -170,6 +171,7 @@ func _open() -> void:
 	can.name = "RelayFuel"
 	get_tree().get_first_node_in_group("world_root").add_child(can)
 	can.global_position = _box_at + Vector3.UP * 0.9
+	_reward = can
 	var st = get_tree().current_scene.get("story")
 	if st != null:
 		st.flags["relay_done"] = true
@@ -177,6 +179,17 @@ func _open() -> void:
 		var q := n as PlayerRig
 		if q.global_position.distance_to(_box_at) < 40.0:
 			q.say("Click-click-click-CLACK: the supply box opens. Inside, a full can of fuel.", 6.0)
+
+
+## F1 (Puzzles, or a story jump to the road choice or before): the box
+## locked with the can inside, the dials back to the start.
+func reset() -> void:
+	Workable.free_reward(_reward, _box_at, 6.0)
+	_reward = null
+	from_dict({"dials": [0, 0, 0, 0], "opened": false})
+	var st = get_tree().current_scene.get("story")
+	if st != null:
+		st.flags.erase("relay_done")
 
 
 func to_dict() -> Dictionary:

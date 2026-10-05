@@ -251,6 +251,19 @@ is careful not to repeat them on the next. Models don't learn while they work
 disagrees with what you assumed.** Each entry: what I assumed, what really
 happened, the fix, and the habit to keep.
 
+- **Assumed** (2026-10-05) a Story jump was enough to replay a puzzle.
+  **Reality:** the user did the water works once, jumped to it again, and
+  found it still full: jumps reset only the Bessi / return state, never the
+  way-out puzzles. **Fix:** every way-out puzzle has `reset()`; a jump to
+  its step or before calls it; a new F1 **Puzzles** tab (all 16, reset + go).
+  **Habit:** a test sheet that says "play it" needs a way to play it again.
+- **Assumed** (2026-09-24, the cloud PR) valve B should hold for one player
+  on the keyboard so a solo tester can finish. **Reality:** the user tests
+  alone on the keyboard, so they never saw the slip: the feature looked
+  broken. **Fix:** it slips for everyone (alone you walk over and turn it);
+  only the play-test's older checks switch it off. **Habit:** the user's
+  own way of playing (here: solo, keyboard) is the case to design for; a
+  "solo exception" hides the feature from the person judging it.
 - **Assumed** a test may give itself what the player gets (binoculars set
   in code). **Reality:** the user found none after an F1 jump. **Fix:** jumps
   give them. **Habit:** never set in code what a player must obtain in play.

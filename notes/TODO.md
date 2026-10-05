@@ -16,6 +16,22 @@ being built and tested), so this always shows where the work is right now.
           (F1 way in, the idea, steps, what you should see). Not walked by
           me (you said not now)
     - [ ] You play them one by one; we discuss each puzzle's changes
+    - [x] Your two reports from #1 (2026-10-05), built in `../MPG_dev`
+          branch `g1`:
+      - [x] A done puzzle couldn't be replayed (the water works stayed
+            full after jumping to it again). New **F1 → Puzzles** tab: all
+            16, Enter resets it, sets the story, puts you there. A Story jump
+            to a way-out step or before now resets those puzzles too
+            (`reset()` on the water works, windmill, maze, lookout box, lift
+            bridge, ghat, watchtower); the bridge row puts the power on.
+            Sheet updated (every "Getting there" is the Puzzles tab).
+      - [x] Valve B never slipped: it only slipped with P2 on a pad (one
+            keyboard = it held, for solo testing). Now it slips for everyone.
+      - [x] Tests: `puzzle_resets` (new, in Quick and Full) + waterworks,
+            dev, windmill, power, bridge, maze, relay, ghat, tower: 0
+            failures (one script error fixed: a picked-up reward was already
+            freed); smoke 23 scenarios, 0 failures. Merged into main, not
+            pushed. Next: your play of #1 again
 - **2026-10-05: Milestone F approved ("all okay", from the recorded
   walkthroughs F3-F8, every decision confirmed) and pushed** (main
   `c1235d8`). New way (you, 2026-10-05): write the test sheet, then I

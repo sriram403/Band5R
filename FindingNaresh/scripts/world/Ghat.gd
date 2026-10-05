@@ -241,6 +241,24 @@ Stop well back: handbrake, engine off, get out and pull the tarp over the van (h
 
 ## Over when it has been near and gone back up (or given up on the van), or
 ## the van left it behind. After that it walks off over the pass for good.
+## F1 (Puzzles, or a story jump to the ghat or before): the glimpse and the
+## first attack happen again.
+func reset() -> void:
+	for cr in [glimpse, attacker]:
+		if cr != null and is_instance_valid(cr):
+			cr.queue_free()
+	glimpse = null
+	attacker = null
+	_glimpse_t = 0.0
+	_gone_t = 0.0
+	_came_close = false
+	_since_spawn = 0.0
+	var st = get_tree().current_scene.get("story")
+	if st != null:
+		for f in ["ghat_glimpse", "first_attack", "first_attack_over"]:
+			st.flags.erase(f)
+
+
 func _watch_attack(van: Camper, delta: float) -> void:
 	_since_spawn += delta
 	var d := Vector2(attacker.global_position.x - van.global_position.x, attacker.global_position.z - van.global_position.z).length()

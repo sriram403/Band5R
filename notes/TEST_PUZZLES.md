@@ -7,12 +7,12 @@ see. When you've played one, tell me its number and what you'd change.
 
 Two players: P1 on keyboard + mouse, P2 on the controller, split screen.
 
-**Every jump works the same way:** start `Play.bat` and pick **New game**.
-Press **F1**, use the arrow keys to pick the tab and the row, then press
-**Enter**. Press **F1** (or Esc) again to close the menu. "Story → *row*"
-sets the objective. "Travel → *place*" puts you both there. From Bessi on,
-a Story jump puts you at the place as well, gives you the binoculars and
-brings Naresh along.
+**Every puzzle starts the same way:** start `Play.bat` and pick **New
+game**. Press **F1**, go to the **Puzzles** tab (arrow keys), pick the
+puzzle and press **Enter**, then press **F1** (or Esc) to close the menu.
+This puts the puzzle back to how you first find it (also after you've done
+it), sets the story to its step and puts you both there. From Bessi on it
+gives you the binoculars and brings Naresh along.
 
 **Controls**
 
@@ -36,8 +36,7 @@ brings Naresh along.
 
 ### 1. The water works
 
-**Getting there:** Story → "The engine is boiling! Get coolant from the
-water works", then Travel → **Water works**.
+**Getting there:** F1 → Puzzles → **1. The water works**.
 
 **The idea:** one player pumps and watches the pressure gauge. The other
 sets two valves in the yard, so the water goes to the blue tank.
@@ -59,11 +58,12 @@ sets two valves in the yard, so the water goes to the blue tank.
    turning, and the lamps light one by one along the road north.
 
 *If stuck:* A points on to valve B, and B points to the blue tank.
+Valve B slips for one player on the keyboard too (fixed 2026-10-05: it
+used to slip only with P2 on a pad).
 
 ### 2. The windmill
 
-**Getting there:** Story → "The windmill is jammed. Free it...", then
-Travel → **The windmill**.
+**Getting there:** F1 → Puzzles → **2. The windmill**.
 
 **The idea:** a rope is snagged on one blade. The climber up top tags that
 blade. The player at the brake stops it at the bottom, so the climber can
@@ -88,7 +88,7 @@ cut the rope.
 
 ### 3. The barn maze (optional, Valley Road)
 
-**Getting there:** Travel → **The barn**.
+**Getting there:** F1 → Puzzles → **3. The barn maze**.
 
 **The idea:** the guide on the loft balcony sees the whole maze. The
 walker inside sees only hedges.
@@ -107,7 +107,7 @@ blower in the loft, and a faint plan of the maze is pinned on the balcony.
 
 ### 4. The lookout boards (optional, Ridge Track)
 
-**Getting there:** Travel → **Pine Ridge lookout**.
+**Getting there:** F1 → Puzzles → **4. The lookout boards**.
 
 **The idea:** two boards across the valley show pictures you can only read
 through binoculars. The box at the bottom has picture dials.
@@ -124,9 +124,7 @@ through binoculars. The box at the bottom has picture dials.
 
 ### 5. The lift bridge
 
-**Getting there:** do **#1 the water works** first, because its power runs
-the bridge. Then Story → "The lift bridge is up. Lower it from the control
-hut by the road", Travel → **Bridge control hut**.
+**Getting there:** F1 → Puzzles → **5. The lift bridge**. The water works counts as done, so the power is on.
 
 **The idea:** the operator in the hut can only see the machinery through a
 safety mirror. The partner across the road clears the jammed gear, then
@@ -152,9 +150,7 @@ rides the counterweight down.
 
 ### 6. The ghat pace notes
 
-**Getting there:** Story → "Up the ghat road to the pass. Fog on the
-hairpins", Travel → **Foot of the ghat (J3)**, then Van → **Bring the van
-here**, and Van → **Both in: P1 drives, P2 alongside**.
+**Getting there:** F1 → Puzzles → **6. The ghat pace notes**. You start in the van at the foot of the ghat, P2 alongside.
 
 **The idea:** fog on the hairpins. Only the passenger can read the bends
 on the nav.
@@ -173,8 +169,7 @@ on the nav.
 
 ### 7. The coast watchtower
 
-**Getting there:** Story → "Something paces round the watchtower. Get up it
-without being seen", Travel → **Coast watchtower**.
+**Getting there:** F1 → Puzzles → **7. The coast watchtower**.
 
 **The idea:** sneak past a creature on foot, climb the tower, and stamp
 the beach on your map.
@@ -196,8 +191,7 @@ the beach on your map.
 
 ### 8. The photo
 
-**Getting there:** Story → "Find where Naresh's photo was taken" (you land
-on the beach).
+**Getting there:** F1 → Puzzles → **8. The photo**. You land on the beach.
 
 **The idea:** only P2 has the photo. Together, find the one spot where it
 was taken.
@@ -215,9 +209,7 @@ was taken.
 
 ### 9. The Five Roses
 
-**Getting there:** carry on from #8, or Story → "Find where Naresh's photo
-was taken", then Travel → **The photo spot (E3)**, face the memorial and
-wait a second.
+**Getting there:** F1 → Puzzles → **9. The Five Roses**. You land on the photo spot: face the memorial and wait a second.
 
 **The idea:** five stone carvings. Open them in the order you travelled.
 
@@ -234,8 +226,7 @@ wait a second.
 
 ### 10. The store shutter
 
-**Getting there:** Story → "Torch batteries for the dark road..." (you
-land at the store with Naresh).
+**Getting there:** F1 → Puzzles → **10. The store shutter**. You land at the store, Naresh with you.
 
 **The idea:** the shutter only stays up while someone holds it, and the
 box inside takes two to carry. So Naresh holds the shutter.
@@ -252,8 +243,7 @@ box inside takes two to carry. So Naresh holds the shutter.
 
 ### 11. The upturned boat
 
-**Getting there:** Story → "Fuel for the coast road: the drum under the
-upturned boat" (you land at the boat with Naresh).
+**Getting there:** F1 → Puzzles → **11. The upturned boat**. You land at the boat, Naresh with you.
 
 **The idea:** it takes all three of you to push the boat off the drum.
 
@@ -272,8 +262,7 @@ upturned boat" (you land at the boat with Naresh).
 
 ### 12. The fishing village (the decoy)
 
-**Getting there:** Story → "Nearly out of fuel. The fishing village: the
-fuel's in the net shed".
+**Getting there:** F1 → Puzzles → **12. The fishing village (the decoy)**.
 
 **The idea:** two creatures guard the net shed and follow Naresh. Send him
 out to the end of the jetty as bait, grab the fuel, then call him back.
@@ -303,8 +292,7 @@ again from step 2.
 
 ### 13. The salt pans (red light, green light)
 
-**Getting there:** Story → "Open salt flats, and something on the old
-gantry watching the road".
+**Getting there:** F1 → Puzzles → **13. The salt pans**.
 
 **The idea:** a watcher on a gantry sweeps its gaze, which you can see as
 a pale beam. Drive while it looks away, and stop behind a salt heap when
@@ -321,8 +309,7 @@ it turns your way.
 
 ### 14. The swing bridge
 
-**Getting there:** Story → "The estuary bridge is swung open. Turn it back
-across".
+**Getting there:** F1 → Puzzles → **14. The swing bridge**.
 
 **The idea:** two wheels turn the span, but only while someone holds the
 red brake lever off.
@@ -340,8 +327,7 @@ red brake lever off.
 
 ### 15. The rail tunnel
 
-**Getting there:** Story → "A flood gate is down across the road in the
-old rail tunnel".
+**Getting there:** F1 → Puzzles → **15. The rail tunnel**.
 
 **The idea:** a steel gate blocks the road. Its winch is in a pitch-dark
 side passage with a creature in it. P2 sneaks in (and finds the flare gun);
@@ -363,8 +349,7 @@ P1 drives through.
 
 ### 16. The radio mast (the finale)
 
-**Getting there:** Story → "Point the mast's three dishes, as the plaque
-says" (P2 has the flare gun).
+**Getting there:** F1 → Puzzles → **16. The radio mast**. P2 has the flare gun.
 
 **The idea:** start the generator, then point three dishes at three far
 blinking red lights. The noise brings creatures.

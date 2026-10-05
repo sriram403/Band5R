@@ -118,6 +118,17 @@ func spawn() -> void:
 				p.say("Something tall is pacing round the foot of the watchtower, slow, round and round.\n\nIt hasn't seen you. Keep low (Ctrl / B), keep things between you and it, and peek out (hold RMB / LT) to watch it. The boxes by the road might help.", 11.0)
 
 
+## F1 (Puzzles, or a story jump to the tower or before): the creature gone
+## until someone comes near again, its first line said again.
+func reset() -> void:
+	if creature != null and is_instance_valid(creature):
+		creature.queue_free()
+	creature = null
+	var st = get_tree().current_scene.get("story")
+	if st != null:
+		st.flags.erase("tower_seen")
+
+
 ## Someone standing on the deck.
 func on_deck(deck: Vector3) -> bool:
 	for n in get_tree().get_nodes_in_group("player"):

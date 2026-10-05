@@ -15,7 +15,36 @@ extends Control
 ## the place for somewhere a player can stand (a floor, a deck or the ground,
 ## with room above it) and turns you to face the place.
 
-const TABS := ["Travel", "Story", "Van", "Spawn", "World", "Gyms"]
+const TABS := ["Travel", "Story", "Puzzles", "Van", "Spawn", "World", "Gyms"]
+
+## The Puzzles tab (the user, 2026-10-05: to replay a puzzle after doing it):
+## the 16 puzzles of `notes/TEST_PUZZLES.md`, in journey order. Enter puts it
+## back to how you first find it, sets the story to its step and puts you
+## there. [name, story step, place ("" = the step's own place), what it is]
+const PUZZLES := [
+	["The water works", "coolant", "facility", "Pump and valves; valve B slips twice. Reward: coolant."],
+	["The windmill", "windmill", "windmill", "Tag the snagged blade, brake it at the bottom, cut the rope."],
+	["The barn maze", "choose_road", "barn", "Optional (Valley Road): the guide on the loft, the walker in the hedges."],
+	["The lookout boards", "choose_road", "lookout", "Optional (Ridge Track): binocular pictures, the dials on the box."],
+	["The lift bridge", "bridge", "bridge_hut", "Levers, the safety mirror, the wedge, the counterweight. The water works counts as done (the power is on)."],
+	["The ghat pace notes", "ghat", "", "Fog on the hairpins, the notes on the swung nav, the glimpse, the first attack. You start in the van at J3."],
+	["The coast watchtower", "tower", "coast_tower", "Sneak past the creature, climb the ramp, stamp the beach."],
+	["The photo", "photo", "", "Only P2 has the photo: find where it was taken."],
+	["The Five Roses", "photo", "photo_spot", "Stand on the photo spot facing the memorial: the roses rise. Open them in travel order."],
+	["The store shutter", "batteries", "", "Naresh holds the shutter; the box takes two."],
+	["The upturned boat", "drum", "", "Three push at once; he goes the wrong way first."],
+	["The fishing village (the decoy)", "village", "", "Naresh as bait on the jetty; the roof key; his refuel mistake."],
+	["The salt pans", "salt_pans", "", "Red light, green light with the gantry's watcher."],
+	["The swing bridge", "swing", "", "Two wheels and the held brake; he lets go once."],
+	["The rail tunnel", "tunnel", "", "The flood gate, the dark gallery, the flare gun, the push start."],
+	["The radio mast", "mast", "", "The generator, the three dishes, Naresh's crank, the creatures."],
+]
+
+## Way-out puzzles and the step each belongs to: a jump (Story or Puzzles) to
+## that step or before puts it back to how you first find it.
+const WAY_OUT_RESETS := [["windmill_brake", "windmill"], ["barn_maze", "choose_road"],
+	["lookout_relay", "choose_road"], ["cooling_station", "coolant"], ["lift_bridge", "bridge"],
+	["ghat", "ghat"], ["coast_watch", "tower"]]
 
 ## The journey, in order: [section, [[poi key, name, what's there], ...]].
 ## Places missing from the world (a gym) are left out; every other named
@@ -358,6 +387,17 @@ func _rows_for(t: int) -> Array:
 				rows.append(_row("%s%2d. %s" % ["> " if now else "   ", i + 1, o["text"]], "jump", i,
 					"[b]%s[/b]\n\n%s\n\n[color=#8a9099]id: %s%s[/color]" % [o["text"], o.get("hint", ""), o["id"], "  (now)" if now else ""]))
 			return rows
+		"Puzzles":
+			var rows: Array = [_header("Reset a puzzle and go there")]
+			for k in PUZZLES.size():
+				var e: Array = PUZZLES[k]
+				rows.append(_row("%2d. %s" % [k + 1, e[0]], "puzzle", k,
+					"[b]%d. %s[/b]
+
+%s
+
+Puts it back to how you first find it, sets the story to its step and puts you both there. Steps: notes/TEST_PUZZLES.md." % [k + 1, e[0], e[3]]))
+			return rows
 		"Van":
 			var c: Camper = boot.camper
 			return [
@@ -516,8 +556,11 @@ func run(action: String, arg = null) -> void:
 			_note = "Objective: " + boot.story.objective_text(0)
 		"jump":
 			boot.story.jump_to(int(arg))
+			reset_way_out(int(arg))
 			var where := go_to_step(String(boot.story.current()["id"]))
 			_note = "Objective: " + boot.story.objective_text(0) + ("   (you're at %s)" % where if where != "" else "")
+		"puzzle":
+			_note = play_puzzle(int(arg))
 		"van_flat":
 			c.engine_on = false
 			c.battery = 0.0
@@ -759,6 +802,50 @@ func go_to_step(id: String) -> String:
 		nz.reset_physics_interpolation()
 		nz.command(p1, "follow")
 	return String(spec[1])
+
+
+## The way-out puzzles at or after story step `i` back to how you first find
+## them (the user replays a puzzle by jumping to it); one before it that the
+## step needs (the water works' power for the bridge) as if done.
+func reset_way_out(i: int) -> void:
+	var st: Story = boot.story
+	var photo := st.index_of("photo")
+	for r in WAY_OUT_RESETS:
+		var node := get_tree().get_first_node_in_group(r[0])
+		if node != null and i <= st.index_of(r[1]):
+			node.reset()
+	var sta := get_tree().get_first_node_in_group("cooling_station") as CoolingStation
+	if sta != null and i > st.index_of("coolant") and (photo < 0 or i < photo):
+		sta.solve_quietly()
+
+
+## The Puzzles tab: puzzle `k` fresh, the story at its step, you both there.
+func play_puzzle(k: int) -> String:
+	var e: Array = PUZZLES[k]
+	var st: Story = boot.story
+	run("jump", st.index_of(e[1]))
+	var where := String(e[0])
+	if e[1] == "ghat":
+		# in the van at the foot of the hairpins, facing up the road
+		var road: Route = boot.builder.network.road("ghat_road")
+		van_to(road.point(3), atan2(-road.forward(3).x, -road.forward(3).z))
+		boot.camper.repair_all()
+		teleport(boot.camper.global_transform * Vector3(-3.2, 0, -1.0))
+		run("van_seat")
+		for p in boot.players:
+			(p as PlayerRig).has_binoculars = true
+	elif String(e[2]) != "":
+		teleport_to(String(e[2]))
+		if st.index_of(e[1]) < st.index_of("photo"):
+			var at: Vector3 = boot.builder.poi[e[2]]
+			van_to(van_spot(at + Vector3(-18, 0, 6)), 0.0)
+			boot.camper.repair_all()
+	if st.index_of(e[1]) < st.index_of("photo"):
+		# the way out is bright (a jump back from the dark return)
+		var mood := get_tree().get_first_node_in_group("mood") as Mood
+		if mood != null:
+			mood.set_now(1.0)
+	return "%d. %s: reset, the story at its step, you're there." % [k + 1, where]
 
 
 func _place_name(key: String) -> String:

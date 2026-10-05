@@ -33,7 +33,7 @@ const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traff
 const SMOKE_GYM := ["mouse", "taps", "enter", "cockpit", "exit", "swap"]
 const SMOKE_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "audio", "dev", "mirrors", "map", "story", "power", "relay_kb", "climb", "look", "pad", "perf", "beach", "save"]
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "climb", "carry", "look", "pad", "teleports", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "climb", "carry", "look", "pad", "teleports", "puzzle_resets", "perf", "save"]
 
 
 func _ready() -> void:
@@ -396,6 +396,7 @@ func _run() -> void:
 					all.insert(all.find("save"), extra)
 			all.insert(all.find("save"), "way_out")
 			all.insert(all.find("save"), "teleports")
+			all.insert(all.find("save"), "puzzle_resets")
 		selection = ""
 	# Scenarios outside a preset can still run by name.
 	if selection != "":
@@ -1103,6 +1104,11 @@ func fresh_hands() -> void:
 		pl.drop_held()
 		pl.set_map_open(false)
 		pl.journal_open = false
+	# valve B slips in play; the older checks pump with nobody at the valves
+	# (the water works test switches it on for its own slip checks)
+	var sta := get_tree().get_first_node_in_group("cooling_station") as CoolingStation
+	if sta != null:
+		sta.co_op = 0
 	await physics_frames(2)
 
 
@@ -1366,6 +1372,7 @@ func t_story() -> void:
 		p.force_exit = true
 		await physics_frames(3)
 	camper().fuel = 26.0          # as a new game: low, so the spare can matters (the dev menu's fix fills it)
+	station().reset()             # as a new game: a dev-menu jump past it fills the tank quietly
 	await wait(0.5)
 	log_line("objective at start: '%s'" % st.objective_text())
 	check(st.current()["id"] == "read_letter", "the first objective is to read the letter")
@@ -1442,6 +1449,7 @@ func t_waterworks() -> void:
 	var road := b.network.road("pump_house_road")
 	var start_i: int = int(road.nearest(b.poi["facility"].x, b.poi["facility"].z)["index"]) - 110
 	await van_to(road.point(start_i))
+	station().reset()          # as you first find it, whatever ran before
 	st.index = st.index_of("pump_road")
 	c.coolant_leak = false
 	c.heat_lockout = false
@@ -1542,7 +1550,7 @@ func t_waterworks() -> void:
 				sta._turn("b", p2())     # the partner turns it back
 				slipped_t = -1.0
 	key(KEY_E, false)
-	sta.co_op = -1
+	sta.co_op = 0
 	log_line("blue tank filled in %.0f s of careful pumping (%d extra pops, valve B slipped %d times)" % [t, sta.pops - pops0, sta.slips])
 	check(sta.solved, "careful pumping fills the blue tank")
 	check(sta.slips == CoolingStation.SLIP_AT.size(), "with two players, valve B kicks back twice while the tank fills")
@@ -2214,6 +2222,76 @@ func t_dev() -> void:
 ## Every place in the developer menu's Travel list: both players land standing
 ## on something (a floor, a deck, the ground), not inside a building or under
 ## the map. (The barn used to drop you under the map.)
+## F1 → Puzzles (the user, 2026-10-05: a done puzzle couldn't be replayed;
+## the water works stayed full). Every way-out row puts its puzzle back,
+## sets the story and puts you there.
+func t_puzzle_resets() -> void:
+	var dm: DevMenu = boot.dev_menu
+	var st: Story = boot.story
+	var story_was := st.to_dict()
+	var sta := station()
+	var wm := get_tree().get_first_node_in_group("windmill_brake") as WindmillBrake
+	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+	var line := get_tree().get_first_node_in_group("power_line") as PowerLine
+	var maze := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+	var relay := get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
+	var fresh := CoolingStation.new()
+	check(fresh.co_op == 1, "in play valve B slips (also for one player on the keyboard)")
+	fresh.free()
+	# done, as after a play: then each row puts it back
+	sta.solve_quietly()
+	sta.slips = 2
+	wm.snagged = false
+	wm.box_open = true
+	wm.map_taken = true
+	lift.from_dict({"locked": true})
+	maze.from_dict({"chest_open": true, "dust_done": true})
+	relay.from_dict({"dials": [1, 2, 3, 4], "opened": true})
+	st.flags["ghat_glimpse"] = true
+	st.flags["first_attack"] = true
+	var rows := {}
+	for k in DevMenu.PUZZLES.size():
+		rows[DevMenu.PUZZLES[k][0]] = k
+	dm.run("puzzle", rows["The water works"])
+	await wait(0.5)
+	check(not sta.solved and sta.fill["coolant"] == 0.0 and sta.slips == 0 and sta.valve_b == "overflow", "Puzzles → the water works: the blue tank empty, the valves back, B ready to slip again")
+	check(not line.powered and not line.hut_powered, "... and the turbine and lamps off again")
+	check(st.current()["id"] == "coolant", "... the story at its step (%s)" % st.current()["id"])
+	check(p1().global_position.distance_to(boot.builder.poi["facility"]) < 40.0, "... both at the water works")
+	dm.run("puzzle", rows["The windmill"])
+	await wait(0.5)
+	check(wm.snagged and wm.brake_on and not wm.box_open and not wm.map_taken, "Puzzles → the windmill: snagged, brake on, the box shut with the map")
+	check(p1().global_position.distance_to(boot.builder.poi["windmill"]) < 40.0, "... both at the windmill")
+	dm.run("puzzle", rows["The barn maze"])
+	await wait(0.5)
+	check(not maze.chest_open, "Puzzles → the barn maze: the chest shut again")
+	dm.run("puzzle", rows["The lookout boards"])
+	await wait(0.5)
+	check(not relay.opened and relay.dials.max() == 0, "Puzzles → the lookout boards: the box locked, the dials back")
+	sta.solve_quietly()
+	lift.from_dict({"locked": true})
+	dm.run("puzzle", rows["The lift bridge"])
+	await wait(0.5)
+	check(not lift.locked and lift.jammed and lift.wedge.visible, "Puzzles → the lift bridge: up, the wedge back in the gear")
+	check(sta.solved and line.hut_powered, "... and the power on (the water works counts as done)")
+	check(p1().global_position.distance_to(boot.builder.poi["bridge_hut"]) < 40.0, "... both at the hut")
+	dm.run("puzzle", rows["The ghat pace notes"])
+	await wait(1.0)
+	check(not st.flags.has("ghat_glimpse") and not st.flags.has("first_attack"), "Puzzles → the ghat: the glimpse and the first attack to come again")
+	check(p1().seat != null and p2().seat != null, "... both in the van at the foot of the ghat")
+	dm.run("van_out")
+	dm.run("puzzle", rows["The coast watchtower"])
+	await wait(0.5)
+	check(st.current()["id"] == "tower", "Puzzles → the coast watchtower: the story at 'tower'")
+	await shot("puzzle_resets_tower")
+	# leave it as the next tests expect: the way out fresh, the story back
+	dm.run("jump", st.index_of("to_windmill"))
+	st.from_dict(story_was)
+	var cw := get_tree().get_first_node_in_group("coast_watch") as CoastWatch
+	if cw != null:
+		cw.reset()
+
+
 func t_teleports() -> void:
 	var dm: DevMenu = boot.dev_menu
 	var st: Story = boot.story

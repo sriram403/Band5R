@@ -199,6 +199,13 @@ func from_dict(d: Dictionary) -> void:
 	_apply_angle()
 
 
+## F1 (Puzzles, or a story jump to the windmill or before): snagged again,
+## the brake on, the box shut with the map in it.
+func reset() -> void:
+	from_dict({"angle": angle})
+	cut_work = 0.0
+
+
 # --- playing -------------------------------------------------------------------
 
 func _cut(p: PlayerRig, dt: float) -> void:

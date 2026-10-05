@@ -124,3 +124,17 @@ func _physics_process(delta: float) -> void:
 func _moved() -> void:
 	if on_amount.is_valid():
 		on_amount.call(amount)
+
+
+## A reward still lying where the puzzle left it goes on a reset; one that
+## somebody is holding stays. Untyped: it may already be freed (picked up
+## and used), and a freed object fails a typed argument.
+static func free_reward(n: Variant, near: Vector3, within: float) -> void:
+	if n == null or not is_instance_valid(n) or not n is Node3D:
+		return
+	if n is Carryable:
+		var c := n as Carryable
+		if not c.holders.is_empty() or c.stowed_in != null:
+			return
+	if (n as Node3D).global_position.distance_to(near) < within:
+		n.queue_free()

@@ -59,6 +59,7 @@ var _mirror_cam: Camera3D
 var _mirror_frame := 0
 var _hum: NoiseLoop
 var _hut_at := Vector3.ZERO
+var _wedge_home := Vector3.ZERO
 
 
 ## `xf`: the pivot on the road's centre line, deck top; -Z towards the far
@@ -157,6 +158,7 @@ func _build_machinery_house() -> void:
 	wedge.name = "Wedge"
 	wedge.position = Vector3(m * (outer - 0.75), 1.05, -0.55)
 	house.add_child(wedge)
+	_wedge_home = wedge.position
 	wedge.add_child(Build.box(Vector3(0.12, 0.2, 0.9), ToonMat.make(Color(0.55, 0.42, 0.26)), Vector3.ZERO, Vector3(35, 0, 0), "Plank"))
 	var wa := Build.interact_area(Vector3(0.9, 0.9, 1.2), Vector3.ZERO, "", func(_p): pass, "WedgeArea")
 	wa.set_meta("tag_name", "the wedge")
@@ -468,6 +470,17 @@ func _update_mirror() -> void:
 
 func to_dict() -> Dictionary:
 	return {"angle": angle, "jammed": jammed, "locked": locked, "cut_outs": cut_outs}
+
+
+## F1 (Puzzles, or a story jump to the bridge or before): the leaf up, the
+## wedge back in the gear, the barriers up.
+func reset() -> void:
+	wedge.position = _wedge_home
+	pull_work = 0.0
+	backed_off = false
+	_strain_said = false
+	_hint_said = false
+	from_dict({})
 
 
 func from_dict(d: Dictionary) -> void:

@@ -26,6 +26,7 @@ var _dust_t := 0.0
 var _dust_done := false
 var _chest_lid: Node3D
 var _landmarks: Array[Node3D] = []
+var _rewards: Array = []
 
 
 ## `xf`: the maze's middle on the ground, in the barn's frame (+Z towards the
@@ -254,10 +255,23 @@ func open_chest(p: PlayerRig) -> void:
 	crate.name = "MazeCrate"
 	root.add_child(crate)
 	crate.global_position = global_transform * (cell_pos(goal) + Vector3(0.9, 0.5, 0.9))
+	_rewards = [jug, crate]
 	var st = get_tree().current_scene.get("story")
 	if st != null:
 		st.flags["maze_done"] = true
 	p.say("Inside the feed chest: a jug of coolant mix and a sturdy crate. Worth taking.", 6.0)
+
+
+## F1 (Puzzles, or a story jump to the road choice or before): the chest
+## shut and full again, the dust ready to blow.
+func reset() -> void:
+	for n in _rewards:
+		Workable.free_reward(n, global_transform * cell_pos(goal), 6.0)
+	_rewards = []
+	from_dict({})
+	var st = get_tree().current_scene.get("story")
+	if st != null:
+		st.flags.erase("maze_done")
 
 
 func to_dict() -> Dictionary:

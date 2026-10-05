@@ -15,13 +15,13 @@ extends Node3D
 ## Nothing on the pump side says which way the valves should point, and the
 ## gauge cannot be seen from the valves - so the two have to talk.
 ##
-## Valve B has a worn seat (its plate says so). With two players, the line
-## pressure kicks it back to the overflow twice while the blue tank fills (at
-## a third and two thirds): the needle collapses on the pump side, the
-## pointer swings and clanks on the valve side, and the valve player has to
-## turn it back. So the valve player stays at their post and both keep
-## talking to the end. Alone on one keyboard (solo view) it holds, so one
-## person can still test the whole puzzle.
+## Valve B has a worn seat (its plate says so). The line pressure kicks it
+## back to the overflow twice while the blue tank fills (at a third and two
+## thirds): the needle collapses on the pump side, the pointer swings and
+## clanks on the valve side, and the valve player has to turn it back. So the
+## valve player stays at their post and both keep talking to the end. It
+## slips for one player on the keyboard too (the user, 2026-10-05: it used to
+## hold there, so their test never saw it); alone you walk over and turn it.
 ##
 ## Filling the blue tank dispenses a coolant jug and a Memory Fragment.
 
@@ -46,10 +46,12 @@ var stalled := 0.0
 var solved := false
 var pops := 0                 ## relief valve pops, for the play-test
 var slips := 0                ## times valve B has kicked back so far
-## -1: valve B slips only when two people play (a pad for P2); 0 / 1 force it
-## off / on (the play-test uses this).
-var co_op := -1
+## Valve B slips (1, always in play) or holds (0: the play-test's older
+## checks, which pump without anyone at the valves).
+var co_op := 1
 
+var _jug: Node3D = null       ## the reward still lying at the tap (a reset clears it)
+var _frag: Node3D = null
 var _pump_hold := 0.0         ## > 0 while someone is holding the pump handle
 var _needle: Node3D
 var _lamp_green: MeshInstance3D
@@ -116,7 +118,7 @@ func _physics_process(delta: float) -> void:
 		fill[r] = minf(1.0, fill[r] + FILL_RATE * delta)
 		if r == "coolant" and fill["coolant"] >= 1.0:
 			_solve()
-		elif r == "coolant" and slips < SLIP_AT.size() and fill["coolant"] >= SLIP_AT[slips] and _two_players():
+		elif r == "coolant" and slips < SLIP_AT.size() and fill["coolant"] >= SLIP_AT[slips] and co_op == 1:
 			_slip()
 	# the waste tank drains back down, so a wrong route is never permanent
 	if not pumping:
@@ -138,19 +140,6 @@ func _turn(which: String, _p) -> void:
 	var at := A_POS if which == "a" else B_POS
 	Sfx.play3d("latch", global_transform * at, -2.0)
 	Sfx.play3d("creak", global_transform * at, -8.0, 0.2)
-
-
-## Two people at the station: P2 has their own device (a pad). Solo testing on
-## one keyboard shares a single pair of hands, so B holds there.
-func _two_players() -> bool:
-	if co_op >= 0:
-		return co_op == 1
-	var kbm := 0
-	for p in get_tree().get_nodes_in_group("player"):
-		var d: InputDevice = p.dev
-		if d != null and d.kind == InputDevice.Kind.KBM:
-			kbm += 1
-	return kbm < 2
 
 
 ## Valve B's worn seat gives way: it spins back to the overflow. The overflow
@@ -194,11 +183,54 @@ func _solve() -> void:
 	jug.name = "CoolantJug"
 	get_tree().get_first_node_in_group("world_root").add_child(jug)
 	jug.global_position = global_transform * tap_local
-	var frag := MemoryFragment.create("water_works")
-	get_tree().get_first_node_in_group("world_root").add_child(frag)
-	frag.global_position = global_transform * (COOLANT_TANK + Vector3(-1.4, 0.4, -2.9))
+	_jug = jug
+	var st = get_tree().current_scene.get("story")
+	if st == null or not "water_works" in st.collected:
+		var frag := MemoryFragment.create("water_works")
+		get_tree().get_first_node_in_group("world_root").add_child(frag)
+		frag.global_position = global_transform * (COOLANT_TANK + Vector3(-1.4, 0.4, -2.9))
+		_frag = frag
 	for p in get_tree().get_nodes_in_group("player"):
 		p.say("The blue tank fills with a gurgle and the tap coughs out a jug of coolant mix. Something small and pink glints beside it.", 7.0)
+
+
+## F1 (Puzzles, or a story jump to the water works or before): back to how
+## you first find it. A jug or fragment still lying at the tap goes; one
+## somebody carried off stays theirs. The turbine and lamps follow (`sync`).
+func reset() -> void:
+	valve_a = "waste"
+	valve_b = "overflow"
+	fill = {"waste": 0.0, "coolant": 0.0}
+	pressure = 0.0
+	stalled = 0.0
+	solved = false
+	slips = 0
+	for n in [_jug, _frag]:
+		if n != null and is_instance_valid(n) and n.global_position.distance_to(global_transform * COOLANT_TANK) < 6.0 				and (not n is Carryable or (n as Carryable).holders.is_empty()):
+			n.queue_free()
+	_jug = null
+	_frag = null
+	_update_pointers()
+	_sync_line()
+
+
+## F1: as if it had been done (a jump past it): the blue tank full, the
+## power on, no reward handed out.
+func solve_quietly() -> void:
+	if solved:
+		return
+	valve_a = "b"
+	valve_b = "coolant"
+	fill["coolant"] = 1.0
+	solved = true
+	_update_pointers()
+	_sync_line()
+
+
+func _sync_line() -> void:
+	var line := get_tree().get_first_node_in_group("power_line")
+	if line != null:
+		line.sync()
 
 
 # --- save support ----------------------------------------------------------------
