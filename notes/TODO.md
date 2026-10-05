@@ -29,6 +29,11 @@ being built and tested), so this always shows where the work is right now.
             The walk `puzzle1` recorded (150 s, every step passing):
             `../MPG_dev/appdata/videos/puzzle1.mp4`. **Next: your look at
             the video**
+      - [~] #1 round 2 (you, after the video): fill P2's jug at a tap on
+            the blue tank instead of a jug appearing; a checklist text from
+            P1 in the opening (not blocking); every instruction in
+            Naresh's voice. Proposal + S5-S7 in `design/PUZZLE_CHANGES.md`;
+            **waiting for your review**
       - [x] New rule (you, 2026-10-05): loose asks are shaped to fit the
             puzzle and world, proposed first, my own ideas added
             (`notes/PRINCIPLES.md` 10, CLAUDE.md, AGENTS.md, memory)

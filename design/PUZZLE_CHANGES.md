@@ -14,7 +14,15 @@ visible consequence, so they keep talking.
 
 ---
 
-## 1. The water works: *built* (2026-10-05), awaiting your look
+**The voice of the game (the user, 2026-10-05): instructions come from
+Naresh.** What to do, how a thing works, "it's locked": in his words, so
+he's useful even while he's missing, and the world stays real. *Proposed
+how* (round 2 of #1 below): on the way out, notes he left where he passed
+(he came through every place days ahead of you) and his old texts arriving;
+from Bessi on, him saying it. Plain narration stays only for what you see,
+hear or feel ("SPLAT! You're covered").
+
+## 1. The water works: round 1 *built* (2026-10-05); round 2 *proposed*
 
 ### What the user asked for
 
@@ -158,3 +166,86 @@ of wrong pumping; a 20% gulp; S1-S4 all in.
 3. The grey tank fills in **about 2 s of wrong pumping**. Right?
 4. The gulp when a valve turns under pressure: **20% of the blue tank**?
 5. Which of S1-S4 do you want?
+
+### Round 2: what the user asked for (2026-10-05, after the video)
+
+1. **No jug and fragment popping out of the tap.** The van already carries
+   a coolant jug (P2's, from the opening). Fill *that* at a tap on the blue
+   tank, then pour it into the van: every piece connected.
+2. **Test as if the jug is on the van.** In a real play, if it isn't, remind
+   the players to fetch it.
+3. **A checklist in the opening**, from P1 (the driver) to P2 by phone: the
+   things to bring. Not blocking: it only tells you.
+4. **Every instruction in the game written by Naresh**, so he's useful and
+   it's real: how-to's, "the door is locked", and so on.
+
+### Round 2: my proposal
+
+**The tap and the jug**
+
+- The blue tank gets a brass **tap** at its foot (where the jug used to
+  appear). Full blue tank = coolant ready. Hold the jug, look at the tap,
+  **hold E**: it fills at 1 L a second (the jug holds 5 L; you hear it, the
+  tank's level drops a little). Then carry it to the van's grille and pour,
+  as now (3 L seals the split hose).
+- **The jug is P2's** from the opening (`HouseCoolantJug`, on the rack's
+  right-hand slot, 2.5 L in it). Measured in the code: 2.5 L is not enough
+  to seal the hose (it needs 3), so pouring it early doesn't skip the puzzle;
+  it just leaves the jug empty for the tap.
+- **F1 → Puzzles → 1** puts the jug on the van's rack (empty) if it isn't.
+- **No jug anywhere near** (not on the van, not in anyone's hands) when the
+  blue tank fills: Naresh's note on the tap says to bring something to
+  carry it in, and the tap's prompt says "You need the coolant jug (P2's
+  house)". Nothing is blocked: you can drive back for it.
+
+**The checklist** (the opening)
+
+- P1's first text to P2 becomes a list: *"Bring: the red fuel can (fill
+  it from the drum in the shed), the blue coolant jug, torch batteries."*
+- **Not blocking:** today the opening only ends when both the can and the
+  jug are on the rack. Proposed: it ends when you're both in the van. The
+  gear steps stay as goals, but skippable.
+
+**Naresh's voice, here** (the pattern for every puzzle on the way out)
+
+- **His note on the pump house door,** read with E (the padlock prompt stays
+  short: "Padlocked"): *"Locked. Key's up the water tower, we found it
+  after an hour. Put it back after. - N"*. The "we" fits the twist: he
+  writes as if his friend were there.
+- **His note pinned by the pump** (replaces the instruction plate's
+  how-to): one stroke at a time, keep it in the green, and "NEVER turn a
+  valve while someone's pumping, the grey one blew all over us".
+- **His note on the tap:** "Bring your own can. We used our water bottles.
+  Don't."
+- **The hint (hold H) becomes his words** for this step too.
+- Kept as narration: what you see and feel (the burst, being covered, the
+  turbine starting).
+
+**The Memory Fragment**
+
+- Out of the tap's way. **Proposed:** on the pump house bench, beside
+  Naresh's mug (he sat there), so the pumper finds it while working.
+
+### Round 2: my extra ideas (yes or no each)
+
+- **S5. The checklist ticks itself.** On the phone, each thing gets a tick
+  when it's on the van's rack, so you can see what you're leaving behind.
+- **S6. A leaky fallback.** An old oil can on the pump house bench: it
+  holds coolant but leaks 1 L a minute, so it works if you rush, and it's
+  funny. Then nobody has to drive back to P2's house if the jug was left
+  behind.
+- **S7. His notes collect in the journal** ("Naresh's notes"), so you can
+  read them again later, and on the way home they read differently.
+
+### Round 2: questions
+
+1. **How far does "written by Naresh" go?** (a) The hints (hold H) and the
+   how-to messages only, with the objective line (top left) staying a short
+   plain goal. Or (b) the objective line too. **My pick: (a)**, because the
+   objective line is the game's menu-like reminder.
+2. **Now or puzzle by puzzle?** **My pick:** do it for each puzzle as we
+   rework it (here first), then one pass at the end for the rest (the
+   opening, the drives).
+3. **Is the fragment on the bench by his mug all right?**
+4. **The opening's gear steps skippable:** yes?
+5. **Which of S5-S7?**
