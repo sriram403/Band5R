@@ -4946,8 +4946,10 @@ func t_opening_save_verify() -> void:
 		"loading restores both cans' fuel source state")
 	check(absf(camper().fuel - 9.0) < 0.1 and camper().tyre_flat,
 		"loading restores the opening van's fuel and puncture")
+	log_line("P2 saved at %s, now at %s (%.2f m); torch %.1f s, on %s" % [PlayTest.expect["p2"], p2().global_position,
+		p2().global_position.distance_to(PlayTest.expect["p2"]), p2().flashlight_seconds, p2().flashlight.visible])
 	check(p2().global_position.distance_to(PlayTest.expect["p2"]) < 0.5 and
-		absf(p2().flashlight_seconds - 123.0) < 2.0 and p2().flashlight.visible,
+		p2().flashlight_seconds <= 123.0 and p2().flashlight_seconds > 119.5 and p2().flashlight.visible,   # it burns while the reload and the wait run (2.2 s headless, GitHub)
 		"loading returns P2 to the house with the torch battery state")
 
 
