@@ -60,6 +60,13 @@ The engine-level details (exact Godot calls, numbers) are also in
   remaining context or a new thread would be cheaper.
 - **Report failures honestly.** If a test failed, say so; if something wasn't
   tested, say that. The user trusts the report only if it is exact.
+- **Shape a loose ask to fit, propose, then build (2026-10-05).** "A room",
+  "water", "a key": design it as the thing that belongs to that puzzle and
+  place (the water works' own pump house, its water tower), write a short
+  proposal with numbers and your own extra ideas (S1, S2, ... yes / no
+  each), wait for the answers, then build (`design/PUZZLE_CHANGES.md`).
+- **Give the user a way to replay what they test.** A Story jump didn't
+  reset a puzzle already done; the F1 Puzzles tab does (reset + story + go).
 
 ## 2. Working as an AI model
 
@@ -334,7 +341,19 @@ The engine-level details (exact Godot calls, numbers) are also in
   windows open.
 - **Solo testing is a real mode:** one person plays both players on one
   screen. Hiding the nav from "the driver" hid it from the only view there
-  was.
+  was. Again in G: valve B "held" for one keyboard player so a solo tester
+  could finish, so the user never saw it slip. Design for how the user
+  actually plays.
+- **Keep both on their toes (the user, G).** Each player can't see the
+  other's side, needs what the other knows, and every mistake has a quick,
+  funny consequence, often for the partner (the sludge tank bursting over
+  the yard, slow motion until you rinse).
+- **Connect the pieces.** A reward that pops out of nowhere (a jug at the
+  tap) is weaker than using what you brought (P2's jug from the opening,
+  filled at the tap, poured into the van).
+- **Instructions in Naresh's words.** He came through every place days
+  ahead: his notes say how things work, his "we" carries the twist; plain
+  narration only for what you see and feel.
 
 ## 5. Godot / GDScript habits that bit us
 

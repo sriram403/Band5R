@@ -6,6 +6,15 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- **2026-10-05 (late): puzzle #1, the water works, approved ("great, push
+  it") and pushed. Hand-over: puzzle #2, the windmill, in a new thread**
+  (you start it by sending `notes/MASTER_PROMPT.md`). There: you play #2
+  (F1 → Puzzles → 2), say what to change; I propose, build, record, you OK,
+  push. Still open from G's start (answer when we get there): music
+  (where, what feel, CC0 or made here), settings (anything beyond
+  sensitivity / volumes / text speed), the .exe (download ~1 GB of export
+  templates to `tools/`; only for you or on GitHub too), the final
+  playthrough video (one or per milestone).
 - [~] **2026-10-05, new thread: Milestone G (Finish) explained to you and its
   open questions asked** (order, music, settings, the .exe export, the final
   QA). Nothing built until we agree (rule 3).
@@ -16,8 +25,9 @@ being built and tested), so this always shows where the work is right now.
           (F1 way in, the idea, steps, what you should see). Not walked by
           me (you said not now)
     - [~] You play them one by one; we discuss each puzzle's changes
+      - [ ] #2 the windmill (next, new thread)
           (`design/PUZZLE_CHANGES.md`)
-      - [~] #1 the water works: your changes (split rooms, the pump house
+      - [x] #1 the water works: your changes (split rooms, the pump house
             key on the water tower, the grey tank bursting sludge = slow
             motion, grey fills fast, valve turns gulp blue into grey) +
             S1-S4, **agreed (2026-10-05) and built** (`../MPG_dev` branch
@@ -28,8 +38,8 @@ being built and tested), so this always shows where the work is right now.
             the standpipe's zone was too big to aim at from inside it.
             The walk `puzzle1` recorded (150 s, every step passing):
             `../MPG_dev/appdata/videos/puzzle1.mp4`. **Next: your look at
-            the video**
-      - [~] #1 round 2 (you, after the video): fill P2's jug at a tap on
+            the video** -> approved with round 2
+      - [x] #1 round 2 (you, after the video): fill P2's jug at a tap on
             the blue tank instead of a jug appearing; a checklist text from
             P1 in the opening (not blocking); every instruction in
             Naresh's voice. **Agreed (your picks + S5-S7) and built**
@@ -41,7 +51,7 @@ being built and tested), so this always shows where the work is right now.
             the rack on a slope snagged and dropped (now straight to your
             hands). smoke 23, set:opening 5, set:puzzles 7: 0 failures. Walk
             `puzzle1` recorded again (163 s, every step passing).
-            **Next: your look at the video**
+            Approved by you ("great, push it"), pushed
       - [x] New rule (you, 2026-10-05): loose asks are shaped to fit the
             puzzle and world, proposed first, my own ideas added
             (`notes/PRINCIPLES.md` 10, CLAUDE.md, AGENTS.md, memory)

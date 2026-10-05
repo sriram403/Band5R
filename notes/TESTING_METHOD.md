@@ -133,6 +133,18 @@ reviews first.
   one player blocking the other's handle).
 - Send each video as it's ready, with times for each step and what only
   the video shows (too dark, a moment told in text only).
+- **Writing a walk (G, puzzle 1: five re-recordings to learn these):**
+  walkers go in straight lines, so give waypoints round anything solid (the
+  pump house, the tanks, the van's sides); give every point its own name
+  (a reused `TAP_STAND` sent P2 to the wrong tap); aim at the thing's own
+  node (`find_child('RadiatorCap')`), not a guessed height; the video is
+  wall-clock shorter than the walk log's seconds (Movie Maker), so read
+  times off the frame grid, not the log; with a failure, look at
+  `_shots/test_walk_fail.png` and `appdata/live_run.log` ("PAD WALK
+  STUCK at ...") first.
+- Puzzle walks start from **F1 → Puzzles → N** (`{"do": "menu", "tab":
+  "Puzzles", "row": "..."}`): it resets the puzzle, so a walk can be rerun
+  in one game.
 
 ## Decision log
 - v1 -> v2: the user saw a dead run carry on for minutes (2026-10-02).

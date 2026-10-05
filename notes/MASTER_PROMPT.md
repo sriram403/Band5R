@@ -15,12 +15,13 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-10-05, Milestone F (the return) approved by the user
-from the recorded walkthroughs of F3-F8 ("all okay", every decision
-confirmed) and pushed.
-Milestones A-F are done, approved by the user and pushed. The user is here:
-one part at a time, their check before each push (rule 2), now by a
-recorded walkthrough first (rule 22). Next: Milestone G.
+Last updated: 2026-10-05 (late), Milestone G started: the puzzle talk.
+Puzzle #1 (the water works) reworked in two rounds with the user, approved
+from its recorded video ("great, push it") and pushed. Next: puzzle #2,
+the windmill, in a new thread (the user starts it by sending this file).
+Milestones A-F are done, approved by the user and pushed. One part at a
+time, their check before each push (rule 2), by a recorded walkthrough
+first (rule 22); every change proposed first (rule 23).
 Start at section 6.
 
 ---
@@ -49,6 +50,21 @@ they/them.
 
 ## 2. Status right now (2026-09-29; latest at the top, 2026-10-05)
 
+- **2026-10-05 (late): puzzle #1, the water works, reworked, approved and
+  pushed; hand-over to a new thread for puzzle #2, the windmill.** G is
+  running as the puzzle talk: the user plays each puzzle from
+  `notes/TEST_PUZZLES.md` (all 16, reached by **F1 → Puzzles**, which
+  resets a puzzle and puts you there), says what to change, I propose
+  (shaped to fit the world, with my own ideas S1, S2, ...), they answer,
+  I build in `../MPG_dev`, test, record the walk, send the video, they OK,
+  push. Everything per puzzle is in `design/PUZZLE_CHANGES.md`. The
+  water works now: the pump inside the brick pump house (key up the water
+  tower), rhythm pumping, the grey "sludge" tank bursting over the yard
+  (slow motion until rinsed or dry), valve turns under pressure gulping
+  blue into grey, P2's coolant jug from the opening filled at a brass tap,
+  Naresh's notes giving the how-to (and a journal page), the fragment and
+  a leaky oil can on the bench; the opening's gear is a self-ticking
+  checklist on P2's phone, not a gate.
 - **2026-10-05: hand-over to a new thread** for Milestone G (the user
   starts it by sending this file). POLISH: screenshots in the sheets
   dropped; puzzle changes discussed together later.
@@ -333,6 +349,20 @@ they/them.
     (`notes/TESTING_METHOD.md` v5.) Bugs from the user's own play that I
     can't reproduce are parked: they tell me after closing the game and I
     read that session's log (`appdata/FindingNaresh/logs/`).
+23. **Fit the world, propose first, add your own ideas (the user,
+    2026-10-05).** When the user asks for "a room", "water", "wind"...,
+    design it as the thing that belongs to that puzzle and place, write a
+    short proposal (with numbers) in `design/PUZZLE_CHANGES.md` plus my own
+    ideas marked S1, S2, ... (yes / no each), wait for the answers, then
+    build. Puzzles keep both players on their toes the whole time
+    (`notes/PRINCIPLES.md` 10).
+24. **Instructions in Naresh's words (the user, 2026-10-05).** How-to's,
+    "it's locked", the hints (hold H): on the way out as notes he left
+    where he passed (`world/NareshNote.gd`, read with E, kept in the
+    journal) and his old texts; from Bessi on, him saying it. The
+    objective line (top left) stays a short plain goal; plain narration
+    only for what you see, hear and feel. Done puzzle by puzzle as each is
+    reworked, then one pass at the end for the rest (the opening, drives).
 
 ---
 
@@ -420,6 +450,15 @@ MPG/
       puzzles/RadioMast.gd      F7: generator, beacons, dishes, cranks, the dish screen
       world/Homecoming.gd       F8: Naresh's home, the tracker, site lights, the end screen
       world/GymBuilder.gd       gyms: small flat test maps (extends LevelBuilder)
+      world/NareshNote.gd       G: a note Naresh left (E reads it; Story.notes; the
+                                journal's second page, A / D or pad D-Left)
+      items/LeakyCan.gd         G: the water works' leaky oil can (4 L, 1 L a minute)
+      (G, the water works)      CoolingStation: pump in the pump house (strokes), the
+                                key on the water tower, the sludge burst, the gulp, the
+                                brass tap, the bench; PlayerRig.slime / slow() (slow
+                                motion), PlayerHUD's sludge overlay; tools/gen/sludge.py
+      dev/DevMenu.gd            F1 Puzzles tab: PUZZLES (16 rows: reset + story step +
+                                place), reset_way_out() on every Story jump, van_jug()
 ```
 
 World layout (see the consts in `LevelLayout.gd` and `LevelBuilder.gd`'s header comment): 4 × 4 km,
@@ -517,7 +556,19 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 6. What to do next
 
-**Where it stands (2026-10-05):** Milestones A-F approved and pushed (main
+**Where it stands (2026-10-05, late): Milestone G, the puzzle talk.**
+Puzzle #1 (the water works) done in two rounds, approved, pushed. **Next:
+puzzle #2, the windmill**, in a new thread: wait for the user to play it
+(F1 → Puzzles → 2) and say what to change; then propose (rule 23), build
+in `../MPG_dev` (a new branch from main), test, write its steps in
+`notes/TEST_PUZZLES.md` #2, make `tools/live/make_puzzle2.py`, record
+(`tools/record_walk.sh puzzle2`), send the video with times, push after
+their OK. While reworking it, turn its instructions into Naresh's notes
+(rule 24). The order after that: the 16 puzzles in `TEST_PUZZLES.md`
+order, then the rest of G (sound and music, settings, the .exe, the final
+playthrough; the user's answers on those are still open, see `TODO.md`).
+
+**Before (2026-10-05):** Milestones A-F approved and pushed (main
 `c1235d8`). F was approved from recorded walkthroughs: I played every part
 of `notes/TEST_MILESTONE_F.md` (F3-F8) as a watched run and recorded it
 (`tools/record_walk.sh f3` ... `f8`, videos in `appdata/videos/`); the user
@@ -777,14 +828,33 @@ reality -> fix -> habit*; read that list before similar work.
 
 ---
 
+- **Live walk expressions run on PlayTest** (`Expression.execute([], pt)`):
+  call its helpers (`station()`, `p1()`, `ww_at(x, y, z)`) but no class
+  names or class constants; nodes by `find_child('Name', true, false)`.
+- **Items off the van's rack go straight to your hands** (`Camper._take_from`):
+  popped up inside the rack's bars on a slope they snagged and dropped.
+- **Typed variables from a ternary or an untyped source:** `var x := a if c
+  else b` with a Variant side is a parse error that stops every script
+  depending on it; give the type (`var x: bool = ...`). Check changed
+  scripts with `tools/run_game.sh --headless --check-only --script
+  res://scripts/<file>` right after editing.
+- **Scripts without class_name** (the LevelBuilder chain's middle:
+  LevelLandmarks) can't be named elsewhere; reach their constants through
+  `LevelBuilder`.
+- **A freed object fails a typed argument:** a helper that may get a freed
+  node takes it untyped (`Workable.free_reward(n: Variant, ...)`).
+
 ## 8. Resuming in a new thread
 
 **The user starts a new thread by sending this file** (they asked for short
 threads with good notes instead of one long one, 2026-10-04). Then:
 
 1. Read this file, `CLAUDE.md`, `notes/TODO.md` ("Right now"),
-   `notes/TEST_MILESTONE_F.md`, the end of `notes/ROUGH_NOTES.md` (the
-   mistake log and the open questions) and `notes/TESTING_METHOD.md`.
+   `design/PUZZLE_CHANGES.md` (the puzzle talk so far: the rules for every
+   puzzle at the top, #1 in full as the worked example),
+   `notes/TEST_PUZZLES.md` (the sheet the user plays from), the mistake
+   log in `notes/ROUGH_NOTES.md` and `notes/TESTING_METHOD.md` (v5 and the
+   walk-writing notes).
 2. Check `git status` and `git log -3` in `MPG` and `../MPG_dev`.
 3. Tell the user in two or three plain lines where things stand and what
    comes next (section 6). Don't start new work unasked.
