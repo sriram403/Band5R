@@ -6,6 +6,16 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [~] **2026-10-05, new thread: Milestone G (Finish) explained to you and its
+  open questions asked** (order, music, settings, the .exe export, the final
+  QA). Nothing built until we agree (rule 3).
+  - [~] You chose to start with the puzzle talk (the first item of the
+        polish list). Going through the 16 puzzles in journey order; each
+        agreed change gets written into `notes/POLISH.md` (Puzzles)
+    - [x] Your ask: one play sheet for all 16 puzzles, `notes/TEST_PUZZLES.md`
+          (F1 way in, the idea, steps, what you should see). Not walked by
+          me (you said not now)
+    - [ ] You play them one by one; we discuss each puzzle's changes
 - **2026-10-05: Milestone F approved ("all okay", from the recorded
   walkthroughs F3-F8, every decision confirmed) and pushed** (main
   `c1235d8`). New way (you, 2026-10-05): write the test sheet, then I
