@@ -20,7 +20,9 @@ agrees a change "for later". When one is built, tick it and say when.
 
 **Almost every puzzle needs a few changes (the user, 2026-10-05): to be
 discussed together some other time.** Don't change puzzles before that
-talk; P1 below is the one already agreed.
+talk; P1 below is the one already agreed. **The talk started 2026-10-05:**
+each puzzle's changes (asked, proposed, agreed) are in
+`design/PUZZLE_CHANGES.md`.
 
 - [ ] **P1. Barn maze (W2): give the guide a job during the hay dust**
       (user, 2026-09-26). Now, when the dust blows over the middle, the guide

@@ -15,7 +15,15 @@ being built and tested), so this always shows where the work is right now.
     - [x] Your ask: one play sheet for all 16 puzzles, `notes/TEST_PUZZLES.md`
           (F1 way in, the idea, steps, what you should see). Not walked by
           me (you said not now)
-    - [ ] You play them one by one; we discuss each puzzle's changes
+    - [~] You play them one by one; we discuss each puzzle's changes
+          (`design/PUZZLE_CHANGES.md`)
+      - [~] #1 the water works: your changes (split rooms, the pump house
+            key on the water tower, the grey tank bursting sludge = slow
+            motion, grey fills fast, valve turns gulp blue into grey) and
+            my proposal + ideas S1-S4 written; **waiting for your review**
+      - [x] New rule (you, 2026-10-05): loose asks are shaped to fit the
+            puzzle and world, proposed first, my own ideas added
+            (`notes/PRINCIPLES.md` 10, CLAUDE.md, AGENTS.md, memory)
     - [x] Your two reports from #1 (2026-10-05), built in `../MPG_dev`
           branch `g1`:
       - [x] A done puzzle couldn't be replayed (the water works stayed

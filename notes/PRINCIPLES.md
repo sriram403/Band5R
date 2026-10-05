@@ -100,6 +100,22 @@ a video for the user to verify: easier to understand than a report, and
 it shows what was done. Watch it yourself first (`notes/TESTING_METHOD.md`
 v5).
 
+## 10. Fit the world, propose first, add your own ideas (the user, 2026-10-05)
+
+- **Whenever the user asks for a thing in plain words** ("a room", "water",
+  "wind", "a key"), design it as something that belongs to that puzzle and
+  place: the water works' own brick pump house as the closed room, its
+  water tower for the key, sludge for the waste tank. Never a generic box.
+- **Propose before building:** write the idea as a short proposal (what it
+  is, how it plays, the numbers), the user reviews it, then build.
+- **Add your own ideas** on top of the user's, marked as suggestions: an
+  improvement to theirs, or something new. They say yes or no to each.
+- *The aim for every puzzle:* keep both players on their toes the whole
+  time. They can't see each other's side, each needs what the other knows,
+  and every mistake has a quick, funny, visible consequence (often for the
+  partner), so they keep talking.
+- *Example:* the water works (`design/PUZZLE_CHANGES.md`, #1).
+
 ## Sources
 
 - Walter Isaacson, *Elon Musk* (2023): "the algorithm"; summaries at

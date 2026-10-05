@@ -24,6 +24,13 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   and send it with times and what to judge. The user verifies the video
   first instead of playing straight away.
 
+- **Fit the world, propose first, add your own ideas (the user,
+  2026-10-05).** When the user asks for "a room", "water", "wind" and so
+  on, design it to belong to that puzzle and place, write it as a short
+  proposal for their review, then build. Add your own ideas or
+  improvements to theirs, marked as suggestions. Puzzles keep both players
+  on their toes (`notes/PRINCIPLES.md` 10, `design/PUZZLE_CHANGES.md`).
+
 ## Two copies of the project
 
 - `MPG` (branch `main`): the long test runs, pushes.
