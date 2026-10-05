@@ -12,6 +12,7 @@ var _arrows: Control
 var binoculars: BinocularView
 var box_view: BoxView
 var _white: ColorRect
+var _sludge: ColorRect                 ## sludge round the edges of the view (the water works)
 ## tag owner index -> where its edge arrow was last drawn (tests read this)
 var tag_arrow_at := {}
 var _prompt: Label
@@ -203,6 +204,17 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	_white.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_white.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_white)
+	_sludge = ColorRect.new()
+	_sludge.name = "Sludge"
+	_sludge.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_sludge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sh := Shader.new()
+	sh.code = SLUDGE_SHADER
+	var sm := ShaderMaterial.new()
+	sm.shader = sh
+	_sludge.material = sm
+	_sludge.visible = false
+	add_child(_sludge)
 
 	p.prompt_changed.connect(_on_prompt)
 	p.message.connect(show_note)
@@ -292,6 +304,10 @@ func _process(delta: float) -> void:
 	_arrows.queue_redraw()
 	_white.color.a = player.whiteout
 	_white.visible = player.whiteout > 0.001
+	var mess := clampf((1.0 - player.slow()) / (1.0 - PlayerRig.SLIME_SLOW), 0.0, 1.0)
+	_sludge.visible = mess > 0.001
+	if _sludge.visible:
+		(_sludge.material as ShaderMaterial).set_shader_parameter("amount", mess)
 	binoculars.amount = clampf(player.zoom - 1.0, 0.0, 1.0)
 	box_view.amount = move_toward(box_view.amount, 1.0 if player.in_box else 0.0, get_process_delta_time() * 4.0)
 	var seated := player.seat != null
@@ -397,3 +413,26 @@ func _set_bar(tag: String, v: float) -> void:
 	if fill:
 		fill.anchor_right = clampf(v, 0.0, 1.0)
 		fill.offset_right = 0
+
+
+## Sludge round the edges of a covered player's view: brown, thicker at the
+## top, with drips running down (the water works' grey tank).
+const SLUDGE_SHADER := """
+shader_type canvas_item;
+uniform float amount = 1.0;
+float hash(float x) { return fract(sin(x * 91.7) * 43758.5); }
+void fragment() {
+	vec2 uv = UV;
+	float edge = min(min(uv.x, 1.0 - uv.x), min(uv.y * 0.6, 1.0 - uv.y));
+	float col = floor(uv.x * 38.0);
+	float len = 0.12 + 0.35 * hash(col);
+	float speed = 0.04 + 0.08 * hash(col + 3.0);
+	float drip_y = mod(TIME * speed + hash(col + 7.0), 1.0) * len + 0.05;
+	float in_col = smoothstep(0.5, 0.2, abs(fract(uv.x * 38.0) - 0.5));
+	float drip = in_col * smoothstep(drip_y, drip_y - 0.04, uv.y) * step(0.45, hash(col + 11.0));
+	float rim = smoothstep(0.16, 0.0, edge);
+	float a = clamp(rim + drip, 0.0, 1.0) * 0.85 * amount;
+	COLOR = vec4(0.30, 0.24, 0.16, a);
+}
+"""
+

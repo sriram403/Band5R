@@ -251,6 +251,22 @@ is careful not to repeat them on the next. Models don't learn while they work
 disagrees with what you assumed.** Each entry: what I assumed, what really
 happened, the fix, and the habit to keep.
 
+- **Assumed** (2026-10-05) appending helpers to PlayTest.gd during a
+  background run was harmless. **Reality:** it was (only new functions,
+  it still compiled), but the rule is there because later segments load
+  the file fresh: a typo would have failed the rest of the run. **Fix:**
+  checked the compile at once. **Habit:** check `tasklist | grep -i godot`
+  before touching any game script; walk helpers can wait for the run.
+- **Assumed** (2026-10-05) a variable name was free in a long test
+  function (`stand`). **Reality:** a parse error ("already declared")
+  that stopped every script depending on PlayTest. **Fix:** renamed;
+  `--check-only` on each changed script after an edit. **Habit:** check
+  the long functions' names before adding to them; compile right away.
+- **Assumed** (2026-10-05) a script without `class_name`
+  (`LevelLandmarks`) could be named in another script. **Reality:**
+  "Identifier not declared". **Fix:** its constants through the class at
+  the end of the chain (`LevelBuilder.TOWER_CATWALK_Y`). **Habit:** the
+  LevelBuilder split's middle scripts have no class names.
 - **Assumed** (2026-10-05) a Story jump was enough to replay a puzzle.
   **Reality:** the user did the water works once, jumped to it again, and
   found it still full: jumps reset only the Bessi / return state, never the

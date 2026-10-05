@@ -90,6 +90,16 @@ var _climb_since := 0
 var peek_offset := Vector3.ZERO        ## head offset while peeking (body space)
 var _peek_side := Vector3.ZERO         ## the way you last leaned (kept while it works)
 var _box_slot: Node3D
+## Covered in sludge (the water works' grey tank): s left. Everything you do
+## runs in slow motion (`slow()`), the last few seconds easing back.
+var slime_t := 0.0
+const SLIME_SLOW := 0.4
+const SLIME_EASE := 5.0
+var _drip_t := 0.0
+var _slow_use_t := 0.0                 ## a tap on something, still on its slow way
+var _slow_use_target: Node = null
+var _sludge_mat: Material = null
+var _avatar_mats := {}
 ## Giving Naresh a job: hold the command key, a wheel of the jobs that fit
 ## what you look at; point (mouse / right stick) at one and let go. A quick
 ## tap gives the first one. Not the driver.
@@ -255,6 +265,11 @@ func _physics_process(delta: float) -> void:
 		else:
 			flashlight.light_energy = 5.5
 	taken_grace = maxf(0.0, taken_grace - delta)
+	if slime_t > 0.0:
+		slime_t -= delta
+		if slime_t <= 0.0:
+			slime(0.0)
+			say("The sludge has dried and flaked off. You can move properly again.", 3.0)
 	if force_exit:
 		force_exit = false
 		exit_vehicle()
@@ -326,7 +341,7 @@ func _process(delta: float) -> void:
 
 
 func _look(delta: float) -> void:
-	var d := dev.look(delta) / zoom      # the view moves as far on screen, zoomed or not
+	var d := dev.look(delta) / zoom * slow()      # the view moves as far on screen, zoomed or not
 	if seat != null:
 		_seat_yaw = clampf(_seat_yaw - d.x, -SEAT_YAW_LIMIT, SEAT_YAW_LIMIT)
 	else:
@@ -347,10 +362,13 @@ func _walk(delta: float) -> void:
 	_update_peek(delta)
 	head.position = Vector3(peek_offset.x, eye_height + peek_offset.y, 0.0)
 
+	# in slow motion a jump is the same height, just slower: velocity * f,
+	# gravity * f * f
+	var f := slow()
 	if not is_on_floor():
-		velocity.y -= GRAVITY * delta
+		velocity.y -= GRAVITY * f * f * delta
 	elif dev.just_pressed("jump") and not map_open and not in_box:
-		velocity.y = JUMP_VELOCITY
+		velocity.y = JUMP_VELOCITY * f
 
 	var mv := dev.move()
 	if map_open:
@@ -368,8 +386,9 @@ func _walk(delta: float) -> void:
 		speed = SPRINT
 	if held != null:
 		speed *= held.speed_factor()
+	speed *= f
 
-	var accel := ACCEL_GROUND if is_on_floor() else ACCEL_AIR
+	var accel := (ACCEL_GROUND if is_on_floor() else ACCEL_AIR) * f
 	var target := dir * speed
 	# Accelerate the *intended* horizontal velocity, not what is left after the
 	# last collision: pressing into a crate side zeroed velocity every tick, so
@@ -391,13 +410,13 @@ func _walk(delta: float) -> void:
 	var planar := Vector2(velocity.x, velocity.z).length()
 	if is_on_floor():
 		if not _was_on_floor:
-			Sfx.play3d(_surface_step(), global_position, -2.0)
+			Sfx.play3d(_step_sound(), global_position, -2.0, 0.08, f)
 			Hearing.emit(global_position, Hearing.LANDING, "landing")
 		elif planar > 0.8:
 			_step_phase += delta * planar * 0.55
 			if _step_phase >= 1.0:
 				_step_phase -= 1.0
-				Sfx.play3d(_surface_step(), global_position, -10.0 + minf(planar, 7.0))
+				Sfx.play3d(_step_sound(), global_position, -10.0 + minf(planar, 7.0) + (6.0 if slime_t > 0.0 else 0.0), 0.08, f)
 				var loud := Hearing.WALK_STEP
 				if crouching:
 					loud = Hearing.CROUCH_STEP
@@ -405,6 +424,11 @@ func _walk(delta: float) -> void:
 					loud = Hearing.SPRINT_STEP
 				Hearing.emit(global_position, loud, "step")
 	_was_on_floor = is_on_floor()
+	if slime_t > 0.0 and is_on_floor():
+		_drip_t -= delta
+		if _drip_t <= 0.0:
+			_drip_t = 0.35 if planar > 0.4 else 1.2
+			_drip()
 
 	# head bob keyed to actual ground speed
 	if is_on_floor() and planar > 0.4:
@@ -585,16 +609,28 @@ func _scan() -> void:
 		if van != null:
 			van.recover()
 
+	# in sludge a tap takes a while to land (your hand moves in slow motion)
+	if _slow_use_t > 0.0:
+		_slow_use_t -= get_physics_process_delta_time()
+		if _slow_use_t <= 0.0 and _slow_use_target != null and is_instance_valid(_slow_use_target) and _slow_use_target == target:
+			var scb: Callable = target.get_meta("callback", Callable())
+			if scb.is_valid():
+				scb.call(self)
 	if dev.just_pressed("interact"):
 		if target != null:
 			var cb: Callable = target.get_meta("callback", Callable())
 			if cb.is_valid():
-				cb.call(self)
+				if slow() < 0.99 and not target.has_meta("no_slow"):
+					_slow_use_t = 0.5 / slow() - 0.5
+					_slow_use_target = target
+				else:
+					cb.call(self)
 		elif seat != null and _can_exit():
 			exit_vehicle()
 	# things you hold E on (pump handles, cranks) get called every tick
 	if target != null and target.has_meta("hold_fn") and dev.held("interact"):
-		(target.get_meta("hold_fn") as Callable).call(self, get_physics_process_delta_time())
+		var hdt := get_physics_process_delta_time()
+		(target.get_meta("hold_fn") as Callable).call(self, hdt if target.has_meta("no_slow") else hdt * slow())
 
 
 # --- giving Naresh jobs ----------------------------------------------------------
@@ -752,7 +788,7 @@ func start_climb(l: Ladder) -> void:
 func _climb(delta: float) -> void:
 	var mv := dev.move()
 	var before := _climb_h
-	_climb_h += mv.y * Ladder.SPEED * delta
+	_climb_h += mv.y * Ladder.SPEED * slow() * delta
 	velocity = Vector3.ZERO
 	if _climb_h >= ladder.height and mv.y > 0.1:
 		var top := ladder.global_transform * ladder.exit_top
@@ -1068,6 +1104,73 @@ func hold_point(item: Carryable) -> Vector3:
 
 
 ## What the feet are on: road, gravel track, wood (decks, crates, boards) or grass.
+## 1 normally; SLIME_SLOW while covered in sludge, easing back to 1 over the
+## last SLIME_EASE seconds.
+func slow() -> float:
+	if slime_t <= 0.0:
+		return 1.0
+	if slime_t >= SLIME_EASE:
+		return SLIME_SLOW
+	return lerpf(1.0, SLIME_SLOW, slime_t / SLIME_EASE)
+
+
+## Covered in sludge for `seconds` (0 = clean). Your partner sees you brown.
+func slime(seconds: float) -> void:
+	slime_t = maxf(0.0, seconds)
+	if seconds > 0.0 and is_inside_tree():
+		Sfx.play3d("squelch", global_position + Vector3.UP, 4.0, 0.1, 0.7)
+	if _sludge_mat == null:
+		_sludge_mat = ToonMat.make(Color(0.36, 0.30, 0.22), 0.02)
+	for m in _mesh_root.get_children():
+		var mi := m as MeshInstance3D
+		if mi == null:
+			continue
+		if not _avatar_mats.has(mi.name):
+			_avatar_mats[mi.name] = mi.material_override
+		mi.material_override = _sludge_mat if slime_t > 0.0 else _avatar_mats[mi.name]
+
+
+## Under the standpipe: `rinse_s` of rinsing washes off all `total` s of it.
+func rinse(dt: float, rinse_s: float, total: float) -> void:
+	if slime_t <= 0.0:
+		return
+	slime_t -= dt * total / rinse_s
+	if fmod(slime_t, 1.5) < dt * total / rinse_s:
+		Sfx.play3d("pour_glug", global_position + Vector3.UP, -6.0)
+	if slime_t <= 0.0:
+		slime(0.0)
+		say("Rinsed off. Soaked, but you can move properly again.", 3.0)
+
+
+func _step_sound() -> String:
+	return "squelch" if slime_t > 0.0 else _surface_step()
+
+
+## A drip of sludge on the ground where you stand, fading away.
+func _drip() -> void:
+	var root := get_tree().get_first_node_in_group("world_root")
+	if root == null:
+		return
+	var m := MeshInstance3D.new()
+	var disc := CylinderMesh.new()
+	var r := randf_range(0.08, 0.16)
+	disc.top_radius = r
+	disc.bottom_radius = r
+	disc.height = 0.01
+	disc.radial_segments = 8
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.30, 0.25, 0.18, 0.9)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	disc.material = mat
+	m.mesh = disc
+	root.add_child(m)
+	m.global_position = global_position + Vector3(randf_range(-0.2, 0.2), 0.03, randf_range(-0.2, 0.2))
+	var tw := m.create_tween()
+	tw.tween_interval(6.0)
+	tw.tween_property(m, "transparency", 1.0, 4.0)
+	tw.tween_callback(m.queue_free)
+
+
 func _surface_step() -> String:
 	var floor_body: Object = null
 	for i in get_slide_collision_count():

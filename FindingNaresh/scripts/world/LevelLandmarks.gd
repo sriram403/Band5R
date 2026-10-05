@@ -469,6 +469,87 @@ Power's been off since the turbine at the water works stopped. No power, no pump
 	poi["kiosk_binoculars"] = root.transform * Vector3(-1.4, 1.1, -5.5)
 
 
+## The water works' pump house (G, the user's puzzle change, 2026-10-05): a
+## room the pumper works in, with no window onto the yard, so the pumper
+## can't see the tanks. Its door (with the padlock) belongs to the puzzle
+## (`CoolingStation`); the doorway is in the front wall, the yard side.
+## Lived in, as block-outs: a bench with a kettle and a mug, a chair, a coat
+## on a hook, a calendar, a bare bulb.
+const PH_DOOR_W := 2.2
+const PH_DOOR_H := 2.6
+
+func _pump_house(root: Node3D, brick: Material) -> void:
+	var t := 0.25
+	var h := 5.0
+	var side := (9.0 - PH_DOOR_W) * 0.5
+	for w in [[Vector3(9.0, h, t), Vector3(-5.0, h * 0.5, 7.5 - t * 0.5), "PumpHouseBack"],
+			[Vector3(t, h, 7.0), Vector3(-9.5 + t * 0.5, h * 0.5, 4.0), "PumpHouseLeft"],
+			[Vector3(t, h, 7.0), Vector3(-0.5 - t * 0.5, h * 0.5, 4.0), "PumpHouseRight"],
+			[Vector3(side, h, t), Vector3(-9.5 + side * 0.5, h * 0.5, 0.5 + t * 0.5), "PumpHouseFrontL"],
+			[Vector3(side, h, t), Vector3(-0.5 - side * 0.5, h * 0.5, 0.5 + t * 0.5), "PumpHouseFrontR"],
+			[Vector3(PH_DOOR_W, h - PH_DOOR_H, t), Vector3(-5.0, (h + PH_DOOR_H) * 0.5, 0.5 + t * 0.5), "PumpHouseLintel"]]:
+		root.add_child(Build.solid_box(w[0], brick, w[1], Vector3.ZERO, w[2]))
+	root.add_child(Build.box(Vector3(8.5, 0.05, 6.5), ToonMat.make(Color(0.42, 0.40, 0.37)), Vector3(-5.0, 0.22, 4.0), Vector3.ZERO, "PumpHouseFloor"))
+	var wood := ToonMat.make(Color(0.48, 0.34, 0.22))
+	root.add_child(Build.solid_box(Vector3(0.8, 0.9, 2.4), wood, Vector3(-8.85, 0.45, 4.6), Vector3.ZERO, "Workbench"))
+	root.add_child(Build.cyl(0.13, 0.22, ToonMat.make(Color(0.70, 0.72, 0.74), 0.01), Vector3(-8.85, 1.02, 4.0), Vector3.ZERO, 12, "Kettle"))
+	root.add_child(Build.cyl(0.05, 0.1, ToonMat.make(Color(0.85, 0.85, 0.80)), Vector3(-8.75, 0.95, 4.9), Vector3.ZERO, 8, "Mug"))
+	root.add_child(Build.box(Vector3(0.45, 0.28, 0.3), ToonMat.make(Color(0.70, 0.20, 0.16)), Vector3(-8.85, 1.04, 5.5), Vector3.ZERO, "ToolBox"))
+	var chair := ToonMat.make(Color(0.40, 0.30, 0.20))
+	root.add_child(Build.solid_box(Vector3(0.5, 0.06, 0.5), chair, Vector3(-7.7, 0.48, 3.6), Vector3.ZERO, "ChairSeat"))
+	root.add_child(Build.box(Vector3(0.5, 0.55, 0.06), chair, Vector3(-7.95, 0.78, 3.6), Vector3(0, 90, 0), "ChairBack"))
+	for lx in [-0.2, 0.2]:
+		for lz in [-0.2, 0.2]:
+			root.add_child(Build.box(Vector3(0.04, 0.45, 0.04), chair, Vector3(-7.7 + lx, 0.23, 3.6 + lz), Vector3.ZERO, "ChairLeg"))
+	root.add_child(Build.box(Vector3(0.55, 1.0, 0.14), ToonMat.make(Color(0.22, 0.32, 0.24)), Vector3(-7.0, 1.55, 7.27), Vector3.ZERO, "Coat"))
+	root.add_child(Build.cyl(0.03, 0.12, ToonMat.make(C_STEEL), Vector3(-7.0, 2.1, 7.32), Vector3(90, 0, 0), 6, "CoatHook"))
+	root.add_child(Build.box(Vector3(0.5, 0.65, 0.02), ToonMat.flat(Color(0.95, 0.94, 0.88)), Vector3(-4.2, 1.85, 7.36), Vector3.ZERO, "Calendar"))
+	root.add_child(Build.label3d("MARCH", Vector3(-4.2, 2.08, 7.34), Vector3(0, 180, 0), 0.07, Color(0.6, 0.15, 0.12)))
+	var bulb := StandardMaterial3D.new()
+	bulb.albedo_color = Color(1.0, 0.92, 0.70)
+	bulb.emission_enabled = true
+	bulb.emission = Color(1.0, 0.85, 0.55)
+	bulb.emission_energy_multiplier = 3.0
+	root.add_child(Build.cyl(0.01, 0.5, ToonMat.make(Color(0.1, 0.1, 0.1)), Vector3(-5.0, 4.6, 4.0), Vector3.ZERO, 4, "BulbFlex"))
+	root.add_child(Build.sphere(0.08, bulb, Vector3(-5.0, 4.3, 4.0), Vector3.ONE, "Bulb"))
+	var lamp := OmniLight3D.new()
+	lamp.name = "PumpHouseLight"
+	lamp.position = Vector3(-5.0, 4.15, 4.0)
+	lamp.light_color = Color(1.0, 0.86, 0.62)
+	lamp.light_energy = 1.4
+	lamp.omni_range = 9.0
+	root.add_child(lamp)
+
+
+## A catwalk round the top of the water tower, with a ladder up to it on the
+## road side: the pump house key hangs up there (`CoolingStation`). Railed all
+## round except where the ladder comes up.
+const TOWER_CATWALK_Y := 14.5
+
+func _tower_catwalk(tower: Node3D, body: StaticBody3D) -> void:
+	var steel := ToonMat.make(C_STEEL)
+	var deck := ToonMat.make(Color(0.42, 0.44, 0.46), 0.01)
+	var y := TOWER_CATWALK_Y
+	var n := 24
+	for k in n:
+		var a := TAU * k / n
+		var dir := Vector3(sin(a), 0, cos(a))
+		var rot := Vector3(0, rad_to_deg(a), 0)    # local X along the ring, local Z outwards
+		var seg := Build.box(Vector3(1.45, 0.15, 1.2), deck, dir * 5.2 + Vector3(0, y - 0.075, 0), rot, "Catwalk")
+		tower.add_child(seg)
+		body.add_child(_box_shape(Vector3(1.45, 0.15, 1.2), Transform3D(Basis.from_euler(Vector3(0, a, 0)), tower.position + dir * 5.2 + Vector3(0, y - 0.075, 0))))
+		# the ladder comes up at a = 0 (towards +Z): no rail there
+		if k == 0:
+			continue
+		tower.add_child(Build.box(Vector3(1.5, 0.05, 0.05), steel, dir * 5.75 + Vector3(0, y + 1.05, 0), rot, "Rail"))
+		tower.add_child(Build.box(Vector3(1.5, 0.04, 0.04), steel, dir * 5.75 + Vector3(0, y + 0.55, 0), rot, "RailMid"))
+		tower.add_child(Build.box(Vector3(0.05, 1.1, 0.05), steel, Vector3(sin(a + PI / n), 0, cos(a + PI / n)) * 5.75 + Vector3(0, y + 0.55, 0), Vector3.ZERO, "RailPost"))
+		body.add_child(_box_shape(Vector3(1.5, 1.2, 0.1), Transform3D(Basis.from_euler(Vector3(0, a, 0)), tower.position + dir * 5.75 + Vector3(0, y + 0.6, 0))))
+	body.add_child(_cyl_shape(tower.position + Vector3(0, 17.5, 0), 4.6, 6.0))
+	Ladder.make(tower, Vector3(0, 0, 6.25), y + 0.1, Vector3(0, 0, -1), Vector3(0, y + 0.1, 5.2), "TowerLadder")
+	poi["water_tower_catwalk"] = facility_xf * (tower.position + Vector3(0, y + 0.2, 5.2))
+
+
 ## The Bessi water works: pump house, tanks and pipes down to the river. The
 ## cooling-station puzzle (A5) is built into this site.
 func _water_facility(at: Vector3) -> void:
@@ -487,9 +568,8 @@ func _water_facility(at: Vector3) -> void:
 	var body := StaticBody3D.new()
 	root.add_child(body)
 	root.add_child(Build.box(Vector3(24.0, 0.2, 20.0), concrete, Vector3(0, 0.1, 0), Vector3.ZERO, "Yard"))
-	root.add_child(Build.solid_box(Vector3(9.0, 5.0, 7.0), brick, Vector3(-5.0, 2.5, 4.0), Vector3.ZERO, "PumpHouse"))
+	_pump_house(root, brick)
 	root.add_child(Build.box(Vector3(9.8, 0.4, 7.8), ToonMat.make(Color(0.36, 0.38, 0.42)), Vector3(-5.0, 5.2, 4.0), Vector3.ZERO, "PumpHouseRoof"))
-	root.add_child(Build.box(Vector3(2.2, 3.0, 0.15), ToonMat.make(Color(0.30, 0.44, 0.40)), Vector3(-5.0, 1.5, 0.45), Vector3.ZERO, "PumpHouseDoor"))
 	for t in 2:
 		var tp := Vector3(5.0 + t * 5.5, 0, 5.0)
 		root.add_child(Build.solid_cyl(2.2, 5.5, concrete, tp + Vector3(0, 2.75, 0), Vector3.ZERO, "Tank%d" % t))
@@ -499,7 +579,7 @@ func _water_facility(at: Vector3) -> void:
 		var px := -6.0 + k * 2.0
 		root.add_child(Build.cyl(0.35, 28.0, pipe, Vector3(px, 0.6, -14.0), Vector3(90, 0, 0), 10, "Intake"))
 		body.add_child(_box_shape(Vector3(0.7, 0.7, 28.0), Transform3D(Basis(), Vector3(px, 0.6, -14.0))))
-	root.add_child(Build.cyl(0.3, 11.0, pipe, Vector3(1.0, 3.0, 5.0), Vector3(0, 0, 90), 10, "TankFeed"))
+	root.add_child(Build.cyl(0.3, 7.0, pipe, Vector3(3.0, 3.0, 5.0), Vector3(0, 0, 90), 10, "TankFeed"))   # from the pump house wall (inside it is a room now)
 	# the water tower from the prototype now belongs here
 	var tower := Node3D.new()
 	tower.position = Vector3(-12.0, 0, -6.0)
@@ -514,6 +594,7 @@ func _water_facility(at: Vector3) -> void:
 		tower.add_child(Build.label3d("BESSI WATER CO.", Vector3(0, 17.8, 4.75 * side), Vector3(0, 0 if side > 0 else 180, 0), 0.9, Color(0.25, 0.30, 0.38)))
 	body.add_child(_cyl_shape(Vector3(-12.0, 7.0, -6.0), 3.6, 14.0))
 	root.add_child(tower)
+	_tower_catwalk(tower, body)
 	# the cooling-station puzzle lives in this yard
 	var station := CoolingStation.new()
 	station.name = "CoolingStation"

@@ -76,7 +76,7 @@ func setup(b: Node) -> void:
 			"hint": "The board at Last Fuel shows the way: north past the water works to the old bridge. Bessi is across the river.",
 			"done": func(): return boot.camper.coolant_leak or flags.has("leak_fixed")},
 		{"id": "coolant", "text": "The engine is boiling! Get coolant from the water works",
-			"hint": "Pull into the water works yard. The plate by the red pump says how: route the pipes to the BLUE tank with valves A and B, then pump and keep the needle in the green. Follow the pipes to see where each valve sends the water.",
+			"hint": "The pump is inside the brick pump house, padlocked: the key hangs up on the water tower's catwalk. One of you pumps in there (a press each time the lever comes up, needle in the green); the other sets valves A and B in the yard so the water goes to the BLUE tank, and says how the tanks are doing. Never turn a valve while they pump. Fill the grey tank and it bursts over the yard.",
 			"done": func(): return _station_solved() or flags.has("leak_fixed")},
 		{"id": "pour_coolant", "text": "Pour the coolant into the van's radiator",
 			"hint": "Carry the blue jug to the front of the van and hold E at the grille.",

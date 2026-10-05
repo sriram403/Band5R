@@ -34,32 +34,54 @@ gives you the binoculars and brings Naresh along.
 
 ## The way out
 
-### 1. The water works
+### 1. The water works (reworked 2026-10-05: your changes)
 
 **Getting there:** F1 → Puzzles → **1. The water works**.
 
-**The idea:** one player pumps and watches the pressure gauge. The other
-sets two valves in the yard, so the water goes to the blue tank.
+**The idea:** the pumper works inside the brick pump house and can't see
+the tanks. The valve player is out in the tank yard and can't see the
+pressure. You talk the whole time: every mistake costs you, often your
+partner.
 
-1. **Pumper:** at the hand pump by the pump house door, hold E. Keep the
-   needle in the green.
-   - **You should see:** the needle rises. If it goes too high, the relief
-     valve bangs and the pump stops for a few seconds.
-2. **Valve player:** follow the grey pipes by eye from valves A and B, and
-   turn each valve (E / X) so the water reaches the **blue** tank.
-   - **You should see:** the blue tank's level rises while the pumper
-     pumps in the green. With a wrong setting, the grey tank fills or the
-     water runs off to the river.
-3. **Valve B slips twice** (it says "WORN SEAT" on its post).
-   - **You should see:** a CLANK, B's pointer swings, and the needle falls.
-     Turn B back and keep pumping.
-4. **You should see:** when the tank is full, a coolant jug and a pink
-   Memory Fragment come out of the tap. The turbine by the river starts
-   turning, and the lamps light one by one along the road north.
+1. **The pump house door is padlocked.** The key hangs on the catwalk at
+   the top of the water tower ("BESSI WATER CO.").
+   - *Exactly how:* ladder on the tower's road side: E, hold W. On the
+     catwalk walk a quarter of the way round, towards the yard; the key is
+     on the tank wall: E. Back to the ladder, look at it, E, hold S. At the
+     door: E.
+   - **You should see:** from the catwalk, the whole yard and its pipes
+     from above (handy for the valve player). The door swings open.
+2. **Pumper:** inside, at the red pump: **press E once each time the lever
+   comes back up** (one stroke at a time). Keep the needle in the green.
+   - **You should see:** each stroke pushes the needle up a little. Press
+     too fast (before the lever is back up) and it jumps; too high and the
+     relief valve bangs, and the pump stalls a few seconds. Pause a beat
+     now and then to hold it in the green.
+3. **Try the mistake once:** pump before the valves are set, with the
+   valve player standing in the yard.
+   - **You should see:** after 2-3 strokes the grey **SLUDGE** tank is
+     full. It gurgles, groans for 2 s, then its lid blows and sludge rains
+     over the whole yard. The valve player is covered: brown, dripping,
+     squelching, everything in slow motion (walking, looking, jumping,
+     turning valves) for ~25 s. The pumper inside just hears a boom; the
+     needle drops and the lever goes slack for 4 s.
+4. **Rinse off (optional):** the standpipe in the yard, by the pump house:
+   hold E / X under it for about 3 s.
+5. **Valve player:** follow the pipes and turn valves A and B (E / X) so
+   the water goes to the **blue** tank, **only while the pumper isn't
+   pumping**.
+   - **You should see:** turned under pressure, a "Glug": a fifth of the
+     blue tank surges back into the grey one (which then fills even
+     faster). Shout "stop!" first, then turn.
+6. **Pump on.** Valve B slips twice ("WORN SEAT").
+   - **You should see:** a CLANK, B's pointer swings, a gulp of blue into
+     grey, and the needle falls. Pumper stops, valve player turns B back,
+     pumper carries on.
+7. **You should see:** when the blue tank is full, a coolant jug and a
+   pink Memory Fragment at its tap. The turbine starts, and the lamps
+   light along the road north.
 
 *If stuck:* A points on to valve B, and B points to the blue tank.
-Valve B slips for one player on the keyboard too (fixed 2026-10-05: it
-used to slip only with P2 on a pad).
 
 ### 2. The windmill
 

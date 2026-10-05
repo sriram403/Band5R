@@ -1,0 +1,503 @@
+{
+ "name": "puzzle1",
+ "setup": [
+  {
+   "do": "eval",
+   "expr": "boot._on_joy_changed(0, true)"
+  }
+ ],
+ "steps": [
+  {
+   "name": "1.0 F1 Puzzles: the water works",
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Puzzles",
+     "row": "The water works"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "fresh: door locked, key up the tower, tanks empty",
+     "expr": "not station().door_open and not station().key_taken and station().fill['coolant'] == 0.0 and boot.story.current()['id'] == 'coolant'",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "1.1 the door is padlocked",
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(-5.0, 0.2, -1.2)",
+     "arrive": 0.6,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:ww_at(-5.0, 1.3, 0.62)"
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "the prompt says padlocked",
+     "expr": "p1().prompt_text.contains('Padlocked')",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "1.2 P1 climbs the water tower",
+   "max": 90,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(-12.0, 0.2, 1.0)",
+     "arrive": 0.5,
+     "max": 40
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:ww_at(-12.0, 1.4, 0.25)"
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "until",
+     "expr": "p1().ladder != null",
+     "max": 2
+    },
+    {
+     "do": "down",
+     "key": "W"
+    },
+    {
+     "do": "until",
+     "expr": "p1().ladder == null",
+     "max": 15
+    },
+    {
+     "do": "up",
+     "key": "W"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "on the catwalk",
+     "expr": "p1().global_position.y > station().global_position.y + 14.0 and p1().is_on_floor()",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "1.3 round the catwalk to the key (the yard below)",
+   "max": 60,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(-8.29, 14.6, -2.29)",
+     "arrive": 0.5,
+     "max": 15
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(-6.6, 14.6, -6.0)",
+     "arrive": 0.4,
+     "max": 15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:ww_at(-2.0, 0.0, 2.0)"
+    },
+    {
+     "do": "wait",
+     "s": 2.5
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:ww_at(-7.38, 15.55, -6.0)"
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    }
+   ],
+   "expect": [
+    {
+     "name": "P1 has the key",
+     "expr": "station().key_taken and station().key_by == 0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "1.4 back down and unlock the pump house",
+   "max": 90,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(-8.29, 14.6, -2.29)",
+     "arrive": 0.5,
+     "max": 15
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(-12.0, 14.6, -0.7999999999999998)",
+     "arrive": 0.4,
+     "max": 15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:ww_at(-12.0, 15.1, 0.25)"
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "until",
+     "expr": "p1().ladder != null",
+     "max": 2
+    },
+    {
+     "do": "down",
+     "key": "S"
+    },
+    {
+     "do": "until",
+     "expr": "p1().ladder == null",
+     "max": 15
+    },
+    {
+     "do": "up",
+     "key": "S"
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(-5.0, 0.2, -1.2)",
+     "arrive": 0.6,
+     "max": 40
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:ww_at(-5.0, 1.3, 0.62)"
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "the door swings open",
+     "expr": "station().door_open",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "1.5 P1 pumps before the valves are set: the grey tank bursts on P2",
+   "max": 90,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(3.5, 0.2, 0.5)",
+     "arrive": 0.8,
+     "max": 40
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(-5.0, 0.2, 1.6)",
+     "arrive": 0.5,
+     "max": 15
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(-1.8, 0.2, 3.25)",
+     "arrive": 0.4,
+     "max": 15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:ww_at(-1.8, 0.9, 4.4)"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "call",
+     "fn": "ww_pump_strokes",
+     "args": [
+      6
+     ]
+    },
+    {
+     "do": "until",
+     "expr": "station().bursts > 0",
+     "max": 6
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "it burst; P2 in the yard covered, P1 inside not",
+     "expr": "station().bursts == 1 and p2().slime_t > 0.0 and p1().slime_t <= 0.0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "1.6 P2 rinses off at the standpipe (in slow motion)",
+   "max": 90,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(0.6, 0.2, 6.7)",
+     "arrive": 0.6,
+     "max": 40
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:ww_at(0.6, 1.0, 7.2)"
+    },
+    {
+     "do": "pad_hold",
+     "btn": "X",
+     "s": 3.6
+    }
+   ],
+   "expect": [
+    {
+     "name": "clean again",
+     "expr": "p2().slime_t <= 0.0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "1.7 P2 sets the valves (no pumping: no gulp)",
+   "max": 90,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(2.5, 0.2, -1.6)",
+     "arrive": 0.5,
+     "max": 40
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:ww_at(2.5, 1.05, -3.0)"
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(8.0, 0.2, -1.6)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:ww_at(8.0, 1.05, -3.0)"
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    }
+   ],
+   "expect": [
+    {
+     "name": "the line goes to the blue tank",
+     "expr": "station().route() == 'coolant' and station().gulps == 0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "1.8 a valve turned while pumping: the gulp",
+   "max": 90,
+   "do": [
+    {
+     "do": "call",
+     "fn": "ww_pump_until",
+     "args": [
+      "blue25",
+      40
+     ]
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 2.5
+    },
+    {
+     "do": "call",
+     "fn": "ww_wait_pressure_off"
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    }
+   ],
+   "expect": [
+    {
+     "name": "blue gulped into grey, then turned back with the pressure off",
+     "expr": "station().gulps == 1 and station().route() == 'coolant'",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "1.9 pump on; valve B slips twice, P2 turns it back each time",
+   "max": 240,
+   "do": [
+    {
+     "do": "call",
+     "fn": "ww_pump_until",
+     "args": [
+      "slip_or_solved",
+      70
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "ww_wait_pressure_off"
+    },
+    {
+     "do": "call",
+     "fn": "ww_fix_b"
+    },
+    {
+     "do": "call",
+     "fn": "ww_pump_until",
+     "args": [
+      "slip_or_solved",
+      70
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "ww_wait_pressure_off"
+    },
+    {
+     "do": "call",
+     "fn": "ww_fix_b"
+    },
+    {
+     "do": "call",
+     "fn": "ww_pump_until",
+     "args": [
+      "slip_or_solved",
+      70
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "ww_wait_pressure_off"
+    },
+    {
+     "do": "call",
+     "fn": "ww_fix_b"
+    },
+    {
+     "do": "call",
+     "fn": "ww_pump_until",
+     "args": [
+      "slip_or_solved",
+      70
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the blue tank full: the coolant jug at the tap",
+     "expr": "station().solved and station().slips == 2",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "1.10 the reward",
+   "max": 40,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(10.5, 0.2, 0.6)",
+     "arrive": 0.6,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:ww_at(10.5, 0.3, 2.1)"
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the jug is there",
+     "expr": "boot.world.get_node_or_null('CoolantJug') != null",
+     "within": 2
+    }
+   ]
+  }
+ ]
+}

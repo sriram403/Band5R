@@ -1505,19 +1505,125 @@ func t_waterworks() -> void:
 	p.force_exit = true
 	await physics_frames(3)
 	var sta := station()
-	# wrong route first (as built: valve A sends everything to the grey tank)
+	var q := p2()
+	var fx := fac.global_transform
+	# the pump house is locked; the key is up the water tower (the user's
+	# change, 2026-10-05): P1 climbs for it with the real keys
+	var door_at := fx * (CoolingStation.DOOR_HINGE + Vector3(1.1, 1.3, 0))
+	await face_point(p, door_at, 1.4, yard_side)
+	await wait(0.3)
+	log_line("at the pump house door: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("Padlocked") and not sta.door_open, "the pump house is padlocked")
+	var ladder := fac.find_child("TowerLadder", true, false) as Ladder
+	var foot := ladder.global_transform * Vector3(0, 1.0, 0)
+	await face_point(p, foot, 0.9, ladder.global_transform.basis.z)
+	await wait(0.3)
+	await tap(KEY_E)
+	check(p.ladder == ladder, "E at the water tower's ladder: on it")
+	key(KEY_W, true)
+	t = 0.0
+	while t < 15.0 and p.ladder != null:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+	key(KEY_W, false)
+	await wait(0.5)
+	var up := p.global_position.y - fx.origin.y
+	log_line("climbed the water tower in %.1f s, %.1f m up, on the floor: %s" % [t, up, p.is_on_floor()])
+	check(p.ladder == null and up > 14.0 and p.is_on_floor(), "up the ladder and onto the catwalk")
+	await shot("ww_catwalk")
+	# round the catwalk to the key (it faces the yard)
+	var key_at := fx * CoolingStation.KEY_POS
+	var outward := fx.basis * Vector3(1, 0, 0)
+	var on_cat := key_at + outward * 1.0
+	on_cat.y = fx.origin.y + LevelBuilder.TOWER_CATWALK_Y + 0.1
+	await place_player(p, on_cat, atan2(outward.x, outward.z))
+	p.pitch = atan2(key_at.y - (on_cat.y + PlayerRig.STAND_HEIGHT - 0.16), 1.0)
+	await wait(0.5)
+	log_line("at the key: '%s', standing %.2f m above the catwalk" % [p.prompt_text, p.global_position.y - on_cat.y + 0.1])
+	await tap(KEY_E)
+	check(sta.key_taken and sta.key_by == 0, "P1 takes the pump house key off its hook")
+	await shot("ww_key_view")
+	await face_point(p, door_at, 1.4, yard_side)
+	await wait(0.3)
+	log_line("back at the door with the key: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await wait(1.2)
+	check(sta.door_open, "the key opens the pump house")
+
+	# wrong route first (as built: valve A sends everything to the grey
+	# tank), P2 standing in the yard: rushed strokes pop the relief valve and
+	# fill the grey tank in a couple of seconds; it bursts over the yard
+	await place_player(q, fx * (CoolingStation.A_POS + Vector3(-1.5, 0.1, 1.0)), 0.0)
 	await face_point(p, b.poi["pump_handle"], 1.5, yard_side)
 	await wait(0.3)
-	log_line("at the pump: '%s'" % p.prompt_text)
-	check(p.prompt_text.contains("pump"), "the pump handle can be worked")
+	log_line("at the pump: '%s', P1 in the pump house: %s" % [p.prompt_text, sta.in_house(p)])
+	check(p.prompt_text.contains("Pump") and sta.in_house(p), "the pump is inside the pump house")
+	check(not sta.in_yard(p) and sta.in_yard(q), "the pump house is not the yard; P2 by the valves is")
+	# first rushed (a press every 0.1 s) until the relief valve pops, then
+	# in rhythm; count the seconds water actually flows into the grey tank
+	t = 0.0
+	var flow_s := 0.0
+	var grey_full_s := -1.0
+	while t < 20.0 and sta.bursts == 0:
+		var ready: bool = sta._lever <= 0.02 if sta.pops > 0 else true
+		if sta.stalled <= 0.0 and ready:
+			key(KEY_E, true)
+			await get_tree().physics_frame
+			key(KEY_E, false)
+			t += 1.0 / 60.0
+			if sta.flowing():
+				flow_s += 1.0 / 60.0
+		for k in 5:
+			await get_tree().physics_frame
+			t += 1.0 / 60.0
+			if sta.flowing():
+				flow_s += 1.0 / 60.0
+		if grey_full_s < 0.0 and sta.fill["waste"] >= 1.0:
+			grey_full_s = flow_s
+	log_line("pumping on the wrong route: pops %d, rushed strokes %d, grey full after %.1f s of flow, burst after %.1f s" % [sta.pops, sta.rushed, grey_full_s, t])
+	check(sta.pops >= 1 and sta.rushed > 0, "rushed strokes pop the relief valve")
+	check(sta.fill["coolant"] == 0.0 and grey_full_s > 0.0 and grey_full_s < 3.0, "the wrong route fills the grey tank, fast (%.1f s of pumping)" % grey_full_s)
+	check(sta.bursts == 1 and sta.fill["waste"] == 0.0, "the full grey tank bursts and empties")
+	await wait(0.3)
+	await shot("ww_burst")
+	check(q.slime_t > 0.0 and absf(q.slow() - PlayerRig.SLIME_SLOW) < 0.01, "P2 in the yard is covered: slow motion (%.2f)" % q.slow())
+	check(p.slime_t <= 0.0, "P1 in the pump house is not")
+	check(sta.clog > 0.0, "the line is clogged for a moment after the burst")
+	await tap(KEY_E)
+	check(sta.pressure == 0.0, "the slack lever does nothing while it's clogged")
+	await wait(CoolingStation.CLOG_S)
+	# what slow motion does: walking, measured with P1 (keyboard) covered
+	await face_point(p, fx * (CoolingStation.TAP_POS + Vector3(-6.0, 1.0, 0.0)), 4.0, fx.basis * Vector3(-1, 0, 0))
+	var walk := func() -> float:
+		var a := p.global_position
+		key(KEY_W, true)
+		await wait(1.5)
+		key(KEY_W, false)
+		await wait(0.4)
+		return Vector2(p.global_position.x - a.x, p.global_position.z - a.z).length()
+	var clean_m: float = await walk.call()
+	await face_point(p, fx * (CoolingStation.TAP_POS + Vector3(-6.0, 1.0, 0.0)), 4.0, fx.basis * Vector3(-1, 0, 0))
+	p.slime(CoolingStation.SLIME_S)
+	var slow_m: float = await walk.call()
+	log_line("walked 1.5 s: %.2f m clean, %.2f m covered" % [clean_m, slow_m])
+	check(slow_m < clean_m * 0.55 and slow_m > clean_m * 0.25, "covered, you walk in slow motion (%.0f%%)" % (slow_m / clean_m * 100.0))
+	await shot("ww_covered")
+	# the standpipe rinses it off
+	await face_point(p, fx * (CoolingStation.TAP_POS + Vector3(0, 1.0, -0.5)), 1.3, fx.basis * Vector3(0, 0, -1))
+	await wait(0.6)
+	log_line("at the standpipe: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("rinse"), "the standpipe offers a rinse to a covered player")
 	key(KEY_E, true)
-	await wait(5.0)
+	t = 0.0
+	while t < 6.0 and p.slime_t > 0.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
 	key(KEY_E, false)
-	log_line("held the pump 5 s on the wrong route: pops %d, grey tank %.0f%%, blue tank %.0f%%" % [sta.pops, sta.fill["waste"] * 100.0, sta.fill["coolant"] * 100.0])
-	check(sta.pops >= 1, "over-pumping pops the relief valve")
-	check(sta.fill["coolant"] == 0.0 and sta.fill["waste"] > 0.0, "the wrong route fills the grey tank, not the blue one")
-	await shot("ww_pump")
-	# set the valves by walking to them (the valve player's job)
+	log_line("rinsed off in %.1f s" % t)
+	check(p.slime_t <= 0.0 and t < 4.0, "holding E under the standpipe rinses you off (%.1f s)" % t)
+	q.slime(0.0)
+
+	# set the valves by walking to them (the valve player's job), the pump at rest
 	for v in [["valve_a", "a"], ["valve_b", "b"]]:
 		await face_point(p, b.poi[v[0]], 1.6, yard_side)
 		await wait(0.3)
@@ -1525,35 +1631,57 @@ func t_waterworks() -> void:
 		await tap(KEY_E)
 	log_line("valves now: A -> %s, B -> %s, route %s" % [sta.valve_a, sta.valve_b, sta.route()])
 	check(sta.route() == "coolant", "turning both valves routes the line to the blue tank")
+	check(sta.gulps == 0, "turned with no pressure: no gulp")
 	await shot("ww_valves")
-	# pump in bursts, keeping the needle in the green. Played as two people:
-	# valve B kicks back twice and the partner at the valves turns it back.
+
+	# pump in rhythm, keeping the needle in the green. Played as two people:
+	# the valve player waits for "stop pumping" before every turn
+	var pump_rhythm := func(until: Callable, limit: float) -> float:
+		var tt := 0.0
+		while tt < limit and not until.call():
+			if sta._lever <= 0.02 and sta.pressure < 0.72 and sta.stalled <= 0.0:
+				key(KEY_E, true)
+				await get_tree().physics_frame
+				key(KEY_E, false)
+				tt += 1.0 / 60.0
+			await get_tree().physics_frame
+			tt += 1.0 / 60.0
+		return tt
 	await face_point(p, b.poi["pump_handle"], 1.5, yard_side)
-	await wait(3.5)
-	sta.co_op = 1
-	t = 0.0
-	var pops0 := sta.pops
-	var slipped_t := -1.0
-	var fill_at_slip := 0.0
-	var held_while_slipped := true
-	while t < 90.0 and not sta.solved:
-		var want := sta.pressure < 0.74
-		key(KEY_E, want)
-		await get_tree().physics_frame
-		t += 1.0 / 60.0
-		if sta.valve_b == "overflow":
-			if slipped_t < 0.0:
-				slipped_t = t
-				fill_at_slip = sta.fill["coolant"]
-			elif t - slipped_t > 1.5:
-				held_while_slipped = held_while_slipped and sta.fill["coolant"] == fill_at_slip
-				sta._turn("b", p2())     # the partner turns it back
-				slipped_t = -1.0
-	key(KEY_E, false)
 	sta.co_op = 0
-	log_line("blue tank filled in %.0f s of careful pumping (%d extra pops, valve B slipped %d times)" % [t, sta.pops - pops0, sta.slips])
-	check(sta.solved, "careful pumping fills the blue tank")
-	check(sta.slips == CoolingStation.SLIP_AT.size(), "with two players, valve B kicks back twice while the tank fills")
+	var rushed0 := sta.rushed
+	var tg: float = await pump_rhythm.call(func() -> bool: return sta.fill["coolant"] >= 0.25, 30.0)
+	log_line("in rhythm: blue at %.0f%% after %.1f s, pressure %.2f, rushed %d" % [sta.fill["coolant"] * 100.0, tg, sta.pressure, sta.rushed - rushed0])
+	check(sta.fill["coolant"] >= 0.25 and sta.rushed == rushed0, "pumping in rhythm fills the blue tank, no rushed strokes")
+	# a valve turned under pressure: a gulp of blue into the grey tank
+	var blue0: float = sta.fill["coolant"]
+	var grey0: float = sta.fill["waste"]
+	sta._turn("b", q)
+	log_line("valve B turned under pressure %.2f: blue %.2f -> %.2f, grey %.2f -> %.2f" % [sta.pressure, blue0, sta.fill["coolant"], grey0, sta.fill["waste"]])
+	check(sta.gulps == 1 and sta.fill["coolant"] < blue0 - 0.15 and sta.fill["waste"] > grey0 + 0.25, "a valve turned under pressure gulps blue water into the grey tank")
+	while sta.pressure > 0.15:
+		await get_tree().physics_frame
+	sta._turn("b", q)
+	check(sta.gulps == 1 and sta.route() == "coolant", "turned back once the pressure is off: no gulp")
+	# the rest, with valve B's two slips: the partner waits for the pressure
+	# to drop, then turns it back
+	sta.co_op = 1
+	var pops0 := sta.pops
+	var held_while_slipped := true
+	t = 0.0
+	while t < 150.0 and not sta.solved:
+		t += await pump_rhythm.call(func() -> bool: return sta.solved or sta.valve_b == "overflow", 150.0 - t)
+		if sta.valve_b == "overflow" and not sta.solved:
+			var at_slip: float = sta.fill["coolant"]
+			while sta.pressure > 0.15:
+				await get_tree().physics_frame
+				t += 1.0 / 60.0
+			held_while_slipped = held_while_slipped and sta.fill["coolant"] <= at_slip
+			sta._turn("b", q)     # the partner turns it back, no pressure
+	sta.co_op = 0
+	log_line("blue tank filled in %.0f s (%d extra pops, valve B slipped %d times, %d gulps, %d bursts)" % [t, sta.pops - pops0, sta.slips, sta.gulps, sta.bursts])
+	check(sta.solved, "pumping in rhythm fills the blue tank")
+	check(sta.slips == CoolingStation.SLIP_AT.size(), "valve B kicks back twice while the tank fills")
 	check(held_while_slipped, "while B is kicked back the blue tank stops filling")
 	await wait(0.5)
 	await shot("ww_solved")
@@ -2256,6 +2384,7 @@ func t_puzzle_resets() -> void:
 	await wait(0.5)
 	check(not sta.solved and sta.fill["coolant"] == 0.0 and sta.slips == 0 and sta.valve_b == "overflow", "Puzzles → the water works: the blue tank empty, the valves back, B ready to slip again")
 	check(not line.powered and not line.hut_powered, "... and the turbine and lamps off again")
+	check(not sta.door_open and not sta.key_taken, "... the pump house locked again, the key back up the tower")
 	check(st.current()["id"] == "coolant", "... the story at its step (%s)" % st.current()["id"])
 	check(p1().global_position.distance_to(boot.builder.poi["facility"]) < 40.0, "... both at the water works")
 	dm.run("puzzle", rows["The windmill"])
@@ -9028,3 +9157,107 @@ func engine_on() -> void:
 	if not camper().engine_on:
 		await tap(KEY_X)
 	await wait(0.8)
+
+
+## Looks only (the water works rework): the catwalk view over the yard, the
+## pump house from the yard and inside, a covered partner. Not in a preset.
+func t_ww_look() -> void:
+	var b: LevelBuilder = boot.builder
+	var fac: Node3D = boot.world.get_node("WaterFacility")
+	var fx := fac.global_transform
+	var sta := station()
+	sta.reset()
+	var p := p1()
+	var q := p2()
+	var cat := fx * (CoolingStation.KEY_POS + Vector3(1.0, -1.1, 0))
+	await place_player(p, cat, atan2(-(fx.basis * Vector3(1, 0, 0.6)).x, -(fx.basis * Vector3(1, 0, 0.6)).z))
+	p.pitch = deg_to_rad(-38.0)
+	await wait(0.6)
+	await shot("wwl_catwalk_yard")
+	await face_point(p, fx * Vector3(-5.0, 2.0, 0.5), 9.0, fx.basis * Vector3(0.3, 0, -1))
+	await wait(0.4)
+	await shot("wwl_house_outside")
+	sta.solve_quietly()
+	sta.solved = false
+	await face_point(p, fx * Vector3(-5.0, 1.6, 6.0), 4.5, fx.basis * Vector3(0, 0, -1))
+	await wait(0.6)
+	await shot("wwl_door_open")
+	await place_player(p, fx * Vector3(-3.0, 0.2, 1.4), atan2(-(fx.basis * Vector3(-0.6, 0, 1)).x, -(fx.basis * Vector3(-0.6, 0, 1)).z))
+	p.pitch = deg_to_rad(-8.0)
+	await wait(0.6)
+	await shot("wwl_inside")
+	await face_point(p, fx * (CoolingStation.WASTE_TANK + Vector3(0, 2.5, 0)), 9.0, fx.basis * Vector3(-0.3, 0, -1))
+	await place_player(q, fx * (CoolingStation.WASTE_TANK + Vector3(-1.0, 0.1, -4.0)), 0.0)
+	q.slime(CoolingStation.SLIME_S)
+	sta._burst()
+	await wait(0.5)
+	await shot("wwl_burst_yard")
+	await wait(1.5)
+	await shot("wwl_after_burst")
+	q.slime(0.0)
+	sta.reset()
+
+
+# --- the water works walk (tools/live/make_puzzle1.py) ---------------------------
+
+## P1 at the pump: `n` strokes with E, each as the lever comes back up.
+func ww_pump_strokes(n: int) -> bool:
+	var sta := station()
+	var done := 0
+	var t := 0.0
+	while done < n and t < 30.0:
+		if sta._lever <= 0.02 and sta.stalled <= 0.0:
+			key(KEY_E, true)
+			await get_tree().physics_frame
+			key(KEY_E, false)
+			done += 1
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+	return done == n
+
+
+## P1 pumps in rhythm, easing off to keep the needle in the green, until:
+## "blue25" the blue tank a quarter full, "slip_or_solved" valve B slips or
+## the tank is full.
+func ww_pump_until(what: String, max_s: float) -> bool:
+	var sta := station()
+	var t := 0.0
+	while t < max_s:
+		if what == "blue25" and sta.fill["coolant"] >= 0.25:
+			return true
+		if what == "slip_or_solved" and (sta.solved or sta.valve_b == "overflow"):
+			return true
+		if sta._lever <= 0.02 and sta.pressure < 0.72 and sta.stalled <= 0.0:
+			key(KEY_E, true)
+			await get_tree().physics_frame
+			key(KEY_E, false)
+			t += 1.0 / 60.0
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+	return false
+
+
+## The valve player waits for "stop pumping": the needle down.
+func ww_wait_pressure_off() -> bool:
+	var t := 0.0
+	while station().pressure > 0.15 and t < 15.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+	return station().pressure <= 0.15
+
+
+## P2 (pad, looking at valve B) turns it back if it has slipped.
+func ww_fix_b() -> bool:
+	var sta := station()
+	if sta.solved or sta.valve_b == "coolant":
+		return true
+	pad_button(JOY_BUTTON_X, true)
+	await physics_frames(5)
+	pad_button(JOY_BUTTON_X, false)
+	await physics_frames(3)
+	return sta.valve_b == "coolant"
+
+
+## Where things are at the water works (station-local -> world).
+func ww_at(x: float, y: float, z: float) -> Vector3:
+	return station().global_transform * Vector3(x, y, z)

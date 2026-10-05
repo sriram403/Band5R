@@ -17,6 +17,8 @@ const FAMILIES := {
 	"paper_open": "bookOpen", "paper_close": "bookClose", "stamp": "bookPlace", "page": "bookFlip",
 	"bong": "bong_", "ui_move": "select_", "ui_ok": "confirmation_", "ui_back": "back_",
 	"ui_error": "error_", "tick": "tick_", "pluck": "pluck_", "glass": "glass_",
+	# made here (tools/gen/sludge.py): the water works' sludge tank
+	"squelch": "squelch_", "gurgle": "gurgle_", "groan": "groan_", "splat": "splat_",
 }
 
 static var _cache := {}
@@ -33,7 +35,7 @@ static func streams(key: String) -> Array:
 		for f in dir.get_files():
 			# exported builds list "x.ogg.import"; the resource is still "x.ogg"
 			var name := f.trim_suffix(".import")
-			if name.begins_with(prefix) and name.ends_with(".ogg"):
+			if name.begins_with(prefix) and (name.ends_with(".ogg") or name.ends_with(".wav")):
 				var s := load("res://audio/" + name)
 				if s != null and not out.has(s):
 					out.append(s)
@@ -47,7 +49,8 @@ static func _pick(key: String) -> AudioStream:
 
 
 ## Positional one-shot, heard by whoever is near.
-static func play3d(key: String, at: Vector3, volume_db := 0.0, pitch_wobble := 0.08) -> void:
+## `pitch` < 1 slows it down (a player covered in sludge moves in slow motion).
+static func play3d(key: String, at: Vector3, volume_db := 0.0, pitch_wobble := 0.08, pitch := 1.0) -> void:
 	if muted:
 		return
 	var s := _pick(key)
@@ -60,7 +63,7 @@ static func play3d(key: String, at: Vector3, volume_db := 0.0, pitch_wobble := 0
 	var p := AudioStreamPlayer3D.new()
 	p.stream = s
 	p.volume_db = volume_db
-	p.pitch_scale = 1.0 + randf_range(-pitch_wobble, pitch_wobble)
+	p.pitch_scale = pitch * (1.0 + randf_range(-pitch_wobble, pitch_wobble))
 	p.unit_size = 6.0
 	p.max_distance = 60.0
 	root.add_child(p)

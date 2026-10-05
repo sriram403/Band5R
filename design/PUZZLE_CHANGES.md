@@ -14,7 +14,7 @@ visible consequence, so they keep talking.
 
 ---
 
-## 1. The water works: *proposed* (2026-10-05)
+## 1. The water works: *built* (2026-10-05), awaiting your look
 
 ### What the user asked for
 
@@ -110,7 +110,47 @@ slowly (pump, walk out, look, walk back).
   the gauge's needle sticks at zero for a few seconds ("the line's full of
   sludge") before pumping works again.
 
-### Questions for you
+### Your answers (2026-10-05): **agreed**
+
+Anyone in the tank yard; 40% for ~20 s + 5 s back; the grey tank in ~2 s
+of wrong pumping; a 20% gulp; S1-S4 all in.
+
+### As built (2026-10-05, `../MPG_dev` branch `g2`)
+
+- **The pump house** (`LevelLandmarks._pump_house`): walls with a doorway,
+  no window, a bulb, the bench, kettle, mug, toolbox, chair, coat,
+  calendar. The door with its padlock is the puzzle's (`CoolingStation`):
+  only the player who took the key can unlock it.
+- **The water tower** (`_tower_catwalk`): a ladder on the road side, a
+  railed catwalk at 14.5 m, the key on the tank wall on the yard side.
+  From there the yard's pipes read from above (S3).
+- **The pump** (S2): one press of E is one stroke (0.6 s, +0.14 pressure);
+  pressing before the lever is back up is a rushed stroke (+0.24, a
+  clank); the line loses 0.10 a second, the overflow route 0.30 more.
+  Steady strokes creep up through the green, so the pumper pauses a beat
+  to hold it. A second press within 0.1 s is ignored (a double read).
+- **The grey (SLUDGE) tank:** 0.5 a second of flow its way (2.2 s of
+  pumping measured), the gurgle at 75%, the groan 2 s, the burst: sludge
+  particles, the hatch flies up, a puddle for 18 s; everyone in the yard
+  (`in_yard`: the yard's rectangle, under 4 m up, not in the pump house)
+  covered; the tank empty; the line clogged 4 s (S4).
+- **Covered** (`PlayerRig.slime`): `slow()` = 0.4 for 20 s, easing back
+  over 5 s: speed, acceleration, turning the view, the jump (velocity x f,
+  gravity x f^2: as high, slower), climbing, held jobs (dt x f) and taps
+  (a delay of 0.5/f - 0.5 s). Brown avatar, drips on the ground, squelch
+  steps (pitched down), a drip overlay round the view (`PlayerHUD`).
+  Measured: 1.5 s of walking 6.45 m clean, 2.58 m covered (40%).
+- **The standpipe** (S1): hold E 3 s (2.4 s measured) to rinse off.
+- **The gulp:** a valve turned with the pressure over 0.2 or the lever
+  moving: 0.2 of the blue tank out, grey +0.35. B's slips gulp too.
+- **Sounds** made here: `tools/gen/sludge.py` (squelch, gurgle, groan,
+  splat). Sfx now plays `.wav` too and takes a pitch.
+- **Tests:** `waterworks` rewritten (the key by the real ladder, the door,
+  the burst on P2 by the valves, P1 inside untouched, slow walking
+  measured, the rinse, the gulp, the slips): 0 failures. `puzzle_resets`
+  checks the door and key go back. The walk: `tools/live/make_puzzle1.py`.
+
+### Questions for you (answered above)
 
 1. Who gets covered: **anyone in the tank yard** (my pick, so you can't
    dodge it) or only someone right by the grey tank?
