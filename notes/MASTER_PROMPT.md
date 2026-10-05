@@ -49,6 +49,9 @@ they/them.
 
 ## 2. Status right now (2026-09-29; latest at the top, 2026-10-05)
 
+- **2026-10-05: hand-over to a new thread** for Milestone G (the user
+  starts it by sending this file). POLISH: screenshots in the sheets
+  dropped; puzzle changes discussed together later.
 - **2026-10-05: Milestone F approved and pushed** (main `c1235d8`). The
   user asked me to play F3 and record it instead of testing it; I
   recorded F3-F8 (`tools/record_walk.sh`, videos in `appdata/videos/`),
@@ -522,12 +525,14 @@ watched them: "all okay", every decision confirmed (`design/RETURN.md`).
 
 **Next, in this order:**
 
-1. **Ask the user (rule 17): continue in this thread, or a new one?** Then
-   remind them of `notes/POLISH.md` (rule 15: all milestones but G are done;
-   it also has "screenshots in the test sheets", which the videos may
-   replace: ask).
-2. **Milestone G** (`notes/TODO.md`, `DESIGN.md`): discuss its open
-   questions with the user first (rule 3), then build part by part.
+1. **This is a new thread (hand-over 2026-10-05).** The user chose a new
+   thread for G and was reminded of `notes/POLISH.md`: screenshots in the
+   sheets dropped (the videos replace them); **almost every puzzle needs a
+   few changes, to be discussed together some other time** (don't change
+   puzzles before that talk).
+2. **Milestone G** (`notes/TODO.md`, `DESIGN.md`): read what G is, tell
+   the user in plain words, and discuss its open questions with them first
+   (rule 3); then build part by part.
 3. **For every part from now on (rule 22):** write the test sheet in plain
    words, make its walk (`tools/live/make_<part>.py`), prove it as a watched
    run, then `tools/record_walk.sh <part>`, watch the video (frame grids),

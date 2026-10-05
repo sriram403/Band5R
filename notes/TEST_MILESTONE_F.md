@@ -24,8 +24,8 @@ Report per part (F3, F4, ...), and say which decisions you'd change.
 
 **How each step reads (2026-10-04, your ask):** a plain sentence of what to
 do and why; under it *Exactly how* (optional, the buttons and where to
-stand) and **You should see** (what tells you it worked). Later: a
-screenshot for each "you should see" (noted in `notes/POLISH.md`).
+stand) and **You should see** (what tells you it worked). (Screenshots
+were planned; dropped 2026-10-05: the recorded walkthroughs replace them.)
 
 **Every jump, the same way:** F1 opens the developer menu; arrow keys to the
 tab and the row; Enter jumps there; **then F1 (or Esc) to close the menu**

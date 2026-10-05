@@ -10,8 +10,12 @@ being built and tested), so this always shows where the work is right now.
   walkthroughs F3-F8, every decision confirmed) and pushed** (main
   `c1235d8`). New way (you, 2026-10-05): write the test sheet, then I
   play it, record it (`tools/record_walk.sh`) and send the video; you
-  verify from the video. Next: Milestone G (after you choose: this
-  thread or a new one).
+  verify from the video. Screenshots in the sheets dropped (the videos
+  replace them). Puzzle changes: almost all need a few; discussed
+  together later (`notes/POLISH.md`).
+- **Hand-over to a new thread (2026-10-05)**: you start it by sending
+  `notes/MASTER_PROMPT.md`. Next there: Milestone G, its open questions
+  discussed with you first.
 - Milestones A-E: done, each part tested and approved by you, full run
   clean, **pushed** (Milestone E finished 2026-09-29, main `8c18ef3`).
 - **Milestone F, the return.** Your answers to `design/RETURN.md`
@@ -69,8 +73,8 @@ being built and tested), so this always shows where the work is right now.
         locally, **not pushed**.
   - [x] The sheet F3-F8 rewritten in plain words (2026-10-04): per step what +
         why, optional *Exactly how*, **You should see**; fallbacks after the
-        steps; screenshots per step later (POLISH)
-  - [ ] **Your test from F3 on** (2026-10-04 or later, in a new thread: send
+        steps (screenshots per step dropped 2026-10-05: the videos replace them)
+  - [x] **Your test from F3 on** (done 2026-10-05 from the recorded videos: "all okay"; pushed) (2026-10-04 or later, in a new thread: send
         `notes/MASTER_PROMPT.md`), then push as sriram403, then Milestone G
     - [~] (2026-10-04, your ask) I play F3 and record it as a video for you
           to review instead (`tools/record_walk.sh f3` ->
