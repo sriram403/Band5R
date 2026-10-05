@@ -22,7 +22,7 @@ how* (round 2 of #1 below): on the way out, notes he left where he passed
 from Bessi on, him saying it. Plain narration stays only for what you see,
 hear or feel ("SPLAT! You're covered").
 
-## 1. The water works: round 1 *built* (2026-10-05); round 2 *proposed*
+## 1. The water works: round 1 and round 2 *built* (2026-10-05), awaiting your look
 
 ### What the user asked for
 
@@ -237,7 +237,41 @@ of wrong pumping; a 20% gulp; S1-S4 all in.
 - **S7. His notes collect in the journal** ("Naresh's notes"), so you can
   read them again later, and on the way home they read differently.
 
-### Round 2: questions
+### Round 2: your answers (2026-10-05): **agreed**
+
+My picks for 1 (hints and how-to's in his words, the objective line plain)
+and 2 (puzzle by puzzle, then one pass at the end for the rest); the
+fragment by his mug; the gear steps skippable; S5-S7 all in.
+
+### Round 2: as built (2026-10-05, `../MPG_dev` branch `g3`)
+
+- **The tap** (`CoolingStation._build_coolant_tap`): brass, at the blue
+  tank's foot beside its sight glass; holding a jug (or the oil can) to it,
+  hold E: 1 L a second (5 L in 5.0 s measured); the tank's level drops a
+  little. Empty-handed it says what you need. No jug appears any more.
+- **P2's jug** (`HouseCoolantJug`): F1 → Puzzles → 1 puts it on the
+  rack's right-hand slot, empty (`DevMenu.van_jug`), and splits the hose.
+  Found on the way: a jug taken off the rack with the van nose-up on the
+  climb popped out inside the rack's bars, snagged and dropped from your
+  hands; anything taken off the rack now goes straight into your hands.
+- **Naresh's notes** (`world/NareshNote.gd`): on the door, by the pump (on
+  the plate, which now only says BESSI WATER CO. / COOLANT MIX PUMP), on a
+  stake by valve B (the old "WORN SEAT" label), by the tap, on a stake by
+  the standpipe. E reads one; the story keeps them (`Story.notes`, saved)
+  for the journal's second page (A / D, pad D-Left) (S7). The pop-up lines
+  now only say what you see and feel. The hint (hold H) quotes his notes.
+- **The bench:** the fragment by his mug (there from the start), and the
+  leaky oil can (`items/LeakyCan.gd`, 4 L, 1 L a minute, S6).
+- **The checklist** (S5): P1's first text to P2 is "I'll come get you.
+  Bring:" with three lines that tick themselves (the filled fuel can on
+  the rack, the coolant jug on the rack, the torch batteries fitted).
+  Getting in the van together at P2's house ends the opening, gear or not
+  (`t_opening_skip`).
+- **Tests:** `waterworks` (the note, the rack, the tap, the pour, the bench,
+  the leak, the journal page), `opening_skip` (new, in set:opening),
+  `puzzle_resets`: 0 failures.
+
+### Round 2: questions (answered above)
 
 1. **How far does "written by Naresh" go?** (a) The hints (hold H) and the
    how-to messages only, with the objective line (top left) staying a short

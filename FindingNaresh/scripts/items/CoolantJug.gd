@@ -16,6 +16,11 @@ func _ready() -> void:
 	super._ready()
 
 
+## How much it holds (the leaky oil can holds less).
+func capacity() -> float:
+	return CAPACITY
+
+
 func label() -> String:
 	if litres <= 0.05:
 		return "coolant jug (empty)"

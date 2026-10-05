@@ -1450,6 +1450,7 @@ func t_waterworks() -> void:
 	var start_i: int = int(road.nearest(b.poi["facility"].x, b.poi["facility"].z)["index"]) - 110
 	await van_to(road.point(start_i))
 	station().reset()          # as you first find it, whatever ran before
+	boot.dev_menu.van_jug(0.0) # P2's coolant jug on the rack, as after the opening (emptied)
 	st.index = st.index_of("pump_road")
 	c.coolant_leak = false
 	c.heat_lockout = false
@@ -1515,6 +1516,14 @@ func t_waterworks() -> void:
 	await wait(0.3)
 	log_line("at the pump house door: '%s'" % p.prompt_text)
 	check(p.prompt_text.contains("Padlocked") and not sta.door_open, "the pump house is padlocked")
+	# Naresh's note on the door says where the key is (round 2: his words)
+	var door_note := fac.find_child("NareshNote_ww_door", true, false) as Node3D
+	await face_point(p, door_note.global_position, 1.3, door_side)
+	await wait(0.3)
+	log_line("at his note on the door: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await wait(0.3)
+	check(st.notes.size() > 0 and st.notes[0]["id"] == "ww_door" and String(st.notes[0]["text"]).contains("water tower"), "Naresh's note on the door: the key's up the water tower")
 	var ladder := fac.find_child("TowerLadder", true, false) as Ladder
 	var foot := ladder.global_transform * Vector3(0, 1.0, 0)
 	await face_point(p, foot, 0.9, ladder.global_transform.basis.z)
@@ -1687,17 +1696,32 @@ func t_waterworks() -> void:
 	await wait(0.5)
 	await shot("ww_solved")
 
-	# the jug: carry it to the van and pour
-	var jug := boot.world.get_node_or_null("CoolantJug") as CoolantJug
-	check(jug != null, "the tap gives a coolant jug")
-	if jug == null:
-		return
-	await face_point(p, jug.global_position + Vector3.UP * 0.2, 1.5, yard_side)
+	# round 2: no jug pops out; P2's jug comes off the van and is filled at
+	# the blue tank's tap, then poured
+	check(boot.world.get_node_or_null("CoolantJug") == null, "no jug pops out of the tank: the coolant waits at its tap")
+	var jug := boot.world.find_child("HouseCoolantJug", true, false) as CoolantJug
+	var slot: Node3D = c.storage_slots[2]
+	await face_point(p, slot.global_position + Vector3.UP * 0.3, 1.0, c.global_transform.basis.z)
 	await wait(0.3)
-	log_line("at the jug: '%s' (jug at %.2f m above ground)" % [p.prompt_text, jug.global_position.y - Landscape.ground(jug.global_position.x, jug.global_position.z)])
+	log_line("at the van's rack: '%s'" % p.prompt_text)
 	await tap(KEY_E)
 	await physics_frames(10)
-	check(p.held == jug, "the jug can be carried")
+	log_line("  held %s, slime %.1f, jug stowed in %s, holders %s" % [p.held, p.slime_t, jug.stowed_in, jug.holders])
+	check(p.held == jug and jug.litres < 0.05, "P2's (empty) coolant jug comes off the van's rack")
+	await face_point(p, fx * CoolingStation.COOLANT_TAP, 1.1, fx.basis * Vector3(0, 0, -1))
+	await wait(0.3)
+	log_line("at the coolant tap: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("fill"), "holding the jug at the tap: fill it")
+	key(KEY_E, true)
+	t = 0.0
+	while t < 10.0 and jug.litres < jug.capacity() - 0.05:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+	key(KEY_E, false)
+	await wait(0.3)
+	log_line("filled %.1f L in %.1f s" % [jug.litres, t])
+	check(jug.litres >= jug.capacity() - 0.1 and t < 7.0, "the jug fills at the tap (%.1f L in %.1f s)" % [jug.litres, t])
+	await shot("ww_tap")
 	var grille := c.global_transform * (Vector3(0, 1.45, -3.9) + Vector3(0, Camper.BODY_Y, 0))
 	var van_before := c.global_position
 	await face_point(p, grille, 1.8, -c.global_transform.basis.z)
@@ -1720,13 +1744,24 @@ func t_waterworks() -> void:
 	# fragments: the station's, then the shed roof by stacking crates
 	var f0 := st.fragments
 	var frag := boot.world.get_node_or_null("Fragment_water_works") as Node3D
+	var frag_at := frag.global_position if frag != null else Vector3.INF
 	if frag:
-		await face_point(p, frag.global_position + Vector3.UP * 0.15, 1.4, yard_side)
+		# the bench is along the pump house's left wall: from the room
+		await face_point(p, frag.global_position + Vector3.UP * 0.15, 1.3, fx.basis * Vector3(1, 0, 0))
 		await wait(0.3)
 		log_line("at the station fragment: '%s'" % p.prompt_text)
 		await tap(KEY_E)
 		await wait(0.3)
 	check(st.fragments == f0 + 1, "the station's Memory Fragment can be picked up")
+	check(frag_at.distance_to(fx * CoolingStation.BENCH_FRAG) < 1.0, "it lay on the pump house bench, by Naresh's mug")
+	# the fallback: an old oil can on the bench that leaks
+	var oil := boot.world.find_child("LeakyOilCan", true, false) as LeakyCan
+	check(oil != null and oil.global_position.distance_to(fx * CoolingStation.BENCH_CAN) < 0.8, "an old oil can on the bench")
+	if oil != null:
+		oil.litres = 4.0
+		await wait(3.0)
+		log_line("the oil can after 3 s: %.3f L" % oil.litres)
+		check(oil.litres < 3.98 and oil.litres > 3.9, "it leaks about a litre a minute")
 	# stack two crates against the shed (as players would carry them over)
 	var roof: Vector3 = b.poi["shed_roof"]
 	var out := fac.global_transform.basis * Vector3(0, 0, -1)     # the shed's yard-side face
@@ -1785,6 +1820,23 @@ func t_waterworks() -> void:
 		await tap(KEY_E)
 		await wait(0.3)
 	check(boot.world.get_node_or_null("Fragment_shed") == null, "the shed roof fragment can be collected")
+	# Naresh's notes collect in the journal (its second page)
+	await seat_p1_driver()
+	c.set_parking_brake(true)
+	await wait(0.5)
+	await tap(KEY_J)
+	await tap(KEY_D)
+	await wait(0.3)
+	var jp: JournalPanel = null
+	for n in boot.huds[0].find_children("*", "JournalPanel", true, false):
+		jp = n as JournalPanel
+	var page := jp._text.text if jp != null else ""
+	log_line("journal page %d: %s" % [p.journal_page, page.substr(0, 80).replace("\n", " ")])
+	check(p.journal_open and p.journal_page == 1 and page.contains("NARESH'S NOTES") and page.contains("water tower"), "the journal's second page: Naresh's notes")
+	await shot("ww_journal_notes")
+	await tap(KEY_J)
+	p.force_exit = true
+	await physics_frames(3)
 	await shot("ww_roof")
 
 	# the clues
@@ -4690,6 +4742,37 @@ func t_driveway() -> void:
 
 ## Opening story state in the actual world. Gym scenarios cover the long
 ## physical tasks; this checks their story handoffs and the two HUD threads.
+## The opening's checklist (round 2 of the water works, the user,
+## 2026-10-05): P1's text to P2 lists the gear and ticks itself; getting in
+## the van together at P2's house ends the opening, gear or no gear.
+## Its own process: `tools/run_test.sh opening_skip` (set:opening).
+func t_opening_skip() -> void:
+	var st: Story = boot.story
+	var c := camper()
+	check(st.opening_mode, "a new game begins the two-player opening")
+	var msg: Dictionary = {}
+	for m in st.phone_threads[1]:
+		if String(m.get("checklist", "")) == "gear":
+			msg = m
+	var body := st.message_body(msg) if not msg.is_empty() else ""
+	log_line("P2's checklist: %s" % body.replace("\n", " | "))
+	check(body.contains("fuel can") and body.contains("coolant jug") and body.contains("batteries") and not body.contains("[x]"), "P1's text to P2 lists the gear, nothing ticked yet")
+	# the coolant jug onto the rack: its line ticks
+	var jug := boot.world.find_child("HouseCoolantJug", true, false) as CoolantJug
+	jug.stow(c.storage_slots[2])
+	await wait(0.3)
+	body = st.message_body(msg)
+	check(body.contains("[x] the blue coolant jug") and body.contains("[  ] the red fuel can"), "the jug on the rack ticks its line")
+	# P1 at P2's house (the van on the drive), both in, the can left behind
+	await van_to(boot.builder.poi["p2_home"])
+	st.opening_steps[0] = 5
+	p1().enter_seat(c, c.seat_nodes["driver"], "driver")
+	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await wait(1.5)
+	log_line("opening mode %s, steps %s, objective '%s'" % [st.opening_mode, str(st.opening_steps), st.objective_text(0)])
+	check(not st.opening_mode and st.current()["id"] == "to_windmill", "both in the van ends the opening, the fuel can left behind (not blocking)")
+
+
 func t_opening() -> void:
 	var st: Story = boot.story
 	var house := boot.world.get_node_or_null("P2Home") as HouseInterior

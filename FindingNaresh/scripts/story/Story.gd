@@ -12,6 +12,9 @@ var boot: Node
 var flags: Dictionary = {}          ## story facts: "letter_read", "text_j1", ...
 var fragments := 0                  ## Memory Fragments held (3 make a Memory Rose)
 var collected: Array = []           ## ids of fragments already picked up
+## Naresh's notes read so far, in order: [{"id", "text"}] (the journal's
+## second page; `NareshNote`)
+var notes: Array = []
 var roses_spent := 0                ## Memory Roses used up by saving
 var index := 0                      ## current objective
 var _t := 0.0
@@ -76,10 +79,10 @@ func setup(b: Node) -> void:
 			"hint": "The board at Last Fuel shows the way: north past the water works to the old bridge. Bessi is across the river.",
 			"done": func(): return boot.camper.coolant_leak or flags.has("leak_fixed")},
 		{"id": "coolant", "text": "The engine is boiling! Get coolant from the water works",
-			"hint": "The pump is inside the brick pump house, padlocked: the key hangs up on the water tower's catwalk. One of you pumps in there (a press each time the lever comes up, needle in the green); the other sets valves A and B in the yard so the water goes to the BLUE tank, and says how the tanks are doing. Never turn a valve while they pump. Fill the grey tank and it bursts over the yard.",
+			"hint": "From Naresh's notes at the water works: \"LOCKED. Key's up the water tower, on the walkway round the top.\" \"One push every time the handle comes back up. Keep the needle in the GREEN. Water to the BLUE tank. Whoever's at the valves tells you how the tanks look. NEVER let them turn a valve while you pump.\" \"Coolant comes out at the tap once the blue tank's full. Bring your own can.\"",
 			"done": func(): return _station_solved() or flags.has("leak_fixed")},
 		{"id": "pour_coolant", "text": "Pour the coolant into the van's radiator",
-			"hint": "Carry the blue jug to the front of the van and hold E at the grille.",
+			"hint": "Naresh's note on the tap: \"Coolant comes out here once the blue tank's full. Bring your own can.\" Fill the coolant jug (P2's, on the van's rack) at the blue tank's brass tap, carry it to the front of the van and hold E at the grille.",
 			"done": func(): return flags.has("leak_fixed")},
 		{"id": "to_bridge", "text": "Carry on north to the old bridge",
 			"hint": "Pump House Road continues past the water works to the river crossing. Follow the lit poles.",
@@ -352,15 +355,50 @@ func begin_opening() -> void:
 	_send_phone(0, "Naresh's mother", "He's gone. He hasn't answered in four days. Please find him and bring him home.")
 	_send_phone(1, "Naresh's mother", "He's gone. He hasn't answered in four days. Please help find him.")
 	_send_phone(0, "P2", "I'm free. Come get me. I'll get the gear ready.")
-	_send_phone(1, "P1", "I'll come get you. Torch batteries are in the kitchen drawer.")
+	_send_phone(1, "P1", "I'll come get you. Bring:", false, "gear")
 	objective_changed.emit()
 
 
-func _send_phone(who: int, sender: String, body: String, photo := false) -> void:
+func _send_phone(who: int, sender: String, body: String, photo := false, checklist := "") -> void:
 	var msg := {"from": sender, "body": body}
 	if photo:
 		msg["photo"] = true
+	if checklist != "":
+		msg["checklist"] = checklist
 	phone_threads[who].append(msg)
+
+
+## A message as the phone shows it: P1's checklist ticks itself (S5) as each
+## thing is done or on the van's rack.
+func message_body(m: Dictionary) -> String:
+	if String(m.get("checklist", "")) != "gear":
+		return String(m["body"])
+	var lines := [String(m["body"])]
+	for item in gear_checklist():
+		lines.append("%s %s" % ["[x]" if item[1] else "[  ]", item[0]])
+	return "\n".join(lines)
+
+
+## P1's list for P2 (the opening): [what, done]. Not blocking: the opening
+## ends when you're both in the van, whatever's left behind.
+func gear_checklist() -> Array:
+	var house: HouseInterior = boot.world.get_node_or_null("P2Home") as HouseInterior if boot != null and boot.world != null else null
+	var can := false
+	var jug := false
+	if boot != null and boot.camper != null:
+		for slot in boot.camper.storage_slots:
+			var item: Carryable = boot.camper.stowed_item(slot)
+			if item != null:
+				can = can or (item.name == "HouseFuelCan" and item.litres >= 19.0)
+				jug = jug or item.name == "HouseCoolantJug"
+	var batteries: bool = house != null and house.drawer_open and boot.players[1].flashlight_seconds > 0.0
+	return [["the red fuel can, filled from the drum in the shed", can],
+		["the blue coolant jug from the shed", jug],
+		["torch batteries (kitchen drawer)", batteries or opening_steps[1] >= 2]]
+
+
+func checklist_sig() -> String:
+	return str(gear_checklist())
 
 
 func phone_text(who: int) -> String:
@@ -380,6 +418,13 @@ func mark_phone_read(who: int) -> void:
 
 func _opening_update() -> void:
 	var changed := false
+	# getting in the van together at P2's house ends the opening, whatever
+	# was left undone (the gear is a checklist, not a gate: the user, 2026-10-05)
+	if boot.players[0].seat != null and boot.players[1].seat != null and _van_near("p2_home", 60.0) \
+			and opening_steps[0] >= 5:
+		if opening_steps[0] < P1_OPENING.size() or opening_steps[1] < P2_OPENING.size():
+			opening_steps = [P1_OPENING.size(), P2_OPENING.size()]
+			changed = true
 	for who in 2:
 		var limit := P1_OPENING.size() if who == 0 else P2_OPENING.size()
 		while opening_steps[who] < limit and _opening_done(who, opening_steps[who]):
@@ -491,6 +536,14 @@ The van is low on fuel; take the spare can from by the garage. Bessi is north-ea
 P.S. The van's travel journal only keeps your progress when you write in it, and writing takes a Memory Rose. Nothing is saved for you. Be careful out there."""
 	p.say(letter, 16.0)
 	objective_changed.emit()
+
+
+## A note of Naresh's read (once each), for the journal's notes page.
+func add_note(id: String, text: String) -> void:
+	for n in notes:
+		if n["id"] == id:
+			return
+	notes.append({"id": id, "text": text})
 
 
 func add_fragment(id: String, p) -> void:
@@ -612,7 +665,8 @@ func to_dict() -> Dictionary:
 	return {"flags": flags.duplicate(), "index": index, "objective": current()["id"] if index < objectives.size() else "", "fragments": fragments,
 		"collected": collected.duplicate(), "roses_spent": roses_spent,
 		"opening_mode": opening_mode, "opening_steps": opening_steps.duplicate(),
-		"phone_threads": phone_threads.duplicate(true), "phone_seen": phone_seen.duplicate()}
+		"phone_threads": phone_threads.duplicate(true), "phone_seen": phone_seen.duplicate(),
+		"notes": notes.duplicate(true)}
 
 
 func from_dict(d: Dictionary) -> void:
@@ -630,4 +684,5 @@ func from_dict(d: Dictionary) -> void:
 	phone_threads = (d.get("phone_threads", [[], []]) as Array).duplicate(true)
 	var seen: Array = d.get("phone_seen", [0, 0])
 	phone_seen = [int(seen[0]), int(seen[1])]
+	notes = (d.get("notes", []) as Array).duplicate(true)
 	objective_changed.emit()

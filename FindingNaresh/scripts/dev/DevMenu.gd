@@ -819,6 +819,31 @@ func reset_way_out(i: int) -> void:
 		sta.solve_quietly()
 
 
+## P2's coolant jug on the van's rack with `litres` in it, as after the
+## opening (the water works fills it at its tap: round 2, the user said to
+## test as if it's on the van already).
+func van_jug(litres: float) -> void:
+	var c: Camper = boot.camper
+	var jug := boot.world.find_child("HouseCoolantJug", true, false) as CoolantJug
+	if jug == null:
+		jug = CoolantJug.new()
+		jug.name = "HouseCoolantJug"
+		boot.world.add_child(jug)
+	for h in jug.holders.duplicate():
+		h.drop_held()
+	if jug.stowed_in != null:
+		jug.unstow()
+	jug.litres = litres
+	jug._update_mass()
+	jug._refresh_prompt()
+	var slot := c.storage_slots[2]
+	var other := c.stowed_item(slot)
+	if other != null and other != jug:
+		other.unstow()
+		other.global_position = c.global_transform * Vector3(1.5, 0.5, 4.5)
+	jug.stow(slot)
+
+
 ## The Puzzles tab: puzzle `k` fresh, the story at its step, you both there.
 func play_puzzle(k: int) -> String:
 	var e: Array = PUZZLES[k]
@@ -840,6 +865,16 @@ func play_puzzle(k: int) -> String:
 			var at: Vector3 = boot.builder.poi[e[2]]
 			van_to(van_spot(at + Vector3(-18, 0, 6)), 0.0)
 			boot.camper.repair_all()
+	if e[1] == "coolant":
+		# the van just outside the yard's gate, where you'd pull in
+		var sta := get_tree().get_first_node_in_group("cooling_station") as CoolingStation
+		van_to(van_spot(sta.global_transform * Vector3(1.5, 0, 15.0)), atan2(-(sta.global_transform.basis.z).x, -(sta.global_transform.basis.z).z))
+		boot.camper.repair_all()
+		van_jug(0.0)
+		# the hose split on the way in (the van needs the coolant)
+		st.flags["leak_started"] = true
+		st.flags.erase("leak_fixed")
+		boot.camper.coolant_leak = true
 	if st.index_of(e[1]) < st.index_of("photo"):
 		# the way out is bright (a jump back from the dark return)
 		var mood := get_tree().get_first_node_in_group("mood") as Mood

@@ -284,7 +284,7 @@ static func _make_item(e: Dictionary) -> Carryable:
 		"fuel_can":
 			return FuelCan.create(float(e.get("litres", FuelCan.CAPACITY)))
 		"coolant":
-			var j := CoolantJug.new()
+			var j: CoolantJug = LeakyCan.new() if String(e.get("name", "")).begins_with("LeakyOilCan") else CoolantJug.new()
 			j.litres = float(e.get("litres", CoolantJug.CAPACITY))
 			return j
 		"crate":

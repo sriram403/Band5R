@@ -817,6 +817,12 @@ func _take_from(p, slot: Node3D) -> void:
 	var it := stowed_item(slot)
 	if it != null:
 		p.pick_up(it)
+		# straight into your hands: popped up inside the rack's bars on a
+		# slope it snagged and dropped (the water works, 2026-10-05)
+		if p.held == it:
+			it.global_position = p.hold_point(it)
+			it.linear_velocity = Vector3.ZERO
+			it.reset_physics_interpolation()
 
 
 ## Everything stowed on the rack, in kg: heavier cargo burns more fuel.
@@ -938,7 +944,7 @@ func _physics_process(delta: float) -> void:
 			return
 		if dev.just_pressed("nav_swing") and not driver.map_open:
 			swing_nav()
-	if passenger != null and passenger.dev != null:
+	if passenger != null and passenger.dev != null and not passenger.journal_open:
 		var pdev := passenger.dev
 		# the lever sits between the seats: the passenger can pull it too
 		if pdev.just_pressed("handbrake"):

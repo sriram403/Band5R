@@ -40,6 +40,20 @@ A_STAND = at(2.5, 0.2, -1.6)
 A_LOOK = at(2.5, 1.05, -3.0)
 B_STAND = at(8.0, 0.2, -1.6)
 B_LOOK = at(8.0, 1.05, -3.0)
+NOTE_LOOK = "expr:station().get_node('PumpHouseDoor').find_child('NareshNote_ww_door', true, false).global_position"
+BENCH_STAND = at(-7.8, 0.2, 5.1)
+FRAG_LOOK = at(-8.75, 1.15, 5.1)
+BRASS_STAND = at(9.9, 0.2, 1.75)        # the brass tap on the blue tank (round 2)
+# from the yard to the van outside the gate: through the gap between the tanks
+GAP_S = at(7.75, 0.2, 1.0)
+GAP_N = at(7.75, 0.2, 8.3)
+GATE = at(0.0, 0.2, 11.0)
+TAP_LOOK2 = at(9.9, 0.8, 2.8)
+RACK = "boot.camper.storage_slots[2].global_position"
+RACK_STAND = "expr:%s + boot.camper.global_transform.basis.z * 0.9" % RACK
+RACK_LOOK = "expr:%s + Vector3(0, 0.3, 0)" % RACK
+GRILLE_STAND = "expr:boot.camper.global_transform * Vector3(0, 0.2, -5.4)"
+GRILLE_LOOK = "expr:boot.camper.find_child('RadiatorCap', true, false).global_position"
 
 walk = {
     "name": "puzzle1",
@@ -49,10 +63,12 @@ walk = {
          "do": [{"do": "menu", "tab": "Puzzles", "row": "The water works"}, {"do": "wait", "s": 1.0}],
          "expect": [{"name": "fresh: door locked, key up the tower, tanks empty",
                      "expr": "not %s.door_open and not %s.key_taken and %s.fill['coolant'] == 0.0 and boot.story.current()['id'] == 'coolant'" % (ST, ST, ST), "within": 3}]},
-        {"name": "1.1 the door is padlocked",
+        {"name": "1.1 the door is padlocked; Naresh's note on it",
          "do": [{"do": "walk", "who": 1, "to": DOOR_STAND, "arrive": 0.6, "max": 30},
-                {"do": "look", "who": 1, "at": DOOR_LOOK}, {"do": "wait", "s": 1.5}],
-         "expect": [{"name": "the prompt says padlocked", "expr": "p1().prompt_text.contains('Padlocked')", "within": 2}]},
+                {"do": "look", "who": 1, "at": DOOR_LOOK}, {"do": "wait", "s": 1.5},
+                {"do": "look", "who": 1, "at": NOTE_LOOK}, {"do": "tap", "key": "E"}, {"do": "wait", "s": 5.0}],
+         "expect": [{"name": "his note read: the key's up the water tower",
+                     "expr": "boot.story.notes.size() > 0 and String(boot.story.notes[0]['text']).contains('water tower')", "within": 2}]},
         {"name": "1.2 P1 climbs the water tower", "max": 90,
          "do": [{"do": "walk", "who": 1, "to": BACK_E, "arrive": 0.8, "max": 20},
                 {"do": "walk", "who": 1, "to": BACK_W, "arrive": 0.8, "max": 20},
@@ -85,6 +101,8 @@ walk = {
         {"name": "1.5 P1 pumps before the valves are set: the grey tank bursts on P2", "max": 90,
          "do": [{"do": "walk", "who": 2, "to": YARD_WAIT, "arrive": 0.8, "max": 40},
                 {"do": "walk", "who": 1, "to": IN_DOOR, "arrive": 0.5, "max": 15},
+                {"do": "walk", "who": 1, "to": BENCH_STAND, "arrive": 0.4, "max": 15},
+                {"do": "look", "who": 1, "at": FRAG_LOOK}, {"do": "wait", "s": 1.0}, {"do": "tap", "key": "E"},
                 {"do": "walk", "who": 1, "to": PUMP_STAND, "arrive": 0.4, "max": 15},
                 {"do": "look", "who": 1, "at": PUMP_LOOK}, {"do": "wait", "s": 1.0},
                 {"do": "call", "fn": "ww_pump_strokes", "args": [6]},
@@ -118,10 +136,28 @@ walk = {
                 {"do": "wait", "s": 2.0}],
          "expect": [{"name": "the blue tank full: the coolant jug at the tap",
                      "expr": "%s.solved and %s.slips == 2" % (ST, ST), "within": 3}]},
-        {"name": "1.10 the reward", "max": 40,
-         "do": [{"do": "walk", "who": 2, "to": at(10.5, 0.2, 0.6), "arrive": 0.6, "max": 30},
-                {"do": "look", "who": 2, "at": at(10.5, 0.3, 2.1)}, {"do": "wait", "s": 3.0}],
-         "expect": [{"name": "the jug is there", "expr": "boot.world.get_node_or_null('CoolantJug') != null", "within": 2}]},
+        {"name": "1.10 P2's jug off the van, filled at the tap, into the radiator", "max": 150,
+         "do": [{"do": "walk", "who": 2, "to": GAP_S, "arrive": 0.5, "max": 20},
+                {"do": "walk", "who": 2, "to": GAP_N, "arrive": 0.5, "max": 20},
+                {"do": "walk", "who": 2, "to": GATE, "arrive": 0.8, "max": 20},
+                {"do": "walk", "who": 2, "to": RACK_STAND, "arrive": 0.5, "max": 30},
+                {"do": "look", "who": 2, "at": RACK_LOOK}, {"do": "pad_tap", "btn": "X"},
+                {"do": "until", "expr": "p2().held != null", "max": 3},
+                {"do": "walk", "who": 2, "to": GATE, "arrive": 0.8, "max": 30},
+                {"do": "walk", "who": 2, "to": GAP_N, "arrive": 0.5, "max": 20},
+                {"do": "walk", "who": 2, "to": GAP_S, "arrive": 0.5, "max": 20},
+                {"do": "walk", "who": 2, "to": BRASS_STAND, "arrive": 0.4, "max": 20},
+                {"do": "look", "who": 2, "at": TAP_LOOK2}, {"do": "pad_hold", "btn": "X", "s": 5.6},
+                {"do": "walk", "who": 2, "to": GAP_S, "arrive": 0.5, "max": 20},
+                {"do": "walk", "who": 2, "to": GAP_N, "arrive": 0.5, "max": 20},
+                {"do": "walk", "who": 2, "to": GATE, "arrive": 0.8, "max": 20},
+                {"do": "walk", "who": 2, "to": "expr:boot.camper.global_transform * Vector3(2.7, 0.2, 2.5)", "arrive": 0.6, "max": 20},
+                {"do": "walk", "who": 2, "to": "expr:boot.camper.global_transform * Vector3(2.7, 0.2, -4.5)", "arrive": 0.6, "max": 20},
+                {"do": "walk", "who": 2, "to": GRILLE_STAND, "arrive": 0.5, "max": 20},
+                {"do": "look", "who": 2, "at": GRILLE_LOOK}, {"do": "pad_hold", "btn": "X", "s": 3.0},
+                {"do": "wait", "s": 2.0}],
+         "expect": [{"name": "the bench fragment taken, the hose sealed",
+                     "expr": "'water_works' in boot.story.collected and not boot.camper.coolant_leak", "within": 3}]},
     ],
 }
 

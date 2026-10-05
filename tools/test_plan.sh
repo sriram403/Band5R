@@ -32,6 +32,7 @@ test_plan() {
 		echo "|opening"
 		echo "|opening_save"
 		echo "|opening_p2"
+		echo "|opening_skip"
 		echo "|opening_full" ;;
 	set:gyms)
 		echo "tagging|tagging"

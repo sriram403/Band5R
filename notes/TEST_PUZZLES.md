@@ -36,15 +36,20 @@ gives you the binoculars and brings Naresh along.
 
 ### 1. The water works (reworked 2026-10-05: your changes)
 
-**Getting there:** F1 → Puzzles → **1. The water works**.
+**Getting there:** F1 → Puzzles → **1. The water works**. (It puts P2's
+coolant jug, empty, on the van's rack, as after the opening, and the van's
+hose split.)
 
 **The idea:** the pumper works inside the brick pump house and can't see
 the tanks. The valve player is out in the tank yard and can't see the
 pressure. You talk the whole time: every mistake costs you, often your
 partner.
 
-1. **The pump house door is padlocked.** The key hangs on the catwalk at
-   the top of the water tower ("BESSI WATER CO.").
+1. **The pump house door is padlocked** (its door faces the tanks).
+   **Naresh's note** is pinned on it (E reads it): the key's up the water
+   tower. His notes tell you how everything here works: the door, the pump,
+   valve B, the tap, the standpipe. They collect in the van's journal
+   (second page: A / D, pad D-Left).
    - *Exactly how:* ladder on the tower's road side: E, hold W. On the
      catwalk walk a quarter of the way round, towards the yard; the key is
      on the tank wall: E. Back to the ladder, look at it, E, hold S. At the
@@ -77,9 +82,15 @@ partner.
    - **You should see:** a CLANK, B's pointer swings, a gulp of blue into
      grey, and the needle falls. Pumper stops, valve player turns B back,
      pumper carries on.
-7. **You should see:** when the blue tank is full, a coolant jug and a
-   pink Memory Fragment at its tap. The turbine starts, and the lamps
-   light along the road north.
+7. **Fill P2's coolant jug at the tap.** When the blue tank is full, take
+   the jug off the van's rack (back of the van, right-hand slot), hold it
+   to the **brass tap** at the blue tank's foot and hold E / X (5 L in 5 s).
+   Carry it to the van's grille and hold E / X to pour.
+   - **You should see:** the hissing stops (the hose is sealed). The turbine
+     started when the tank filled; the lamps light along the road north.
+   - **No jug?** The old oil can on the pump house bench holds 4 L but leaks
+     a litre a minute: hurry.
+8. **The Memory Fragment** is on the pump house bench, by Naresh's mug.
 
 *If stuck:* A points on to valve B, and B points to the blue tank.
 

@@ -32,8 +32,14 @@ being built and tested), so this always shows where the work is right now.
       - [~] #1 round 2 (you, after the video): fill P2's jug at a tap on
             the blue tank instead of a jug appearing; a checklist text from
             P1 in the opening (not blocking); every instruction in
-            Naresh's voice. Proposal + S5-S7 in `design/PUZZLE_CHANGES.md`;
-            **waiting for your review**
+            Naresh's voice. **Agreed (your picks + S5-S7) and built**
+            (`../MPG_dev` branch `g3`): the brass tap, P2's jug filled
+            there, his notes (5) + the journal's notes page, the fragment
+            and the leaky oil can on the bench, the self-ticking checklist,
+            the opening ends when you're both in the van. Tests: waterworks,
+            opening_skip (new), puzzle_resets: 0 failures. Found: a jug off
+            the rack on a slope snagged and dropped (now straight to your
+            hands). Recording the walk next
       - [x] New rule (you, 2026-10-05): loose asks are shaped to fit the
             puzzle and world, proposed first, my own ideas added
             (`notes/PRINCIPLES.md` 10, CLAUDE.md, AGENTS.md, memory)

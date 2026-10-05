@@ -9,6 +9,7 @@ extends Control
 const SENDER_COLORS := {"Naresh's mother": Color(1.0, 0.72, 0.55), "P1": Color(1.0, 0.80, 0.42), "P2": Color(0.55, 0.85, 1.0)}
 const SHOWN := 6                      ## newest texts that fit; older ones scroll off the top
 
+var _built_sig := ""             ## the checklist as last drawn (it ticks itself)
 var player: PlayerRig
 var _phone: PanelContainer
 var _thread: VBoxContainer
@@ -174,11 +175,13 @@ func _process(_delta: float) -> void:
 	_footer.text = "[%s] put away" % glyph
 	var msgs: Array = story.phone_threads[who]
 	var has_pic := story.photo_texture != null
-	if msgs.size() != _shown or absf(w - _built_w) > 1.0 or has_pic != _built_pic:
+	var sig := story.checklist_sig()
+	if msgs.size() != _shown or absf(w - _built_w) > 1.0 or has_pic != _built_pic or sig != _built_sig:
 		_shown = msgs.size()
+		_built_sig = sig
 		_built_w = w
 		_built_pic = has_pic
 		for c in _thread.get_children():
 			c.queue_free()
 		for m in msgs.slice(maxi(0, msgs.size() - SHOWN)):
-			_thread.add_child(_bubble(m["from"], m["body"], w - 64.0, story.photo_texture if m.get("photo", false) else null))
+			_thread.add_child(_bubble(m["from"], story.message_body(m), w - 64.0, story.photo_texture if m.get("photo", false) else null))

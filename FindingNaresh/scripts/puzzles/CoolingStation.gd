@@ -30,7 +30,15 @@ extends Node3D
 ## every turn. Valve B's worn seat (its plate says so) kicks it back to the
 ## overflow twice while the blue tank fills, and each slip gulps too.
 ##
-## Filling the blue tank dispenses a coolant jug and a Memory Fragment.
+## THE TAP (round 2, the user, 2026-10-05). The full blue tank is the
+## coolant: fill the van's own jug at the brass tap on its foot (P2's, from
+## the opening) and pour it into the radiator. If the jug was left behind,
+## an old oil can on the pump house bench holds it, leaking (`LeakyCan`).
+## The water works' Memory Fragment lies on the bench by Naresh's mug.
+##
+## NARESH'S NOTES (round 2): the how-to is in his words, on notes he left
+## when he came through (`NareshNote`): the door, the pump, valve B, the
+## tap, the standpipe. The pop-up lines only say what you see and feel.
 
 signal solved_changed
 
@@ -76,8 +84,7 @@ var door_open := false
 ## checks, which pump without anyone at the valves).
 var co_op := 1
 
-var _jug: Node3D = null       ## the reward still lying at the tap (a reset clears it)
-var _frag: Node3D = null
+var _oil_can: LeakyCan = null
 var _lever := 0.0             ## s left in the current stroke (0 = the lever is up, ready)
 var _gurgled := false         ## the three-quarters gurgle, once per filling
 var _needle: Node3D
@@ -112,6 +119,10 @@ const DOOR_OPEN := 0.0                       ## swung out into the yard
 const TOWER := Vector3(-12.0, 0, -6.0)       ## the water tower (LevelLandmarks)
 const KEY_POS := Vector3(-12.0 + 4.62, 15.6, -6.0)   ## on the tank wall, facing the yard
 const TAP_POS := Vector3(0.6, 0, 7.6)        ## the yard's standpipe
+const COOLANT_TAP := Vector3(9.9, 0.85, 2.8)   ## the brass tap at the blue tank's foot (beside its sight glass)
+const FILL_PER_S := 1.0                      ## litres a second into a jug at the tap
+const BENCH_FRAG := Vector3(-8.75, 1.05, 5.1)  ## the fragment, by his mug on the bench
+const BENCH_CAN := Vector3(-8.8, 0.95, 5.55)   ## the leaky oil can
 ## The tank yard (local): covered by the sludge, the pump house left out.
 const YARD_MIN := Vector3(-12.5, -1.0, -11.0)
 const YARD_MAX := Vector3(13.0, 4.0, 10.5)
@@ -133,7 +144,10 @@ func _ready() -> void:
 	_build_key()
 	_build_tap()
 	_build_sludge()
+	_build_coolant_tap()
+	_build_notes()
 	_update_pointers()
+	_place_bench_things.call_deferred()
 
 
 # --- the puzzle ----------------------------------------------------------------
@@ -235,7 +249,7 @@ func _turn(which: String, p) -> void:
 	Sfx.play3d("latch", global_transform * at, -2.0)
 	Sfx.play3d("creak", global_transform * at, -8.0, 0.2)
 	if not solved and (pressure > 0.2 or flowing()):
-		_gulp(p, "Glug: turned under pressure, water surges back out of the blue tank into the grey one. (Shout \"stop pumping!\" before you turn a valve.)" if gulps == 0 else "Glug: blue water back into the grey tank.")
+		_gulp(p, "Glug: turned under pressure, water surges back out of the blue tank into the grey one." if gulps == 0 else "Glug: blue water back into the grey tank.")
 
 
 ## A fifth of the blue tank back into the grey one.
@@ -263,7 +277,7 @@ func _slip() -> void:
 	Sfx.play3d("bang", at, -6.0, 0.1)
 	Sfx.play3d("latch", at, 0.0)
 	Sfx.play3d("creak", at, -2.0, 0.3)
-	var text := "CLANK! Valve B kicks back under the pressure and spins to the overflow, gulping blue water back into the grey tank. Turn it back - and stay by it." if slips == 1 else "CLANK! Valve B slips again. Turn it back!"
+	var text := "CLANK! Valve B kicks back under the pressure and spins to the overflow, gulping blue water back into the grey tank." if slips == 1 else "CLANK! Valve B slips again."
 	for p in get_tree().get_nodes_in_group("player"):
 		if (p as Node3D).global_position.distance_to(at) < 30.0 and in_yard(p):
 			p.say(text, 4.0)
@@ -280,7 +294,7 @@ func _pop() -> void:
 	if _puff:
 		_puff.restart()
 		_puff.emitting = true
-	_tell_inside("BANG! The relief valve blows with a shriek of steam. The pump stalls - give it a moment. (Keep the needle in the green: don't rush the strokes.)", 5.0)
+	_tell_inside("BANG! The relief valve blows with a shriek of steam, and the pump stalls.", 4.0)
 
 
 ## The full grey tank's lid blows: sludge over the whole yard, the tank empty.
@@ -311,7 +325,7 @@ func _burst() -> void:
 		var p := n as PlayerRig
 		if in_yard(p):
 			p.slime(SLIME_S)
-			p.say("SPLAT! The grey tank's lid blows off and sludge rains down over the whole yard. You're covered: everything's s-l-o-w until it dries. (Or rinse it off at the standpipe.)", 6.0)
+			p.say("SPLAT! The grey tank's lid blows off and sludge rains down over the whole yard. You're covered: everything's s-l-o-w until it dries.", 6.0)
 		elif in_house(p):
 			p.say("BOOM! Something outside bursts, and the needle drops dead. The lever goes slack.", 5.0)
 
@@ -338,20 +352,11 @@ func _solve() -> void:
 	solved = true
 	solved_changed.emit()
 	Sfx.play3d("bong", global_transform * COOLANT_TANK, 0.0, 0.0)
-	var tap_local := COOLANT_TANK + Vector3(0, 0.1, -2.9)
-	var jug := CoolantJug.new()
-	jug.name = "CoolantJug"
-	get_tree().get_first_node_in_group("world_root").add_child(jug)
-	jug.global_position = global_transform * tap_local
-	_jug = jug
-	var st = get_tree().current_scene.get("story")
-	if st == null or not "water_works" in st.collected:
-		var frag := MemoryFragment.create("water_works")
-		get_tree().get_first_node_in_group("world_root").add_child(frag)
-		frag.global_position = global_transform * (COOLANT_TANK + Vector3(-1.4, 0.4, -2.9))
-		_frag = frag
+	var text := "The blue tank is full of coolant mix, right up to its brass tap."
+	if not _container_near():
+		text += "\n\nNothing to carry it in, though. The coolant jug was at P2's house."
 	for p in get_tree().get_nodes_in_group("player"):
-		p.say("The blue tank fills with a gurgle and the tap coughs out a jug of coolant mix. Something small and pink glints beside it.", 7.0)
+		p.say(text, 6.0)
 
 
 # --- the key, the door, the standpipe -------------------------------------------
@@ -376,7 +381,7 @@ func unlock(p) -> void:
 	var tw := create_tween()
 	tw.tween_property(_door, "rotation:y", DOOR_OPEN, 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	if p != null:
-		p.say("The padlock drops open. Inside: the pump, its pressure gauge, a kettle on the bench. No window onto the yard - you won't see the tanks from in here.", 7.0)
+		p.say("The padlock drops open. Inside: the pump and its pressure gauge, a kettle and a mug on the bench. No window onto the yard.", 6.0)
 
 
 func _show_door() -> void:
@@ -413,10 +418,7 @@ func reset() -> void:
 	key_taken = false
 	key_by = -1
 	door_open = false
-	for n in [_jug, _frag]:
-		Workable.free_reward(n, global_transform * COOLANT_TANK, 6.0)
-	_jug = null
-	_frag = null
+	_place_bench_things(true)
 	for p in get_tree().get_nodes_in_group("player"):
 		(p as PlayerRig).slime(0.0)
 	_update_pointers()
@@ -452,8 +454,8 @@ func to_dict() -> Dictionary:
 		"key_taken": key_taken, "key_by": key_by, "door_open": door_open}
 
 
-## Restore after a load. A solved station keeps its jug (restored as a normal
-## item) and re-offers its fragment unless that was already picked up.
+## Restore after a load. The fragment is offered again on the bench unless
+## it was picked up; the oil can is an item like any other (saved by name).
 ## Saves from before the pump house had a door load with it open.
 func from_dict(d: Dictionary, collected: Array) -> void:
 	valve_a = d.get("valve_a", valve_a)
@@ -471,12 +473,8 @@ func from_dict(d: Dictionary, collected: Array) -> void:
 	groan = 0.0
 	_update_pointers()
 	_show_door()
-	if solved and not "water_works" in collected:
-		var root := get_tree().get_first_node_in_group("world_root")
-		if root.find_child("Fragment_water_works", true, false) == null:
-			var frag := MemoryFragment.create("water_works")
-			root.add_child(frag)
-			frag.global_position = global_transform * (COOLANT_TANK + Vector3(-1.4, 0.4, -2.9))
+	if not "water_works" in collected:
+		_place_fragment()
 
 
 # --- construction ----------------------------------------------------------------
@@ -608,7 +606,7 @@ func _build_gauge() -> void:
 	plate.rotation_degrees = Vector3(0, 180, 0)
 	add_child(plate)
 	plate.add_child(Build.box(Vector3(1.5, 1.15, 0.04), ToonMat.make(Color(0.92, 0.90, 0.80), 0.008), Vector3.ZERO, Vector3.ZERO, "Plate"))
-	plate.add_child(Build.label3d("COOLANT MIX\n1. Route the line to the BLUE tank\n   (valves A and B, in the yard)\n2. Pump: one stroke at a time,\n   needle in the GREEN.\n3. NEVER turn a valve\n   under pressure.", Vector3(0, 0, 0.03), Vector3.ZERO, 0.07, Color(0.2, 0.2, 0.25)))
+	plate.add_child(Build.label3d("BESSI WATER CO.\nCOOLANT MIX PUMP\nNo. 2", Vector3(0, 0.3, 0.03), Vector3.ZERO, 0.07, Color(0.2, 0.2, 0.25)))
 
 
 func _build_valve(tag: String, at: Vector3, cb: Callable) -> Node3D:
@@ -629,9 +627,6 @@ func _build_valve(tag: String, at: Vector3, cb: Callable) -> Node3D:
 	pointer.add_child(Build.box(Vector3(0.07, 0.05, 0.55), ToonMat.make(Color(0.98, 0.80, 0.18), 0.008), Vector3(0, 0.05, -0.27), Vector3.ZERO, "Arrow"))
 	pointer.add_child(Build.cone(0.1, 0.18, ToonMat.make(Color(0.98, 0.80, 0.18), 0.008), Vector3(0, 0.05, -0.6), Vector3(-90, 0, 0), 8, "Tip"))
 	add_child(Build.label3d(tag, at + Vector3(0, 1.55, 0), Vector3(0, 180, 0), 0.4, Color(0.95, 0.95, 0.9)))
-	if tag == "B":
-		# a hand-written warning, so the kick-back is foreshadowed, not a trick
-		add_child(Build.label3d("WORN SEAT -\nwatch it under pressure", at + Vector3(0, 0.62, -0.14), Vector3(0, 180, 0), 0.06, Color(0.85, 0.25, 0.2)))
 	var area := Build.interact_area(Vector3(1.2, 1.2, 1.2), at + Vector3(0, 1.0, 0), "Turn valve " + tag, cb, "ValveArea" + tag)
 	add_child(area)
 	return wheel
@@ -695,7 +690,7 @@ func _build_door() -> void:
 	var open_it := func(p):
 		if not door_open and key_taken and p.index == key_by:
 			unlock(p)
-	var area := Build.interact_area(Vector3(2.2, 2.4, 1.0), Vector3(1.1, 1.2, -0.3), "Locked", open_it, "DoorArea")
+	var area := Build.interact_area(Vector3(2.2, 2.4, 0.3), Vector3(1.1, 1.2, -0.15), "Locked", open_it, "DoorArea")   # thin: his note on it sticks out further
 	area.set_meta("tag_name", "the pump house door")
 	area.set_meta("prompt_fn", func(p) -> String:
 		if door_open:
@@ -704,7 +699,7 @@ func _build_door() -> void:
 			return "Unlock the pump house"
 		if key_taken:
 			return "Locked. P%d has the key" % (key_by + 1)
-		return "Padlocked. The key must be about somewhere")
+		return "Padlocked")
 	_door.add_child(area)
 
 
@@ -809,3 +804,112 @@ func _build_sludge() -> void:
 	_puddle = Build.node(disc, puddle_mat, Transform3D(Basis(), WASTE_TANK + Vector3(-1.0, 0.23, -2.0)), "SludgePuddle")
 	_puddle.visible = false
 	add_child(_puddle)
+
+
+# --- round 2: the tap, his notes, the bench ---------------------------------------
+
+## The brass tap at the blue tank's foot: hold a jug (or the oil can) to it
+## and hold E to fill it, once the tank is full.
+func _build_coolant_tap() -> void:
+	var brass := ToonMat.make(Color(0.80, 0.64, 0.28), 0.01)
+	add_child(Build.cyl(0.05, 0.3, brass, COOLANT_TAP + Vector3(0, 0, 0.08), Vector3(90, 0, 0), 8, "TapBody"))
+	add_child(Build.cyl(0.035, 0.14, brass, COOLANT_TAP + Vector3(0, -0.08, -0.07), Vector3.ZERO, 8, "TapSpout"))
+	add_child(Build.box(Vector3(0.18, 0.03, 0.03), ToonMat.make(Color(0.80, 0.20, 0.16)), COOLANT_TAP + Vector3(0, 0.07, -0.02), Vector3.ZERO, "TapHandle"))
+	var area := Build.interact_area(Vector3(0.6, 0.6, 0.5), COOLANT_TAP + Vector3(0, 0, -0.2), "", func(_p): pass, "CoolantTapArea")
+	area.set_meta("tag_name", "the coolant tap")
+	area.set_meta("prompt_fn", func(_p) -> String: return "")
+	area.set_meta("blocked_fn", func() -> String:
+		if not solved:
+			return "The coolant tap: dry until the blue tank is full"
+		if _container_near():
+			return "The coolant tap: hold the coolant jug to it"
+		return "The coolant tap: you need something to carry it in (the coolant jug, P2's)")
+	area.set_meta("held_prompt_fn", func(_p, item) -> String:
+		if not item is CoolantJug:
+			return ""
+		if not solved:
+			return "Dry: the blue tank isn't full yet"
+		if item.litres >= item.capacity() - 0.05:
+			return "It's full"
+		return "Hold to fill it at the tap  -  %.1f of %d L" % [item.litres, int(item.capacity())])
+	area.set_meta("held_action", func(_p, item, dt: float, _first: bool):
+		if not item is CoolantJug or not solved:
+			return
+		var room: float = item.capacity() - item.litres
+		var got := minf(room, FILL_PER_S * dt)
+		if got <= 0.0:
+			return
+		item.litres += got
+		item._update_mass()
+		item._refresh_prompt()
+		fill["coolant"] = maxf(0.4, fill["coolant"] - got * 0.03)
+		if fmod(item.litres, 0.6) < got:
+			Sfx.play3d("pour_glug", global_transform * COOLANT_TAP, -4.0))
+	add_child(area)
+
+
+## Something to carry coolant in, near the water works: on the van's rack
+## (with the van close), in someone's hands, or lying about the yard.
+func _container_near() -> bool:
+	var here := global_transform.origin
+	for n in get_tree().get_nodes_in_group("carryable"):
+		if n is CoolantJug and not n is LeakyCan and (n as Node3D).global_position.distance_to(here) < 90.0:
+			return true
+	return false
+
+
+## Naresh's notes: the how-to, in his words (he came through days ago).
+func _build_notes() -> void:
+	NareshNote.make(_door, "ww_door", Vector3(1.1, 1.65, -0.07), 180.0,
+		"LOCKED. Key's up the water tower, on the walkway round the top. Took us an hour to find it. Hang it back after. - N")
+	NareshNote.make(self, "ww_pump", GAUGE_POS + Vector3(-1.45, 1.25, -0.05), 180.0,
+		"One push every time the handle comes back up. Don't rush it. Keep the needle in the GREEN. Water to the BLUE tank: that's the coolant. Whoever's out at the valves tells you how the tanks look. NEVER let them turn a valve while you pump: the grey one blew all over us. - N")
+	# on a stake beside B, clear of the wheel (its use zone)
+	add_child(Build.cyl(0.03, 0.9, ToonMat.make(Color(0.48, 0.34, 0.22)), B_POS + Vector3(0.85, 0.45, -0.03), Vector3.ZERO, 6, "NoteStake"))
+	NareshNote.make(self, "ww_valve_b", B_POS + Vector3(0.85, 0.85, 0.0), 0.0,
+		"B slips back on its own once the water's flowing. Stand by it. Shout STOP before you turn anything. - N")
+	NareshNote.make(self, "ww_tap", COOLANT_TAP + Vector3(-0.55, 0.45, 0.28), 180.0,
+		"Coolant comes out here once the blue tank's full. Bring your own can. We used our water bottles. Don't. - N")
+	add_child(Build.cyl(0.03, 0.9, ToonMat.make(Color(0.48, 0.34, 0.22)), TAP_POS + Vector3(-0.8, 0.45, 0.03), Vector3.ZERO, 6, "NoteStake"))
+	NareshNote.make(self, "ww_standpipe", TAP_POS + Vector3(-0.8, 0.85, 0.0), 180.0,
+		"Rinse off here. Ask me how I know. - N")
+
+
+## The fragment by his mug and the leaky oil can, on the pump house bench
+## (`again`: a reset puts the can back, empty, unless someone has it).
+func _place_bench_things(again := false) -> void:
+	var st = get_tree().current_scene.get("story")
+	if st == null or not "water_works" in st.collected:
+		_place_fragment()
+	var root := get_tree().get_first_node_in_group("world_root")
+	if root == null:
+		return
+	if _oil_can == null or not is_instance_valid(_oil_can):
+		_oil_can = root.find_child("LeakyOilCan", true, false) as LeakyCan
+	if _oil_can == null:
+		_oil_can = LeakyCan.new()
+		_oil_can.name = "LeakyOilCan"
+		_oil_can.litres = 0.0
+		root.add_child(_oil_can)
+		again = true
+	if again and _oil_can.holders.is_empty():
+		if _oil_can.stowed_in != null:
+			_oil_can.unstow()
+		_oil_can.litres = 0.0
+		_oil_can._update_mass()
+		_oil_can._refresh_prompt()
+		_oil_can.global_transform = Transform3D(Basis(), global_transform * BENCH_CAN)
+		_oil_can.linear_velocity = Vector3.ZERO
+		_oil_can.reset_physics_interpolation()
+
+
+func _place_fragment() -> void:
+	var root := get_tree().get_first_node_in_group("world_root")
+	if root == null:
+		return
+	var frag := root.find_child("Fragment_water_works", true, false) as Node3D
+	if frag == null:
+		frag = MemoryFragment.create("water_works")
+		root.add_child(frag)
+	frag.global_position = global_transform * BENCH_FRAG
+

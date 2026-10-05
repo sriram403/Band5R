@@ -67,6 +67,7 @@ var phone_open := false                ## read-only opening texts
 var journal_sel := 0
 var journal_confirm := false
 var journal_note := ""
+var journal_page := 0                  ## 0 the save slots, 1 Naresh's notes
 var _step_phase := 0.0
 var _was_on_floor := true
 var _using: Node = null                ## thing being used with the held item while E is held
@@ -1245,6 +1246,7 @@ func _van_parked() -> bool:
 func _open_journal() -> void:
 	set_map_open(false)
 	journal_open = true
+	journal_page = 0
 	Sfx.play3d("paper_open", head.global_position, -4.0)
 	journal_confirm = false
 	journal_note = ""
@@ -1259,6 +1261,15 @@ func _journal_controls() -> void:
 		return
 	var up := dev.just_pressed("menu_up") or (dev.kind == InputDevice.Kind.KBM and dev.just_pressed("fwd"))
 	var down := dev.just_pressed("menu_down") or (dev.kind == InputDevice.Kind.KBM and dev.just_pressed("back"))
+	# A / D (pad: D-Left) turn to Naresh's notes and back
+	var flip := dev.just_pressed("left") or dev.just_pressed("right") if dev.kind == InputDevice.Kind.KBM else dev.just_pressed("headlights")
+	if flip:
+		journal_page = 1 - journal_page
+		Sfx.play3d("page", head.global_position, -8.0)
+	if journal_page == 1:
+		if dev.just_pressed("journal") or dev.just_pressed("menu_back"):
+			journal_open = false
+		return
 	if up or down:
 		journal_sel = wrapi(journal_sel + (1 if down else -1), 0, SaveGame.SLOTS)
 		journal_confirm = false

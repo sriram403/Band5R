@@ -29,7 +29,7 @@
    ]
   },
   {
-   "name": "1.1 the door is padlocked",
+   "name": "1.1 the door is padlocked; Naresh's note on it",
    "do": [
     {
      "do": "walk",
@@ -46,12 +46,25 @@
     {
      "do": "wait",
      "s": 1.5
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:station().get_node('PumpHouseDoor').find_child('NareshNote_ww_door', true, false).global_position"
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 5.0
     }
    ],
    "expect": [
     {
-     "name": "the prompt says padlocked",
-     "expr": "p1().prompt_text.contains('Padlocked')",
+     "name": "his note read: the key's up the water tower",
+     "expr": "boot.story.notes.size() > 0 and String(boot.story.notes[0]['text']).contains('water tower')",
      "within": 2
     }
    ]
@@ -271,6 +284,26 @@
      "to": "expr:ww_at(-1.6, 0.2, 2.1)",
      "arrive": 0.5,
      "max": 15
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(-7.8, 0.2, 5.1)",
+     "arrive": 0.4,
+     "max": 15
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:ww_at(-8.75, 1.15, 5.1)"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "tap",
+     "key": "E"
     },
     {
      "do": "walk",
@@ -499,31 +532,151 @@
    ]
   },
   {
-   "name": "1.10 the reward",
-   "max": 40,
+   "name": "1.10 P2's jug off the van, filled at the tap, into the radiator",
+   "max": 150,
    "do": [
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:ww_at(10.5, 0.2, 0.6)",
-     "arrive": 0.6,
+     "to": "expr:ww_at(7.75, 0.2, 1.0)",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(7.75, 0.2, 8.3)",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(0.0, 0.2, 11.0)",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.camper.storage_slots[2].global_position + boot.camper.global_transform.basis.z * 0.9",
+     "arrive": 0.5,
      "max": 30
     },
     {
      "do": "look",
      "who": 2,
-     "at": "expr:ww_at(10.5, 0.3, 2.1)"
+     "at": "expr:boot.camper.storage_slots[2].global_position + Vector3(0, 0.3, 0)"
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "until",
+     "expr": "p2().held != null",
+     "max": 3
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(0.0, 0.2, 11.0)",
+     "arrive": 0.8,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(7.75, 0.2, 8.3)",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(7.75, 0.2, 1.0)",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(9.9, 0.2, 1.75)",
+     "arrive": 0.4,
+     "max": 20
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:ww_at(9.9, 0.8, 2.8)"
+    },
+    {
+     "do": "pad_hold",
+     "btn": "X",
+     "s": 5.6
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(7.75, 0.2, 1.0)",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(7.75, 0.2, 8.3)",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:ww_at(0.0, 0.2, 11.0)",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.camper.global_transform * Vector3(2.7, 0.2, 2.5)",
+     "arrive": 0.6,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.camper.global_transform * Vector3(2.7, 0.2, -4.5)",
+     "arrive": 0.6,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.camper.global_transform * Vector3(0, 0.2, -5.4)",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:boot.camper.find_child('RadiatorCap', true, false).global_position"
+    },
+    {
+     "do": "pad_hold",
+     "btn": "X",
+     "s": 3.0
     },
     {
      "do": "wait",
-     "s": 3.0
+     "s": 2.0
     }
    ],
    "expect": [
     {
-     "name": "the jug is there",
-     "expr": "boot.world.get_node_or_null('CoolantJug') != null",
-     "within": 2
+     "name": "the bench fragment taken, the hose sealed",
+     "expr": "'water_works' in boot.story.collected and not boot.camper.coolant_leak",
+     "within": 3
     }
    ]
   }

@@ -49,6 +49,10 @@ func _process(_delta: float) -> void:
 		for i in SaveGame.SLOTS:
 			_summaries.append(SaveGame.summary(i))
 	var st := get_tree().get_first_node_in_group("story") as Story
+	var flip_key := ("A / D" if player.dev and player.dev.kind == InputDevice.Kind.KBM else "D-Left")
+	if player.journal_page == 1:
+		_text.text = _notes_page(st, flip_key)
+		return
 	var roses := st.roses() if st else 0
 	var petals := st.petals() if st else 0
 	var d := player.dev
@@ -65,7 +69,26 @@ func _process(_delta: float) -> void:
 		lines += "[color=#8a2a1a]You have no Memory Rose. Three fragments make one.[/color]\n"
 	elif player.journal_confirm:
 		lines += "[b]Write in slot %d? This uses 1 of your %d Memory Roses.[/b]  [%s] yes\n" % [player.journal_sel + 1, roses, d.glyph("menu_ok") if d else "Enter"]
+	lines += "[%s] Naresh's notes   " % flip_key
 	lines += "[%s/%s] choose   [%s] write   [%s] close" % [
 		"W" if d and d.kind == InputDevice.Kind.KBM else "D-Up", "S" if d and d.kind == InputDevice.Kind.KBM else "D-Down",
 		d.glyph("menu_ok") if d else "Enter", d.glyph("journal") if d else "J"]
 	_text.text = lines
+
+
+## The journal's second page: every note of Naresh's you've read, in the
+## order you found them (S7: on the way home they read differently).
+func _notes_page(st: Story, flip_key: String) -> String:
+	var lines := "[center][b]NARESH'S NOTES[/b][/center]\n"
+	lines += "[i]Notes he left on the way, days ahead of you.[/i]\n\n"
+	var shown: Array = st.notes.slice(maxi(0, st.notes.size() - 5)) if st else []
+	if shown.is_empty():
+		lines += "Nothing yet.\n"
+	for n in shown:
+		lines += "\"%s\"\n\n" % n["text"]
+	if st and st.notes.size() > 5:
+		lines += "[i](the last five of %d)[/i]\n" % st.notes.size()
+	var d := player.dev
+	lines += "\n[%s] travel journal   [%s] close" % [flip_key, d.glyph("journal") if d else "J"]
+	return lines
+
