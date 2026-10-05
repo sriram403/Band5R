@@ -1218,7 +1218,7 @@ func _random_acts(delta: float) -> void:
 	act = pick[0]
 	act_good = pick[1]
 	_tele_t = TELEGRAPH
-	acts_log.append({"id": act, "good": act_good, "tele": Time.get_ticks_msec(), "start": -1})
+	acts_log.append({"id": act, "good": act_good, "tele": Time.get_ticks_msec(), "start": -1, "tele_f": Engine.get_physics_frames(), "start_f": -1})
 	say(pick[2])
 
 
@@ -1313,7 +1313,7 @@ func act_now(id := "") -> bool:
 			act = id
 			act_good = a[1]
 			_tele_t = TELEGRAPH
-			acts_log.append({"id": act, "good": act_good, "tele": Time.get_ticks_msec(), "start": -1})
+			acts_log.append({"id": act, "good": act_good, "tele": Time.get_ticks_msec(), "start": -1, "tele_f": Engine.get_physics_frames(), "start_f": -1})
 			say(a[2])
 			return true
 	return false
@@ -1329,6 +1329,7 @@ func _start_act() -> void:
 			say(a[3])
 	if not acts_log.is_empty():
 		acts_log[-1]["start"] = Time.get_ticks_msec()
+		acts_log[-1]["start_f"] = Engine.get_physics_frames()   # game time (headless runs faster than the clock)
 	_last_good = act_good
 	_act_data = {"prev_state": state, "prev_leader": leader, "t": 0.0}
 	var v := _the_van()

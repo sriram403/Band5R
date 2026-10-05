@@ -489,7 +489,10 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
   controls + one short world check per system); an **area set** when a whole
   area changed (`set:opening / gyms / puzzles / creatures / driving / world`,
   3-6 min each); **full** (`tools/run_test.sh full`) before a push or a
-  hand-over, and GitHub runs full on every push. Don't rerun the opening or
+  hand-over. The GitHub run (`.github/workflows/playtest.yml`) is
+  **manual only** since 2026-10-06 (the user): start it by hand for a
+  release check; on a failure it writes the failing lines as public
+  annotations (read them with the GitHub API, no login needed). Don't rerun the opening or
   the long playthroughs for an unrelated fix. The plans live in
   `tools/test_plan.sh` (shared with the headless runner); `SMOKE_GYM` /
   `SMOKE_WORLD` in `PlayTest.gd`.

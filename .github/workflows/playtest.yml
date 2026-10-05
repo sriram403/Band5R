@@ -1,12 +1,12 @@
-# Runs on GitHub's Linux machines at every push and pull request: the road
-# check, then the automated play-test with no window and no GPU (the same
-# scenarios as tools/run_test.sh, minus screenshots and frame rates). Looks,
-# sound and frame rate still need a real PC.
+# Runs on GitHub's Linux machines, by hand only (the user, 2026-10-06: it
+# duplicated the tests run on the PC before every push and sat failing for
+# 11 days unnoticed). Start it from the Actions tab ("Run workflow"), e.g.
+# for a release check. The road check, then the automated play-test with no
+# window and no GPU (the same scenarios as tools/run_test.sh, minus
+# screenshots and frame rates). Looks, sound and frame rate need a real PC.
 name: Play-test (headless)
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 concurrency:

@@ -840,7 +840,7 @@ func van_jug(litres: float) -> void:
 	var other := c.stowed_item(slot)
 	if other != null and other != jug:
 		other.unstow()
-		other.global_position = c.global_transform * Vector3(1.5, 0.5, 4.5)
+		other.global_position = c.global_transform * Vector3(3.5, 0.5, 0.0)   # beside the van, not where you stand at the rack
 	jug.stow(slot)
 
 

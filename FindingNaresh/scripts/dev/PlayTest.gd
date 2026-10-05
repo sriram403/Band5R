@@ -6549,7 +6549,8 @@ func t_naresh() -> void:
 	for a in n.acts_log:
 		summary.append("%s%s" % [a["id"], "" if int(a["start"]) > 0 else "(dropped)"])
 		if int(a["start"]) > 0:
-			var lead := (int(a["start"]) - int(a["tele"])) / 1000.0
+			# in game time: headless runs (GitHub) go faster than the wall clock
+			var lead := float(int(a["start_f"]) - int(a["tele_f"])) / Engine.physics_ticks_per_second
 			if lead < 2.7 or lead > 3.6:
 				lead_ok = false
 				log_line("act %s announced %.2f s before" % [a["id"], lead])
@@ -7250,6 +7251,12 @@ func t_decoy() -> void:
 	# pour the full can in yourself
 	p.force_exit = true
 	await physics_frames(3)
+	# nothing earlier tests left lying behind the van (P1 stood on it once,
+	# late in the full run, and missed the can)
+	for loose in get_tree().get_nodes_in_group("carryable"):
+		var it := loose as Carryable
+		if it != fv.can_full and it.stowed_in == null and it.holders.is_empty() and it.global_position.distance_to(c.rack_stand()) < 2.5:
+			it.global_position += (it.global_position - c.global_position).normalized() * 6.0 + Vector3.UP
 	await place_player(p, c.rack_stand() + Vector3(0, 0.3, 0), 0.0)
 	await look_at_point(p, fv.can_full.global_position)
 	await tap(KEY_E)
@@ -8511,7 +8518,7 @@ func t_photo() -> void:
 	q.phone_open = true
 	await wait(0.6)
 	var pic := boot.huds[1].find_child("Photo", true, false) as TextureRect
-	check(pic != null and pic.is_visible_in_tree() and pic.texture != null, "P2's phone shows it")
+	check(headless or (pic != null and pic.is_visible_in_tree() and pic.texture != null), "P2's phone shows it")   # headless: no picture to show
 	boot._set_layout(Boot.Layout.SIDE_BY_SIDE)
 	await wait(0.3)
 	await shot("photo_phone")
@@ -8641,7 +8648,9 @@ func t_roses() -> void:
 	var met := await until(func() -> bool: return st.flags.has("naresh_met"), 3.0)
 	await physics_frames(5)
 	check(met and not nz.sitting and nz.said_since("You came!", 0) and nz.leader == p, "close up he gets down: 'You came! He said you would.' and follows")
-	check(st.current()["id"] == "look_around", "and the story moves on")
+	# the story checks its steps four times a second
+	var moved_on := await until(func() -> bool: return st.current()["id"] == "look_around", 1.5)
+	check(moved_on, "and the story moves on")
 	await wait(2.0)
 	await look_at_point(p, nz.global_position + Vector3.UP * 1.2)
 	await shot("roses_naresh_met")

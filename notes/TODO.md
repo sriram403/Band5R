@@ -6,6 +6,11 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- **2026-10-06: the GitHub test is manual only now** (you: it duplicated
+  the PC tests; it had been red since 2026-09-25 unnoticed). Its failures
+  were all in the tests on a faster headless machine (timing by the wall
+  clock, test order, no textures headless): fixed. Nothing to check in the
+  new thread.
 - **2026-10-05 (late): puzzle #1, the water works, approved ("great, push
   it") and pushed. Hand-over: puzzle #2, the windmill, in a new thread**
   (you start it by sending `notes/MASTER_PROMPT.md`). There: you play #2

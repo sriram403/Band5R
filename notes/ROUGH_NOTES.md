@@ -251,6 +251,19 @@ is careful not to repeat them on the next. Models don't learn while they work
 disagrees with what you assumed.** Each entry: what I assumed, what really
 happened, the fix, and the habit to keep.
 
+- **Assumed** (2026-10-06) the GitHub test run was worth keeping green.
+  **Reality:** the user asked "why GitHub test again?": it had been red
+  for 11 days unnoticed, duplicated the PC tests, and everything it found
+  was in the tests (wall-clock timing on a faster machine, test order,
+  headless has no textures). **Fix:** manual only. **Habit:** question a
+  requirement before servicing it (who asked, what does it catch that we
+  don't?), and stop as soon as the user says it doesn't matter now.
+- **Assumed** (2026-10-06) I could edit a test while a long run went on
+  (again). **Reality:** the same slip as the day before; it only compiled
+  by luck. **Habit:** while a run goes, edit only in `../MPG_dev`.
+- **Assumed** (2026-10-06) test timings in ms of the wall clock are fine.
+  **Reality:** headless `--fixed-fps 60` runs faster than real time (3 s
+  of game in 0.11 s): measure in physics frames.
 - **Assumed** (2026-10-05) taking a jug off the van's rack worked anywhere
   (other tests took cans off it). **Reality:** with the van nose-up on the
   water works climb, the jug popped out 0.2 m up, inside the rack's bars,
