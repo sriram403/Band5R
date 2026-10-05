@@ -19,8 +19,16 @@ being built and tested), so this always shows where the work is right now.
           (`design/PUZZLE_CHANGES.md`)
       - [~] #1 the water works: your changes (split rooms, the pump house
             key on the water tower, the grey tank bursting sludge = slow
-            motion, grey fills fast, valve turns gulp blue into grey) and
-            my proposal + ideas S1-S4 written; **waiting for your review**
+            motion, grey fills fast, valve turns gulp blue into grey) +
+            S1-S4, **agreed (2026-10-05) and built** (`../MPG_dev` branch
+            `g2`, merged into main, not pushed; `design/PUZZLE_CHANGES.md`
+            "As built"). Tests: waterworks rewritten, set:puzzles (7) and
+            smoke (23): 0 failures. Found by the walk: the old door was
+            boxed in by the intake pipes (the doorway now faces the tanks);
+            the standpipe's zone was too big to aim at from inside it.
+            The walk `puzzle1` recorded (150 s, every step passing):
+            `../MPG_dev/appdata/videos/puzzle1.mp4`. **Next: your look at
+            the video**
       - [x] New rule (you, 2026-10-05): loose asks are shaped to fit the
             puzzle and world, proposed first, my own ideas added
             (`notes/PRINCIPLES.md` 10, CLAUDE.md, AGENTS.md, memory)

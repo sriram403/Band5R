@@ -99,14 +99,16 @@ var _mat_on: StandardMaterial3D
 var _mat_off: StandardMaterial3D
 var _hiss: NoiseLoop
 
-const PUMP_POS := Vector3(-1.8, 0, 4.5)      ## inside the pump house, the lever towards the door
-const GAUGE_POS := Vector3(-1.8, 0, 4.9)     ## right above the pump: watch it while you pump
+const PUMP_POS := Vector3(-3.5, 0, 5.0)      ## inside the pump house, the lever towards the front
+const GAUGE_POS := Vector3(-3.5, 0, 5.4)     ## right above the pump: watch it while you pump
 const A_POS := Vector3(2.5, 0, -3.0)
 const B_POS := Vector3(8.0, 0, -3.0)
 const WASTE_TANK := Vector3(5.0, 0, 5.0)
 const COOLANT_TANK := Vector3(10.5, 0, 5.0)
 const PIPE_Y := 0.45
-const DOOR_HINGE := Vector3(-6.1, 0, 0.62)   ## the pump house doorway's left edge (LevelLandmarks)
+const DOOR_HINGE := Vector3(-0.62, 0, 1.0)   ## the doorway's front edge, in the yard-side wall (LevelLandmarks)
+const DOOR_SHUT := -PI * 0.5                 ## the door lies along +Z, shut
+const DOOR_OPEN := 0.0                       ## swung out into the yard
 const TOWER := Vector3(-12.0, 0, -6.0)       ## the water tower (LevelLandmarks)
 const KEY_POS := Vector3(-12.0 + 4.62, 15.6, -6.0)   ## on the tank wall, facing the yard
 const TAP_POS := Vector3(0.6, 0, 7.6)        ## the yard's standpipe
@@ -368,17 +370,17 @@ func unlock(p) -> void:
 	if door_open:
 		return
 	door_open = true
-	Sfx.play3d("latch", global_transform * (DOOR_HINGE + Vector3(1.1, 1.2, 0)), 0.0)
-	Sfx.play3d("door_open", global_transform * (DOOR_HINGE + Vector3(1.1, 1.2, 0)), 0.0)
+	Sfx.play3d("latch", global_transform * (DOOR_HINGE + Vector3(0, 1.2, 1.1)), 0.0)
+	Sfx.play3d("door_open", global_transform * (DOOR_HINGE + Vector3(0, 1.2, 1.1)), 0.0)
 	_door_body.collision_layer = 0
 	var tw := create_tween()
-	tw.tween_property(_door, "rotation:y", deg_to_rad(100.0), 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tw.tween_property(_door, "rotation:y", DOOR_OPEN, 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	if p != null:
 		p.say("The padlock drops open. Inside: the pump, its pressure gauge, a kettle on the bench. No window onto the yard - you won't see the tanks from in here.", 7.0)
 
 
 func _show_door() -> void:
-	_door.rotation.y = deg_to_rad(100.0) if door_open else 0.0
+	_door.rotation.y = DOOR_OPEN if door_open else DOOR_SHUT
 	_door_body.collision_layer = 0 if door_open else 1
 	_key.visible = not key_taken
 
@@ -491,11 +493,11 @@ func _build_pipes() -> void:
 	# All the same colour on purpose: you have to follow them, not read them.
 	var mat := ToonMat.make(Color(0.46, 0.50, 0.52), 0.01)
 	var y := Vector3.UP * PIPE_Y
-	var pump_out := Vector3(-0.5, 0, 1.5)
-	# from the pump inside, along the floor by the right-hand wall and out
-	_pipe(PUMP_POS + Vector3(0.4, 0, 0) + y, Vector3(-0.85, 0, PUMP_POS.z) + y, mat)
-	_pipe(Vector3(-0.85, 0, PUMP_POS.z) + y, Vector3(-0.85, 0, pump_out.z) + y, mat)
-	_pipe(Vector3(-0.85, 0, pump_out.z) + y, pump_out + y, mat)
+	var pump_out := Vector3(-0.5, 0, 6.6)
+	# from the pump inside, along the back of the room and out through the
+	# yard-side wall, clear of the doorway
+	_pipe(PUMP_POS + Vector3(0, 0, 0.3) + y, Vector3(PUMP_POS.x, 0, pump_out.z) + y, mat)
+	_pipe(Vector3(PUMP_POS.x, 0, pump_out.z) + y, pump_out + y, mat)
 	_pipe(pump_out + y, Vector3(A_POS.x, 0, pump_out.z) + y, mat)
 	_pipe(Vector3(A_POS.x, 0, pump_out.z) + y, A_POS + y, mat)
 	# valve A: one outlet doubles back to the grey tank, the other runs on to B
@@ -677,6 +679,7 @@ func _build_door() -> void:
 	_door = Node3D.new()
 	_door.name = "PumpHouseDoor"
 	_door.position = DOOR_HINGE
+	_door.rotation.y = DOOR_SHUT
 	add_child(_door)
 	_door_body = StaticBody3D.new()
 	_door.add_child(_door_body)
@@ -731,7 +734,7 @@ func _build_tap() -> void:
 	add_child(Build.cyl(0.05, 0.4, steel, TAP_POS + Vector3(0, 1.55, -0.2), Vector3(90, 0, 0), 8, "Spout"))
 	add_child(Build.cyl(0.12, 0.03, ToonMat.make(Color(0.80, 0.20, 0.16)), TAP_POS + Vector3(0, 1.62, 0), Vector3.ZERO, 10, "TapWheel"))
 	add_child(Build.box(Vector3(1.2, 0.04, 1.2), ToonMat.make(Color(0.34, 0.36, 0.38)), TAP_POS + Vector3(0, 0.22, -0.5), Vector3.ZERO, "Drain"))
-	var area := Build.interact_area(Vector3(1.6, 2.2, 1.8), TAP_POS + Vector3(0, 1.0, -0.5), "", func(_p): pass, "TapArea")
+	var area := Build.interact_area(Vector3(0.9, 2.0, 0.9), TAP_POS + Vector3(0, 1.0, -0.2), "", func(_p): pass, "TapArea")   # small: standing inside it, your aim misses it
 	area.set_meta("tag_name", "the standpipe")
 	area.set_meta("prompt_fn", func(p) -> String: return "Hold to rinse the sludge off" if p.slime_t > 0.0 else "")
 	area.set_meta("hold_fn", func(p, dt): rinse(p, dt))

@@ -34,14 +34,14 @@
     {
      "do": "walk",
      "who": 1,
-     "to": "expr:ww_at(-5.0, 0.2, -1.2)",
+     "to": "expr:ww_at(1.0, 0.2, 2.1)",
      "arrive": 0.6,
      "max": 30
     },
     {
      "do": "look",
      "who": 1,
-     "at": "expr:ww_at(-5.0, 1.3, 0.62)"
+     "at": "expr:ww_at(-0.62, 1.3, 2.1)"
     },
     {
      "do": "wait",
@@ -63,9 +63,23 @@
     {
      "do": "walk",
      "who": 1,
+     "to": "expr:ww_at(1.0, 0.2, 8.6)",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(-10.6, 0.2, 8.6)",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 1,
      "to": "expr:ww_at(-12.0, 0.2, 1.0)",
      "arrive": 0.5,
-     "max": 40
+     "max": 20
     },
     {
      "do": "look",
@@ -200,14 +214,28 @@
     {
      "do": "walk",
      "who": 1,
-     "to": "expr:ww_at(-5.0, 0.2, -1.2)",
+     "to": "expr:ww_at(-10.6, 0.2, 8.6)",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(1.0, 0.2, 8.6)",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:ww_at(1.0, 0.2, 2.1)",
      "arrive": 0.6,
-     "max": 40
+     "max": 20
     },
     {
      "do": "look",
      "who": 1,
-     "at": "expr:ww_at(-5.0, 1.3, 0.62)"
+     "at": "expr:ww_at(-0.62, 1.3, 2.1)"
     },
     {
      "do": "tap",
@@ -240,21 +268,21 @@
     {
      "do": "walk",
      "who": 1,
-     "to": "expr:ww_at(-5.0, 0.2, 1.6)",
+     "to": "expr:ww_at(-1.6, 0.2, 2.1)",
      "arrive": 0.5,
      "max": 15
     },
     {
      "do": "walk",
      "who": 1,
-     "to": "expr:ww_at(-1.8, 0.2, 3.25)",
+     "to": "expr:ww_at(-3.5, 0.2, 3.7)",
      "arrive": 0.4,
      "max": 15
     },
     {
      "do": "look",
      "who": 1,
-     "at": "expr:ww_at(-1.8, 0.9, 4.4)"
+     "at": "expr:ww_at(-3.5, 0.9, 4.9)"
     },
     {
      "do": "wait",
@@ -292,7 +320,7 @@
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:ww_at(0.6, 0.2, 6.7)",
+     "to": "expr:ww_at(0.6, 0.2, 6.2)",
      "arrive": 0.6,
      "max": 40
     },

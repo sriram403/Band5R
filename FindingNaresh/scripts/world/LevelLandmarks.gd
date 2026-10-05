@@ -472,7 +472,9 @@ Power's been off since the turbine at the water works stopped. No power, no pump
 ## The water works' pump house (G, the user's puzzle change, 2026-10-05): a
 ## room the pumper works in, with no window onto the yard, so the pumper
 ## can't see the tanks. Its door (with the padlock) belongs to the puzzle
-## (`CoolingStation`); the doorway is in the front wall, the yard side.
+## (`CoolingStation`); the doorway is in the side wall facing the tanks (the
+## front, towards the river, has the intake pipes either side: a doorway
+## there was boxed in by them, found by the walk, 2026-10-05).
 ## Lived in, as block-outs: a bench with a kettle and a mug, a chair, a coat
 ## on a hook, a calendar, a bare bulb.
 const PH_DOOR_W := 2.2
@@ -481,13 +483,16 @@ const PH_DOOR_H := 2.6
 func _pump_house(root: Node3D, brick: Material) -> void:
 	var t := 0.25
 	var h := 5.0
-	var side := (9.0 - PH_DOOR_W) * 0.5
+	# the doorway in the right-hand (tank yard) wall, z 1.0 .. 3.2
+	var z0 := 1.0
+	var z1 := z0 + PH_DOOR_W
+	var rx := -0.5 - t * 0.5
 	for w in [[Vector3(9.0, h, t), Vector3(-5.0, h * 0.5, 7.5 - t * 0.5), "PumpHouseBack"],
 			[Vector3(t, h, 7.0), Vector3(-9.5 + t * 0.5, h * 0.5, 4.0), "PumpHouseLeft"],
-			[Vector3(t, h, 7.0), Vector3(-0.5 - t * 0.5, h * 0.5, 4.0), "PumpHouseRight"],
-			[Vector3(side, h, t), Vector3(-9.5 + side * 0.5, h * 0.5, 0.5 + t * 0.5), "PumpHouseFrontL"],
-			[Vector3(side, h, t), Vector3(-0.5 - side * 0.5, h * 0.5, 0.5 + t * 0.5), "PumpHouseFrontR"],
-			[Vector3(PH_DOOR_W, h - PH_DOOR_H, t), Vector3(-5.0, (h + PH_DOOR_H) * 0.5, 0.5 + t * 0.5), "PumpHouseLintel"]]:
+			[Vector3(9.0, h, t), Vector3(-5.0, h * 0.5, 0.5 + t * 0.5), "PumpHouseFront"],
+			[Vector3(t, h, z0 - 0.5), Vector3(rx, h * 0.5, (0.5 + z0) * 0.5), "PumpHouseRightA"],
+			[Vector3(t, h, 7.5 - z1), Vector3(rx, h * 0.5, (z1 + 7.5) * 0.5), "PumpHouseRightB"],
+			[Vector3(t, h - PH_DOOR_H, PH_DOOR_W), Vector3(rx, (h + PH_DOOR_H) * 0.5, (z0 + z1) * 0.5), "PumpHouseLintel"]]:
 		root.add_child(Build.solid_box(w[0], brick, w[1], Vector3.ZERO, w[2]))
 	root.add_child(Build.box(Vector3(8.5, 0.05, 6.5), ToonMat.make(Color(0.42, 0.40, 0.37)), Vector3(-5.0, 0.22, 4.0), Vector3.ZERO, "PumpHouseFloor"))
 	var wood := ToonMat.make(Color(0.48, 0.34, 0.22))

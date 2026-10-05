@@ -251,6 +251,13 @@ is careful not to repeat them on the next. Models don't learn while they work
 disagrees with what you assumed.** Each entry: what I assumed, what really
 happened, the fix, and the habit to keep.
 
+- **Assumed** (2026-10-05) the pump house's old (painted-on) door was a
+  doorway you could reach. **Reality:** the two intake pipes (solid, 0.95
+  m high) run from the front wall to the river either side of it: the
+  walk couldn't get there; the play-test teleported past it and passed.
+  **Fix:** the doorway in the side wall facing the tanks. **Habit:** a
+  decoration that becomes a way in gets walked to (the walk found it, the
+  teleporting test didn't: the lesson "walk, don't teleport" again).
 - **Assumed** (2026-10-05) appending helpers to PlayTest.gd during a
   background run was harmless. **Reality:** it was (only new functions,
   it still compiled), but the rule is there because later segments load

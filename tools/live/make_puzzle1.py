@@ -25,13 +25,16 @@ LADDER_FOOT_LOOK = at(-12.0, 1.4, -6.0 + 6.25)
 ROUND = at(-12.0 + 3.71, CAT_Y, -6.0 + 3.71)       # 45 deg round the catwalk
 KEY_STAND = at(-12.0 + 5.4, CAT_Y, -6.0)
 KEY_LOOK = at(-12.0 + 4.62, 15.55, -6.0)
-DOOR_STAND = at(-5.0, 0.2, -1.2)
-DOOR_LOOK = at(-5.0, 1.3, 0.62)
-IN_DOOR = at(-5.0, 0.2, 1.6)
-PUMP_STAND = at(-1.8, 0.2, 3.25)
-PUMP_LOOK = at(-1.8, 0.9, 4.4)
+DOOR_STAND = at(1.0, 0.2, 2.1)                      # the doorway in the yard-side wall
+DOOR_LOOK = at(-0.62, 1.3, 2.1)
+IN_DOOR = at(-1.6, 0.2, 2.1)
+PUMP_STAND = at(-3.5, 0.2, 3.7)
+PUMP_LOOK = at(-3.5, 0.9, 4.9)
+# round the back of the pump house (its front has the intake pipes)
+BACK_E = at(1.0, 0.2, 8.6)
+BACK_W = at(-10.6, 0.2, 8.6)
 YARD_WAIT = at(3.5, 0.2, 0.5)                       # P2 by the tanks, in the yard
-TAP_STAND = at(0.6, 0.2, 6.7)
+TAP_STAND = at(0.6, 0.2, 6.2)
 TAP_LOOK = at(0.6, 1.0, 7.2)
 A_STAND = at(2.5, 0.2, -1.6)
 A_LOOK = at(2.5, 1.05, -3.0)
@@ -51,7 +54,9 @@ walk = {
                 {"do": "look", "who": 1, "at": DOOR_LOOK}, {"do": "wait", "s": 1.5}],
          "expect": [{"name": "the prompt says padlocked", "expr": "p1().prompt_text.contains('Padlocked')", "within": 2}]},
         {"name": "1.2 P1 climbs the water tower", "max": 90,
-         "do": [{"do": "walk", "who": 1, "to": LADDER_FOOT_STAND, "arrive": 0.5, "max": 40},
+         "do": [{"do": "walk", "who": 1, "to": BACK_E, "arrive": 0.8, "max": 20},
+                {"do": "walk", "who": 1, "to": BACK_W, "arrive": 0.8, "max": 20},
+                {"do": "walk", "who": 1, "to": LADDER_FOOT_STAND, "arrive": 0.5, "max": 20},
                 {"do": "look", "who": 1, "at": LADDER_FOOT_LOOK}, {"do": "tap", "key": "E"},
                 {"do": "until", "expr": "p1().ladder != null", "max": 2},
                 {"do": "down", "key": "W"},
@@ -72,7 +77,9 @@ walk = {
                 {"do": "down", "key": "S"},
                 {"do": "until", "expr": "p1().ladder == null", "max": 15},
                 {"do": "up", "key": "S"},
-                {"do": "walk", "who": 1, "to": DOOR_STAND, "arrive": 0.6, "max": 40},
+                {"do": "walk", "who": 1, "to": BACK_W, "arrive": 0.8, "max": 20},
+                {"do": "walk", "who": 1, "to": BACK_E, "arrive": 0.8, "max": 20},
+                {"do": "walk", "who": 1, "to": DOOR_STAND, "arrive": 0.6, "max": 20},
                 {"do": "look", "who": 1, "at": DOOR_LOOK}, {"do": "tap", "key": "E"}, {"do": "wait", "s": 1.5}],
          "expect": [{"name": "the door swings open", "expr": "%s.door_open" % ST, "within": 2}]},
         {"name": "1.5 P1 pumps before the valves are set: the grey tank bursts on P2", "max": 90,
