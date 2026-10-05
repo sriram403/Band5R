@@ -39,7 +39,9 @@ being built and tested), so this always shows where the work is right now.
             the opening ends when you're both in the van. Tests: waterworks,
             opening_skip (new), puzzle_resets: 0 failures. Found: a jug off
             the rack on a slope snagged and dropped (now straight to your
-            hands). Recording the walk next
+            hands). smoke 23, set:opening 5, set:puzzles 7: 0 failures. Walk
+            `puzzle1` recorded again (163 s, every step passing).
+            **Next: your look at the video**
       - [x] New rule (you, 2026-10-05): loose asks are shaped to fit the
             puzzle and world, proposed first, my own ideas added
             (`notes/PRINCIPLES.md` 10, CLAUDE.md, AGENTS.md, memory)
