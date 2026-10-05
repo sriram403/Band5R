@@ -53,6 +53,23 @@ jobs:
       - name: Play-test, everything (tools/test_plan.sh "full")
         run: TIMEOUT=3600 GODOT=~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 tools/run_test_headless.sh full
 
+      # On a failure, put the reason where anyone can read it without logging
+      # in: the run's annotations (the public API shows them; the log itself
+      # needs an account). The FAIL / SCRIPT ERROR lines, else the log's end.
+      - name: Why it failed (annotations)
+        if: failure()
+        shell: bash
+        run: |
+          log=tools/_last_playtest.log
+          if [ ! -f "$log" ]; then echo "::error::no play-test log was written"; exit 0; fi
+          seg=$(grep -m1 -E "^\[test\] adapter=|segment" "$log" | cut -c1-200)
+          echo "::error::segment: ${seg:-unknown} (log $(wc -l < "$log") lines)"
+          hits=$(grep -E "FAIL|SCRIPT ERROR|ERROR:|Parse Error|at: " "$log" | grep -v "Interpolated Camera3D" | head -8)
+          if [ -z "$hits" ]; then hits=$(tail -8 "$log"); fi
+          echo "$hits" | while IFS= read -r line; do
+            echo "::error::$(echo "$line" | cut -c1-300)"
+          done
+
       - name: Keep the log
         if: always()
         uses: actions/upload-artifact@v4
