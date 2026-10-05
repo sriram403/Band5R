@@ -93,6 +93,13 @@ happened didn't. Plan the expected outcome of each step, check them in
 parallel, stop on the first failure, fix, carry on from there
 (`notes/TESTING_METHOD.md`).
 
+## 9. Show it: record the walkthrough (the user, 2026-10-05)
+
+Once a test sheet's steps are written, play them and record the run as
+a video for the user to verify: easier to understand than a report, and
+it shows what was done. Watch it yourself first (`notes/TESTING_METHOD.md`
+v5).
+
 ## Sources
 
 - Walter Isaacson, *Elon Musk* (2023): "the algorithm"; summaries at

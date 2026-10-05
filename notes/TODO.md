@@ -6,6 +6,12 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- **2026-10-05: Milestone F approved ("all okay", from the recorded
+  walkthroughs F3-F8, every decision confirmed) and pushed** (main
+  `c1235d8`). New way (you, 2026-10-05): write the test sheet, then I
+  play it, record it (`tools/record_walk.sh`) and send the video; you
+  verify from the video. Next: Milestone G (after you choose: this
+  thread or a new one).
 - Milestones A-E: done, each part tested and approved by you, full run
   clean, **pushed** (Milestone E finished 2026-09-29, main `8c18ef3`).
 - **Milestone F, the return.** Your answers to `design/RETURN.md`

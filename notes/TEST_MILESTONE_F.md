@@ -243,7 +243,7 @@ to the jetty end, and so on.
 **Also try:** pour the heavy can in yourself before he offers (then there's
 no mistake and no breakdown); stand in his way at the van ("Excuse me!").
 
-### Decisions to confirm (F3) (not yet tested: you test from F3 on once F is finished)
+### Decisions to confirm (F3): confirmed by you, 2026-10-05 (from the recorded walkthrough)
 
 1. **Why the fuel's low:** the storm road and the climb drank the Bessi drum;
    the lamp comes on 420 m short of the village, ~1 L left.
@@ -301,7 +301,7 @@ the open where the beam can see you.
      for the van (the usual van trouble). Drive on and it falls behind.
      Nothing is lost.
 
-### Decisions to confirm (F4) (you test from F3 on once F is finished)
+### Decisions to confirm (F4): confirmed by you, 2026-10-05 (from the recorded walkthrough)
 
 1. **Its gaze is visible** (a pale beam), so you can play it.
 2. **The pattern:** four stares along the road (~3 s each), then out to sea
@@ -358,7 +358,7 @@ white post with a yellow float (the tide).
 longer you take; after about 4 minutes the current pulls twice as hard. It
 only makes it harder, never a fail.
 
-### Decisions to confirm (F5) (you test from F3 on once F is finished)
+### Decisions to confirm (F5): confirmed by you, 2026-10-05 (from the recorded walkthrough)
 
 1. **All three at once:** the span only moves while the brake is held off
    *and* a crank turns; the brake let go, the current swings it open
@@ -432,7 +432,7 @@ through.
 the passage, look at the winch, **V**, "Hold the gate winch". Then you have
 to go back into the dark and fetch him afterwards.
 
-### Decisions to confirm (F6) (you test from F3 on once F is finished)
+### Decisions to confirm (F6): confirmed by you, 2026-10-05 (from the recorded walkthrough)
 
 1. **The tunnel is a puzzle, not just a road:** the flood gate, its winch in
    a side gallery (~120 m door to door; the tunnel is ~360 m).
@@ -502,7 +502,7 @@ hut: a green **generator** with a pull cord and a choke.
    - **You should see:** "The mast hums ... away to the west the clouds break
      over the West Road." The goal changes to taking Naresh home.
 
-### Decisions to confirm (F7) (you test from F3 on once F is finished)
+### Decisions to confirm (F7): confirmed by you, 2026-10-05 (from the recorded walkthrough)
 
 1. **No van at the mast** (it's on a hill, no road up: measured 230 m from
    the coast road). So the power is the mast's own generator,
@@ -560,7 +560,7 @@ step 1. After an F1 jump you won't get it: that's expected.
 (F1 → Story → "Home along the West Road" starts you at his home, him already
 inside.)
 
-### Decisions to confirm (F8) (you test from F3 on once F is finished)
+### Decisions to confirm (F8): confirmed by you, 2026-10-05 (from the recorded walkthrough)
 
 1. **The scene is text only** (as agreed), with his mother and sister as
    simple block-out figures at the door; ~24 s from the door to him going

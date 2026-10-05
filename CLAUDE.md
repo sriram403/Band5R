@@ -18,6 +18,11 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   a question, not a pass.
 - **Own it:** test it, look at the screenshots, read the logs, write the
   lesson down at once.
+- **Record the walkthrough (the user, 2026-10-05).** Keep writing the
+  test sheet; once its steps are written, play them as a watched run,
+  record it (`tools/record_walk.sh <walk>` -> `appdata/videos/`), watch it,
+  and send it with times and what to judge. The user verifies the video
+  first instead of playing straight away.
 
 ## Two copies of the project
 

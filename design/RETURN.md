@@ -132,6 +132,11 @@ Found while checking the page against the built world: the scripted refuel
 mistake already exists (`Naresh.refuel_mistake`, E1); it only needs arming at
 the fishing village.
 
+**F3-F8 confirmed (the user, 2026-10-05):** every "Decision to confirm" in
+`notes/TEST_MILESTONE_F.md` (F3-F8) accepted as built, after watching the
+recorded walkthroughs ("all okay"), including the dark tunnel gallery and
+the homecoming told in text.
+
 ## Questions for you (answered above)
 
 1. The storm road: a real but brutal dead end (the bridge swinging open), a real

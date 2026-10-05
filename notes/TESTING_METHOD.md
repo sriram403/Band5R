@@ -1,6 +1,6 @@
 # How we test the game: the method, version by version
 
-**Current: v4 (agreed with the user 2026-10-02; built the same day).**
+**Current: v5 (v4's watched run, recorded as a video for the user; 2026-10-05).**
 Each version keeps what worked in the one before and names what it wasted.
 The general way of thinking behind it is in the skill
 `first-principles-solving` (`D:\mine\Agentics\Skills\skills\first-principles-solving\SKILL.md`).
@@ -113,9 +113,33 @@ already passed.
 - Resume costs ~40 s (a restart) against minutes for a rerun from the
   start; plan-only fixes resume in the open game without a restart.
 
+## v5: the recorded walkthrough (the user, 2026-10-05)
+
+v4 proves the sheet; the user still had to play it to see what was built.
+Now the watched run is also recorded, and the video is what the user
+reviews first.
+- Write the sheet as before (plain words, `notes/TEST_MILESTONE_<X>.md`)
+  and its walk (`tools/live/make_<part>.py`).
+- `tools/record_walk.sh <walk>`: Godot's Movie Maker (`--write-movie x.avi
+  --fixed-fps 25`, before the `--`), the walk played in it, then ffmpeg
+  to `appdata/videos/<walk>.mp4` (with sound; the game plays none through
+  the speakers while recording) and `<walk>.walk.log`.
+- Recording runs the game at 68-87 % of real time (Godot prints it at the
+  end: "recorded in ... (84% of real-time speed)"); the walk's deadlines
+  are real seconds, so leave them slack.
+- Before sending: a frame grid (`ffmpeg -i x.mp4 -vf "fps=1/10,scale=400:-1,
+  tile=5x6" -frames:v 1 grid.jpg`), and on a failure the seconds round it
+  at 4 fps: the video shows causes the log can't (a can caught on the van,
+  one player blocking the other's handle).
+- Send each video as it's ready, with times for each step and what only
+  the video shows (too dark, a moment told in text only).
+
 ## Decision log
 - v1 -> v2: the user saw a dead run carry on for minutes (2026-10-02).
 - v2 -> v3: the user: test as a human does, closed loop (2026-10-02).
 - v3 -> v4: the user: a human doesn't stop to check every step that worked;
   watch in parallel, stop only on failure, resume from there (2026-10-02).
 - v4 agreed, stop-at-first-failure agreed (2026-10-02).
+- v4 -> v5: the user: "do F3 and capture a video, I'll review that"
+  (2026-10-04); then: keep the test sheets, and once the steps are written
+  do the walkthrough, record it and place it for me to verify (2026-10-05).

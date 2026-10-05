@@ -15,13 +15,12 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-09-29, Milestone E (Naresh and Bessi, E1-E7) done and
-approved by the user part by part (each with its decisions, "for now"); E8
-the full run and the push.
-Milestones A-E are done, approved by the user and pushed. The user is here:
-one part at a time, their test before each push (rule 2). Next: Milestone F
-(the return), whose open questions (`design/RETURN.md`) must be discussed
-with the user before anything is built.
+Last updated: 2026-10-05, Milestone F (the return) approved by the user
+from the recorded walkthroughs of F3-F8 ("all okay", every decision
+confirmed) and pushed.
+Milestones A-F are done, approved by the user and pushed. The user is here:
+one part at a time, their check before each push (rule 2), now by a
+recorded walkthrough first (rule 22). Next: Milestone G.
 Start at section 6.
 
 ---
@@ -48,8 +47,17 @@ they/them.
 
 ---
 
-## 2. Status right now (2026-09-29; latest at the top, 2026-10-04)
+## 2. Status right now (2026-09-29; latest at the top, 2026-10-05)
 
+- **2026-10-05: Milestone F approved and pushed** (main `c1235d8`). The
+  user asked me to play F3 and record it instead of testing it; I
+  recorded F3-F8 (`tools/record_walk.sh`, videos in `appdata/videos/`),
+  all walks passing; the user watched them: "all okay", decisions
+  confirmed. Fixed on the way: a story jump now puts every creature back
+  at its post, calm (the stall's creature came for the van after a jump
+  back to F3). Parked: P1 once flung across the map after getting out
+  to refuel (not reproduced; knocks and takes are now logged; the user
+  says when it happens again and I read the session log).
 - **2026-10-04: hand-over to a new thread.** The test sheet F3-F8 is
   rewritten in plain words; everything proven and merged locally, not
   pushed; **waiting for the user's test** (section 6). The user starts the
@@ -312,6 +320,16 @@ they/them.
     expected outcomes, checked in parallel inside the game, stop on the first
     failure, resume from that step's save point; don't stop to check steps
     that worked (`notes/TESTING_METHOD.md`).
+22. **The recorded walkthrough (the user, 2026-10-05):** keep writing the
+    test sheet (`notes/TEST_MILESTONE_<X>.md`) as now; once its steps are
+    written, play them myself as a watched run and **record it as a video**
+    (`tools/record_walk.sh <walk>` -> `appdata/videos/<walk>.mp4`), check the
+    video (frame grids), and send it with what happens at which time and what
+    to judge. The user verifies by watching it instead of playing straight
+    away: it shows visually what was built and done.
+    (`notes/TESTING_METHOD.md` v5.) Bugs from the user's own play that I
+    can't reproduce are parked: they tell me after closing the game and I
+    read that session's log (`appdata/FindingNaresh/logs/`).
 
 ---
 
@@ -496,52 +514,38 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 
 ## 6. What to do next
 
-**Where it stands (hand-over 2026-10-04):** Milestones A-E approved and
-pushed. **Milestone F (the return), F1-F9, is built.** F1 and F2 are
-approved and pushed. F3-F8 are proven: each part of the user's test sheet
-was played start to finish by a watched run with real keys and pad only
-(`tools/live/make_f3.py` ... `make_f8.py`, all six back to back with
-`tools/live_all.sh`: pass, 24 min). The older suite passes too (72 world
-scenarios; frame-rate checks pass alone at 144 fps). The sheet
-`notes/TEST_MILESTONE_F.md` was rewritten in plain words (the user's ask,
-2026-10-04): per step what + why, optional *Exactly how*, **You should
-see**. Everything is merged into `main` **locally, not pushed**
-(`MPG_dev` is on branch `f4`, same code).
+**Where it stands (2026-10-05):** Milestones A-F approved and pushed (main
+`c1235d8`). F was approved from recorded walkthroughs: I played every part
+of `notes/TEST_MILESTONE_F.md` (F3-F8) as a watched run and recorded it
+(`tools/record_walk.sh f3` ... `f8`, videos in `appdata/videos/`); the user
+watched them: "all okay", every decision confirmed (`design/RETURN.md`).
 
 **Next, in this order:**
 
-1. **Wait for the user's test from F3 on.** They follow
-   `notes/TEST_MILESTONE_F.md` (F3 to F8), two players (P1 keyboard,
-   P2 pad), and report per part. **Don't start anything else**: answer
-   their questions, fix what they find (in `../MPG_dev`, a quick check for
-   the change first), keep the sheet in plain words (memory
-   `mpg-plain-test-sheets`), and update the notes as you go.
-   - If a sheet step confuses them: rewrite it (one goal per step, lines in
-     the order you act, fallbacks after the steps, only names visible on
-     screen, P1 / P2 for who).
-   - If something in the game is wrong: reproduce it with the live line
-     (`tools/live_restart.sh`, `python tools/live.py ...`) or the part's
-     walk (`python tools/live.py --walk tools/live/fN.json --from "<step>"`),
-     fix, rerun the walk, then tell them.
-   - Their "Decisions to confirm" answers go into `design/RETURN.md` and
-     the sheet.
-2. **After their OK:** merge `f4` into main if needed, push **as
-   sriram403** (never lexbolt; no AI attribution in commits), then
-   Milestone G (`notes/TODO.md`, `DESIGN.md`), and remind the user of
-   `notes/POLISH.md` (it now also has "screenshots in the test sheets").
-3. **Open questions to keep an eye on** (`notes/ROUGH_NOTES.md`, end):
-   P2's binocular recall once didn't take in the old decoy test (it now
-   logs why); a village creature once ended up inside the shed's crate
-   stack (a safety hop frees it); after the stall the full can was once
-   not on the rack, only late in the long run (the test logs the rack).
+1. **Ask the user (rule 17): continue in this thread, or a new one?** Then
+   remind them of `notes/POLISH.md` (rule 15: all milestones but G are done;
+   it also has "screenshots in the test sheets", which the videos may
+   replace: ask).
+2. **Milestone G** (`notes/TODO.md`, `DESIGN.md`): discuss its open
+   questions with the user first (rule 3), then build part by part.
+3. **For every part from now on (rule 22):** write the test sheet in plain
+   words, make its walk (`tools/live/make_<part>.py`), prove it as a watched
+   run, then `tools/record_walk.sh <part>`, watch the video (frame grids),
+   and send it with times and what to judge. The user verifies from the
+   video; push after their OK (as sriram403, no AI attribution).
+4. **Parked:** P1 flung across the map after getting out to refuel (the
+   user's F3 play, 2026-10-04; not reproduced). The game logs `[knock]` and
+   `[taken]`; when the user says it happened, read their latest session log
+   in `appdata/FindingNaresh/logs/`. Other open questions: the end of
+   `notes/ROUGH_NOTES.md`.
 
-**How we test now (the user's method, `notes/TESTING_METHOD.md` v4):** a
+**How we test now (the user's method, `notes/TESTING_METHOD.md` v5):** a
 planned walk per sheet part, expected outcomes checked in parallel inside
 the game, stop at the first failure, fix, resume from that step's save
-point. Long runs in the background (they get stopped at a time limit:
-`tools/run_test.sh resume` carries on). Every learning into
-`notes/ROUGH_NOTES.md` at once, mistakes as *assumed -> reality -> fix ->
-habit*; read that list before similar work.
+point; then the walk recorded as a video for the user. Long runs in the
+background (`tools/run_test.sh resume` carries on a broken-off run). Every
+learning into `notes/ROUGH_NOTES.md` at once, mistakes as *assumed ->
+reality -> fix -> habit*; read that list before similar work.
 
 ## 7. Hard-won technical lessons (don't relearn these)
 
@@ -777,9 +781,8 @@ threads with good notes instead of one long one, 2026-10-04). Then:
    `notes/TEST_MILESTONE_F.md`, the end of `notes/ROUGH_NOTES.md` (the
    mistake log and the open questions) and `notes/TESTING_METHOD.md`.
 2. Check `git status` and `git log -3` in `MPG` and `../MPG_dev`.
-3. Tell the user in two or three plain lines where things stand, and that
-   you're **waiting for their test results** (section 6, step 1). Then wait:
-   don't start new work unasked.
+3. Tell the user in two or three plain lines where things stand and what
+   comes next (section 6). Don't start new work unasked.
 
 Read the files listed at the top, check `git status` / `git log -3` (and `git diff` if
 anything is uncommitted: that is the last thread's unfinished work), read

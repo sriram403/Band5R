@@ -116,6 +116,17 @@ The engine-level details (exact Godot calls, numbers) are also in
 
 ## 3. Testing a game
 
+- **A recorded run is the best evidence, for the user and for me**
+  (2026-10-04/05). The user reviews videos of the walks instead of
+  playing first. Twice the video showed a failure's cause the log
+  couldn't: the full can caught on the van's side and fell from P1's
+  hands; P1 stood in P2's line to the generator's choke. Both were my
+  walks' positions, not the game. And it showed what only a viewer
+  judges: the tunnel gallery nearly black, the homecoming told in text
+  while you sit facing the road. Read the tool's own numbers before
+  naming a cause (I guessed the recording speed wrong twice; Godot
+  prints it).
+
 - **Don't assume a speed limit: test it** (user, 2026-09-27). We sat idle
   through hour-long full runs because "only one game at a time". Broken
   down and tried: two instances run fine on this PC (112 fps in one while
