@@ -30,6 +30,12 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   proposal for their review, then build. Add your own ideas or
   improvements to theirs, marked as suggestions. Puzzles keep both players
   on their toes (`notes/PRINCIPLES.md` 10, `design/PUZZLE_CHANGES.md`).
+- **Both out of the van, no repeats, fun mechanics (the user,
+  2026-10-06).** Every stop needs both players on foot, each with a job.
+  Never repeat a puzzle (how it plays or what it's for); when the user's
+  ask repeats an earlier puzzle or idea, say so and suggest a way round.
+  A challenge can be the thing instead of a puzzle. At least three fun
+  mechanics like the head-butt. Mistakes have real consequences.
 
 ## Two copies of the project
 

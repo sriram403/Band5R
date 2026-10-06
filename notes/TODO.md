@@ -6,6 +6,16 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [~] **2026-10-06: puzzle #2, the windmill: your changes heard, my
+  proposal written** (`design/PUZZLE_CHANGES.md` #2: a 24 m windmill with
+  four legs and one neck, the J1 power gate, the lever held to spin it up,
+  sliding legs head-butted back, it falls on you if you're slow, the
+  ladder unrolls, the napin in a chest at the top, the map at P2's home,
+  the head-butt as the first fun mechanic; S1-S5; 5 questions).
+  **Waiting for your answers; nothing built.** Your new rules written down
+  (both out of the van, no repeats and I flag yours, 3+ fun mechanics,
+  real consequences): PUZZLE_CHANGES, PRINCIPLES 10, CLAUDE.md,
+  AGENTS.md, MASTER_PROMPT rule 25, memory
 - **2026-10-06: the GitHub test is manual only now** (you: it duplicated
   the PC tests; it had been red since 2026-09-25 unnoticed). Its failures
   were all in the tests on a faster headless machine (timing by the wall

@@ -22,7 +22,22 @@ how* (round 2 of #1 below): on the way out, notes he left where he passed
 from Bessi on, him saying it. Plain narration stays only for what you see,
 hear or feel ("SPLAT! You're covered").
 
-## 1. The water works: round 1 and round 2 *built* (2026-10-05), awaiting your look
+**More rules for every place (the user, 2026-10-06, at the windmill):**
+- **Get both players out of the van.** Every stop is designed so the van
+  has to stop and both players are needed on foot, each with a job.
+- **Never repeat a puzzle,** in how it plays or in what it's for. When
+  the user asks for something that repeats an earlier puzzle or one of
+  their own earlier ideas, **say so** and suggest a way round it.
+- **Not everything has to be a puzzle:** a challenge is fine (the
+  windmill). A place rewards with a view, the challenge itself, and/or a
+  new ability.
+- **Fun mechanics:** at least three abilities like the head-butt, just
+  for fun, usable on your partner, Naresh and the van from then on, each
+  learned at the place that needs it.
+- **Mistakes have real consequences:** the windmill falls on you and you
+  start the challenge again.
+
+## 1. The water works: round 1 and round 2 *approved* (2026-10-05), pushed
 
 ### What the user asked for
 
@@ -283,3 +298,168 @@ fragment by his mug; the gear steps skippable; S5-S7 all in.
 3. **Is the fragment on the bench by his mug all right?**
 4. **The opening's gear steps skippable:** yes?
 5. **Which of S5-S7?**
+
+---
+
+## 2. The windmill: *proposed* (2026-10-06), waiting for your answers
+
+### What the user asked for (2026-10-06)
+
+- **A new windmill, bigger and menacing but realistic:** four legs that
+  join into one huge neck, the fan on top as a windmill has it.
+- **Why we stop:** the windmill is dead, so there's no power and the road
+  on can't be crossed. Spinning it makes the power that opens the way.
+  The stop has to get **both players out of the van and on their feet**
+  (a rule for every place from now on).
+- **Clear the area:** everything round the windmill goes (rope, brake,
+  miller's box, trough, ladder, platform). Only the lever stays.
+- **The lever is a capacitor:** one player holds the lever all the time
+  (they can look around) and the fan spins up slowly, faster and faster.
+  Once it's at full speed they can let go: the wind keeps it going.
+- **The legs slide:** as it speeds up, the legs come loose one at a time,
+  at random. The other player **head-butts** each sliding leg back into
+  place ("holding it in the ground"). If they're too slow, the windmill
+  **falls, always on top of them**, and they start again.
+- **The ladder unrolls by itself:** it's rolled up by the head. Once the
+  fan is at full speed the shaking makes it roll down, still fixed at the
+  top. Now you can climb.
+- **The reward:** the view from the top, and a chest up there with the
+  **napin** ("navigation pin"). Only **one** pin; the different stamps go.
+  The paper map itself is found at P2's home at the start.
+- **A new ability, the head-butt:** from then on you can head-butt your
+  partner, Naresh and the van, just for fun. The game should have **at
+  least three fun mechanics like this**.
+- It's a challenge more than a puzzle. That's fine.
+
+### My proposal
+
+**The blocker: a powered gate at Windmill Junction (J1).** The lane from
+P2's home ends at a red-and-white boom gate just before the fork:
+"JUNCTION CLOSED / NO POWER". A ditch on one side, a fence with boulders
+on the other, so you can't drive round it. Its lamp is dead. The windmill
+stands 25 m off the road beside the gate, its lever by the gate. The van
+has to stop, so you both get out.
+
+**The windmill, rebuilt (the old one's hub is at 14 m):**
+- four steel legs on stone footings, splayed 8 m apart at the ground,
+  rising 7 m to a collar, braced with cross-ties;
+- from the collar, **one neck**: a rusty steel tube 2 m thick, up to the
+  head at **24 m** (about an 8-storey building: real for a big farm
+  windmill, menacing from the lane);
+- the head: a 3 m gearbox housing with a long tail vane, and a narrow
+  walkway with a rail round it. The rolled-up rope ladder is lashed there;
+- **the fan:** the windmill fan you know, 12 m across, 18 blades, pale
+  and weathered. It looms over the road and creaks.
+
+**The lever (whoever takes it):** an old starter lever on a post 14 m out
+from the legs, close enough to watch all four. **Hold E (pad X)** and the
+fan winds up:
+- held, its speed climbs from 0 to full in about **45 s**;
+- let go too early and it **slows twice as fast** as it climbed;
+- at full speed it **"catches the wind"**: a deeper hum, the gate's lamp
+  comes on, and the lever player can let go;
+- the lever's creak and the fan's whoosh rise with the speed.
+
+**The legs (the other player):** at **20, 40, 60 and 80 %** speed one
+leg comes loose, in a random order (one at a time, each leg once):
+- a grinding screech, dust from its footing, and the foot **slides
+  outwards about 0.5 m over 8 s**. The whole windmill leans that way and
+  the fan wobbles;
+- **head-butt it 3 times** (G / pad RB with empty hands, within 1.5 m,
+  facing the leg) to knock it back onto its footing: each butt pushes it
+  a third of the way back, with a clang and a small shake of your view;
+- a leg that slides all the way (8 s without enough butts) **brings the
+  windmill down**: 2 s of a loud groan and the lean speeding up (time to
+  run), then it **falls towards whichever player is nearest**. Anyone
+  under it: a crash, a cloud of dust, white screen, "The windmill came
+  down." Then the challenge resets: the windmill standing, the fan
+  stopped, both of you by the gate (question 3).
+
+**The ladder:** 5 s after the fan catches the wind, the shaking works the
+rolled ladder loose. It unrolls down the neck with a clatter and hangs to
+just above the ground, fixed at the walkway. Climb it (E, then W), 24 m.
+
+**At the top:** the walkway round the head, the fan thundering past a
+few metres away, and **a chest** with the **napin**. The view: both roads
+on to Last Fuel, the lake, the ridge, and below, the gate lifting.
+
+**The napin (one pin):**
+- the paper map's five stamps (fuel, danger, puzzle, shortcut,
+  unexplored) go. There is **one napin** (question 2);
+- open the map, put the napin anywhere; putting it again moves it; RMB /
+  pad X takes it off;
+- **the van's nav points at the napin** (it follows stamps today);
+- what used stamps changes with it: the coast watchtower's "stamp the
+  beach" becomes "pin the beach";
+- before the windmill you have the map but no pin: you can look, not
+  mark.
+
+**The paper map at P2's home:** P2's opening step "stamp the windmill on
+the map" becomes "**take the map from the kitchen table**". Naresh has
+pencilled a ring round the windmill (he went this way). P1 has no map
+until the pick-up; their M says "P2 has the map" (question 4).
+
+**The head-butt (the first fun mechanic):** **G / pad RB with empty
+hands** (that's throw, which does nothing with empty hands: no new
+button). A quick lunge of your head and a "bonk":
+- your partner staggers back 1.5 m, their view jolts, a few stars; both
+  hear it;
+- Naresh staggers and says something ("Oi!", "Really?");
+- the van rocks on its springs with a hollow thump;
+- loose things (cans, crates, boxes) are knocked over or away;
+- **not creatures** (no fighting in this game): butting at one only makes
+  a noise it hears;
+- half a second between butts. Learned here (Naresh's note teaches it),
+  usable everywhere after.
+
+**Naresh's notes here (rule 24):** one pinned to the lever post:
+*"Starter lever. Hold it till she catches the wind, don't let go. The
+footings are cracked and the legs walk when she spins up. Head-butt them
+back. Works every time. N."* One on the chest at the top: *"The napin.
+Stick it where you're going, the van knows the way."*
+
+**What goes from the old one:** the snagged rope, the brake, the cut, the
+miller's box and its valley map (`MapState.reveal_valley`), the trough,
+the platform, the old ladder. The tag (T) was first used here; it stays
+in the game (S1 uses it here again).
+
+### The repeat (you asked me to say it): power that opens the way
+
+The water works (#1) already makes the power that runs the lift bridge
+(#5). Here the windmill would also make power that opens the way: the
+same idea twice, close together. My suggestion: **keep it here** (it's
+the first and simplest) and **change #5 when we get to it**: the water
+works' turbine only lights the lamps along the road, and the lift bridge
+runs by hand (cranks and the counterweight; it's half that already).
+Question 1.
+
+### My extra ideas (suggestions: yes or no each)
+
+- **S1. The lever player is the eyes.** From the lever they see all four
+  legs; the butting player is under the neck and can't see the far side.
+  A leg starting to slide is easy to miss from below: the lever player
+  tags it (T / RT, still holding the lever) or shouts.
+- **S2. A butted leg can slip again.** It wobbles for a few seconds and,
+  while the fan is still speeding up, slips again one time in four. It
+  keeps the runner busy to the end.
+- **S3. The gate opens with a show.** At full speed the gate's lamp
+  blinks, a buzzer, the boom swings up, and the dead street lamps along
+  the next 200 m of road light one by one: the power you made, visible.
+- **S4. The fall is funny, not cruel.** After the white screen you wake
+  by the gate with dust on your view and a text from your partner ("you
+  ok? I think I'm flat"). Back to trying within 5 s.
+- **S5. Two more fun mechanics, for later** (only noted now): (a) **a
+  leg-up:** one crouches, the other stands on their back to reach
+  something high; (b) **push-starting the van:** with a flat battery,
+  both push, the driver lets the clutch in. Each learned at a place that
+  needs it.
+
+### Questions for you
+
+1. **The power repeat:** keep it here and change the lift bridge (#5)
+   later (my pick), or give the windmill a different job?
+2. **Napin:** one shared pin for both of you (my pick), or one each?
+3. **When it falls:** restart the challenge right there (my pick), or
+   load the last save?
+4. **Before the pick-up:** P1 has no map (my pick), or both can look?
+5. **Which of S1-S5?**

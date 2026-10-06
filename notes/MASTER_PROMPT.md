@@ -363,6 +363,14 @@ they/them.
     objective line (top left) stays a short plain goal; plain narration
     only for what you see, hear and feel. Done puzzle by puzzle as each is
     reworked, then one pass at the end for the rest (the opening, drives).
+25. **Both out of the van, no repeats, fun mechanics (the user,
+    2026-10-06).** Every stop makes the van stop and needs both players
+    on foot, each with a job. Never repeat a puzzle (how it plays or what
+    it's for); when the user's ask repeats an earlier puzzle or idea, say
+    so and suggest a way round. A challenge can replace a puzzle (rewards:
+    a view, the challenge, a new ability). At least three fun mechanics
+    like the head-butt. Mistakes have real consequences
+    (`design/PUZZLE_CHANGES.md` top).
 
 ---
 

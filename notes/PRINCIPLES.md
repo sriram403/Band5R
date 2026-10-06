@@ -115,6 +115,14 @@ v5).
   and every mistake has a quick, funny, visible consequence (often for the
   partner), so they keep talking.
 - *Example:* the water works (`design/PUZZLE_CHANGES.md`, #1).
+- **(the user, 2026-10-06, at the windmill)** Every stop gets **both
+  players out of the van**, each with a job. **Never repeat a puzzle**
+  (how it plays or what it's for), and **tell the user when their ask
+  repeats an earlier puzzle or idea**, with a way round it. A challenge
+  can stand in for a puzzle; rewards are a view, the challenge, a new
+  ability. **At least three fun mechanics** like the head-butt (usable on
+  partner, Naresh, the van). Mistakes have real consequences (the
+  windmill falls on you; start again).
 
 ## Sources
 
