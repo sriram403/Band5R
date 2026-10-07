@@ -10006,7 +10006,7 @@ func wm_guard_legs_kb(max_s: float) -> bool:
 ## Solo testing: P2 on the keyboard, out of the van and round to the legs.
 func wm_p2_kb_under() -> bool:
 	var q := p2()
-	await round_van(q, -1.0, false)
+	await round_van_back(q, false)
 	await via_stile(q, true, false)
 	return await walk_to(q, wm_at(-6.5, 0.2, -2.0), "by the legs", 0.8, 20.0)
 
@@ -10029,6 +10029,18 @@ func via_stile(p: PlayerRig, into: bool, pad: bool) -> bool:
 	var b := st - out * (2.2 if into else -2.2)
 	for t in [a, st, b]:
 		var ok: bool = await pad_walk_to(p, t, 0.45, 20.0) if pad else await walk_to(p, t, "the stile", 0.45, 20.0)
+		if not ok:
+			return false
+	return true
+
+
+## Round the back of the van to its left (driver's) side: at the junction
+## gate its nose is up against the gate and the meadow fence.
+func round_van_back(p: PlayerRig, pad: bool) -> bool:
+	var c := camper()
+	for corner in [Vector3(2.9, 0.0, 4.6), Vector3(-1.6, 0.0, 4.9)]:
+		var at: Vector3 = c.global_transform * corner
+		var ok: bool = await pad_walk_to(p, at, 0.7, 20.0) if pad else await walk_to(p, at, "round the van's back", 0.7, 20.0)
 		if not ok:
 			return false
 	return true

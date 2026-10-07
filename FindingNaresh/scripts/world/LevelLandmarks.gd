@@ -148,7 +148,7 @@ func _windmill(at: Vector3) -> void:
 			vside = -vside
 		verge.append(q + vside * 4.9)
 		li -= 3
-	var stile_at := 14.0                          # m south of the gate
+	var stile_at := 22.0                          # m south of the gate: just behind where the van stops (14 m had the van parked across it)
 	# the stile is the point stile_at metres along the fence (one measure for
 	# both: picking it by distance from the gate and splitting the fence by
 	# distance along it put a fence slab across the gap, 2026-10-07)

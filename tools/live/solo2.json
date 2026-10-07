@@ -45,6 +45,15 @@
    "max": 90,
    "do": [
     {
+     "do": "call",
+     "fn": "via_stile",
+     "args": [
+      "p1",
+      true,
+      false
+     ]
+    },
+    {
      "do": "walk",
      "who": 1,
      "to": "expr:wm_at(0.0, 0.2, -19.0)",
