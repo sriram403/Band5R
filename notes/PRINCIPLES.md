@@ -128,6 +128,13 @@ v5).
   from where a player stands: visible, easy to reach, its note readable,
   nothing floating or sunk into the ground, blockers that really block
   (walk and drive round them). Every action shows visibly that it worked.
+- **(the user, 2026-10-07) Lived in, never programmatic.** Everything
+  built should look placed by a person who used it (a mug left on the
+  bench, a crate pushed against the rail, posts not quite in line);
+  everything natural (trees, rocks, thickets) should sit the way nature
+  would have left it on that ground (clumps, half-sunk rocks, nothing in
+  rows or grids). If a space is cramped for what goes in it, make the
+  space bigger rather than squeezing the thing in.
 
 ## Sources
 

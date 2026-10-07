@@ -459,7 +459,15 @@ fragment by his mug; the gear steps skippable; S5-S7 all in.
 - **S8. Butting something solid** (a wall, a tree): a dull thunk and you
   stagger back a step. Silly, cheap, makes the butt feel physical.
 
-### Round 2: questions
+### Round 2: your answers (2026-10-07): **agreed**
+
+1. The chest: yes, **and make the walkway bigger** if it's cramped; the
+   whole place should look lived in (placed by a person), nature as nature
+   would leave it, nothing programmatic (a rule from now on).
+2. The spark along the wire: yes.
+3. S6, S7, S8: all yes.
+
+### Round 2: questions (answered above)
 
 1. **The chest:** at the walkway's open side as above, fine?
 2. **The wire's spark** travelling to the gate and lamps: yes?

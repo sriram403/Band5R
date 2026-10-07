@@ -40,6 +40,9 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   from where a player stands before showing it: visible, reachable, notes
   readable, nothing floating or sunk, blockers that really block (drive
   round them). Every action shows visibly that it worked.
+- **Lived in, never programmatic (the user, 2026-10-07).** Built things
+  look placed by a person; natural things sit as nature would leave them
+  (clumps, half-sunk rocks, no rows). A cramped space gets bigger.
 
 ## Two copies of the project
 

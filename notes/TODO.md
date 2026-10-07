@@ -39,8 +39,20 @@ being built and tested), so this always shows where the work is right now.
         legs showing each butt, the chest and its note, a power hut with a
         wire to the gate, a proper gate) + the rule "built for humans: no
         awkward placement" (PRINCIPLES 10, CLAUDE.md, AGENTS.md, memory)
-  - [~] **Round 2 proposed** (`design/PUZZLE_CHANGES.md` #2 "Round 2"),
-        S6-S8; waiting for your answers, nothing built
+  - [x] **Round 2 agreed** (all, S6-S8, + a bigger walkway; new rule:
+        lived in, never programmatic)
+  - [~] **Building round 2** in `../MPG_dev` branch `g5`:
+    - [ ] the walkway bigger, the chest and note easy to see and reach,
+          a few lived-in props
+    - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being
+          butted: stars round your view), S8 the thunk on walls / trees
+    - [ ] legs: red light while sliding, the jump back, sparks, marks,
+          the bolt plate, green light; S7 the screech from its side
+    - [ ] the switch hut, the cable, the poles and wire, the spark to the
+          gate and the lamps; S6 the power dial
+    - [ ] the gate: a fence on the ground, 60 m each side, thickets at
+          the ends; a test that tries to drive round it
+    - [ ] tests, screenshots from where a player stands, record, send
 - [x] **2026-10-06: puzzle #2, the windmill: your changes heard, my
   proposal written** (`design/PUZZLE_CHANGES.md` #2: a 24 m windmill with
   four legs and one neck, the J1 power gate, the lever held to spin it up,
