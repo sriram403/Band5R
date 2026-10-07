@@ -57,9 +57,10 @@ being built and tested), so this always shows where the work is right now.
         lever player; the lamp line beyond the last lamps wrecked by a storm
         (foreshadowing). gate_bypass (12 runs), windmill, fall, fun, solo,
         save, smoke, set:creatures: 0 failures. Walks puzzle2 + solo2
-        recorded again, sent. set:driving running (the drives through J1
-        now open the gate first)
-  - [ ] Your look at the video, then merge (g5) and push
+        recorded again, sent; merged into main (not pushed). set:driving
+        stopped (you: the long sets only before a push)
+  - [ ] Your look at the video / your play; then, on your OK to push:
+        set:driving + full, fix, push
     - [ ] the walkway bigger, the chest and note easy to see and reach,
           a few lived-in props
     - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being

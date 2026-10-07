@@ -263,6 +263,13 @@ happened, the fix, and the habit to keep.
   new aim, so E held on nothing. Passed with a 0.2 s wait after the look.
   **Habit:** after `look_at_point`, wait a few frames (and log the prompt)
   before pressing; the prompt in the log tells you what E will do.
+- **Assumed** (2026-10-08) a world-wide change (the undergrowth) needed
+  the 25-minute driving set before the user's look. **Reality:** the user:
+  "why the full run now? I haven't even confirmed the windmill changes";
+  our own method says quick checks for the change, the long runs only
+  before a push. **Habit:** before the user's OK: the change's own tests,
+  smoke and its area set; the long sets (driving, full) only after they
+  agree to push. Ask "who needs this run now?" before starting one.
 - **Assumed** (2026-10-08) a new blocker only touched its own puzzle's
   tests. **Reality:** the junction gate also stopped the old drive tests
   (journey, routes) that pass J1, and the meadow fence stopped every walk
