@@ -3348,7 +3348,9 @@ func t_windmill() -> void:
 	p.force_exit = true
 	await physics_frames(3)
 	var lever: Vector3 = b.poi["windmill_lever"]
-	var ok := await walk_to(p, lever, "the starter lever", 0.6, 30.0)
+	var ok := await via_stile(p, true, false)
+	check(ok, "P1 gets over the stile into the windmill's meadow")
+	ok = await walk_to(p, lever, "the starter lever", 0.6, 30.0)
 	check(ok, "P1 walks from the van to the starter lever")
 	await look_at_point(p, wm.global_transform * (WindmillPower.LEVER_AT + Vector3(0, 1.4, 0)))
 	await wait(0.2)
@@ -6049,6 +6051,7 @@ func t_climb() -> void:
 ## Drive from the homestead to the bridge barrier by each route, by keyboard.
 func t_journey() -> void:
 	var b: LevelBuilder = boot.builder
+	wm_open_gate()       # the junction gate (puzzle #2) is up, as after the windmill
 	# the roads, not the town cars (as t_routes): run first in a fresh world
 	# the keyboard driver got stuck behind one; mood 0.6 has them all gone
 	var mood := get_tree().get_first_node_in_group("mood") as Mood
@@ -6109,6 +6112,7 @@ func t_journey() -> void:
 ## it is not in the default list: `tools/run_test.sh routes`.
 func t_routes() -> void:
 	var b: LevelBuilder = boot.builder
+	wm_open_gate()       # the junction gate (puzzle #2) is up, as after the windmill
 	# the roads, not the traffic: the auto-driver doesn't dodge cars, and what
 	# ran before decides whether the town cars are out (mood 0.6: all gone)
 	var mood := get_tree().get_first_node_in_group("mood") as Mood
@@ -10003,5 +10007,28 @@ func wm_guard_legs_kb(max_s: float) -> bool:
 func wm_p2_kb_under() -> bool:
 	var q := p2()
 	await round_van(q, -1.0, false)
-	await walk_to(q, wm_at(-8.5, 0.2, -9.0), "towards the windmill", 0.8, 20.0)
+	await via_stile(q, true, false)
 	return await walk_to(q, wm_at(-6.5, 0.2, -2.0), "by the legs", 0.8, 20.0)
+
+
+## The junction gate up (the windmill turning), for tests that drive past J1.
+func wm_open_gate() -> void:
+	var w := wm()
+	if w != null and not w.caught:
+		w.from_dict({"caught": true})
+
+
+## Over the meadow fence's stile, into the windmill's meadow (`into`) or out
+## to the lane, walking (keyboard, or the pad for P2).
+func via_stile(p: PlayerRig, into: bool, pad: bool) -> bool:
+	var st: Vector3 = boot.builder.poi["windmill_stile"]
+	var out := st - wm().global_position
+	out.y = 0.0
+	out = out.normalized()
+	var a := st + out * (2.2 if into else -2.2)
+	var b := st - out * (2.2 if into else -2.2)
+	for t in [a, st, b]:
+		var ok: bool = await pad_walk_to(p, t, 0.45, 20.0) if pad else await walk_to(p, t, "the stile", 0.45, 20.0)
+		if not ok:
+			return false
+	return true

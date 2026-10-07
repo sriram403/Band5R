@@ -149,25 +149,33 @@ func _windmill(at: Vector3) -> void:
 		verge.append(q + vside * 4.9)
 		li -= 3
 	var stile_at := 14.0                          # m south of the gate
+	# the stile is the point stile_at metres along the fence (one measure for
+	# both: picking it by distance from the gate and splitting the fence by
+	# distance along it put a fence slab across the gap, 2026-10-07)
 	var before := [gate_xf * Vector3(-WindmillPower.GATE_HALF - 0.75, 0, 0.2)]
 	var after := []
+	var s0: Vector3 = verge[verge.size() - 1]
+	var along := Vector3.FORWARD
 	var dist := 0.0
+	var found := false
 	for k in range(1, verge.size()):
-		dist += Vector2(verge[k].x - verge[k - 1].x, verge[k].z - verge[k - 1].z).length()
-		if dist < stile_at - 0.6:
+		var seg: float = Vector2(verge[k].x - verge[k - 1].x, verge[k].z - verge[k - 1].z).length()
+		if not found and dist + seg >= stile_at:
+			found = true
+			var u := (stile_at - dist) / seg
+			s0 = (verge[k - 1] as Vector3).lerp(verge[k], u)
+			along = (verge[k] as Vector3) - (verge[k - 1] as Vector3)
+			along.y = 0.0
+			along = along.normalized()
+			before.append(s0 - along * 0.55)
+			after.append(s0 + along * 0.55)
+			if (1.0 - u) * seg > 1.2:
+				after.append(verge[k])
+		elif not found:
 			before.append(verge[k])
-		elif dist > stile_at + 0.6:
+		elif k > 0 and after.size() > 0 and (verge[k] as Vector3).distance_to(after[after.size() - 1]) > 0.5:
 			after.append(verge[k])
-	var s0: Vector3 = verge[0].lerp(verge[mini(4, verge.size() - 1)], 0.5)
-	for k in range(1, verge.size()):
-		if Vector2(verge[k].x - g.x, verge[k].z - g.z).length() >= stile_at:
-			s0 = verge[k]
-			break
-	var along: Vector3 = (after[0] if not after.is_empty() else s0) - (before[before.size() - 1] as Vector3)
-	along.y = 0.0
-	along = along.normalized()
-	before.append(s0 - along * 0.55)
-	after.push_front(s0 + along * 0.55)
+		dist += seg
 	Fence.build(world, before, 7401, "MeadowFenceNorth")
 	Fence.build(world, after, 7402, "MeadowFenceSouth")
 	_stile(s0, along)
