@@ -263,6 +263,16 @@ happened, the fix, and the habit to keep.
   new aim, so E held on nothing. Passed with a 0.2 s wait after the look.
   **Habit:** after `look_at_point`, wait a few frames (and log the prompt)
   before pressing; the prompt in the log tells you what E will do.
+- **Assumed** (2026-10-07) the solo walk could press TAB right after a
+  walk ended. **Reality:** the walk's W release and the TAB landed in the
+  same tick, so the player left behind kept "W held" and walked 80 m off
+  (the game did as designed). **Habit:** let go, wait a beat, then TAB
+  (the sheet tells the user the same).
+- **Assumed** (2026-10-07) the second solo failure was the butt again.
+  **Reality:** identical end state twice = deterministic: the walk sent P2
+  from the van only after the lever was going, and the first leg slid its
+  full 8 s first. The windmill fell, correctly. **Habit:** when the same
+  failure repeats exactly, look upstream at the plan's order first.
 - **Found** (2026-10-07): cans "set out in place" (shelves, drawers) are
   frozen until picked up, so the first head-butt did nothing to them; a
   butt now unfreezes a loose carryable first.

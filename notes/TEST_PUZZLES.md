@@ -14,6 +14,15 @@ This puts the puzzle back to how you first find it (also after you've done
 it), sets the story to its step and puts you both there. From Bessi on it
 gives you the binoculars and brings Naresh along.
 
+**Testing alone (one keyboard, no controller; 2026-10-07):** **TAB**
+moves the keyboard to the other player. The player you leave **keeps
+holding** whatever they held at that moment (E on a lever or a crank, W
+up a ladder): their screen says "HOLDING E", and yours says "P1 is holding
+E". TAB back and let go to release them. So: P1 holds the lever (hold E),
+press TAB, let go of E, play P2. Let go of W before you press TAB, or the
+player you leave keeps walking. F2 shows both views at once. Switch it off
+in F1 → Puzzles (the first row).
+
 **Controls**
 
 | | P1 | P2 (pad) |

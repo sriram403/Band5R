@@ -29,7 +29,14 @@ being built and tested), so this always shows where the work is right now.
         the map (the nearer one wins); after a fall you were put behind
         the lever's post (now the lane side); the ladder said "[?/?] Climb"
   - [x] smoke (23 scenarios) and set:puzzles (7): 0 failures
-  - [ ] **Your look at the video**, then merge into main and push on your OK
+  - [x] Your ask (2026-10-07): a way to test the co-op puzzles alone. You
+        chose option 1: **TAB keeps holding** (the player you leave keeps
+        holding E / W; both screens say so; F1 Puzzles toggle, on by
+        default). Test `solo` (0 failures), walk `solo2` recorded (92 s:
+        one keyboard gets the windmill turning), `appdata/videos/solo2.mp4`.
+        Sheet: "Testing alone" at the top of TEST_PUZZLES
+  - [ ] **Your own test of #2** (alone, with TAB), then merge into main
+        and push on your OK
 - [x] **2026-10-06: puzzle #2, the windmill: your changes heard, my
   proposal written** (`design/PUZZLE_CHANGES.md` #2: a 24 m windmill with
   four legs and one neck, the J1 power gate, the lever held to spin it up,
