@@ -25,7 +25,16 @@ const FAN_R := 6.0
 const BLADES := 18
 const ROTOR_Z := -3.4            ## the fan in front of the head (local -Z faces the lane)
 const LEVER_AT := Vector3(0, 0, -18.0)
-const LADDER_Z := 2.45           ## the rope ladder hangs off the walkway's back edge
+## The walkway round the head (round 2: bigger, so the chest and a person
+## have room): from WALK_FRONT (just behind the fan's sweep) to WALK_BACK,
+## WALK_HALF either side.
+const WALK_FRONT := -2.8
+const WALK_BACK := 3.8
+const WALK_HALF := 3.4
+const LADDER_Z := WALK_BACK + 0.1    ## the rope ladder hangs off the walkway's back edge
+const HUT_AT := Vector3(6.5, 0, -10.0)   ## the switch house (round 2), local
+const GATE_HALF := 4.4                ## half the boom's reach across the lane
+const CABLE_LEG := 2                  ## the leg the cable runs down (nearest the switch house)
 
 const SPIN_UP_S := 45.0          ## held, 0 -> full
 const RUN_DOWN := 2.0            ## let go: it slows this many times faster
@@ -81,12 +90,19 @@ var _napin_mesh: Node3D
 var _boom: Node3D
 var _boom_body: StaticBody3D
 var _gate_lamp: MeshInstance3D
-var _lamps: Array = []           ## [MeshInstance3D head, OmniLight3D]
 var _lamp_off: Material
 var _lamp_on: Material
-var _lamp_t := -1.0
 var _crushed: Array = []
 var _viewed := false             ## someone has looked out from the walkway
+var wire: WindmillWire
+var _bump := [0.0, 0.0, 0.0, 0.0]        ## a butted foot's jump back (overshoot, dies away)
+var _butts := [0, 0, 0, 0]               ## butts that counted on each sliding leg
+var _leg_light: Array = []               ## MeshInstance3D per leg (red sliding, green done)
+var _leg_marks: Array = []               ## per leg: the three white marks on its footing
+var _leg_plate: Array = []               ## per leg: the bolt-down plate (shows when it's back)
+var _red: Material
+var _green: Material
+var _off: Material
 var _wxf := Transform3D.IDENTITY   ## where it stands (set before it is in the tree)
 
 
@@ -94,17 +110,28 @@ var _wxf := Transform3D.IDENTITY   ## where it stands (set before it is in the t
 ## `xf` (world; its -Z faces the lane). The gate goes across the lane at
 ## `gate_xf` and the street lamps at `lamp_at`, both under `world` (world
 ## space).
-func setup(xf: Transform3D, world: Node3D, gate_xf: Transform3D, fence_len: Array, lamp_at: Array) -> void:
+func setup(xf: Transform3D, world: Node3D, gate_xf: Transform3D, fence_len: Array, lane: Array, ridge: Array, valley: Array) -> void:
 	add_to_group("windmill")
 	transform = xf
 	_wxf = xf
 	rng.randomize()
+	_red = ToonMat.make(Color(1.0, 0.2, 0.15), 0.008, 0.9, Color(1.0, 0.15, 0.1) * 2.5)
+	_green = ToonMat.make(Color(0.3, 1.0, 0.4), 0.008, 0.9, Color(0.2, 1.0, 0.3) * 2.0)
+	_off = ToonMat.make(Color(0.2, 0.2, 0.2), 0.008)
 	_build_tower()
 	_build_lever()
 	_build_ladder()
 	_build_chest()
 	_build_gate(world, gate_xf, fence_len)
-	_build_lamps(world, lamp_at)
+	# the switch house faces the lever; the wire runs from it to the gate
+	var hut_pos := _wxf * HUT_AT
+	hut_pos.y = Landscape.ground(hut_pos.x, hut_pos.z)
+	var to_lever := _wxf * LEVER_AT - hut_pos
+	to_lever.y = 0.0
+	var hut_xf := Transform3D(Basis.looking_at(to_lever.normalized(), Vector3.UP), hut_pos)
+	wire = WindmillWire.new()
+	wire.setup(world, hut_xf, _wxf * (_foot_local(CABLE_LEG) + Vector3(0, 0.1, 0)), gate.transform * Vector3(-GATE_HALF - 0.9, 5.4, 0.6),
+		lane, ridge, valley, func(): _open_gate(true))
 	_fan_noise = NoiseLoop.new()
 	_fan_noise.name = "FanWhoosh"
 	_fan_noise.kind = NoiseLoop.Kind.WIND
@@ -162,12 +189,8 @@ func _physics_process(delta: float) -> void:
 		_caught_t += delta
 		if not ladder_down and _caught_t >= LADDER_AFTER:
 			_unroll_ladder()
-	if _lamp_t >= 0.0:
-		_lamp_t += delta
-		for i in _lamps.size():
-			_light_lamp(i, _lamp_t >= 0.5 + i * 0.4)
-		if _lamp_t > 0.5 + _lamps.size() * 0.4:
-			_lamp_t = -1.0
+	for k in 4:
+		_bump[k] = move_toward(_bump[k], 0.0, delta * 0.9)
 	angle = wrapf(angle + power * FULL_SPIN * delta, -PI, PI)
 	_creak_t -= delta
 	if power > 0.05 and not caught and _creak_t <= 0.0:
@@ -185,6 +208,12 @@ func _reslip_pending() -> bool:
 
 func _show() -> void:
 	rotor.rotation = Vector3(0, 0, angle)
+	if wire != null:
+		wire.set_dial(power)
+	var flash := fmod(Time.get_ticks_msec() * 0.001, 0.5) < 0.25
+	for k in _leg_light.size():
+		var mi := _leg_light[k] as MeshInstance3D
+		mi.material_override = (_red if flash else _off) if leg_state[k] == 1 else (_green if leg_state[k] == 2 else _off)
 	_fan_noise.target = power
 	_hum.target = 0.6 if caught else power * 0.4
 	_hum.pitch = 0.8 + power * 0.6
@@ -208,6 +237,12 @@ func _show() -> void:
 		tower.transform = Transform3D(Basis(Vector3.UP.cross(_lean_dir).normalized(), _lean_ang + wob), Vector3.ZERO)
 
 
+func _foot_local(k: int) -> Vector3:
+	var sx := 1.0 if k % 2 == 0 else -1.0
+	var sz := 1.0 if k < 2 else -1.0
+	return Vector3(sx * FOOT, 0, sz * FOOT)
+
+
 func _leg_out(k: int) -> Vector3:
 	var sx := 1.0 if k % 2 == 0 else -1.0
 	var sz := 1.0 if k < 2 else -1.0
@@ -217,7 +252,7 @@ func _leg_out(k: int) -> Vector3:
 func _place_leg(k: int) -> void:
 	var sx := 1.0 if k % 2 == 0 else -1.0
 	var sz := 1.0 if k < 2 else -1.0
-	var foot: Vector3 = Vector3(sx * FOOT, 0, sz * FOOT) + _leg_out(k) * SLIDE_M * leg_slide[k]
+	var foot: Vector3 = Vector3(sx * FOOT, 0, sz * FOOT) + _leg_out(k) * SLIDE_M * (leg_slide[k] + _bump[k])
 	var top := Vector3(sx * LEG_TOP, COLLAR_Y, sz * LEG_TOP)
 	var d := top - foot
 	var b := Basis(Quaternion(Vector3.UP, d.normalized()))
@@ -239,9 +274,14 @@ func _hold_lever(_p, _dt: float) -> void:
 func _start_slip(k: int) -> void:
 	leg_state[k] = 1
 	_reslip_t[k] = -1.0
-	var at := (_legs[k] as Node3D).global_position
-	Sfx.play3d("hit_metal_heavy", at, 2.0)
-	Sfx.play3d("creak", at, 4.0)
+	_butts[k] = 0
+	_show_marks(k)
+	(_leg_plate[k] as Node3D).visible = false
+	# S7: the screech comes from that leg's foot, loud, so you can find it by ear
+	var at := global_transform * _foot_local(k) + Vector3.UP * 0.6
+	Sfx.play3d("hit_metal_heavy", at, 6.0)
+	Sfx.play3d("creak", at, 8.0)
+	Sfx.play3d("groan", at, 2.0)
 	PlayerRig._dust_puff(global_transform * (_leg_out(k) * FOOT * 1.41) + Vector3.UP * 0.3, 14.0)
 	for p in _players_near(80.0):
 		p.say("A screech of metal: one of the windmill's legs is sliding off its footing!", 3.5)
@@ -249,16 +289,34 @@ func _start_slip(k: int) -> void:
 
 ## A head-butt on leg k (PlayerRig.headbutt finds the leg's "on_headbutt").
 func butt_leg(k: int, p: PlayerRig) -> void:
+	var foot := global_transform * _foot_local(k)
 	if leg_state[k] != 1:
 		Sfx.play3d("hit_metal", p.global_position + Vector3.UP * 1.5, -4.0)
+		ButtFx.impact(p.head.global_position + (-p.head.global_transform.basis.z) * 0.5, true, "CLONK")
 		return
+	# the foot jumps back past where it'll sit and settles (you see it move)
 	leg_slide[k] = maxf(0.0, leg_slide[k] - 1.0 / BUTTS)
+	_bump[k] = -0.18
+	_butts[k] = mini(_butts[k] + 1, 3)
+	_show_marks(k)
 	Sfx.play3d("hit_metal_heavy", p.global_position + Vector3.UP * 1.5, 0.0)
+	ButtFx.impact(p.head.global_position + (-p.head.global_transform.basis.z) * 0.5, true, "CLANG!")
+	PlayerRig._dust_puff(foot + Vector3.UP * 0.3, 10.0)
 	if leg_slide[k] <= 0.001:
 		leg_slide[k] = 0.0
 		leg_state[k] = 2
-		Sfx.play3d("latch", (_legs[k] as Node3D).global_position, 2.0)
-		p.say("CLANG. The leg drops back onto its footing.", 2.5)
+		_butts[k] = 3
+		_show_marks(k)
+		# the bolt-down plate slams on: it's back for good
+		var plate := _leg_plate[k] as Node3D
+		plate.visible = true
+		var rest := plate.position
+		plate.position = rest + Vector3.UP * 0.7
+		var tw := plate.create_tween()
+		tw.tween_property(plate, "position", rest, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_callback(func(): Sfx.play3d("bang", plate.global_position, 2.0))
+		Sfx.play3d("latch", foot, 4.0)
+		p.say("CLANG. The leg drops back onto its footing and the bolt plate slams down.", 2.5)
 		if not caught and not _reslipped[k] and rng.randf() < reslip_chance:
 			_reslipped[k] = true
 			_reslip_t[k] = 3.0
@@ -384,13 +442,12 @@ func _catch() -> void:
 	power = 1.0
 	_caught_t = 0.0
 	Sfx.play3d("bong", global_position + Vector3.UP * HUB_Y, 4.0)
-	_open_gate(true)
-	_lamp_t = 0.0
+	wire.power_on()       # the spark runs to the gate (it opens) and on to the lamps
 	var st = get_tree().current_scene.get("story")
 	if st != null:
 		st.flags["windmill_power"] = true
 	for p in _players_near(150.0):
-		p.say("The fan catches the wind with a deep hum. Down at the junction, the gate's lamp blinks and the barrier swings up.", 6.0)
+		p.say("The fan catches the wind with a deep hum. The switch house lights up, and a spark runs along the wire towards the gate.", 6.0)
 	print("[windmill] caught the wind")
 
 
@@ -409,13 +466,10 @@ func _open_gate(open: bool, at_once := false) -> void:
 	tw.tween_property(_boom, "rotation:z", to, 3.0).set_trans(Tween.TRANS_SINE)
 
 
-func _light_lamp(i: int, on: bool) -> void:
-	var l: Array = _lamps[i]
-	var was: bool = (l[1] as OmniLight3D).visible
-	(l[0] as MeshInstance3D).material_override = _lamp_on if on else _lamp_off
-	(l[1] as OmniLight3D).visible = on
-	if on and not was:
-		Sfx.play3d("click", (l[0] as Node3D).global_position, -2.0)
+func _show_marks(k: int) -> void:
+	var marks: Array = _leg_marks[k]
+	for i in marks.size():
+		(marks[i] as Node3D).visible = i < _butts[k]
 
 
 func _unroll_ladder() -> void:
@@ -451,8 +505,9 @@ func _look_out() -> void:
 func _open_chest(p: PlayerRig) -> void:
 	if not chest_open:
 		chest_open = true
+		_napin_mesh.visible = not napin_taken         # in the open chest now
 		var tw := create_tween()
-		tw.tween_property(_lid, "rotation:x", deg_to_rad(105.0), 0.7).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(_lid, "rotation:x", deg_to_rad(80.0), 0.7).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		Sfx.play3d("latch", _lid.global_position, 0.0)
 		return
 	if napin_taken:
@@ -485,8 +540,11 @@ func from_dict(d: Dictionary) -> void:
 		leg_state = [2, 2, 2, 2]
 		_caught_t = LADDER_AFTER
 		_open_gate(true, true)
-		for i in _lamps.size():
-			_light_lamp(i, true)
+		wire.set_on_now()
+		for k in 4:
+			_butts[k] = 3
+			_show_marks(k)
+			(_leg_plate[k] as Node3D).visible = true
 		ladder_down = true
 		_roll.visible = false
 		_ladder_hang.visible = true
@@ -494,8 +552,8 @@ func from_dict(d: Dictionary) -> void:
 		_ladder.collision_layer = 4
 	chest_open = bool(d.get("chest_open", false))
 	napin_taken = bool(d.get("napin_taken", false))
-	_lid.rotation.x = deg_to_rad(105.0) if chest_open else 0.0
-	_napin_mesh.visible = not napin_taken
+	_lid.rotation.x = deg_to_rad(80.0) if chest_open else 0.0
+	_napin_mesh.visible = chest_open and not napin_taken
 	_show()
 
 
@@ -522,11 +580,16 @@ func reset() -> void:
 	chest_open = false
 	napin_taken = false
 	_lid.rotation.x = 0.0
-	_napin_mesh.visible = true
+	_napin_mesh.visible = false     # inside, until the lid's up
 	_open_gate(false, true)
-	_lamp_t = -1.0
-	for i in _lamps.size():
-		_light_lamp(i, false)
+	if wire != null:
+		wire.reset()
+	for k in 4:
+		_butts[k] = 0
+		_bump[k] = 0.0
+		if k < _leg_marks.size():
+			_show_marks(k)
+			(_leg_plate[k] as Node3D).visible = false
 	tower.transform = Transform3D.IDENTITY
 	_show()
 
@@ -581,6 +644,33 @@ func _build_tower() -> void:
 		add_child(f)
 		# a crack across each footing
 		add_child(Build.box(Vector3(1.0, 0.02, 0.06), ToonMat.flat(Color(0.2, 0.2, 0.2)), Vector3(sx * FOOT, 0.13, sz * FOOT), Vector3(0, -30 * sx * sz, 0), "Crack"))
+		# round 2: a warning light on the footing's outer corner (red while the
+		# leg slides, green once it's back), three white marks for the butts
+		# that counted, and the bolt-down plate that slams on when it's back
+		var out := Vector3(sx, 0, sz).normalized()
+		var corner := Vector3(sx * FOOT, 0, sz * FOOT) + out * 0.85
+		add_child(Build.cyl(0.04, 0.5, ToonMat.make(Color(0.3, 0.3, 0.3), 0.008), corner + Vector3(0, 0.25, 0), Vector3.ZERO, 6, "LightPost"))
+		var lamp := Build.sphere(0.11, _off, corner + Vector3(0, 0.55, 0), Vector3.ONE, "LegLight")
+		add_child(lamp)
+		_leg_light.append(lamp)
+		var marks: Array = []
+		var side := Vector3(-sz, 0, sx).normalized()
+		for m in 3:
+			var mk := Build.box(Vector3(0.05, 0.02, 0.22), ToonMat.flat(Color(0.95, 0.95, 0.9)), Vector3(sx * FOOT, 0.14, sz * FOOT) + out * 0.5 + side * (m - 1) * 0.12, Vector3(0, rad_to_deg(atan2(out.x, out.z)), 0), "Mark")
+			mk.visible = false
+			add_child(mk)
+			marks.append(mk)
+		_leg_marks.append(marks)
+		var plate := Node3D.new()
+		plate.name = "BoltPlate"
+		plate.position = Vector3(sx * FOOT, 0.16, sz * FOOT)
+		plate.visible = false
+		add_child(plate)
+		plate.add_child(Build.box(Vector3(0.95, 0.06, 0.95), ToonMat.make(Color(0.25, 0.27, 0.3), 0.01), Vector3.ZERO, Vector3(0, 45, 0), "Plate"))
+		for b in 4:
+			var ba := TAU * b / 4.0 + PI * 0.25
+			plate.add_child(Build.cyl(0.05, 0.08, ToonMat.make(Color(0.7, 0.68, 0.6), 0.008), Vector3(cos(ba) * 0.36, 0.05, sin(ba) * 0.36), Vector3.ZERO, 6, "Bolt"))
+		_leg_plate.append(plate)
 	# legs: one body each, so a butt knows which leg it hit
 	var leg_len := Vector3(FOOT - LEG_TOP, COLLAR_Y, FOOT - LEG_TOP).length() + 0.3
 	for k in 4:
@@ -597,6 +687,9 @@ func _build_tower() -> void:
 		body.add_child(Build.cyl(0.32, 0.5, rust, Vector3(0, -leg_len * 0.5 + 0.3, 0), Vector3.ZERO, 8, "Shoe"))
 		var kk := k
 		body.set_meta("on_headbutt", func(p): butt_leg(kk, p))
+		if k == CABLE_LEG:
+			# the cable from the gearbox down this leg to the switch house
+			body.add_child(Build.cyl(0.05, leg_len - 0.4, ToonMat.make(Color(0.1, 0.1, 0.1), 0.006), Vector3(0.24, 0, 0), Vector3.ZERO, 5, "Cable"))
 		body.set_meta("tag_name", "that leg")
 		tower.add_child(body)
 		_legs.append(body)
@@ -613,14 +706,27 @@ func _build_tower() -> void:
 	for y in [11.0, 15.0, 19.0]:
 		tower.add_child(Build.cyl(NECK_R + 0.06, 0.2, steel, Vector3(0, y, 0), Vector3.ZERO, 20, "Band"))
 	var deck := ToonMat.make(Color(0.40, 0.36, 0.30), 0.012)
-	tower.add_child(Build.box(Vector3(4.8, 0.2, 4.8), deck, Vector3(0, WALK_Y - 0.1, 0), Vector3.ZERO, "Walkway"))
-	_box_shape(tb, Vector3(4.8, 0.2, 4.8), Vector3(0, WALK_Y - 0.1, 0))
+	var wl := WALK_BACK - WALK_FRONT
+	var wz := (WALK_BACK + WALK_FRONT) * 0.5
+	tower.add_child(Build.box(Vector3(WALK_HALF * 2.0, 0.2, wl), deck, Vector3(0, WALK_Y - 0.1, wz), Vector3.ZERO, "Walkway"))
+	_box_shape(tb, Vector3(WALK_HALF * 2.0, 0.2, wl), Vector3(0, WALK_Y - 0.1, wz))
+	# struts from the neck out to the walkway's corners, so it isn't a mushroom
+	for cx in [-1.0, 1.0]:
+		for cz in [WALK_FRONT + 0.3, WALK_BACK - 0.3]:
+			var top := Vector3(cx * (WALK_HALF - 0.3), WALK_Y - 0.2, cz)
+			var bot := Vector3(cx * NECK_R * 0.7, WALK_Y - 3.6, cz * 0.25)
+			var sd := top - bot
+			var st := Build.cyl(0.07, sd.length(), steel, Vector3.ZERO, Vector3.ZERO, 6, "Strut")
+			st.transform = Transform3D(Basis(Quaternion(Vector3.UP, sd.normalized())), (top + bot) * 0.5)
+			tower.add_child(st)
 	var rail := ToonMat.make(Color(0.75, 0.22, 0.16), 0.01)
-	var e := 2.35
+	var gap_w := 1.2
+	var back_w := WALK_HALF - gap_w * 0.5
 	# the back rail has a gap in the middle where the ladder hangs
-	for spec in [[Vector3(4.8, 1.0, 0.06), Vector3(0, 0.55, -e)], [Vector3(0.06, 1.0, 4.8), Vector3(-e, 0.55, 0)],
-			[Vector3(0.06, 1.0, 4.8), Vector3(e, 0.55, 0)], [Vector3(1.9, 1.0, 0.06), Vector3(-1.45, 0.55, e)],
-			[Vector3(1.9, 1.0, 0.06), Vector3(1.45, 0.55, e)]]:
+	for spec in [[Vector3(WALK_HALF * 2.0, 1.0, 0.06), Vector3(0, 0.55, WALK_FRONT)],
+			[Vector3(0.06, 1.0, wl), Vector3(-WALK_HALF, 0.55, wz)], [Vector3(0.06, 1.0, wl), Vector3(WALK_HALF, 0.55, wz)],
+			[Vector3(back_w, 1.0, 0.06), Vector3(-(gap_w * 0.5 + back_w * 0.5), 0.55, WALK_BACK)],
+			[Vector3(back_w, 1.0, 0.06), Vector3(gap_w * 0.5 + back_w * 0.5, 0.55, WALK_BACK)]]:
 		var sz: Vector3 = spec[0]
 		var at: Vector3 = spec[1] + Vector3(0, WALK_Y, 0)
 		tower.add_child(Build.box(Vector3(sz.x, 0.07, sz.z), rail, at + Vector3(0, 0.45, 0), Vector3.ZERO, "Rail"))
@@ -631,8 +737,8 @@ func _build_tower() -> void:
 	tower.add_child(Build.box(Vector3(1.8, 1.7, 3.2), red, Vector3(0, WALK_Y + 1.2, -0.6), Vector3.ZERO, "Head"))
 	_box_shape(tb, Vector3(1.8, 1.7, 3.2), Vector3(0, WALK_Y + 1.2, -0.6))
 	tower.add_child(Build.cyl(0.35, 2.4, steel, Vector3(0, HUB_Y, -2.4), Vector3(90, 0, 0), 10, "Shaft"))
-	tower.add_child(Build.box(Vector3(0.12, 0.12, 4.2), steel, Vector3(0, WALK_Y + 2.6, 2.4), Vector3.ZERO, "TailBoom"))
-	tower.add_child(Build.box(Vector3(0.08, 2.4, 3.0), red, Vector3(0, WALK_Y + 3.0, 4.2), Vector3.ZERO, "TailVane"))
+	tower.add_child(Build.box(Vector3(0.12, 0.12, 5.6), steel, Vector3(0, WALK_Y + 2.7, 3.4), Vector3.ZERO, "TailBoom"))
+	tower.add_child(Build.box(Vector3(0.08, 2.4, 3.0), red, Vector3(0, WALK_Y + 3.0, 6.0), Vector3.ZERO, "TailVane"))
 	tower.add_child(Build.label3d("POWER CO-OP\nNo. 3", Vector3(0.92, WALK_Y + 1.2, -0.6), Vector3(0, 90, 0), 0.22, Color(0.95, 0.92, 0.8)))
 	# the fan
 	rotor = Node3D.new()
@@ -709,9 +815,9 @@ func _local_ground(at: Vector3) -> float:
 
 
 func _build_ladder() -> void:
-	# rolled up on the walkway's back edge
+	# rolled up and lashed at the gap in the walkway's back rail
 	var ropey := ToonMat.make(Color(0.52, 0.42, 0.28), 0.012)
-	_roll = Build.cyl(0.32, 1.0, ropey, Vector3(0, WALK_Y + 0.35, LADDER_Z - 0.15), Vector3(0, 0, 90), 12, "LadderRoll")
+	_roll = Build.cyl(0.32, 1.0, ropey, Vector3(0, WALK_Y + 0.35, LADDER_Z - 0.4), Vector3(0, 0, 90), 12, "LadderRoll")
 	tower.add_child(_roll)
 	# hanging: the top fixed at the walkway, scaled down from there
 	_ladder_hang = Node3D.new()
@@ -719,68 +825,119 @@ func _build_ladder() -> void:
 	_ladder_hang.position = Vector3(0, WALK_Y, LADDER_Z)
 	tower.add_child(_ladder_hang)
 	var h := WALK_Y + 0.02
-	_ladder = Ladder.make(_ladder_hang, Vector3(0, -h, 0), h, Vector3(0, 0, -1), Vector3(0, -0.0, -1.3), "WindmillLadder")
+	_ladder = Ladder.make(_ladder_hang, Vector3(0, -h, 0), h, Vector3(0, 0, -1), Vector3(0, 0.0, -1.3), "WindmillLadder")
 	_ladder.collision_layer = 0
 	_ladder_hang.scale.y = 0.02
 	_ladder_hang.visible = false
 
 
+## Round 2 (the user: "the loot box placed in an awkward position"): right in
+## front of you as you step off the ladder, against the back of the gearbox
+## housing, in the light, bright red with a yellow lid; Naresh's note on the
+## housing wall just above it at eye height. And the things a person who
+## worked up here left lying about.
 func _build_chest() -> void:
 	var box := Node3D.new()
 	box.name = "Chest"
-	box.position = Vector3(1.45, WALK_Y, 1.1)
-	box.rotation_degrees = Vector3(0, -90, 0)
+	box.position = Vector3(0, WALK_Y, 1.0 + 0.36)
+	box.rotation_degrees = Vector3(0, 180, 0)          # its front faces the ladder
 	tower.add_child(box)
-	var wood := ToonMat.make(Color(0.48, 0.34, 0.22), 0.012)
-	box.add_child(Build.box(Vector3(0.9, 0.5, 0.6), wood, Vector3(0, 0.25, 0), Vector3.ZERO, "ChestBox"))
+	var redm := ToonMat.make(Color(0.78, 0.18, 0.14), 0.012)
+	var yellow := ToonMat.make(Color(0.95, 0.78, 0.2), 0.012)
+	box.add_child(Build.box(Vector3(0.9, 0.5, 0.6), redm, Vector3(0, 0.25, 0), Vector3.ZERO, "ChestBox"))
+	for bx in [-0.32, 0.32]:
+		box.add_child(Build.box(Vector3(0.06, 0.52, 0.62), yellow, Vector3(bx, 0.25, 0), Vector3.ZERO, "Band"))
+	box.add_child(Build.box(Vector3(0.14, 0.12, 0.04), ToonMat.make(Color(0.3, 0.3, 0.3), 0.006), Vector3(0, 0.38, -0.31), Vector3.ZERO, "Latch"))
+	var body := StaticBody3D.new()
+	_box_shape(body, Vector3(0.9, 0.5, 0.6), Vector3(0, 0.25, 0))
+	box.add_child(body)
 	_lid = Node3D.new()
 	_lid.name = "LidHinge"
 	_lid.position = Vector3(0, 0.52, 0.3)
 	box.add_child(_lid)
-	_lid.add_child(Build.box(Vector3(0.92, 0.07, 0.62), wood, Vector3(0, 0.035, -0.31), Vector3.ZERO, "Lid"))
+	_lid.add_child(Build.box(Vector3(0.92, 0.07, 0.62), yellow, Vector3(0, 0.035, -0.31), Vector3.ZERO, "Lid"))
 	_napin_mesh = Node3D.new()
 	_napin_mesh.name = "Napin"
-	_napin_mesh.position = Vector3(0, 0.52, 0)
+	_napin_mesh.position = Vector3(0, 0.5, 0)
 	box.add_child(_napin_mesh)
 	var brass := ToonMat.make(Color(0.85, 0.66, 0.22), 0.008)
-	_napin_mesh.add_child(Build.cyl(0.015, 0.16, brass, Vector3(0, 0.08, 0), Vector3.ZERO, 6, "Needle"))
-	_napin_mesh.add_child(Build.sphere(0.05, ToonMat.make(Color(0.85, 0.15, 0.12)), Vector3(0, 0.17, 0), Vector3.ONE, "Head"))
-	var a := Build.interact_area(Vector3(1.1, 0.9, 0.9), Vector3(0, 0.45, 0), "", func(p): _open_chest(p), "ChestArea")
+	_napin_mesh.add_child(Build.box(Vector3(0.3, 0.02, 0.22), ToonMat.make(Color(0.2, 0.3, 0.5), 0.006), Vector3.ZERO, Vector3(0, 12, 0), "Cloth"))
+	_napin_mesh.add_child(Build.cyl(0.02, 0.2, brass, Vector3(0, 0.1, 0), Vector3(0, 0, 25), 6, "Needle"))
+	_napin_mesh.add_child(Build.sphere(0.06, ToonMat.make(Color(0.85, 0.15, 0.12)), Vector3(-0.05, 0.2, 0), Vector3.ONE, "Head"))
+	var a := Build.interact_area(Vector3(1.2, 1.0, 1.0), Vector3(0, 0.45, -0.1), "", func(p): _open_chest(p), "ChestArea")
 	a.set_meta("tag_name", "the chest")
 	a.set_meta("prompt_fn", func(_p) -> String:
 		if not chest_open:
 			return "Open the chest"
 		return "" if napin_taken else "Take the napin")
 	box.add_child(a)
-	NareshNote.make(tower, "wm_chest", Vector3(0.92, WALK_Y + 0.9, 0.6), 90.0,
+	# his note on the housing wall above the chest, at eye height, facing the ladder
+	NareshNote.make(tower, "wm_chest", Vector3(0.0, WALK_Y + 1.45, 1.02), 0.0,
 		"The napin. Stick it in the map wherever you're going -\nthe van knows the way after that.\n- N")
+	# left lying about: a toolbox with a flask on it, a coil of rope, a
+	# folded tarp, an oil can
+	var tool := ToonMat.make(Color(0.20, 0.36, 0.55), 0.012)
+	var tb := Node3D.new()
+	tb.position = Vector3(2.35, WALK_Y, 2.7)
+	tb.rotation_degrees = Vector3(0, 23, 0)
+	tower.add_child(tb)
+	tb.add_child(Build.box(Vector3(0.55, 0.26, 0.24), tool, Vector3(0, 0.13, 0), Vector3.ZERO, "Toolbox"))
+	tb.add_child(Build.box(Vector3(0.3, 0.04, 0.04), ToonMat.make(Color(0.15, 0.15, 0.15), 0.006), Vector3(0, 0.3, 0), Vector3.ZERO, "Handle"))
+	tb.add_child(Build.cyl(0.05, 0.22, ToonMat.make(Color(0.6, 0.62, 0.6), 0.006), Vector3(0.36, 0.11, 0.05), Vector3.ZERO, 8, "Flask"))
+	var rope := ToonMat.make(Color(0.6, 0.5, 0.32), 0.012)
+	for r in 3:
+		tower.add_child(Build.cyl(0.32 - r * 0.02, 0.06, rope, Vector3(-2.75, WALK_Y + 0.03 + r * 0.055, 3.05), Vector3(2, 0, 3), 14, "RopeCoil"))
+	tower.add_child(Build.box(Vector3(0.7, 0.12, 0.5), ToonMat.make(Color(0.35, 0.42, 0.3), 0.012), Vector3(-2.6, WALK_Y + 0.06, -1.9), Vector3(0, -14, 0), "Tarp"))
+	tower.add_child(Build.cyl(0.09, 0.22, ToonMat.make(Color(0.7, 0.25, 0.15), 0.008), Vector3(2.85, WALK_Y + 0.11, -2.2), Vector3(0, 0, 0), 8, "OilCan"))
 
 
+## Round 2 (the user: "make it proper gate"): a boom on a motor housing on
+## its own concrete pad, resting in a fork on the far side; the wire comes
+## down a pole into the housing. Fences either side follow the ground post by
+## post (Fence.gd) far out, west up the hill and east into the trees, and end
+## in thickets (Thicket.gd) a van can't get through.
 func _build_gate(world: Node3D, xf: Transform3D, fence_len: Array) -> void:
 	gate = Node3D.new()
 	gate.name = "JunctionGate"
 	gate.transform = xf
 	world.add_child(gate)          # x across the lane, -z up the lane
 	var steel := ToonMat.make(Color(0.32, 0.33, 0.35), 0.01)
+	var concrete := ToonMat.make(Color(0.62, 0.61, 0.58), 0.01)
+	var yellow := ToonMat.make(Color(0.92, 0.72, 0.15), 0.01)
 	var white := ToonMat.make(Color(0.95, 0.95, 0.92), 0.01)
 	var redm := ToonMat.make(Color(0.80, 0.14, 0.12), 0.01)
-	var half := 4.4
-	gate.add_child(Build.solid_box(Vector3(0.5, 1.2, 0.5), steel, Vector3(-half, 0.6, 0), Vector3.ZERO, "PivotPost"))
-	gate.add_child(Build.solid_box(Vector3(0.3, 0.9, 0.3), steel, Vector3(half, 0.45, 0), Vector3.ZERO, "RestPost"))
-	gate.add_child(Build.box(Vector3(0.5, 0.9, 0.12), steel, Vector3(-half, 1.65, 0.0), Vector3.ZERO, "SignPost"))
-	gate.add_child(Build.label3d("JUNCTION CLOSED\nNO POWER", Vector3(-half, 2.4, 0.3), Vector3.ZERO, 0.26, Color(0.95, 0.2, 0.15)))
-	gate.add_child(Build.label3d("JUNCTION CLOSED\nNO POWER", Vector3(-half, 2.4, -0.3), Vector3(0, 180, 0), 0.26, Color(0.95, 0.2, 0.15)))
+	var half := GATE_HALF
+	# each part sits on the ground where it stands (the lane's edges can be
+	# higher or lower than its middle)
+	var gl := func(x: float, z: float) -> float:
+		var w := xf * Vector3(x, 0, z)
+		return Landscape.ground(w.x, w.z) - xf.origin.y
+	var hy: float = gl.call(-half, 0.0)
+	gate.add_child(Build.solid_box(Vector3(1.3, 0.3, 1.1), concrete, Vector3(-half, hy - 0.05, 0), Vector3.ZERO, "Pad"))
+	gate.add_child(Build.solid_box(Vector3(0.7, 1.1, 0.6), yellow, Vector3(-half, hy + 0.65, 0), Vector3.ZERO, "Housing"))
+	gate.add_child(Build.box(Vector3(0.72, 0.06, 0.62), steel, Vector3(-half, hy + 1.22, 0), Vector3.ZERO, "Lid"))
+	var ry: float = gl.call(half, 0.0)
+	gate.add_child(Build.solid_box(Vector3(0.18, 1.0, 0.18), steel, Vector3(half, ry + 0.4, 0), Vector3.ZERO, "RestPost"))
+	gate.add_child(Build.box(Vector3(0.06, 0.25, 0.3), steel, Vector3(half, ry + 0.98, 0), Vector3.ZERO, "Fork"))
+	# the sign on its own post by the housing, facing the traffic
+	var sy: float = gl.call(-half - 1.1, 0.8)
+	gate.add_child(Build.box(Vector3(0.09, 2.3, 0.09), steel, Vector3(-half - 1.1, sy + 1.1, 0.8), Vector3(0, 0, 1.5), "SignPost"))
+	gate.add_child(Build.box(Vector3(1.4, 0.75, 0.05), white, Vector3(-half - 1.1, sy + 2.0, 0.85), Vector3.ZERO, "SignBoard"))
+	gate.add_child(Build.label3d("JUNCTION CLOSED\nNO POWER", Vector3(-half - 1.1, sy + 2.0, 0.89), Vector3.ZERO, 0.19, Color(0.85, 0.1, 0.08)))
 	_lamp_off = ToonMat.make(Color(0.25, 0.22, 0.18), 0.01)
 	_lamp_on = ToonMat.make(Color(1.0, 0.86, 0.45), 0.01, 0.9, Color(1.0, 0.75, 0.3) * 2.5)
-	_gate_lamp = Build.sphere(0.16, _lamp_off, Vector3(-half, 1.35, 0), Vector3.ONE, "GateLamp")
+	_gate_lamp = Build.sphere(0.15, _lamp_off, Vector3(-half, hy + 1.4, 0), Vector3.ONE, "GateLamp")
 	gate.add_child(_gate_lamp)
+	# the wire's last pole beside the housing, a cable down into it
+	gate.add_child(Build.cyl(0.11, 5.9, ToonMat.make(Color(0.40, 0.31, 0.22), 0.012), Vector3(-half - 0.9, hy + 2.7, 0.6), Vector3.ZERO, 7, "GatePole"))
+	gate.add_child(Build.cyl(0.03, 4.3, ToonMat.make(Color(0.1, 0.1, 0.1), 0.006), Vector3(-half - 0.62, hy + 3.3, 0.45), Vector3(0, 0, -8), 5, "DropCable"))
 	_boom = Node3D.new()
 	_boom.name = "Boom"
-	_boom.position = Vector3(-half, 1.0, 0)
+	_boom.position = Vector3(-half + 0.1, hy + 1.0, 0)
 	gate.add_child(_boom)
 	var n := 8
 	for i in n:
-		var seg := Build.box(Vector3(2.0 * half / n, 0.16, 0.12), white if i % 2 == 0 else redm,
+		var seg := Build.box(Vector3(2.0 * half / n, 0.14, 0.1), white if i % 2 == 0 else redm,
 			Vector3((i + 0.5) * 2.0 * half / n, 0, 0), Vector3.ZERO, "BoomSeg")
 		_boom.add_child(seg)
 	_boom_body = StaticBody3D.new()
@@ -788,54 +945,22 @@ func _build_gate(world: Node3D, xf: Transform3D, fence_len: Array) -> void:
 	# a tall box: the van can't jump it, and you can't walk under it either
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
-	bs.size = Vector3(2.0 * half, 1.0, 0.3)
+	bs.size = Vector3(2.0 * half, 1.2, 0.3)
 	cs.shape = bs
-	cs.position = Vector3(0, 0.6, 0)
+	cs.position = Vector3(0, (hy + ry) * 0.5 + 0.6, 0)
 	_boom_body.add_child(cs)
 	gate.add_child(_boom_body)
-	# fences either side, rails a van can't cross; walkers step through
-	# the gap between the post and the fence
-	var wood := ToonMat.make(Color(0.45, 0.34, 0.24), 0.012)
-	var rock := ToonMat.make(Color(0.50, 0.48, 0.45), 0.01)
-	for side in [-1.0, 1.0]:
-		var from := half + 1.3
-		var to: float = from + float(fence_len[0 if side < 0 else 1])
-		var x := from
-		while x <= to:
-			gate.add_child(Build.box(Vector3(0.18, 1.3, 0.18), wood, Vector3(side * x, 0.65, 0), Vector3.ZERO, "FencePost"))
-			x += 3.0
-		var mid := (from + to) * 0.5
-		var len := to - from
-		gate.add_child(Build.box(Vector3(len, 0.12, 0.08), wood, Vector3(side * mid, 1.05, 0), Vector3.ZERO, "FenceRail"))
-		gate.add_child(Build.box(Vector3(len, 0.12, 0.08), wood, Vector3(side * mid, 0.6, 0), Vector3.ZERO, "FenceRail"))
-		var fb := StaticBody3D.new()
-		fb.name = "FenceBody"
-		_box_shape(fb, Vector3(len, 1.6, 0.4), Vector3(side * mid, 0.6, 0))
-		gate.add_child(fb)
-		var k := from + 4.0
-		while k < to:
-			gate.add_child(Build.solid_box(Vector3(1.3, 0.9, 1.1), rock, Vector3(side * k, 0.3, 1.2), Vector3(8, k * 37.0, 5), "Boulder"))
-			k += 7.0
-
-
-func _build_lamps(world: Node3D, at: Array) -> void:
-	var post := ToonMat.make(Color(0.30, 0.31, 0.33), 0.01)
-	var holder := Node3D.new()
-	holder.name = "StreetLamps"
-	world.add_child(holder)
-	for p in at:
-		var w: Vector3 = p
-		var n := Node3D.new()
-		n.position = w
-		holder.add_child(n)
-		n.add_child(Build.cyl(0.08, 5.0, post, Vector3(0, 2.5, 0), Vector3.ZERO, 6, "LampPost"))
-		var head := Build.sphere(0.22, _lamp_off, Vector3(0, 5.1, 0), Vector3(1, 0.7, 1), "LampHead")
-		n.add_child(head)
-		var l := OmniLight3D.new()
-		l.position = Vector3(0, 4.8, 0)
-		l.light_color = Color(1.0, 0.85, 0.55)
-		l.light_energy = 1.4
-		l.omni_range = 9.0
-		l.visible = false
-		n.add_child(l)
-		_lamps.append([head, l])
+	# the fences: from just past the housing and the rest post, wandering a
+	# little as a fence put up by hand does, out to a thicket at each end
+	var west: float = fence_len[0]
+	var east: float = fence_len[1]
+	var wpts := [Vector3(-half - 0.75, 0, 0.2), Vector3(-west * 0.27, 0, 1.3), Vector3(-west * 0.55, 0, -0.7),
+		Vector3(-west * 0.8, 0, 0.9), Vector3(-west, 0, 0.1)]
+	var epts := [Vector3(half + 0.35, 0, 0.1), Vector3(east * 0.35, 0, -0.9), Vector3(east * 0.7, 0, 0.8), Vector3(east, 0, -0.2)]
+	for pts in [wpts, epts]:
+		var w: Array = []
+		for q in pts:
+			w.append(xf * (q as Vector3))
+		Fence.build(world, w, 7100 + w.size(), "GateFence")
+	Thicket.grow(world, xf * Vector3(-west - 7.0, 0, 1.5), 9.0, 7301, "GateThicketWest")
+	Thicket.grow(world, xf * Vector3(east + 6.0, 0, -0.5), 8.0, 7302, "GateThicketEast")

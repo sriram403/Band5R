@@ -91,20 +91,22 @@ func _windmill(at: Vector3) -> void:
 	var xf := Transform3D(Basis.looking_at(to_lane.normalized(), Vector3.UP), pos)
 	# street lamps beyond the gate: up the lane to J1, then a little way
 	# along both roads (S3: the power you made, lit one by one)
-	var lamps := []
+	var lane_lamps := []
 	var right := gate_xf.basis.x
 	for i in range(gi + 1, lane.points.size()):
 		var q: Vector3 = lane.points[i]
-		if lamps.is_empty() and q.distance_to(g) < 12.0:
+		if lane_lamps.is_empty() and q.distance_to(g) < 12.0:
 			continue
-		if lamps.is_empty() or q.distance_to(lamps[lamps.size() - 1] - right * 5.5) > 24.0:
-			var lp := q + right * 5.5
+		if lane_lamps.is_empty() or q.distance_to(lane_lamps[lane_lamps.size() - 1] - right * 5.5) > 24.0:
+			var lp := q - right * 5.5          # the windmill's side of the lane, where the wire comes from
 			lp.y = _h(lp.x, lp.z)
-			lamps.append(lp)
+			lane_lamps.append(lp)
+	var road_lamps := {}
 	for road_name in ["ridge_track", "valley_road"]:
 		var r: Route = network.road(road_name)
 		var last := Vector3(J1.x, 0, J1.y)
 		var n := 0
+		var list := []
 		for q in r.points:
 			if n >= 4:
 				break
@@ -114,12 +116,14 @@ func _windmill(at: Vector3) -> void:
 				var side := Vector3(-d.z, 0, d.x).normalized() * 5.5
 				var lp := qq + side
 				lp.y = _h(lp.x, lp.z)
-				lamps.append(lp)
+				list.append(lp)
 				last = qq
 				n += 1
+		road_lamps[road_name] = list
 	var puzzle := WindmillPower.new()
 	puzzle.name = "Windmill"
-	puzzle.setup(xf, world, gate_xf, [40.0, 40.0], lamps)
+	# fences: 150 m west up the open hill, 80 m east into the trees
+	puzzle.setup(xf, world, gate_xf, [150.0, 80.0], lane_lamps, road_lamps["ridge_track"], road_lamps["valley_road"])
 	world.add_child(puzzle)
 	poi["windmill"] = pos
 	poi["windmill_gate"] = g

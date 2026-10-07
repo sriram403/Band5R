@@ -123,6 +123,12 @@ const SNATCH_REACH := 2.3
 const PUSH_HOLD := 0.5                 ## pad: hold RB this long (a tap opens the journal)
 var _butt_cd := 0.0
 var _butt_t := 0.0                     ## > 0 while the head lunges forward
+## Round 2 (the user: show the "ramping" and the impact): a wind-up before
+## the strike (the head rears back), a shake when it lands, stars after.
+const BUTT_WINDUP := 0.14
+var _butt_wind := 0.0                  ## > 0 while rearing back
+var _shake_t := 0.0                    ## > 0: the view shakes (a butt landed)
+var dazed_t := 0.0                     ## > 0: stars circling your view
 var _shove := Vector3.ZERO             ## a stagger from being butted, dying away
 var _push_hold := 0.0
 
@@ -298,6 +304,12 @@ func _physics_process(delta: float) -> void:
 		_knock_van = null
 	_butt_cd = maxf(0.0, _butt_cd - delta)
 	_butt_t = maxf(0.0, _butt_t - delta)
+	_shake_t = maxf(0.0, _shake_t - delta)
+	dazed_t = maxf(0.0, dazed_t - delta)
+	if _butt_wind > 0.0:
+		_butt_wind -= delta
+		if _butt_wind <= 0.0:
+			_strike()
 	if seat != null:
 		_push_controls(delta)
 		if seat == null:
@@ -354,8 +366,13 @@ func _process(delta: float) -> void:
 		var sx := seat.get_global_transform_interpolated()
 		xf = sx * Transform3D(Basis.from_euler(Vector3(pitch, _seat_yaw, 0)), Vector3(0, SEATED_EYE, 0))
 	else:
-		var lunge := sin(clampf(_butt_t / 0.22, 0.0, 1.0) * PI) * 0.28
-		var origin := get_global_transform_interpolated().origin + Basis(Vector3.UP, yaw) * (Vector3(0, eye_height - lunge * 0.3, -lunge) + peek_offset) + bob_offset
+		var lunge := sin(clampf(_butt_t / 0.22, 0.0, 1.0) * PI) * 0.32
+		var rear := sin(clampf(1.0 - _butt_wind / BUTT_WINDUP, 0.0, 1.0) * PI * 0.5) * 0.16 if _butt_wind > 0.0 else 0.0
+		var shake := Vector3(randf_range(-1, 1), randf_range(-1, 1), 0) * 0.035 * (_shake_t / 0.18) if _shake_t > 0.0 else Vector3.ZERO
+		var origin := get_global_transform_interpolated().origin + Basis(Vector3.UP, yaw) * (Vector3(0, eye_height - lunge * 0.3 + rear * 0.3, -lunge + rear) + peek_offset + shake) + bob_offset
+		var av_head := _mesh_root.get_node_or_null("Head") as Node3D
+		if av_head != null and _pose_stand.has("Head") and seat == null and knocked_t <= 0.0:
+			av_head.position = (_pose_stand["Head"] as Transform3D).origin + Vector3(0, -lunge * 0.3, -lunge * 1.4 + rear * 1.2)
 		xf = Transform3D(Basis.from_euler(Vector3(pitch, yaw, 0)), origin)
 	var b := xf.basis.rotated(xf.basis.z.normalized(), cam_roll)
 	cam.global_transform = Transform3D(b, xf.origin)
@@ -1016,9 +1033,17 @@ func tag_look() -> TagMarker:
 ## (its "on_headbutt"), your partner, Naresh, the van, loose things. Not a
 ## weapon: a creature only hears it.
 func headbutt() -> void:
-	if _butt_cd > 0.0 or knocked_t > 0.0 or taken_hold > 0.0:
+	if _butt_cd > 0.0 or _butt_wind > 0.0 or knocked_t > 0.0 or taken_hold > 0.0:
 		return
-	_butt_cd = BUTT_COOLDOWN
+	_butt_cd = BUTT_COOLDOWN + BUTT_WINDUP
+	_butt_wind = BUTT_WINDUP
+	Sfx.play3d("pluck", head.global_position, -16.0, 0.1, 0.6)
+
+
+## The strike, after the wind-up: the lunge, then whatever it lands on.
+func _strike() -> void:
+	if knocked_t > 0.0 or taken_hold > 0.0 or seat != null or ladder != null:
+		return
 	_butt_t = 0.22
 	var xf := head.global_transform
 	var fwd := -xf.basis.z
@@ -1061,6 +1086,7 @@ func headbutt() -> void:
 	var col: Object = hit["collider"]
 	print("[butt] P%d butts %s" % [index + 1, (col as Node).name if col is Node else "?"])
 	cam_roll += 0.05
+	_shake_t = 0.18
 	var n := col as Node
 	while n != null and not n.has_meta("on_headbutt"):
 		n = n.get_parent()
@@ -1068,6 +1094,9 @@ func headbutt() -> void:
 		(n.get_meta("on_headbutt") as Callable).call(self)
 		return
 	Sfx.play3d("hit_soft", hit["position"], 0.0)
+	var at: Vector3 = hit["position"]
+	if col is PlayerRig or col is Naresh or col is Camper or col is RigidBody3D:
+		ButtFx.impact(at, col is Camper)
 	if col is PlayerRig:
 		(col as PlayerRig).butted(self, flat)
 	elif col is Naresh:
@@ -1089,6 +1118,15 @@ func headbutt() -> void:
 		# up and away: a straight shove only slid a can half a metre on grass
 		rb.apply_central_impulse((flat * 4.5 + Vector3.UP * 3.0) * rb.mass)
 		Sfx.play3d("hit_wood", hit["position"], -4.0)
+	elif not col is Creature:
+		# S8: something solid (a wall, a tree, a post): a dull thunk and you
+		# stagger back a step, seeing stars
+		var nrm: Vector3 = hit.get("normal", -flat)
+		if nrm.y < 0.7:
+			ButtFx.impact(at, false, "THUNK")
+			Sfx.play3d("hit_wood_heavy", at, 2.0)
+			_shove = -flat * 3.5
+			dazed_t = 0.7
 
 
 ## Butted by your partner: you stagger back, your view jolts, stars.
@@ -1096,6 +1134,8 @@ func butted(by: PlayerRig, dir: Vector3) -> void:
 	if seat != null or knocked_t > 0.0 or ladder != null:
 		return
 	_shove = dir * 5.5
+	dazed_t = 1.1
+	_shake_t = 0.18
 	cam_roll += 0.18 * (1.0 if randf() < 0.5 else -1.0)
 	pitch = clampf(pitch + 0.12, -PITCH_LIMIT, PITCH_LIMIT)
 	Sfx.play3d("hit_wood", head.global_position, 2.0)
