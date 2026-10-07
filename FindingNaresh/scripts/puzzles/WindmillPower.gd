@@ -292,7 +292,7 @@ func butt_leg(k: int, p: PlayerRig) -> void:
 	var foot := global_transform * _foot_local(k)
 	if leg_state[k] != 1:
 		Sfx.play3d("hit_metal", p.global_position + Vector3.UP * 1.5, -4.0)
-		ButtFx.impact(p.head.global_position + (-p.head.global_transform.basis.z) * 0.5, true, "CLONK")
+		ButtFx.impact(p.head.global_position + (-p.head.global_transform.basis.z) * 0.95, true, "CLONK")
 		return
 	# the foot jumps back past where it'll sit and settles (you see it move)
 	leg_slide[k] = maxf(0.0, leg_slide[k] - 1.0 / BUTTS)
@@ -300,7 +300,7 @@ func butt_leg(k: int, p: PlayerRig) -> void:
 	_butts[k] = mini(_butts[k] + 1, 3)
 	_show_marks(k)
 	Sfx.play3d("hit_metal_heavy", p.global_position + Vector3.UP * 1.5, 0.0)
-	ButtFx.impact(p.head.global_position + (-p.head.global_transform.basis.z) * 0.5, true, "CLANG!")
+	ButtFx.impact(p.head.global_position + (-p.head.global_transform.basis.z) * 0.95, true, "CLANG!")
 	PlayerRig._dust_puff(foot + Vector3.UP * 0.3, 10.0)
 	if leg_slide[k] <= 0.001:
 		leg_slide[k] = 0.0

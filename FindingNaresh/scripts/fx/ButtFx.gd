@@ -23,7 +23,7 @@ static func impact(at: Vector3, metal := false, word := "BONK!") -> void:
 	var l := Label3D.new()
 	l.text = word
 	l.font_size = 96
-	l.pixel_size = 0.0045
+	l.pixel_size = 0.0026     # ~0.25 m letters: readable to both, not a wall in your face
 	l.modulate = Color(1.0, 0.92, 0.35)
 	l.outline_size = 22
 	l.outline_modulate = Color(0.25, 0.1, 0.05)
