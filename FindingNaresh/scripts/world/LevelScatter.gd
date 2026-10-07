@@ -23,6 +23,7 @@ func _scatter() -> void:
 	var reeds: Array[Transform3D] = []
 	var flowers: Array[Transform3D] = []
 	var flower_cols: Array[Color] = []
+	var tree_pts := PackedVector3Array()     # every tree, for the undergrowth between them
 	var petal_palette := [Color(0.95, 0.85, 0.30), Color(0.96, 0.96, 0.92), Color(0.78, 0.45, 0.85),
 		Color(0.95, 0.55, 0.30), Color(0.55, 0.70, 0.98)]
 
@@ -116,6 +117,7 @@ func _scatter() -> void:
 			pines.append(_xf(Vector3(x, y + 5.4 * s, z), yaw, Vector3(s, s, s)))
 			pine_cols.append(C_LEAF_A.lerp(C_LEAF_C, rng.randf()))
 			_tile_shape(bodies, colliders, x, z, _cylinder(0.55 * s, 6.0 * s), Vector3(x, y + 3.0, z))
+			tree_pts.append(Vector3(x, y, z))
 		elif kind < 0.80:
 			var s2 := rng.randf_range(0.9, 1.7)
 			var yaw2 := rng.randf_range(0, TAU)
@@ -123,6 +125,7 @@ func _scatter() -> void:
 			blobs.append(_xf(Vector3(x, y + 4.2 * s2, z), yaw2, Vector3(s2, s2 * 0.85, s2)))
 			blob_cols.append(C_LEAF_B.lerp(C_LEAF_A, rng.randf()))
 			_tile_shape(bodies, colliders, x, z, _cylinder(0.6 * s2, 6.0 * s2), Vector3(x, y + 3.0, z))
+			tree_pts.append(Vector3(x, y, z))
 		elif kind < 0.90:
 			var s3 := rng.randf_range(0.5, 2.4)
 			var ryaw := rng.randf_range(0, TAU)
@@ -142,6 +145,11 @@ func _scatter() -> void:
 			bushes.append(_xf(Vector3(x, y + 0.35 * s4, z), rng.randf_range(0, TAU),
 				Vector3(s4, s4 * 0.8, s4)))
 			bush_cols.append(C_LEAF_C.lerp(C_LEAF_B, rng.randf()))
+
+	var logs: Array[Transform3D] = []
+	var t_under := Time.get_ticks_msec()
+	_undergrowth(tree_pts, colliders, bushes, bush_cols, logs)
+	print("[World] undergrowth %d ms" % (Time.get_ticks_msec() - t_under))
 
 	var trunk_mesh := CylinderMesh.new()
 	trunk_mesh.top_radius = 0.28
@@ -196,9 +204,116 @@ func _scatter() -> void:
 	world.add_child(_tiled("Canopies", blob_mesh, ToonMat.make(Color.WHITE, 0.035), blobs, blob_cols, 1500.0))
 	world.add_child(_tiled("Rocks", rock_mesh, ToonMat.make(Color.WHITE, 0.02), rocks, rock_cols, 900.0))
 	world.add_child(_tiled("Bushes", bush_mesh, ToonMat.make(Color.WHITE, 0.02), bushes, bush_cols, 700.0))
+	var log_mesh := CylinderMesh.new()
+	log_mesh.top_radius = 0.26
+	log_mesh.bottom_radius = 0.32
+	log_mesh.height = 1.0
+	log_mesh.radial_segments = 7
+	log_mesh.rings = 1
+	world.add_child(_tiled("FallenLogs", log_mesh, ToonMat.make(Color(0.40, 0.29, 0.20), 0.02), logs, [], 600.0))
 	world.add_child(_tiled("Reeds", reed_mesh, ToonMat.make(Color(0.46, 0.58, 0.28), 0.0), reeds, [], 450.0))
 	world.add_child(_tiled("Wildflowers", flower_mesh, ToonMat.make(Color.WHITE, 0.0), flowers, flower_cols, 350.0, false))
 	world.add_child(colliders)
+
+
+## Woods a van can't drive through (the user, 2026-10-07). Where trees stand
+## close (a tree with three others within 12 m is in a wood, not alone in a
+## meadow), neighbours up to 11 m apart are joined by undergrowth: a slab only
+## the van collides with (VAN_BLOCK), and something you can see there
+## (brambly bushes, now and then a fallen log), so the van always stops
+## against growth, never an invisible wall. Never across a road or the river.
+## Its own random numbers: the trees themselves stay exactly as before.
+func _undergrowth(pts: PackedVector3Array, parent: Node3D, bushes: Array[Transform3D], bush_cols: Array[Color], logs: Array[Transform3D]) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = SCATTER_SEED + 77
+	const CELL := 12.0
+	const LINK := 11.0
+	var grid := {}
+	for i in pts.size():
+		var key := Vector2i(floori(pts[i].x / CELL), floori(pts[i].z / CELL))
+		if not grid.has(key):
+			grid[key] = PackedInt32Array()
+		grid[key].append(i)
+	var near: Array = []
+	near.resize(pts.size())
+	for i in pts.size():
+		var p := pts[i]
+		var c := Vector2i(floori(p.x / CELL), floori(p.z / CELL))
+		var mine := PackedInt32Array()
+		for dx in [-1, 0, 1]:
+			for dz in [-1, 0, 1]:
+				var k := Vector2i(c.x + dx, c.y + dz)
+				if not grid.has(k):
+					continue
+				for j in grid[k]:
+					if j != i and Vector2(pts[j].x - p.x, pts[j].z - p.z).length() < CELL:
+						mine.append(j)
+		near[i] = mine
+	var bodies := {}
+	var shapes := {}             # one box per length (to the half metre), shared
+	var links := 0
+	for i in pts.size():
+		if (near[i] as PackedInt32Array).size() < 3:
+			continue
+		var a := pts[i]
+		for j in near[i]:
+			if j <= i or (near[j] as PackedInt32Array).size() < 3:
+				continue
+			var b := pts[j]
+			var flat := Vector2(b.x - a.x, b.z - a.z)
+			var len := flat.length()
+			if len > LINK or len < 1.0:
+				continue
+			var clear := true
+			for u in [0.2, 0.5, 0.8]:
+				var x := lerpf(a.x, b.x, u)
+				var z := lerpf(a.z, b.z, u)
+				if Landscape.road_distance(x, z) < Landscape.ROAD_HALF + 3.5 or Landscape.river_distance(x, z) < Landscape.RIVER_HALF + 2.0 or _in_clearing(x, z):
+					clear = false
+					break
+			if not clear:
+				continue
+			links += 1
+			var mid := (a + b) * 0.5
+			var q := snappedf(len, 0.5)
+			if not shapes.has(q):
+				var box := BoxShape3D.new()
+				box.size = Vector3(0.7, 1.8, q)
+				shapes[q] = box
+			var sb := _van_body(bodies, parent, mid.x, mid.z)
+			var owner_id := sb.create_shape_owner(sb)
+			sb.shape_owner_add_shape(owner_id, shapes[q])
+			var dir := Vector3(flat.x, 0, flat.y).normalized()
+			sb.shape_owner_set_transform(owner_id, Transform3D(Basis.looking_at(dir, Vector3.UP), mid + Vector3.UP * 0.7))
+			# what you see there: a bramble or two, a fallen log now and then
+			var side := Vector3(-dir.z, 0, dir.x)
+			var nb := 1 if len < 6.0 else 2
+			for k in nb:
+				var u := rng.randf_range(0.2, 0.8)
+				var bp := a.lerp(b, u) + side * rng.randf_range(-0.6, 0.6)
+				var s := rng.randf_range(0.7, 1.25)
+				bp.y = Landscape.ground(bp.x, bp.z) + 0.3 * s
+				bushes.append(_xf(bp, rng.randf_range(0, TAU), Vector3(s * 1.1, s * 0.75, s)))
+				bush_cols.append(C_LEAF_C.lerp(C_LEAF_B, rng.randf() * 0.7).darkened(rng.randf_range(0.0, 0.15)))
+			if len > 4.0 and rng.randf() < 0.12:
+				var lp := mid + side * rng.randf_range(-0.8, 0.8)
+				lp.y = Landscape.ground(lp.x, lp.z) + 0.22
+				var ll := len * rng.randf_range(0.6, 0.9)
+				var lb := Basis.looking_at(dir.rotated(Vector3.UP, rng.randf_range(-0.25, 0.25)), Vector3.UP) * Basis(Vector3.RIGHT, PI * 0.5)
+				logs.append(Transform3D(lb.scaled_local(Vector3(1, ll, 1)), lp))
+	print("[World] undergrowth: %d trees, %d links" % [pts.size(), links])
+
+
+func _van_body(bodies: Dictionary, parent: Node3D, x: float, z: float) -> StaticBody3D:
+	var t := _tile(x, z)
+	if not bodies.has(t):
+		var sb := StaticBody3D.new()
+		sb.name = "Undergrowth%d" % t
+		sb.collision_layer = VAN_BLOCK
+		sb.collision_mask = 0
+		bodies[t] = sb
+		parent.add_child(sb)
+	return bodies[t]
 
 
 ## A scatter collider: a shape straight on its tile's body, no node of its own

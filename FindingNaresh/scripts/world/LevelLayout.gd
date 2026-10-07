@@ -128,6 +128,10 @@ const GAS_STATION := Vector3(130, 0, 470)   ## Last Fuel, at J2
 const FACILITY := Vector3(405, 0, -150)     ## pump house yard, on the west bank
 const COAST_TOWER := Vector3(1395, 0, -85)
 const EDGE_LAYER := 64                 ## the world's edge walls (LevelScatter._world_edge)
+## Undergrowth in the woods: only the van bumps into it (people, Naresh and
+## creatures walk through). The user, 2026-10-07: a van can't drive through
+## a forest (LevelScatter._undergrowth).
+const VAN_BLOCK := 128
 const FISHING_VILLAGE := Vector3(1715, 0, -620)
 const VILLAGE_JETTY_Z := 36.0          ## the jetty: this far north of the village centre
 const VILLAGE_JETTY_W := 3.0           ## (the sea wall leaves a gap for it)

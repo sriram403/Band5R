@@ -3495,8 +3495,8 @@ func t_windmill_fall() -> void:
 	await look_at_point(p, wm.global_transform * (WindmillPower.LEVER_AT + Vector3(0, 1.4, 0)))
 	await wait(0.2)
 	log_line("P1 at the lever: '%s' at %s, seat %s" % [p.prompt_text, p.global_position, p.seat])
-	# P2 stands in the open, 12 m from the legs, nearer than P1
-	var spot := wm.global_transform * Vector3(-14.0, 0, 2.0)
+	# P2 stands next to it, 8 m from its middle
+	var spot := wm.global_transform * Vector3(-8.0, 0, 2.0)
 	await place_player(q, _on_ground(spot), 0.0)
 	key(KEY_E, true)
 	var frames := 0
@@ -3513,7 +3513,7 @@ func t_windmill_fall() -> void:
 	var toward := (wm.global_transform.basis * wm.fall_dir)
 	var to_q := q.global_position - wm.global_position
 	to_q.y = 0.0
-	check(toward.angle_to(to_q) < deg_to_rad(10.0), "it falls towards P2, the nearest")
+	check(toward.angle_to(to_q) < deg_to_rad(10.0), "it falls towards P2, standing next to it")
 	await physics_frames(int(60 * (WindmillPower.FALL_WARN + 1.6)))
 	await shot("windmill_falling")
 	frames = 0
@@ -3525,6 +3525,29 @@ func t_windmill_fall() -> void:
 	check(crushed, "P2, under it, is flattened (white)")
 	check(not wm.falling and wm.power == 0.0 and not wm.caught and wm.leg_state == [0, 0, 0, 0], "then it stands again, still, ready to start over")
 	check(q.whiteout == 0.0 and q.global_position.distance_to(boot.builder.poi["windmill_lever"]) < 8.0, "P2 is back by the gate")
+	# nobody next to it: it comes down on the one at the lever
+	await place_player(q, _on_ground(wm.global_transform * Vector3(-40.0, 0, 10.0)), 0.0)
+	await place_player(p, boot.builder.poi["windmill_lever"], 0.0)
+	await look_at_point(p, wm.global_transform * (WindmillPower.LEVER_AT + Vector3(0, 1.4, 0)))
+	await wait(0.2)
+	key(KEY_E, true)
+	frames = 0
+	while wm.sliding_leg() < 0 and frames < 60 * 20:
+		await physics_frames(1)
+		frames += 1
+	key(KEY_E, false)
+	frames = 0
+	while not wm.falling and frames < 60 * 12:
+		await physics_frames(1)
+		frames += 1
+	var toward2 := (wm.global_transform.basis * wm.fall_dir)
+	var to_p := p.global_position - wm.global_position
+	to_p.y = 0.0
+	check(wm.falling and toward2.angle_to(to_p) < deg_to_rad(10.0), "with nobody next to it, it falls towards P1 at the lever")
+	frames = 0
+	while wm.falling and frames < 60 * 12:
+		await physics_frames(1)
+		frames += 1
 	wm.spin_up = WindmillPower.SPIN_UP_S
 
 
@@ -3597,7 +3620,7 @@ func t_wm_look() -> void:
 	boot.viewports[0].add_child(cam)
 	var env: Environment = (boot.world.get_node("Environment") as WorldEnvironment).environment
 	env.fog_enabled = false
-	for v in [["wm_overview_300", 300.0], ["wm_overview_140", 140.0]]:
+	for v in [["wm_overview_900", 900.0], ["wm_overview_300", 300.0], ["wm_overview_140", 140.0]]:
 		cam.size = v[1]
 		cam.global_transform = Transform3D(Basis.looking_at(Vector3.DOWN, -gx.basis.z), Vector3(g.x, 600, g.z) - gx.basis.z * 0.0 + (w.global_position - g) * 0.4)
 		cam.current = true
@@ -3619,9 +3642,28 @@ func t_gate_bypass() -> void:
 	var gx: Transform3D = w.gate.global_transform
 	var held := 0
 	var tried := 0
-	for x in [-40.0, -150.0, -154.0, -160.0, 40.0, 80.0, 84.0]:
-		var target: Vector3 = gx * Vector3(x, 0, -6.0)
-		var start: Vector3 = gx * Vector3(x, 0, 16.0)
+	# east: at the gate's fence and on into the woods; west: from just off the
+	# lane, all along the meadow's fence and past its end, towards the windmill
+	var runs: Array = []
+	for x in [-40.0, 40.0, 80.0, 84.0, 100.0, 130.0, 170.0]:
+		runs.append([gx * Vector3(x, 0, 16.0), gx * Vector3(x, 0, -30.0), x])
+	var lane: Route = boot.builder.network.road("home_lane")
+	var g: Vector3 = boot.builder.poi["windmill_gate"]
+	var gi := 0
+	for i in lane.point_count():
+		if lane.point(i).distance_to(g) < lane.point(gi).distance_to(g):
+			gi = i
+	for zs in [40.0, 110.0, 190.0, 250.0, 290.0]:
+		# on the lane, zs metres back from the gate, heading for the windmill
+		var li := gi
+		while li > 0 and lane.point(li).distance_to(g) < zs:
+			li -= 1
+		var on_lane := lane.point(li)
+		runs.append([on_lane, on_lane.lerp(w.global_position, 0.9), -1000.0 - zs])
+	for run in runs:
+		var start: Vector3 = run[0]
+		var target: Vector3 = run[1]
+		var x: float = run[2]
 		boot.dev_menu.van_to(boot.dev_menu.van_spot(start), atan2(-(target - start).x, -(target - start).z))
 		c.repair_all()
 		await physics_frames(30)
@@ -3632,11 +3674,16 @@ func t_gate_bypass() -> void:
 			c.toggle_engine()
 		c.set_parking_brake(false)
 		key(KEY_W, true)
-		await physics_frames(60 * 7)
+		await physics_frames(60 * 10)
 		key(KEY_W, false)
 		var local: Vector3 = gx.affine_inverse() * c.global_position
 		tried += 1
-		var ok := local.z > -0.5
+		# east runs: still short of the gate's line; west runs: not into the
+		# windmill's meadow (west of the lane, north of the woods)
+		var in_meadow := c.global_position.distance_to(w.global_position) < 38.0     # the meadow fence stands ~39 m from it
+		var ok := local.z > -0.5 if x > -999.0 else not in_meadow
+		if x < -999.0:
+			log_line("from the lane %.0f m back: ended %.0f m from the windmill" % [-x - 1000.0, c.global_position.distance_to(w.global_position)])
 		held += 1 if ok else 0
 		log_line("at x %.0f: the van ended %.1f m %s the fence line (%.1f m/s)" % [x, absf(local.z), "short of" if ok else "PAST", c.linear_velocity.length()])
 		if not ok:
@@ -3685,6 +3732,18 @@ func t_wm_look2() -> void:
 	await place_player(p, w.leg_foot(0) + (w.global_position - w.leg_foot(0)).normalized() * 2.5 + Vector3.UP * 0.3, 0.0)
 	await look_at_point(p, w.leg_foot(0) + Vector3.UP * 0.4)
 	await shot("wm2_leg_done")
+	var stile: Vector3 = boot.builder.poi["windmill_stile"]
+	await place_player(p, boot.builder.poi["windmill_gate"] + (stile - boot.builder.poi["windmill_gate"]).normalized() * 22.0 + Vector3.UP * 0.5, 0.0)
+	await look_at_point(p, stile + Vector3.UP * 0.8)
+	await shot("wm2_stile")
+	for nm in ["LeaningPost", "SnappedPost", "UprootedTrunk"]:
+		var nodes := w.wire.find_children(nm, "", true, false)
+		if nodes.is_empty():
+			continue
+		var at: Vector3 = (nodes[0] as Node3D).global_position
+		await place_player(p, _on_ground(at + Vector3(9, 0, 7)), 0.0)
+		await look_at_point(p, at + Vector3.UP * 1.5)
+		await shot("wm2_storm_" + nm.to_lower())
 	w.reset()
 
 
