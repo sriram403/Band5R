@@ -330,13 +330,14 @@ func _physics_process(delta: float) -> void:
 		_climb(delta)
 	else:
 		_walk(delta)
+	var was_holding := held != null     # G that throws doesn't also head-butt
 	if map_open:
 		_map_controls()
 	else:
 		_scan()
 		if dev.just_pressed("tag") and can_tag():
 			tag_look()
-		if seat == null and ladder == null and held == null and not in_box and dev.just_pressed("throw"):
+		if seat == null and ladder == null and held == null and not was_holding and not in_box and dev.just_pressed("throw"):
 			headbutt()
 	_command_controls(delta)
 	if seat != null and not map_open and dev.just_pressed("journal") and _van_parked():
@@ -1116,7 +1117,7 @@ func _strike() -> void:
 		elif rb.freeze:
 			return
 		# up and away: a straight shove only slid a can half a metre on grass
-		rb.apply_central_impulse((flat * 4.5 + Vector3.UP * 3.0) * rb.mass)
+		rb.apply_central_impulse((flat * 6.0 + Vector3.UP * 4.0) * rb.mass)
 		Sfx.play3d("hit_wood", hit["position"], -4.0)
 	elif not col is Creature:
 		# S8: something solid (a wall, a tree, a post): a dull thunk and you

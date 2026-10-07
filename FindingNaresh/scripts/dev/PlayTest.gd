@@ -1889,6 +1889,7 @@ func t_save() -> void:
 	var wm := get_tree().get_first_node_in_group("windmill") as WindmillPower
 	wm.from_dict({"caught": true, "chest_open": true, "napin_taken": true})
 	ms.holder = 1
+	ms.find_napin()          # taken from the chest: the pin can be in the map
 	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
 	lift.from_dict({"locked": true})
 	var maze := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
@@ -3797,8 +3798,10 @@ func t_fun() -> void:
 	await look_at_point(p, can.global_position)
 	await wait(0.6)
 	await tap(KEY_G)
-	await wait(0.8)
-	check(can.global_position.distance_to(c0) > 0.5, "a head-butt sends a can flying")
+	await wait(0.3)
+	log_line("can after the butt: moved %.2f m, speed %.1f m/s, frozen %s" % [can.global_position.distance_to(c0), can.linear_velocity.length(), can.freeze])
+	await wait(0.5)
+	check(can.global_position.distance_to(c0) > 0.5, "a head-butt sends a can flying (%.1f m)" % can.global_position.distance_to(c0))
 	can.queue_free()
 	# the van rocks
 	var c := camper()
