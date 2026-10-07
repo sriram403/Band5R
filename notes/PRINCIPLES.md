@@ -136,6 +136,19 @@ v5).
   rows or grids). If a space is cramped for what goes in it, make the
   space bigger rather than squeezing the thing in.
 
+## 11. Long runs off the critical path; the change ledger (the user, 2026-10-08)
+
+- A 25-minute run before the user has even seen the change wastes their
+  time. Before their look: the change's own tests, smoke and its area set.
+- Every finished part gets an entry in `notes/CHANGE_LEDGER.md`: what
+  changed, what it could break (our honest guess), which tests cover it.
+- On "push": push at once (GitHub is the backup, not a release), then run
+  the long sets in the background in the second copy while the next part
+  is built in the first. What they find goes under its entry; fix it next
+  round. One last full run at the end, checked against the whole ledger.
+- When a long run fails, read the ledger first: it usually names the
+  cause (a gate across the road, undergrowth in the woods).
+
 ## Sources
 
 - Walter Isaacson, *Elon Musk* (2023): "the algorithm"; summaries at

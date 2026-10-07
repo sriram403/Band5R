@@ -155,3 +155,14 @@ reviews first.
 - v4 -> v5: the user: "do F3 and capture a video, I'll review that"
   (2026-10-04); then: keep the test sheets, and once the steps are written
   do the walkthrough, record it and place it for me to verify (2026-10-05).
+
+## v6 (the user, 2026-10-08): the change ledger, long runs after the push
+
+- Before the user's look at a part: its own tests, smoke, its area set.
+  Never the 25-minute driving set or full.
+- Each finished part: an entry in `notes/CHANGE_LEDGER.md` (what changed,
+  what it could break, which tests cover it).
+- On "push": push, then set:driving / full in the background in `MPG`
+  while the next part is built in `../MPG_dev`. Failures are matched to a
+  ledger entry, written under it, and fixed in the next round.
+- At the end of the puzzle tuning: one last full run against the ledger.

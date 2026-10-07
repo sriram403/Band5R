@@ -380,6 +380,14 @@ they/them.
     a view, the challenge, a new ability). At least three fun mechanics
     like the head-butt. Mistakes have real consequences
     (`design/PUZZLE_CHANGES.md` top).
+26. **The change ledger; long runs after the push (the user, 2026-10-08).**
+    Before the user's look: the change's own tests, smoke, its area set.
+    Each finished puzzle gets an entry in `notes/CHANGE_LEDGER.md` (what
+    changed, what it could break, the tests). On "push": push, then start
+    set:driving / full in the background in `MPG` while the next puzzle is
+    built in `../MPG_dev`; findings go under the ledger entry and are fixed
+    next round. If a thread ends while one runs, the hand-over says so and
+    where its log is. One last full run at the end of the puzzle tuning.
 
 ---
 

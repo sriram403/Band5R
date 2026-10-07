@@ -43,6 +43,14 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
 - **Lived in, never programmatic (the user, 2026-10-07).** Built things
   look placed by a person; natural things sit as nature would leave them
   (clumps, half-sunk rocks, no rows). A cramped space gets bigger.
+- **The change ledger; long runs off the critical path (the user,
+  2026-10-08).** Before the user's look: only the change's own tests,
+  smoke and its area set. Each finished puzzle gets an entry in
+  `notes/CHANGE_LEDGER.md` (what changed, what it could break, which tests
+  cover it). On "push": push at once, then start set:driving / full in the
+  background in `MPG` while the next part is built in `../MPG_dev`; write
+  what they find under its ledger entry and fix it next round. One last
+  full run at the end of the puzzle tuning, checked against the ledger.
 
 ## Two copies of the project
 
