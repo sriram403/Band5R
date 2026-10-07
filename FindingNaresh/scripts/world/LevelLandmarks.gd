@@ -107,8 +107,9 @@ func _windmill(at: Vector3) -> void:
 		var last := Vector3(J1.x, 0, J1.y)
 		var n := 0
 		var list := []
+		var wreck := []
 		for q in r.points:
-			if n >= 4:
+			if n >= 7:
 				break
 			var qq: Vector3 = q
 			if qq.distance_to(last) > 25.0:
@@ -116,20 +117,93 @@ func _windmill(at: Vector3) -> void:
 				var side := Vector3(-d.z, 0, d.x).normalized() * 5.5
 				var lp := qq + side
 				lp.y = _h(lp.x, lp.z)
-				list.append(lp)
+				if n < 4:
+					list.append(lp)
+				else:
+					wreck.append(lp)
 				last = qq
 				n += 1
 		road_lamps[road_name] = list
+		road_lamps[road_name + "_wreck"] = wreck
 	var puzzle := WindmillPower.new()
 	puzzle.name = "Windmill"
 	# fences: 150 m west up the open hill, 80 m east into the trees
 	puzzle.setup(xf, world, gate_xf, [150.0, 80.0], lane_lamps, road_lamps["ridge_track"], road_lamps["valley_road"])
+	puzzle.wire.storm_wreck([road_lamps["ridge_track_wreck"], road_lamps["valley_road_wreck"]])
+	# The windmill's meadow is fenced along the lane, from the gate down to
+	# the woods (the user, 2026-10-07: you mustn't drive round the gate; the
+	# meadow is open all the way to the valley road). A stile lets you in on
+	# foot where the van stops; too narrow for the van.
+	var verge := []
+	var walked := 0.0
+	var prev: Vector3 = lane.points[gi]
+	var li := gi
+	while li > 0 and walked < 230.0:
+		var q: Vector3 = lane.points[li]
+		walked += Vector2(q.x - prev.x, q.z - prev.z).length()
+		prev = q
+		var fwd: Vector3 = lane.points[mini(li + 1, lane.points.size() - 1)] - lane.points[maxi(li - 1, 0)]
+		var vside := Vector3(fwd.z, 0, -fwd.x).normalized()      # the windmill's side of the lane
+		if (pos - q).dot(vside) < 0.0:
+			vside = -vside
+		verge.append(q + vside * 4.9)
+		li -= 3
+	var stile_at := 22.0                          # m south of the gate: just behind where the van stops (14 m had the van parked across it)
+	# the stile is the point stile_at metres along the fence (one measure for
+	# both: picking it by distance from the gate and splitting the fence by
+	# distance along it put a fence slab across the gap, 2026-10-07)
+	var before := [gate_xf * Vector3(-WindmillPower.GATE_HALF - 0.75, 0, 0.2)]
+	var after := []
+	var s0: Vector3 = verge[verge.size() - 1]
+	var along := Vector3.FORWARD
+	var dist := 0.0
+	var found := false
+	for k in range(1, verge.size()):
+		var seg: float = Vector2(verge[k].x - verge[k - 1].x, verge[k].z - verge[k - 1].z).length()
+		if not found and dist + seg >= stile_at:
+			found = true
+			var u := (stile_at - dist) / seg
+			s0 = (verge[k - 1] as Vector3).lerp(verge[k], u)
+			along = (verge[k] as Vector3) - (verge[k - 1] as Vector3)
+			along.y = 0.0
+			along = along.normalized()
+			before.append(s0 - along * 0.55)
+			after.append(s0 + along * 0.55)
+			if (1.0 - u) * seg > 1.2:
+				after.append(verge[k])
+		elif not found:
+			before.append(verge[k])
+		elif k > 0 and after.size() > 0 and (verge[k] as Vector3).distance_to(after[after.size() - 1]) > 0.5:
+			after.append(verge[k])
+		dist += seg
+	Fence.build(world, before, 7401, "MeadowFenceNorth")
+	Fence.build(world, after, 7402, "MeadowFenceSouth")
+	_stile(s0, along)
+	Thicket.grow(world, (after[after.size() - 1] as Vector3) + (pos - g).normalized() * 6.0, 8.0, 7403, "MeadowThicket")
+	poi["windmill_stile"] = s0
 	world.add_child(puzzle)
 	poi["windmill"] = pos
 	poi["windmill_gate"] = g
 	poi["windmill_lever"] = puzzle.lever_spot()
 	poi["windmill_ladder"] = xf * Vector3(0, 0, WindmillPower.LADDER_Z + 0.6)
 	poi["windmill_top"] = xf * Vector3(0, WindmillPower.WALK_Y + 0.1, 1.2)
+
+## A stile in the meadow fence: two stout posts a person-width apart, a
+## worn step between them, a plank to steady yourself. People pass; the van
+## (2.24 m wide) can't.
+func _stile(at: Vector3, along: Vector3) -> void:
+	var n := Node3D.new()
+	n.name = "MeadowStile"
+	n.position = Vector3(at.x, _h(at.x, at.z), at.z)
+	n.basis = Basis.looking_at(Vector3(-along.z, 0, along.x), Vector3.UP)    # -Z across the fence, X along it
+	world.add_child(n)
+	var wood := ToonMat.make(Color(0.42, 0.31, 0.22), 0.012)
+	for sx in [-0.62, 0.62]:
+		n.add_child(Build.solid_box(Vector3(0.2, 1.45, 0.2), wood, Vector3(sx, 0.62, 0), Vector3(0, 0, sx * 2.5), "StilePost"))
+	n.add_child(Build.box(Vector3(1.0, 0.07, 0.3), ToonMat.make(Color(0.5, 0.4, 0.3), 0.012), Vector3(0, 0.12, 0), Vector3(0, 4, 0), "Step"))
+	n.add_child(Build.box(Vector3(1.45, 0.08, 0.1), wood, Vector3(0, 1.15, 0.05), Vector3(0, 0, -3), "Handrail"))
+	n.add_child(Build.label3d("FOOTPATH", Vector3(-0.62, 1.05, 0.13), Vector3.ZERO, 0.06, Color(0.95, 0.92, 0.8)))
+
 
 func _junction_signpost() -> void:
 	var pos := Vector3(J1.x - 8.0, 0, J1.y + 9.0)

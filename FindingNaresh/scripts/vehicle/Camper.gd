@@ -151,7 +151,7 @@ func _ready() -> void:
 	add_to_group("camper")
 	mass = MASS
 	collision_layer = 8
-	collision_mask = 1 | 2 | 64
+	collision_mask = 1 | 2 | 64 | LevelBuilder.VAN_BLOCK     # the woods' undergrowth too
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	center_of_mass = Vector3(0, -0.30, 0)
 	continuous_cd = true

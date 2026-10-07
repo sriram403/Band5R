@@ -45,6 +45,7 @@ const SLIDE_M := 0.5
 const BUTTS := 3                 ## butts to knock a leg back from the start of its slide
 const LEAN_DEG := 5.0            ## lean of the whole windmill at a full slide
 const FALL_WARN := 2.0           ## s of groaning before it goes
+const NEXT_TO := 12.0            ## m from its middle: "standing next to it" (it falls on them)
 const FALL_S := 2.6              ## s from starting to fall to the ground
 const RESET_AFTER := 3.0         ## s after it lands, the challenge starts again
 const LADDER_AFTER := 5.0        ## s after catching the wind, the ladder shakes loose
@@ -327,14 +328,22 @@ func _start_fall(k: int) -> void:
 	fall_t = 0.0
 	_landed = false
 	_crushed.clear()
-	# down on whoever is nearest (it's always on top of you)
+	# down on whoever is standing next to it; if nobody is, on the one at
+	# the lever (the user, 2026-10-07: it's always on top of you)
 	var near: PlayerRig = null
+	var lever_p: PlayerRig = null
+	var lever_at := global_transform * LEVER_AT
 	for p in get_tree().get_nodes_in_group("player"):
 		var q := p as PlayerRig
 		if q.seat != null:
 			continue
-		if near == null or q.global_position.distance_to(global_position) < near.global_position.distance_to(global_position):
+		var d := Vector2(q.global_position.x - global_position.x, q.global_position.z - global_position.z).length()
+		if d < NEXT_TO and (near == null or d < Vector2(near.global_position.x - global_position.x, near.global_position.z - global_position.z).length()):
 			near = q
+		if lever_p == null or q.global_position.distance_to(lever_at) < lever_p.global_position.distance_to(lever_at):
+			lever_p = q
+	if near == null:
+		near = lever_p
 	if near != null:
 		var to := global_transform.affine_inverse() * near.global_position
 		to.y = 0.0

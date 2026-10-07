@@ -107,6 +107,15 @@
      "s": 0.8
     },
     {
+     "do": "call",
+     "fn": "via_stile",
+     "args": [
+      "p1",
+      true,
+      false
+     ]
+    },
+    {
      "do": "walk",
      "who": 1,
      "to": "expr:wm_at(0.0, 0.2, -19.0)",
@@ -115,19 +124,20 @@
     },
     {
      "do": "call",
-     "fn": "round_van",
+     "fn": "round_van_back",
      "args": [
       "p2",
-      -1.0,
       true
      ]
     },
     {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:wm_at(-8.5, 0.2, -9.0)",
-     "arrive": 0.8,
-     "max": 40
+     "do": "call",
+     "fn": "via_stile",
+     "args": [
+      "p2",
+      true,
+      true
+     ]
     },
     {
      "do": "walk",
@@ -613,6 +623,15 @@
    "max": 90,
    "do": [
     {
+     "do": "call",
+     "fn": "via_stile",
+     "args": [
+      "p1",
+      false,
+      false
+     ]
+    },
+    {
      "do": "walk",
      "who": 1,
      "to": "expr:boot.camper.global_transform * Vector3(-2.3, 0.2, -1.2)",
@@ -630,12 +649,26 @@
     },
     {
      "do": "call",
-     "fn": "round_van",
+     "fn": "via_stile",
      "args": [
       "p2",
-      1.0,
+      false,
       true
      ]
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.camper.global_transform * Vector3(-1.6, 0.2, 4.9)",
+     "arrive": 0.7,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.camper.global_transform * Vector3(2.9, 0.2, 4.6)",
+     "arrive": 0.7,
+     "max": 20
     },
     {
      "do": "walk",

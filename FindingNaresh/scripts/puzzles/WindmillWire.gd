@@ -218,6 +218,90 @@ func lamp_count() -> int:
 	return _lamps.size()
 
 
+# --- the storm's leftovers ----------------------------------------------------------
+
+## Beyond the last lamp on each road the line is down (the user, 2026-10-07:
+## the street lamps go nowhere; make it look as if a storm blew the rest
+## away, a hint of what's coming later). `roads`: per road, the three spots
+## where the next lamps stood. The first leans hard, its wire sagging to it
+## and its head hanging by the cable; the second snapped, its top in the
+## grass, the glass in bits; the third only a stump. Torn branches about,
+## and an uprooted tree. Nothing on the road itself.
+func storm_wreck(roads: Array) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 41
+	var post := ToonMat.make(Color(0.30, 0.31, 0.33), 0.01)
+	var dark := ToonMat.make(Color(0.18, 0.17, 0.16), 0.01)
+	var bark := ToonMat.make(Color(0.36, 0.26, 0.18), 0.012)
+	var leaf := ToonMat.make(Color(0.30, 0.45, 0.22), 0.012)
+	for r in _paths.size() - 1:
+		var spots: Array = roads[r] if r < roads.size() else []
+		if spots.size() < 3:
+			continue
+		var pts: Array = _paths[r + 1]["pts"]
+		var last_top: Vector3 = pts[pts.size() - 1]
+		var a: Vector3 = spots[0]
+		var b: Vector3 = spots[1]
+		var c: Vector3 = spots[2]
+		var away := Vector3(b.x - a.x, 0, b.z - a.z).normalized()
+		# 1: leaning hard away from the road, the head hanging off its arm
+		var lean := Node3D.new()
+		lean.position = a
+		lean.basis = Basis(Vector3.UP.cross(away).normalized(), deg_to_rad(24.0)) * Basis(Vector3.UP, rng.randf_range(0, TAU))
+		add_child(lean)
+		lean.add_child(Build.cyl(0.08, 5.6, post, Vector3(0, 2.6, 0), Vector3.ZERO, 6, "LeaningPost"))
+		var arm_end := lean.transform * Vector3(0, 5.2, 0)
+		var hang := arm_end + Vector3.DOWN * 1.3
+		_rod(arm_end, hang, 0.02, _wire_mat)
+		add_child(Build.sphere(0.2, dark, hang + Vector3.DOWN * 0.15, Vector3(1, 0.7, 1), "DanglingHead"))
+		# the wire from the last good lamp sags low to it
+		var mid := (last_top + arm_end) * 0.5 + Vector3.DOWN * 2.2
+		_rod(last_top, mid, 0.022, _wire_mat)
+		_rod(mid, arm_end, 0.022, _wire_mat)
+		# from it, a snapped end trailing on the grass towards the next
+		var trail := a.lerp(b, 0.45)
+		trail.y = Landscape.ground(trail.x, trail.z) + 0.04
+		_rod(arm_end, trail, 0.02, _wire_mat)
+		_rod(trail, trail + away * 2.5 + Vector3(0, 0.0, 0) + Vector3(-away.z, 0, away.x) * 0.8, 0.02, _wire_mat)
+		# 2: snapped at head height, the top lying in the grass
+		var stump_h := rng.randf_range(1.4, 2.0)
+		add_child(Build.cyl(0.08, stump_h, post, b + Vector3(0, stump_h * 0.5, 0), Vector3(rng.randf_range(-4, 4), 0, rng.randf_range(-4, 4)), 6, "SnappedPost"))
+		var top_dir := away.rotated(Vector3.UP, rng.randf_range(-0.6, 0.6))
+		var top_mid := b + top_dir * 2.3
+		top_mid.y = Landscape.ground(top_mid.x, top_mid.z) + 0.1
+		var top := Build.cyl(0.08, 3.8, post, Vector3.ZERO, Vector3.ZERO, 6, "FallenTop")
+		top.transform = Transform3D(Basis(Quaternion(Vector3.UP, top_dir)), top_mid)
+		add_child(top)
+		for k in 4:
+			var shard := top_mid + top_dir * 1.9 + Vector3(rng.randf_range(-0.6, 0.6), 0, rng.randf_range(-0.6, 0.6))
+			shard.y = Landscape.ground(shard.x, shard.z) + 0.03
+			add_child(Build.box(Vector3(0.12, 0.03, 0.09), dark, shard, Vector3(0, rng.randf_range(0, 360), 0), "Glass"))
+		# 3: just a stump
+		add_child(Build.cyl(0.09, 0.5, post, c + Vector3(0, 0.22, 0), Vector3(6, 0, -3), 6, "Stump"))
+		# torn branches strewn along the verge, and one tree pulled up by the roots
+		for k in 7:
+			var bp: Vector3 = a.lerp(c, rng.randf()) + Vector3(-away.z, 0, away.x) * rng.randf_range(0.5, 4.0)
+			bp.y = Landscape.ground(bp.x, bp.z) + 0.08
+			var bl := rng.randf_range(0.8, 2.2)
+			var br := Build.cyl(rng.randf_range(0.03, 0.07), bl, bark, Vector3.ZERO, Vector3.ZERO, 5, "Branch")
+			br.transform = Transform3D(Basis(Vector3.UP, rng.randf_range(0, TAU)) * Basis(Vector3.RIGHT, PI * 0.5 + rng.randf_range(-0.15, 0.15)), bp)
+			add_child(br)
+			if rng.randf() < 0.5:
+				add_child(Build.sphere(rng.randf_range(0.25, 0.45), leaf, bp + Vector3.UP * 0.12, Vector3(1.3, 0.6, 1), "Leaves"))
+		var tree_at: Vector3 = c + Vector3(-away.z, 0, away.x) * 7.0
+		tree_at.y = Landscape.ground(tree_at.x, tree_at.z)
+		var fall := away.rotated(Vector3.UP, rng.randf_range(0.6, 1.1))
+		var trunk := Build.cyl(0.32, 7.5, bark, Vector3.ZERO, Vector3.ZERO, 7, "UprootedTrunk")
+		trunk.transform = Transform3D(Basis(Quaternion(Vector3.UP, fall)), tree_at + fall * 3.9 + Vector3.UP * 0.35)
+		add_child(trunk)
+		var roots := Build.cyl(1.3, 0.35, ToonMat.make(Color(0.34, 0.27, 0.2), 0.012), Vector3.ZERO, Vector3.ZERO, 9, "RootPlate")
+		roots.transform = Transform3D(Basis(Quaternion(Vector3.UP, -fall)), tree_at + Vector3.UP * 1.0 - fall * 0.1)
+		add_child(roots)
+		add_child(Build.sphere(2.2, leaf, tree_at + fall * 8.2 + Vector3.UP * 1.1, Vector3(1.2, 0.7, 1.0), "FallenCrown"))
+		var hole := Build.cyl(1.2, 0.1, ToonMat.make(Color(0.3, 0.24, 0.18), 0.01), tree_at + Vector3.UP * 0.02, Vector3.ZERO, 9, "Hole")
+		add_child(hole)
+
+
 # --- building --------------------------------------------------------------------
 
 ## A wooden pole at `foot` (a little out of plumb, its own height) with a
