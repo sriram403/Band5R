@@ -326,14 +326,14 @@
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:wm_at(0.0, 0.2, 3.85)",
+     "to": "expr:wm_at(0.0, 0.2, 5.3)",
      "arrive": 0.4,
      "max": 30
     },
     {
      "do": "look",
      "who": 2,
-     "at": "expr:wm_at(0.0, 1.6, 2.45)"
+     "at": "expr:wm_at(0.0, 1.6, 3.9)"
     },
     {
      "do": "wait",
@@ -383,6 +383,13 @@
     {
      "do": "walk",
      "who": 2,
+     "to": "expr:wm_at(-1.9, 22.8, 2.5)",
+     "arrive": 0.4,
+     "max": 10
+    },
+    {
+     "do": "walk",
+     "who": 2,
      "to": "expr:wm_at(-1.7, 22.8, -1.4)",
      "arrive": 0.4,
      "max": 10
@@ -399,7 +406,14 @@
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:wm_at(-0.2, 22.8, 1.4)",
+     "to": "expr:wm_at(-1.9, 22.8, 2.5)",
+     "arrive": 0.4,
+     "max": 10
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:wm_at(0.0, 22.8, 2.7)",
      "arrive": 0.4,
      "max": 10
     },
@@ -444,14 +458,14 @@
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:wm_at(0.0, 22.8, 1.6)",
+     "to": "expr:wm_at(0.0, 22.8, 3.1)",
      "arrive": 0.35,
      "max": 10
     },
     {
      "do": "look",
      "who": 2,
-     "at": "expr:wm_at(0.0, 23.2, 2.45)"
+     "at": "expr:wm_at(0.0, 23.2, 3.9)"
     },
     {
      "do": "wait",

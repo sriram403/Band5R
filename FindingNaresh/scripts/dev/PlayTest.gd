@@ -372,7 +372,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -1889,6 +1889,7 @@ func t_save() -> void:
 	var wm := get_tree().get_first_node_in_group("windmill") as WindmillPower
 	wm.from_dict({"caught": true, "chest_open": true, "napin_taken": true})
 	ms.holder = 1
+	ms.find_napin()          # taken from the chest: the pin can be in the map
 	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
 	lift.from_dict({"locked": true})
 	var maze := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
@@ -3394,16 +3395,29 @@ func t_windmill() -> void:
 			await shot("windmill_butt")
 	check(walked, "P2 walks under the windmill to the first sliding leg")
 	check(fixed == 4 and not wm.falling, "P2 head-butts all four legs back as they slide (%d)" % fixed)
+	var plates := 0
+	var greens := 0
+	for k in 4:
+		plates += 1 if (wm._leg_plate[k] as Node3D).visible else 0
+		greens += 1 if (wm._leg_light[k] as MeshInstance3D).material_override == wm._green else 0
+	check(plates == 4 and greens == 4, "every leg shows it's back: bolt plate on, light green (%d plates, %d green)" % [plates, greens])
 	check(wm.caught, "the fan catches the wind (P1 held the lever %.0f s)" % (frames / 60.0 + 2.0))
 	key(KEY_E, false)
+	var spark_f := 0
+	while not (wm.gate.find_child("BoomBody", true, false).get_child(0) as CollisionShape3D).disabled and spark_f < 60 * 15:
+		await physics_frames(1)
+		spark_f += 1
+	log_line("the spark reached the gate %.1f s after it caught the wind" % (spark_f / 60.0))
 	await wait(4.0)
 	var bars: Array = wm.gate.find_children("BoomBody", "StaticBody3D", true, false)
 	var open_now: bool = not bars.is_empty() and ((bars[0] as StaticBody3D).get_child(0) as CollisionShape3D).disabled
 	check(wm.power >= 1.0 and open_now and st.flags.has("windmill_power"), "let go: it keeps turning; the gate is open")
-	var lit := 0
-	for l in wm._lamps:
-		lit += 1 if (l[1] as OmniLight3D).visible else 0
-	check(lit == wm._lamps.size() and lit >= 4, "the street lamps beyond the gate light up (%d)" % lit)
+	var lf := 0
+	while wm.wire.lamps_lit() < wm.wire.lamp_count() and lf < 60 * 20:
+		await physics_frames(1)
+		lf += 1
+	var lit := wm.wire.lamps_lit()
+	check(lit == wm.wire.lamp_count() and lit >= 4 and wm.wire.on, "the spark runs on and lights every street lamp (%d)" % lit)
 	check(st.current()["id"] == "napin", "the objective moves on: climb the windmill")
 	await look_at_point(p, gate + Vector3.UP * 2.0)
 	await shot("windmill_gate_open")
@@ -3437,7 +3451,7 @@ func t_windmill() -> void:
 	await shot("windmill_view")
 	# the chest
 	var chest := wm.tower.get_node("Chest") as Node3D
-	await place_player(q, _on_walkway(wm, Vector3(-0.2, 0, 1.4)), 0.0)
+	await place_player(q, _on_walkway(wm, Vector3(0.0, 0, 2.7)), 0.0)
 	await look_at_point(q, chest.global_position + Vector3.UP * 0.35)
 	await wait(0.2)
 	log_line("at the chest: '%s'" % q.prompt_text)
@@ -3449,7 +3463,7 @@ func t_windmill() -> void:
 	await key_pad_interact(q)
 	check(wm.napin_taken and boot.map_state.napin and st.flags.has("napin"), "P2 takes the napin")
 	# and down again
-	await place_player(q, _on_walkway(wm, Vector3(0, 0, 1.6)), lad.climb_yaw() + PI)
+	await place_player(q, _on_walkway(wm, Vector3(0, 0, WindmillPower.LADDER_Z - 0.8)), lad.climb_yaw() + PI)
 	await look_at_point(q, lad.global_transform * Vector3(0, lad.height + 0.6, 0))
 	await wait(0.2)
 	log_line("at the top of the ladder: '%s'" % q.prompt_text)
@@ -3547,6 +3561,131 @@ func _pad_walk(p: PlayerRig, target: Vector3, what: String, max_s := 20.0) -> bo
 	log_line("PAD WALK STUCK going to %s: at %s, %.1f m short" % [what, p.global_position, Vector2(target.x - p.global_position.x, target.z - p.global_position.z).length()])
 	await shot("walk_stuck_" + what.replace(" ", "_"))
 	return false
+
+
+## Looks only (puzzle #2 round 2): the ground and trees round the junction
+## gate, from above and along the fence line. Not in a preset.
+func t_wm_look() -> void:
+	var b: LevelBuilder = boot.builder
+	var w := wm()
+	var g: Vector3 = b.poi["windmill_gate"]
+	var gx := w.gate.global_transform
+	var across := gx.basis.x
+	var trees: Array = []
+	for nm in b.scatter.keys():
+		if String(nm).to_lower().contains("tree") or String(nm).to_lower().contains("pine") or String(nm).to_lower().contains("oak"):
+			for t in b.scatter[nm]:
+				var tx: Transform3D = t
+				if tx.origin.distance_to(g) < 260.0:
+					trees.append(tx.origin)
+	log_line("scatter keys: %s; trees within 260 m of the gate: %d" % [b.scatter.keys(), trees.size()])
+	for side in [-1.0, 1.0]:
+		var line := ""
+		var d := 6.0
+		while d <= 200.0:
+			var at: Vector3 = g + across * side * d
+			var near := 999.0
+			for t in trees:
+				near = minf(near, Vector2(t.x - at.x, t.z - at.z).length())
+			line += " %d m: h %.1f (tree %.0f m)," % [int(d), Landscape.ground(at.x, at.z) - g.y, near]
+			d += 10.0
+		log_line("fence line %s: %s" % ["minus x" if side < 0 else "plus x", line])
+	var cam := Camera3D.new()
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.far = 2000.0
+	cam.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	boot.viewports[0].add_child(cam)
+	var env: Environment = (boot.world.get_node("Environment") as WorldEnvironment).environment
+	env.fog_enabled = false
+	for v in [["wm_overview_300", 300.0], ["wm_overview_140", 140.0]]:
+		cam.size = v[1]
+		cam.global_transform = Transform3D(Basis.looking_at(Vector3.DOWN, -gx.basis.z), Vector3(g.x, 600, g.z) - gx.basis.z * 0.0 + (w.global_position - g) * 0.4)
+		cam.current = true
+		await wait(0.5)
+		await shot(v[0])
+	env.fog_enabled = true
+	cam.queue_free()
+	p1().cam.current = true
+
+
+## Round 2 (the user: "I could easily go across with a van"): the van can't
+## get past the gate's fence, at its middle, its ends or into the thickets.
+func t_gate_bypass() -> void:
+	var w := wm()
+	if w == null:
+		return
+	w.reset()
+	var c := camper()
+	var gx: Transform3D = w.gate.global_transform
+	var held := 0
+	var tried := 0
+	for x in [-40.0, -150.0, -154.0, -160.0, 40.0, 80.0, 84.0]:
+		var target: Vector3 = gx * Vector3(x, 0, -6.0)
+		var start: Vector3 = gx * Vector3(x, 0, 16.0)
+		boot.dev_menu.van_to(boot.dev_menu.van_spot(start), atan2(-(target - start).x, -(target - start).z))
+		c.repair_all()
+		await physics_frames(30)
+		var l0: Vector3 = gx.affine_inverse() * c.global_position
+		log_line("at x %.0f: the van starts at x %.1f, %.1f m short of the fence" % [x, l0.x, l0.z])
+		await seat_p1_driver()
+		if not c.engine_on:
+			c.toggle_engine()
+		c.set_parking_brake(false)
+		key(KEY_W, true)
+		await physics_frames(60 * 7)
+		key(KEY_W, false)
+		var local: Vector3 = gx.affine_inverse() * c.global_position
+		tried += 1
+		var ok := local.z > -0.5
+		held += 1 if ok else 0
+		log_line("at x %.0f: the van ended %.1f m %s the fence line (%.1f m/s)" % [x, absf(local.z), "short of" if ok else "PAST", c.linear_velocity.length()])
+		if not ok:
+			await shot("gate_bypass_%d" % int(x))
+		key(KEY_S, true)
+		await physics_frames(40)
+		key(KEY_S, false)
+		p1().force_exit = true
+		await physics_frames(3)
+	check(held == tried, "driving at the fence (middle, ends, thickets): the van never gets past (%d of %d held)" % [held, tried])
+
+
+## Looks only (round 2): what a player sees: the walkway from the ladder top,
+## the chest, the switch house from the lever, the fence from the road.
+func t_wm_look2() -> void:
+	var w := wm()
+	w.from_dict({"caught": true})
+	var p := p1()
+	var lad := w._ladder
+	await place_player(p, lad.global_transform * Vector3(0, lad.height, 0) + lad.global_transform.basis * Vector3(0, 0.1, -1.3), 0.0)
+	await look_at_point(p, w.tower.get_node("Chest").global_position + Vector3.UP * 0.5)
+	await wait(0.4)
+	log_line("stepping off the ladder: '%s', chest %.1f m away" % [p.prompt_text, p.global_position.distance_to(w.tower.get_node("Chest").global_position)])
+	await shot("wm2_chest_from_ladder")
+	await place_player(p, w.global_transform * Vector3(-2.6, WindmillPower.WALK_Y + 0.2, 2.6), 0.0)
+	await look_at_point(p, w.global_transform * Vector3(0, WindmillPower.WALK_Y + 0.6, 0.5))
+	await shot("wm2_walkway")
+	await place_player(p, boot.builder.poi["windmill_lever"], 0.0)
+	await look_at_point(p, w.wire.get_node("SwitchHouse").global_position + Vector3.UP * 1.3)
+	await shot("wm2_hut_from_lever")
+	await look_at_point(p, boot.builder.poi["windmill_gate"] + Vector3.UP * 3.0)
+	await shot("wm2_wire_to_gate")
+	var gx: Transform3D = w.gate.global_transform
+	await place_player(p, gx * Vector3(0.0, 0.3, 14.0), 0.0)
+	await look_at_point(p, gx * Vector3(-30.0, 1.0, 0.0))
+	await shot("wm2_fence_west")
+	await look_at_point(p, gx * Vector3(30.0, 1.0, 0.0))
+	await shot("wm2_fence_east")
+	await look_at_point(p, gx * Vector3(0.0, 1.5, 0.0))
+	await shot("wm2_gate")
+	for k in 4:
+		w.leg_state[k] = 2
+		w._butts[k] = 3
+		w._show_marks(k)
+		(w._leg_plate[k] as Node3D).visible = true
+	await place_player(p, w.leg_foot(0) + (w.global_position - w.leg_foot(0)).normalized() * 2.5 + Vector3.UP * 0.3, 0.0)
+	await look_at_point(p, w.leg_foot(0) + Vector3.UP * 0.4)
+	await shot("wm2_leg_done")
+	w.reset()
 
 
 ## Solo testing (the user, 2026-10-07): one keyboard, no controller. P1
@@ -3659,8 +3798,10 @@ func t_fun() -> void:
 	await look_at_point(p, can.global_position)
 	await wait(0.6)
 	await tap(KEY_G)
-	await wait(0.8)
-	check(can.global_position.distance_to(c0) > 0.5, "a head-butt sends a can flying")
+	await wait(0.3)
+	log_line("can after the butt: moved %.2f m, speed %.1f m/s, frozen %s" % [can.global_position.distance_to(c0), can.linear_velocity.length(), can.freeze])
+	await wait(0.5)
+	check(can.global_position.distance_to(c0) > 0.5, "a head-butt sends a can flying (%.1f m)" % can.global_position.distance_to(c0))
 	can.queue_free()
 	# the van rocks
 	var c := camper()
@@ -3670,7 +3811,7 @@ func t_fun() -> void:
 	await place_player(p, _on_ground(side), 0.0)
 	await look_at_point(p, c.global_transform * Vector3(0, 1.2, 0))
 	await tap(KEY_G)
-	await wait(0.1)
+	await wait(0.25)          # the wind-up, then the strike
 	var rock: float = c._body_root.rotation.length()
 	await wait(0.8)
 	check(rock > 0.01 and c._body_root.rotation.length() < 0.005, "butting the van: it rocks on its springs and settles")

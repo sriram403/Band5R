@@ -19,14 +19,14 @@ LEVER_STAND = at(0.0, 0.2, -19.0)
 LEVER_LOOK = at(0.0, 1.5, -18.0)
 NOTE_LOOK = at(0.0, 0.45, -18.3)
 UNDER = at(-6.5, 0.2, -2.0)            # P2 off to one side of the legs, watching
-LADDER_STAND = at(0.0, 0.2, 3.85)
-LADDER_LOOK = at(0.0, 1.6, 2.45)
+LADDER_STAND = at(0.0, 0.2, 5.3)
+LADDER_LOOK = at(0.0, 1.6, 3.9)
 TOP_LOOKOUT = at(-1.7, 22.8, -1.4)
 VIEW_LOOK = "expr:boot.builder.poi['j1'] + (boot.builder.poi['j1'] - wm().global_position) * 4.0 + Vector3(0, 20, 0)"
-CHEST_STAND = at(-0.2, 22.8, 1.4)
+CHEST_STAND = at(0.0, 22.8, 2.7)
 CHEST_LOOK = "expr:wm().tower.get_node('Chest').global_position + Vector3(0, 0.35, 0)"
-TOP_LADDER = at(0.0, 22.8, 1.6)
-TOP_LADDER_LOOK = at(0.0, 23.2, 2.45)
+TOP_LADDER = at(0.0, 22.8, 3.1)
+TOP_LADDER_LOOK = at(0.0, 23.2, 3.9)
 GATE_LOOK = "expr:boot.builder.poi['windmill_gate'] + Vector3(0, 2, 0)"
 VAN_DOOR_L = "expr:boot.camper.global_transform * Vector3(-2.3, 0.2, -1.2)"
 VAN_DOOR_R = "expr:boot.camper.global_transform * Vector3(2.3, 0.2, -1.2)"
@@ -92,8 +92,10 @@ walk = {
                 {"do": "pad_axis", "axis": "LY", "v": 0.0}, {"do": "wait", "s": 0.5}],
          "expect": [{"name": "on the walkway", "expr": "p2().global_position.y > %s.global_position.y + 22.0 and p2().is_on_floor()" % WM, "within": 2}]},
         {"name": "2.7 the view, the chest, the napin", "max": 60,
-         "do": [{"do": "walk", "who": 2, "to": TOP_LOOKOUT, "arrive": 0.4, "max": 10},
+         "do": [{"do": "walk", "who": 2, "to": at(-1.9, 22.8, 2.5), "arrive": 0.4, "max": 10},
+                {"do": "walk", "who": 2, "to": TOP_LOOKOUT, "arrive": 0.4, "max": 10},
                 {"do": "look", "who": 2, "at": VIEW_LOOK}, {"do": "wait", "s": 4.0},
+                {"do": "walk", "who": 2, "to": at(-1.9, 22.8, 2.5), "arrive": 0.4, "max": 10},
                 {"do": "walk", "who": 2, "to": CHEST_STAND, "arrive": 0.4, "max": 10},
                 {"do": "look", "who": 2, "at": CHEST_LOOK}, {"do": "wait", "s": 0.3}, {"do": "pad_tap", "btn": "X"},
                 {"do": "wait", "s": 1.2}, {"do": "pad_tap", "btn": "X"}, {"do": "wait", "s": 4.0}],

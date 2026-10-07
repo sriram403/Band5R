@@ -12,6 +12,7 @@ var _arrows: Control
 var binoculars: BinocularView
 var box_view: BoxView
 var _white: ColorRect
+var _stars: StarsRing
 var _sludge: ColorRect                 ## sludge round the edges of the view (the water works)
 ## tag owner index -> where its edge arrow was last drawn (tests read this)
 var tag_arrow_at := {}
@@ -197,6 +198,10 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	wheel.player = p
 	add_child(wheel)
 
+	# head-butted: stars circling the middle of your view
+	_stars = StarsRing.new()
+	_stars.name = "Stars"
+	add_child(_stars)
 	# being taken: the view goes white (on top of everything)
 	_white = ColorRect.new()
 	_white.name = "Whiteout"
@@ -302,6 +307,7 @@ func _process(delta: float) -> void:
 		else:
 			_objective_hint.text = "(hold %s for a hint)" % (d.glyph("hint") if d else "H")
 	_arrows.queue_redraw()
+	_stars.amount = clampf(player.dazed_t / 0.5, 0.0, 1.0)
 	_white.color.a = player.whiteout
 	_white.visible = player.whiteout > 0.001
 	var mess := clampf((1.0 - player.slow()) / (1.0 - PlayerRig.SLIME_SLOW), 0.0, 1.0)
