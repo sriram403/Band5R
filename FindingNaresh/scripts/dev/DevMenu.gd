@@ -23,7 +23,7 @@ const TABS := ["Travel", "Story", "Puzzles", "Van", "Spawn", "World", "Gyms"]
 ## there. [name, story step, place ("" = the step's own place), what it is]
 const PUZZLES := [
 	["The water works", "coolant", "facility", "Pump and valves; valve B slips twice. Reward: coolant."],
-	["The windmill", "windmill", "windmill", "Tag the snagged blade, brake it at the bottom, cut the rope."],
+	["The windmill", "windmill", "", "Hold the starter lever; head-butt the legs back as they slide; the ladder, the napin. You start in the van at the gate."],
 	["The barn maze", "choose_road", "barn", "Optional (Valley Road): the guide on the loft, the walker in the hedges."],
 	["The lookout boards", "choose_road", "lookout", "Optional (Ridge Track): binocular pictures, the dials on the box."],
 	["The lift bridge", "bridge", "bridge_hut", "Levers, the safety mirror, the wedge, the counterweight. The water works counts as done (the power is on)."],
@@ -42,7 +42,7 @@ const PUZZLES := [
 
 ## Way-out puzzles and the step each belongs to: a jump (Story or Puzzles) to
 ## that step or before puts it back to how you first find it.
-const WAY_OUT_RESETS := [["windmill_brake", "windmill"], ["barn_maze", "choose_road"],
+const WAY_OUT_RESETS := [["windmill", "windmill"], ["barn_maze", "choose_road"],
 	["lookout_relay", "choose_road"], ["cooling_station", "coolant"], ["lift_bridge", "bridge"],
 	["ghat", "ghat"], ["coast_watch", "tower"]]
 
@@ -61,8 +61,9 @@ const PLACES := [
 	]],
 	["The way out", [
 		["j1", "Windmill junction (J1)", "The road choice: Valley Road or Ridge Track."],
-		["windmill", "The windmill", "W1: the brake puzzle. Ladder at the back, lever out front."],
-		["windmill_platform", "Windmill platform", "Up top, under the blades."],
+		["windmill", "The windmill", "Puzzle #2: the starter lever, the sliding legs, the junction gate."],
+		["windmill_gate", "The junction gate", "Closed until the windmill turns."],
+		["windmill_top", "Windmill walkway", "Up top, by the fan: the chest with the napin."],
 		["dock", "Mirror Lake dock", "Valley Road: a Memory Fragment, Naresh's bench."],
 		["billboard", "The billboard", "Valley Road: 'Bessi and the 5 Roses'."],
 		["barn", "The barn", "Valley Road: W2, the hay maze on its west side."],
@@ -817,6 +818,19 @@ func reset_way_out(i: int) -> void:
 	var sta := get_tree().get_first_node_in_group("cooling_station") as CoolingStation
 	if sta != null and i > st.index_of("coolant") and (photo < 0 or i < photo):
 		sta.solve_quietly()
+	# the one map: P2 has it after the pick-up; the napin once you're past
+	# the windmill's chest, none at the windmill or before (it's in the chest)
+	var ms: MapState = boot.map_state
+	if ms != null:
+		if ms.holder < 0:
+			ms.holder = 1
+		if i <= st.index_of("windmill"):
+			ms.lose_napin()
+		elif i > st.index_of("napin"):
+			ms.find_napin()
+		var wm := get_tree().get_first_node_in_group("windmill") as WindmillPower
+		if wm != null and i > st.index_of("windmill") and not wm.caught:
+			wm.from_dict({"caught": true, "chest_open": i > st.index_of("napin"), "napin_taken": i > st.index_of("napin")})
 
 
 ## P2's coolant jug on the van's rack with `litres` in it, as after the
@@ -865,6 +879,21 @@ func play_puzzle(k: int) -> String:
 			var at: Vector3 = boot.builder.poi[e[2]]
 			van_to(van_spot(at + Vector3(-18, 0, 6)), 0.0)
 			boot.camper.repair_all()
+	if e[1] == "windmill":
+		# in the van on the lane, 30 m short of the junction gate, facing it
+		var lane: Route = boot.builder.network.road("home_lane")
+		var g: Vector3 = boot.builder.poi["windmill_gate"]
+		var gi := 0
+		for i in lane.point_count():
+			if lane.point(i).distance_to(g) < lane.point(gi).distance_to(g):
+				gi = i
+		var vi := gi
+		while vi > 0 and lane.point(vi).distance_to(g) < 30.0:
+			vi -= 1
+		van_to(lane.point(vi), atan2(-lane.forward(vi).x, -lane.forward(vi).z))
+		boot.camper.repair_all()
+		teleport(boot.camper.global_transform * Vector3(-3.2, 0, -1.0))
+		run("van_seat")
 	if e[1] == "coolant":
 		# the van just outside the yard's gate, where you'd pull in
 		var sta := get_tree().get_first_node_in_group("cooling_station") as CoolingStation

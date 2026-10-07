@@ -114,6 +114,17 @@ var wheel_point := Vector3.ZERO
 var wheel_sel := -1
 var wheel_cursor := Vector2.ZERO
 var _wheel_t := 0.0
+## The fun mechanics (puzzle #2, the user 2026-10-07): the head-butt (G /
+## pad RB, empty hands, on foot), taking the map off your partner (E, looking
+## at them), and pushing them out of the van (seated: G, pad hold RB).
+const BUTT_REACH := 1.8
+const BUTT_COOLDOWN := 0.5
+const SNATCH_REACH := 2.3
+const PUSH_HOLD := 0.5                 ## pad: hold RB this long (a tap opens the journal)
+var _butt_cd := 0.0
+var _butt_t := 0.0                     ## > 0 while the head lunges forward
+var _shove := Vector3.ZERO             ## a stagger from being butted, dying away
+var _push_hold := 0.0
 
 
 func _ready() -> void:
@@ -285,6 +296,12 @@ func _physics_process(delta: float) -> void:
 	if _knock_van != null and is_instance_valid(_knock_van) and _knock_van.global_position.distance_to(global_position) > 5.0:
 		remove_collision_exception_with(_knock_van)
 		_knock_van = null
+	_butt_cd = maxf(0.0, _butt_cd - delta)
+	_butt_t = maxf(0.0, _butt_t - delta)
+	if seat != null:
+		_push_controls(delta)
+		if seat == null:
+			return
 	# Look itself is applied per rendered frame in _process; the physics step
 	# only copies the result onto the body, the head and the interaction ray.
 	rotation.y = yaw
@@ -307,6 +324,8 @@ func _physics_process(delta: float) -> void:
 		_scan()
 		if dev.just_pressed("tag") and can_tag():
 			tag_look()
+		if seat == null and ladder == null and held == null and not in_box and dev.just_pressed("throw"):
+			headbutt()
 	_command_controls(delta)
 	if seat != null and not map_open and dev.just_pressed("journal") and _van_parked():
 		_open_journal()
@@ -335,7 +354,8 @@ func _process(delta: float) -> void:
 		var sx := seat.get_global_transform_interpolated()
 		xf = sx * Transform3D(Basis.from_euler(Vector3(pitch, _seat_yaw, 0)), Vector3(0, SEATED_EYE, 0))
 	else:
-		var origin := get_global_transform_interpolated().origin + Basis(Vector3.UP, yaw) * (Vector3(0, eye_height, 0) + peek_offset) + bob_offset
+		var lunge := sin(clampf(_butt_t / 0.22, 0.0, 1.0) * PI) * 0.28
+		var origin := get_global_transform_interpolated().origin + Basis(Vector3.UP, yaw) * (Vector3(0, eye_height - lunge * 0.3, -lunge) + peek_offset) + bob_offset
 		xf = Transform3D(Basis.from_euler(Vector3(pitch, yaw, 0)), origin)
 	var b := xf.basis.rotated(xf.basis.z.normalized(), cam_roll)
 	cam.global_transform = Transform3D(b, xf.origin)
@@ -395,8 +415,9 @@ func _walk(delta: float) -> void:
 	# last collision: pressing into a crate side zeroed velocity every tick, so
 	# a jump from against it never had the momentum to carry you on top.
 	_plan_vel = _plan_vel.move_toward(Vector2(target.x, target.z), accel * delta * 6.0)
-	velocity.x = _plan_vel.x
-	velocity.z = _plan_vel.y
+	velocity.x = _plan_vel.x + _shove.x
+	velocity.z = _plan_vel.y + _shove.z
+	_shove = _shove.move_toward(Vector3.ZERO, 12.0 * delta)
 	move_and_slide()
 	# Walking into loose items nudges them along instead of stopping dead.
 	for i in get_slide_collision_count():
@@ -595,6 +616,9 @@ func _scan() -> void:
 				if label != "":
 					target = node
 					text = "[%s]  %s" % [dev.glyph("interact"), label]
+	var snatch := _snatch_target() if target == null else null
+	if text == "" and snatch != null:
+		text = "[%s]  Take the map off P%d" % [dev.glyph("interact"), snatch.index + 1]
 	if text == "" and _near_upset_van() != null:
 		text = "[%s]  Right the van" % dev.glyph("recover")
 	if seat != null and text == "":
@@ -626,6 +650,8 @@ func _scan() -> void:
 					_slow_use_target = target
 				else:
 					cb.call(self)
+		elif snatch != null:
+			take_map_from(snatch)
 		elif seat != null and _can_exit():
 			exit_vehicle()
 	# things you hold E on (pump handles, cranks) get called every tick
@@ -975,6 +1001,127 @@ func tag_look() -> TagMarker:
 	return TagMarker.place(self, hit.position, hit.collider)
 
 
+# --- head-butts, the map snatch, the push -----------------------------------------
+
+## A quick lunge of the head at whatever is right in front: a windmill leg
+## (its "on_headbutt"), your partner, Naresh, the van, loose things. Not a
+## weapon: a creature only hears it.
+func headbutt() -> void:
+	if _butt_cd > 0.0 or knocked_t > 0.0 or taken_hold > 0.0:
+		return
+	_butt_cd = BUTT_COOLDOWN
+	_butt_t = 0.22
+	var xf := head.global_transform
+	var fwd := -xf.basis.z
+	var flat := Vector3(fwd.x, 0, fwd.z).normalized()
+	_plan_vel += Vector2(flat.x, flat.z) * 2.0
+	var space := get_world_3d().direct_space_state
+	var ex: Array[RID] = [get_rid()]
+	var hit := {}
+	# straight ahead, then a little lower (a butt at a chest still lands)
+	for drop in [0.0, 0.4, 0.8]:
+		var from: Vector3 = xf.origin + Vector3.DOWN * drop
+		var q := PhysicsRayQueryParameters3D.create(from, from + fwd * BUTT_REACH, 1 | 2 | 8 | Carryable.LAYER | 32, ex)
+		hit = space.intersect_ray(q)
+		if not hit.is_empty():
+			break
+	Hearing.emit(global_position, Hearing.LANDING, "bonk")
+	if hit.is_empty():
+		Sfx.play3d("pluck", head.global_position, -14.0)
+		return
+	var col: Object = hit["collider"]
+	print("[butt] P%d butts %s" % [index + 1, (col as Node).name if col is Node else "?"])
+	cam_roll += 0.05
+	var n := col as Node
+	while n != null and not n.has_meta("on_headbutt"):
+		n = n.get_parent()
+	if n != null:
+		(n.get_meta("on_headbutt") as Callable).call(self)
+		return
+	Sfx.play3d("hit_soft", hit["position"], 0.0)
+	if col is PlayerRig:
+		(col as PlayerRig).butted(self, flat)
+	elif col is Naresh:
+		var nz := col as Naresh
+		nz.knock(flat * 3.0 + Vector3.UP * 1.5)
+		nz.say(["Oi!", "Really?", "What was that for?", "My head!"][randi() % 4])
+	elif col is Camper:
+		(col as Camper).thump(hit["position"], flat)
+	elif col is RigidBody3D:
+		var rb := col as RigidBody3D
+		if rb.freeze or (rb is Carryable and not (rb as Carryable).holders.is_empty()):
+			return
+		rb.apply_central_impulse((flat * 3.0 + Vector3.UP * 1.2) * rb.mass)
+		Sfx.play3d("hit_wood", hit["position"], -4.0)
+
+
+## Butted by your partner: you stagger back, your view jolts, stars.
+func butted(by: PlayerRig, dir: Vector3) -> void:
+	if seat != null or knocked_t > 0.0 or ladder != null:
+		return
+	_shove = dir * 5.5
+	cam_roll += 0.18 * (1.0 if randf() < 0.5 else -1.0)
+	pitch = clampf(pitch + 0.12, -PITCH_LIMIT, PITCH_LIMIT)
+	Sfx.play3d("hit_wood", head.global_position, 2.0)
+	say("* BONK * P%d head-butted you." % (by.index + 1), 2.0)
+
+
+## Your partner, if they have the map, are within reach and you look at them.
+func _snatch_target() -> PlayerRig:
+	var ms := paper_map.state if paper_map != null else null
+	if ms == null or ms.holder == index or ms.holder < 0 or knocked_t > 0.0:
+		return null
+	for n in get_tree().get_nodes_in_group("player"):
+		var o := n as PlayerRig
+		if o == self or o.index != ms.holder:
+			continue
+		var to := o.head.global_position - head.global_position
+		var aim := -head.global_transform.basis.z
+		if to.length() < SNATCH_REACH and aim.angle_to(to) < deg_to_rad(35.0):
+			return o
+	return null
+
+
+## The map changes hands (out of theirs, even open, into your pocket).
+func take_map_from(o: PlayerRig) -> void:
+	var ms := paper_map.state
+	if ms == null or ms.holder != o.index:
+		return
+	o.set_map_open(false)
+	ms.holder = index
+	ms.changed.emit()
+	Sfx.play3d("paper_close", head.global_position, 0.0)
+	say("You've got the map.", 2.0)
+	o.say("P%d snatched the map off you!" % (index + 1), 2.5)
+	print("[map] P%d took the map from P%d" % [index + 1, o.index + 1])
+
+
+## Seated: G (pad: hold RB) shoves the other one out of their door, at any
+## speed. Pad RB is also the journal in a parked van, so the pad holds.
+func _push_controls(delta: float) -> void:
+	if map_open or knocked_t > 0.0:
+		_push_hold = 0.0
+		return
+	var go := false
+	if dev.kind == InputDevice.Kind.KBM:
+		go = dev.just_pressed("throw")
+	elif dev.held("throw"):
+		if _push_hold >= 0.0:
+			_push_hold += delta
+			if _push_hold >= PUSH_HOLD:
+				go = true
+				_push_hold = -1.0       # until RB is let go
+	else:
+		_push_hold = 0.0
+	if not go or vehicle == null:
+		return
+	var other: PlayerRig = vehicle.passenger if seat_role == "driver" else vehicle.driver
+	if other == null:
+		return
+	journal_open = false
+	vehicle.push_out(other, self)
+
+
 # --- paper map -----------------------------------------------------------------
 
 ## The map can be read on foot, or in the van while it is stopped.
@@ -988,6 +1135,10 @@ func _update_map() -> void:
 	if paper_map == null:
 		return
 	if dev.just_pressed("map"):
+		var ms := paper_map.state
+		if not map_open and ms != null and ms.holder != index:
+			say(ms.who_has_it(index), 3.0)
+			return
 		set_map_open(not map_open and can_read_map())
 	elif map_open and not can_read_map():
 		set_map_open(false)      # the van pulled away: fold it up
@@ -1007,8 +1158,10 @@ func set_map_open(open: bool) -> void:
 
 func _map_controls() -> void:
 	if dev.just_pressed("map_place"):
-		paper_map.place_stamp()
-		Sfx.play3d("stamp", head.global_position, -2.0)
+		if paper_map.place_stamp():
+			Sfx.play3d("stamp", head.global_position, -2.0)
+		else:
+			Sfx.play_ui("ui_error", -10.0)
 	elif dev.just_pressed("map_remove"):
 		if paper_map.remove_stamp():
 			Sfx.play3d("page", head.global_position, -6.0)

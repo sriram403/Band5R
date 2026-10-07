@@ -17,11 +17,7 @@ const WATER := Color(0.36, 0.58, 0.74)
 const GRAVEL := Color(0.52, 0.40, 0.26)
 
 const STAMP_STYLE := {
-	"fuel": {"col": Color(0.85, 0.30, 0.18), "glyph": "F", "name": "FUEL"},
-	"danger": {"col": Color(0.80, 0.10, 0.12), "glyph": "!", "name": "DANGER"},
-	"puzzle": {"col": Color(0.45, 0.30, 0.75), "glyph": "?", "name": "PUZZLE"},
-	"shortcut": {"col": Color(0.15, 0.55, 0.35), "glyph": ">", "name": "SHORTCUT"},
-	"unexplored": {"col": Color(0.30, 0.45, 0.70), "glyph": "o", "name": "UNEXPLORED"},
+	"napin": {"col": Color(0.85, 0.15, 0.12), "glyph": "N", "name": "NAPIN"},
 }
 
 static var _relief: ImageTexture = null
@@ -112,8 +108,13 @@ func cycle_stamp(dir: int) -> void:
 	queue_redraw()
 
 
-func place_stamp() -> void:
+## Pin the napin at the pencil (moving it if it's elsewhere). False with no
+## napin yet.
+func place_stamp() -> bool:
+	if not state.napin:
+		return false
 	state.add_stamp(current_stamp(), cursor_world())
+	return true
 
 
 func remove_stamp() -> bool:
@@ -179,10 +180,13 @@ func _draw() -> void:
 
 	# pencil cursor and the stamp it will place
 	var cp := paper_to_screen(cursor)
-	_draw_stamp(cp + Vector2(22, -22), current_stamp(), 0.8)
+	if state.napin:
+		_draw_stamp(cp + Vector2(22, -22), current_stamp(), 0.8)
 	draw_line(cp + Vector2(-10, 0), cp + Vector2(10, 0), INK, 1.5)
 	draw_line(cp + Vector2(0, -10), cp + Vector2(0, 10), INK, 1.5)
-	var help := "Stamp: %s   [Q/E] change   [LMB] place   [RMB] rub out   [wheel / + -] zoom %.1fx   [M] put away" % [STAMP_STYLE[current_stamp()]["name"], zoom]
+	var help := "[LMB] stick the napin here   [RMB] take it out   [wheel / + -] zoom %.1fx   [M] put away" % zoom
+	if not state.napin:
+		help = "No pin yet: you can only look.   [wheel / + -] zoom %.1fx   [M] put away" % zoom
 	draw_string(_font, Vector2(r.position.x, r.end.y + 26), help, HORIZONTAL_ALIGNMENT_LEFT, r.size.x, 15, Color(1, 1, 1, 0.95))
 
 

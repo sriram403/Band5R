@@ -39,7 +39,7 @@ const P2_OPENING := [
 	["Read the message from Naresh's mother (P)", "P or D-pad right opens your read-only phone."],
 	["Find batteries in the kitchen drawer and fit them", "The torch is dead. Open the kitchen drawer with E, carry the batteries and press F."],
 	["Open the shed and fill the red fuel can", "Use the torch inside the shed. Carry the empty can to the drum and hold E to fill it."],
-	["Stamp the windmill on the shared paper map", "Open the map with M or D-pad down. Move the pencil to the windmill and place a stamp."],
+	["Take the paper map from the desk upstairs", "It's on the desk in the upstairs room. There's only the one map: whoever has it opens it with M (D-pad down); the other has to take it off them."],
 	["Watch for P1's van", "The upstairs window looks out over the lane. Or wait by the drive."],
 	["Carry the can and coolant jug to the van rack", "Take both from the shed and stow them on P1's van. The jug only fits the rack's right-hand slot."],
 	["Get into the van with P1", "Join P1 in the van when the gear is loaded."],
@@ -65,10 +65,13 @@ func setup(b: Node) -> void:
 			"done": func(): return _can_on_rack() or boot.camper.fuel >= 40.0},
 		{"id": "to_windmill", "text": "Drive up the lane to the windmill",
 			"hint": "Driver's door is on the left of the van. X starts the engine, W to go. The windmill is where the lane ends.",
-			"done": func(): return _van_near("j1", 45.0)},
-		{"id": "windmill", "text": "The windmill is jammed. Free it: the miller's box at its foot holds a map",
-			"hint": "One climbs the ladder at the back of the tower to the platform and tags the blade with the rope round it (T). The other works the brake lever out front: let it off, and put it back on when the tagged blade comes down to the platform. Then cut the rope (hold E).",
-			"done": func(): return flags.has("windmill_map") or _van_near("j2", 70.0)},
+			"done": func(): return _van_near("windmill_gate", 45.0) or _van_near("j1", 45.0)},
+		{"id": "windmill", "text": "The junction gate has no power. Get the windmill turning",
+			"hint": "Naresh's note on the starter lever: \"Hold it down till she catches the wind, don't let go. The footings are cracked and the legs walk when she spins up. Head-butt them back (G). Works every time.\" One holds the lever (E) and watches the legs; the other runs to whichever leg slides and butts it back.",
+			"done": func(): return flags.has("windmill_power") or _van_near("j2", 70.0)},
+		{"id": "napin", "text": "The ladder's down: climb the windmill",
+			"hint": "Up the rope ladder at the back of the windmill (E, then W) to the walkway by the fan. There's a chest up there. Come down the same way (look at the top of the ladder, E, then S).",
+			"done": func(): return flags.has("napin") or _van_near("j2", 70.0)},
 		{"id": "choose_road", "text": "Pick a road to Bessi: Valley Road or Ridge Track",
 			"hint": "Both reach Last Fuel. The ridge track is shorter but steep - watch the temperature gauge. The signpost and your map (M) help.",
 			"done": func(): return _van_near("j2", 70.0)},
@@ -105,8 +108,8 @@ func setup(b: Node) -> void:
 		{"id": "tower", "text": "Something paces round the watchtower. Get up it without being seen",
 			"hint": "Keep low (Ctrl / B) and keep cover between you and it; peek out (hold RMB / LT) to watch where it goes. Move when it's on the far side. A box from the stack by the road works too - keep still when it looks. The ramp is at the back.",
 			"done": func(): return _on_deck("coast_tower_deck")},
-		{"id": "stamp_beach", "text": "From the top: find Bessi beach and stamp it on your map",
-			"hint": "Look out to the sea: the long beach with the stalls, the rose-shaped hill behind it. Open the map (M), move the stamp over the beach and stamp it. The nav in the van will point there.",
+		{"id": "stamp_beach", "text": "From the top: find Bessi beach and put the napin on it",
+			"hint": "Look out to the sea: the long beach with the stalls, the rose-shaped hill behind it. Whoever has the map opens it (M), moves the pencil over the beach and sticks the napin in. The nav in the van will point there.",
 			"done": func(): return _stamp_near("beach", 300.0)},
 		{"id": "to_beach", "text": "Down to Bessi beach",
 			"hint": "Down the Beach Road to the loop round the rose-shaped hill, then east to the sea: the promenade with the stalls.",
@@ -467,7 +470,7 @@ func _opening_done(who: int, step: int) -> bool:
 			0: return phone_unread(1) == 0
 			1: return house != null and house.drawer_open and boot.players[1].flashlight_seconds > 0.0
 			2: return house != null and house.fuel_can.litres >= 19.0
-			3: return _windmill_stamped()
+			3: return boot.map_state.holder == 1
 			4:
 				# from the window, or already out at the drive when the van pulls up
 				var p2: PlayerRig = boot.players[1]
@@ -475,14 +478,6 @@ func _opening_done(who: int, step: int) -> bool:
 					or p2.global_position.distance_to(boot.camper.global_position) < 20.0)
 			5: return _opening_gear_stowed()
 			6: return boot.players[1].seat != null
-	return false
-
-
-func _windmill_stamped() -> bool:
-	var target: Vector3 = boot.builder.poi["j1"]
-	for stamp in boot.map_state.stamps:
-		if (stamp["pos"] as Vector2).distance_to(Vector2(target.x, target.z)) < 85.0:
-			return true
 	return false
 
 

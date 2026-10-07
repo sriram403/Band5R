@@ -93,6 +93,9 @@ func _ready() -> void:
 	map_state.add_to_group("map_state")
 	add_child(map_state)
 	map_state.setup(builder)
+	# the one paper map: on the desk at P2's in a new game (the opening),
+	# with P1 otherwise (play-tests, gyms); a load sets its own
+	map_state.holder = -1 if opening_run else 0
 
 	_spawn_camper()
 	_load_settings()
