@@ -127,6 +127,8 @@ func glyph(action: String) -> String:
 			"zoom": return "LT"
 			"horn": return "L3"
 			"command": return "D-Up"
+			"fwd": return "Stick up"
+			"back": return "Stick down"
 			_: return "?"
 	match action:
 		"interact": return "E"
@@ -151,6 +153,8 @@ func glyph(action: String) -> String:
 		"zoom": return "RMB"
 		"horn": return "Q"
 		"command": return "V"
+		"fwd": return "W"
+		"back": return "S"
 		_: return "?"
 
 

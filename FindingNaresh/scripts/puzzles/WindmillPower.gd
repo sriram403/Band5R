@@ -347,7 +347,7 @@ func _land(pivot: Vector3) -> void:
 func _restart() -> void:
 	falling = false
 	reset()
-	var spot := global_transform * (LEVER_AT + Vector3(-3.0, 0, 3.0))
+	var spot := global_transform * (LEVER_AT + Vector3(-2.5, 0, -4.0))     # the lane side of the lever
 	var i := 0
 	for p in get_tree().get_nodes_in_group("player"):
 		var q := p as PlayerRig
@@ -577,10 +577,10 @@ func _build_tower() -> void:
 	for k in 4:
 		var sx := 1.0 if k % 2 == 0 else -1.0
 		var sz := 1.0 if k < 2 else -1.0
-		var f := Build.solid_box(Vector3(1.4, 0.5, 1.4), stone, Vector3(sx * FOOT, 0.05, sz * FOOT), Vector3(0, 45, 0), "Footing%d" % k)
+		var f := Build.solid_box(Vector3(1.4, 0.5, 1.4), stone, Vector3(sx * FOOT, -0.13, sz * FOOT), Vector3(0, 45, 0), "Footing%d" % k)
 		add_child(f)
 		# a crack across each footing
-		add_child(Build.box(Vector3(1.0, 0.02, 0.06), ToonMat.flat(Color(0.2, 0.2, 0.2)), Vector3(sx * FOOT, 0.31, sz * FOOT), Vector3(0, -30 * sx * sz, 0), "Crack"))
+		add_child(Build.box(Vector3(1.0, 0.02, 0.06), ToonMat.flat(Color(0.2, 0.2, 0.2)), Vector3(sx * FOOT, 0.13, sz * FOOT), Vector3(0, -30 * sx * sz, 0), "Crack"))
 	# legs: one body each, so a butt knows which leg it hit
 	var leg_len := Vector3(FOOT - LEG_TOP, COLLAR_Y, FOOT - LEG_TOP).length() + 0.3
 	for k in 4:

@@ -4,6 +4,10 @@
   {
    "do": "eval",
    "expr": "boot._on_joy_changed(0, true)"
+  },
+  {
+   "do": "eval",
+   "expr": "boot.map_state.set('holder', 1)"
   }
  ],
  "steps": [
@@ -36,6 +40,10 @@
    "name": "2.1 up the lane: the junction gate stops the van",
    "max": 60,
    "do": [
+    {
+     "do": "call",
+     "fn": "engine_on"
+    },
     {
      "do": "eval",
      "expr": "boot.camper.set_parking_brake(false)"
@@ -106,11 +114,27 @@
      "max": 30
     },
     {
+     "do": "call",
+     "fn": "round_van",
+     "args": [
+      "p2",
+      -1.0,
+      true
+     ]
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:wm_at(-8.5, 0.2, -9.0)",
+     "arrive": 0.8,
+     "max": 40
+    },
+    {
      "do": "walk",
      "who": 2,
      "to": "expr:wm_at(-6.5, 0.2, -2.0)",
      "arrive": 0.8,
-     "max": 40
+     "max": 20
     },
     {
      "do": "look",
@@ -251,6 +275,11 @@
     {
      "do": "down",
      "key": "E"
+    },
+    {
+     "do": "until",
+     "expr": "wm().lever_held",
+     "max": 3
     },
     {
      "do": "call",
@@ -457,6 +486,13 @@
      "s": 0.5
     },
     {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:wm_at(4.0, 0.2, -10.0)",
+     "arrive": 0.6,
+     "max": 20
+    },
+    {
      "do": "pad_tap",
      "btn": "DOWN"
     },
@@ -501,6 +537,13 @@
    "name": "2.9 the fun: P1 takes the map off P2, P2 head-butts P1",
    "max": 60,
    "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:wm_at(2.5, 0.2, -17.0)",
+     "arrive": 0.6,
+     "max": 10
+    },
     {
      "do": "walk",
      "who": 1,
@@ -572,6 +615,15 @@
      "key": "E"
     },
     {
+     "do": "call",
+     "fn": "round_van",
+     "args": [
+      "p2",
+      1.0,
+      true
+     ]
+    },
+    {
      "do": "walk",
      "who": 2,
      "to": "expr:boot.camper.global_transform * Vector3(2.3, 0.2, -1.2)",
@@ -597,12 +649,13 @@
      "key": "Space"
     },
     {
-     "do": "drive",
-     "road": "home_lane",
-     "to": "expr:boot.builder.poi['j1']",
-     "until": "boot.camper.linear_velocity.length() > 7.5",
-     "max": 20,
-     "kmh": 35
+     "do": "down",
+     "key": "W"
+    },
+    {
+     "do": "until",
+     "expr": "boot.camper.linear_velocity.length() > 8.0",
+     "max": 8
     },
     {
      "do": "pad_hold",
@@ -610,14 +663,18 @@
      "s": 0.8
     },
     {
+     "do": "up",
+     "key": "W"
+    },
+    {
      "do": "wait",
-     "s": 4.0
+     "s": 5.0
     }
    ],
    "expect": [
     {
-     "name": "P1 tumbles out on the road past the gate",
-     "expr": "p1().seat == null",
+     "name": "P1 tumbles out on the road past the gate; the van rolls on",
+     "expr": "p1().seat == null and wm_van_short_of_gate() == false",
      "within": 2
     }
    ]

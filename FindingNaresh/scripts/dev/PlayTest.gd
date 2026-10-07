@@ -9681,15 +9681,20 @@ func wm_guard_legs(max_s: float) -> bool:
 		var foot := w.leg_foot(k)
 		var inward := w.global_position - foot
 		inward.y = 0.0
-		await pad_walk_to(q, foot + inward.normalized() * 1.9, 0.5, 10.0)
-		await look_at_point(q, foot.lerp(w.global_position + Vector3.UP * WindmillPower.COLLAR_Y, 0.25))
+		# the leg leans in: at head height it's ~1.3 m in from its foot;
+		# stand a step further in than that, facing it
+		var at_head := foot.lerp(w.global_position + Vector3.UP * WindmillPower.COLLAR_Y, 1.55 / WindmillPower.COLLAR_Y)
+		var stand := at_head + inward.normalized() * 0.95
+		await pad_walk_to(q, Vector3(stand.x, q.global_position.y, stand.z), 0.35, 10.0)
+		await look_at_point(q, at_head)
 		await physics_frames(4)
 		for i in 5:
 			if w.leg_state[k] != 1:
 				break
 			await pad_tap(JOY_BUTTON_RIGHT_SHOULDER)
 			await wait(0.45)
-		log_line("guard: leg %d now state %d (power %.0f %%)" % [k, w.leg_state[k], w.power * 100.0])
+		log_line("guard: leg %d now state %d (power %.0f %%), P2 %.1f m from its foot, cooldown %.2f, knocked %.1f, hold %.1f" % [k, w.leg_state[k], w.power * 100.0,
+			Vector2(q.global_position.x - foot.x, q.global_position.z - foot.z).length(), q._butt_cd, q.knocked_t, q.taken_hold])
 	return w.caught
 
 

@@ -616,7 +616,16 @@ func _scan() -> void:
 				if label != "":
 					target = node
 					text = "[%s]  %s" % [dev.glyph("interact"), label]
-	var snatch := _snatch_target() if target == null else null
+	# your partner with the map, nearer than what the ray found behind them
+	# (the ray looks through people: P1 climbed the windmill's ladder behind
+	# P2 instead of taking the map, the 2026-10-07 walk)
+	var snatch := _snatch_target()
+	if snatch != null and target != null and ray.is_colliding() \
+			and head.global_position.distance_to(ray.get_collision_point()) > head.global_position.distance_to(snatch.head.global_position):
+		target = null
+		text = ""
+	elif target != null:
+		snatch = null
 	if text == "" and snatch != null:
 		text = "[%s]  Take the map off P%d" % [dev.glyph("interact"), snatch.index + 1]
 	if text == "" and _near_upset_van() != null:
@@ -1025,8 +1034,28 @@ func headbutt() -> void:
 		hit = space.intersect_ray(q)
 		if not hit.is_empty():
 			break
+	if hit.is_empty():
+		# not dead on: anything butt-able in a ball just in front of the
+		# head counts (a thin leaning windmill leg beside your head, the
+		# 2026-10-07 walk: the rays missed it)
+		var ball := SphereShape3D.new()
+		ball.radius = 0.5
+		var sq := PhysicsShapeQueryParameters3D.new()
+		sq.shape = ball
+		sq.transform = Transform3D(Basis(), xf.origin + fwd * 0.75 + Vector3.DOWN * 0.2)
+		sq.collision_mask = 1 | 2 | 8 | Carryable.LAYER
+		sq.exclude = ex
+		for h in space.intersect_shape(sq, 8):
+			var o: Object = h["collider"]
+			var m := o as Node
+			while m != null and not m.has_meta("on_headbutt"):
+				m = m.get_parent()
+			if m != null or o is PlayerRig or o is Naresh or o is Camper or o is Carryable:
+				hit = {"collider": o, "position": (o as Node3D).global_position if o is Node3D else xf.origin}
+				break
 	Hearing.emit(global_position, Hearing.LANDING, "bonk")
 	if hit.is_empty():
+		print("[butt] P%d butts nothing (from %s along %s)" % [index + 1, xf.origin, fwd])
 		Sfx.play3d("pluck", head.global_position, -14.0)
 		return
 	var col: Object = hit["collider"]
