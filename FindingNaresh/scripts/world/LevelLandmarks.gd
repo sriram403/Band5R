@@ -71,77 +71,61 @@ func _homestead() -> void:
 func _windmill(at: Vector3) -> void:
 	var pos := at
 	pos.y = _h(pos.x, pos.z)
-	var root := Node3D.new()
-	root.name = "Windmill"
-	root.position = pos
-	var steel := ToonMat.make(C_STEEL, 0.012)
-	for k in 4:
-		var a := TAU * k / 4.0 + PI * 0.25
-		var leg := Build.cyl(0.12, 14.0, steel, Vector3(cos(a) * 1.6, 6.9, sin(a) * 1.6), Vector3.ZERO, 6, "Leg")
-		leg.rotation_degrees = Vector3(sin(a) * 6.5, 0, -cos(a) * 6.5)
-		root.add_child(leg)
-	for hy in [3.0, 7.0, 11.0]:
-		var w: float = 3.2 - hy * 0.2
-		root.add_child(Build.box(Vector3(w, 0.08, 0.08), steel, Vector3(0, hy, w * 0.5), Vector3.ZERO, "Brace"))
-		root.add_child(Build.box(Vector3(w, 0.08, 0.08), steel, Vector3(0, hy, -w * 0.5), Vector3.ZERO, "Brace"))
-	root.add_child(Build.box(Vector3(0.6, 0.6, 1.2), ToonMat.make(Color(0.72, 0.28, 0.24)), Vector3(0, 14.2, 0), Vector3.ZERO, "Head"))
-	root.add_child(Build.box(Vector3(0.08, 1.4, 2.4), ToonMat.make(Color(0.72, 0.28, 0.24)), Vector3(0, 14.2, 2.0), Vector3.ZERO, "Vane"))
-	var rotor := Spinner.new()
-	rotor.name = "Rotor"
-	rotor.position = Vector3(0, 14.2, -0.8)
-	rotor.axis = Vector3.FORWARD
-	rotor.speed = 0.0             # WindmillBrake turns it
-	root.add_child(rotor)
-	var blade := ToonMat.make(Color(0.92, 0.92, 0.88), 0.012)
-	for b in 12:
-		var holder := Node3D.new()
-		holder.rotation = Vector3(0, 0, TAU * b / 12.0)
-		holder.add_child(Build.box(Vector3(0.35, 2.2, 0.04), blade, Vector3(0, 1.5, 0), Vector3(0, 18, 0), "Blade"))
-		rotor.add_child(holder)
-	root.add_child(Build.solid_cyl(1.6, 1.2, ToonMat.make(C_STONE), Vector3(3.0, 0.6, 0.0), Vector3.ZERO, "Trough"))
-	# solid legs (not a solid tower: you climb inside its frame), a platform
-	# under the hub where the lowest blade tip comes by, and a ladder up the back
-	var body := StaticBody3D.new()
-	body.name = "TowerBody"
-	for k in 4:
-		var a := TAU * k / 4.0 + PI * 0.25
-		var cs := CollisionShape3D.new()
-		var cyl := CylinderShape3D.new()
-		cyl.radius = 0.14
-		cyl.height = 14.0
-		cs.shape = cyl
-		cs.position = Vector3(cos(a) * 1.6, 6.9, sin(a) * 1.6)
-		cs.rotation_degrees = Vector3(sin(a) * 6.5, 0, -cos(a) * 6.5)
-		body.add_child(cs)
-	var deck := ToonMat.make(C_WOOD, 0.012)
-	const PLAT_Y := 11.3
-	root.add_child(Build.box(Vector3(2.6, 0.15, 2.2), deck, Vector3(0, PLAT_Y, 0.5), Vector3.ZERO, "Platform"))
-	body.add_child(_box_shape(Vector3(2.6, 0.15, 2.2), Transform3D(Basis(), Vector3(0, PLAT_Y, 0.5))))
-	for spec in [[Vector3(0.06, 1.0, 2.2), Vector3(-1.3, PLAT_Y + 0.55, 0.5)], [Vector3(0.06, 1.0, 2.2), Vector3(1.3, PLAT_Y + 0.55, 0.5)],
-			[Vector3(2.6, 1.0, 0.06), Vector3(0, PLAT_Y + 0.55, -0.55)],
-			[Vector3(0.9, 1.0, 0.06), Vector3(-0.85, PLAT_Y + 0.55, 1.6)], [Vector3(0.9, 1.0, 0.06), Vector3(0.85, PLAT_Y + 0.55, 1.6)]]:
-		var sz: Vector3 = spec[0]
-		var rail_at: Vector3 = spec[1]
-		root.add_child(Build.box(Vector3(sz.x, 0.06, sz.z), steel, rail_at + Vector3(0, 0.45, 0), Vector3.ZERO, "Rail"))
-		body.add_child(_box_shape(sz, Transform3D(Basis(), rail_at)))
-	root.add_child(body)
-	Ladder.make(root, Vector3(0, 0, 1.75), PLAT_Y + 0.15, Vector3(0, 0, -1), Vector3(0, PLAT_Y + 0.1, 1.0), "WindmillLadder")
-	# the puzzle: brake lever and miller's box out front, where the blades show
-	var lever_at := Vector3(-3.2, 0, -3.6)
-	var box_at := Vector3(3.2, 0, -3.2)
-	lever_at.y = _h(pos.x + lever_at.x, pos.z + lever_at.z) - pos.y
-	box_at.y = _h(pos.x + box_at.x, pos.z + box_at.z) - pos.y
-	var puzzle := WindmillBrake.new()
-	puzzle.name = "WindmillBrake"
-	root.add_child(puzzle)
-	puzzle.setup(rotor, lever_at, box_at)
-	world.add_child(root)
+	# the junction gate: across Home Lane, just before J1 (the windmill stands
+	# on the near side, so you stop beside it)
+	var lane: Route = network.road("home_lane")
+	var want := Vector3(J1.x, 0, J1.y + 18.0)
+	var gi := 0
+	for i in lane.points.size():
+		var q: Vector3 = lane.points[i]
+		if Vector2(q.x, q.z).distance_to(Vector2(want.x, want.z)) < Vector2(lane.points[gi].x, lane.points[gi].z).distance_to(Vector2(want.x, want.z)):
+			gi = i
+	var g: Vector3 = lane.points[gi]
+	var ahead: Vector3 = lane.points[mini(gi + 3, lane.points.size() - 1)] - lane.points[maxi(gi - 3, 0)]
+	ahead.y = 0.0
+	g.y = _h(g.x, g.z)
+	var gate_xf := Transform3D(Basis.looking_at(ahead.normalized(), Vector3.UP), g)
+	# the windmill faces the lane (its -Z, where the fan and the lever are)
+	var to_lane := g - pos
+	to_lane.y = 0.0
+	var xf := Transform3D(Basis.looking_at(to_lane.normalized(), Vector3.UP), pos)
+	# street lamps beyond the gate: up the lane to J1, then a little way
+	# along both roads (S3: the power you made, lit one by one)
+	var lamps := []
+	var right := gate_xf.basis.x
+	for i in range(gi + 1, lane.points.size()):
+		var q: Vector3 = lane.points[i]
+		if lamps.is_empty() and q.distance_to(g) < 12.0:
+			continue
+		if lamps.is_empty() or q.distance_to(lamps[lamps.size() - 1] - right * 5.5) > 24.0:
+			var lp := q + right * 5.5
+			lp.y = _h(lp.x, lp.z)
+			lamps.append(lp)
+	for road_name in ["ridge_track", "valley_road"]:
+		var r: Route = network.road(road_name)
+		var last := Vector3(J1.x, 0, J1.y)
+		var n := 0
+		for q in r.points:
+			if n >= 4:
+				break
+			var qq: Vector3 = q
+			if qq.distance_to(last) > 25.0:
+				var d: Vector3 = r.points[mini(r.points.find(q) + 1, r.points.size() - 1)] - qq
+				var side := Vector3(-d.z, 0, d.x).normalized() * 5.5
+				var lp := qq + side
+				lp.y = _h(lp.x, lp.z)
+				lamps.append(lp)
+				last = qq
+				n += 1
+	var puzzle := WindmillPower.new()
+	puzzle.name = "Windmill"
+	puzzle.setup(xf, world, gate_xf, [40.0, 40.0], lamps)
+	world.add_child(puzzle)
 	poi["windmill"] = pos
-	poi["windmill_ladder"] = pos + Vector3(0, 0, 2.6)
-	poi["windmill_platform"] = pos + Vector3(0, PLAT_Y + 0.2, 0.3)
-	poi["windmill_lever"] = pos + lever_at
-	poi["windmill_box"] = pos + box_at
-
+	poi["windmill_gate"] = g
+	poi["windmill_lever"] = puzzle.lever_spot()
+	poi["windmill_ladder"] = xf * Vector3(0, 0, WindmillPower.LADDER_Z + 0.6)
+	poi["windmill_top"] = xf * Vector3(0, WindmillPower.WALK_Y + 0.1, 1.2)
 
 func _junction_signpost() -> void:
 	var pos := Vector3(J1.x - 8.0, 0, J1.y + 9.0)

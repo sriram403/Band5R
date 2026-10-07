@@ -11,7 +11,9 @@ extends Node
 
 signal changed
 
-const STAMP_TYPES := ["fuel", "danger", "puzzle", "shortcut", "unexplored"]
+## One pin, the napin (puzzle #2, the user 2026-10-07: "only one pin is
+## enough"), found in the chest on the windmill; the nav points at it.
+const STAMP_TYPES := ["napin"]
 const ROAD_CHUNK := 12            ## centreline samples per revealable road piece
 const ROAD_REVEAL_M := 55.0       ## reveal a road piece when a player is this close
 const LANDMARK_REVEAL_M := 160.0  ## landmarks are big; you notice them from further off
@@ -25,7 +27,11 @@ var river_pts := PackedVector2Array()
 var river_chunks: Array = []
 var lakes: Array = []        ## [{pos: Vector2, r: float, revealed: bool}]
 var landmarks: Array = []    ## [{id, label, icon, pos: Vector2, revealed: bool}]
-var stamps: Array = []       ## [{type: String, pos: Vector2}]
+var stamps: Array = []       ## [{type: String, pos: Vector2}]: at most one, the napin
+## Who has the one paper map: -1 nobody (on the desk at P2's house), else the
+## player's index. Only they can open it; the other takes it off them (E).
+var holder := 0
+var napin := false           ## found the napin: the map can be pinned
 var _tick := 0.0
 
 
@@ -170,8 +176,29 @@ func revealed_fraction() -> float:
 # --- stamps --------------------------------------------------------------------
 
 func add_stamp(type: String, world_xz: Vector2) -> void:
+	# one pin: putting it somewhere new moves it
+	stamps.clear()
 	stamps.append({"type": type, "pos": world_xz})
 	changed.emit()
+
+
+func find_napin() -> void:
+	napin = true
+	changed.emit()
+
+
+## F1 back to the windmill or before: the napin is in its chest again.
+func lose_napin() -> void:
+	napin = false
+	stamps.clear()
+	changed.emit()
+
+
+## "P2 has the map" / "The map is on the desk at P2's" for player `i`.
+func who_has_it(i: int) -> String:
+	if holder < 0:
+		return "The map is on the desk upstairs at P2's house."
+	return "P%d has the map. Go and take it off them (E)." % (holder + 1)
 
 
 ## Remove the stamp nearest to a point, if one is within `radius` metres.
@@ -205,7 +232,8 @@ func to_dict() -> Dictionary:
 	var st := []
 	for s in stamps:
 		st.append({"type": s["type"], "x": (s["pos"] as Vector2).x, "z": (s["pos"] as Vector2).y})
-	return {"roads": rd, "river": river_chunks.duplicate(), "lakes": lk, "landmarks": lm, "stamps": st}
+	return {"roads": rd, "river": river_chunks.duplicate(), "lakes": lk, "landmarks": lm, "stamps": st,
+		"holder": holder, "napin": napin}
 
 
 func from_dict(d: Dictionary) -> void:
@@ -224,6 +252,10 @@ func from_dict(d: Dictionary) -> void:
 	for m in landmarks:
 		m["revealed"] = d.get("landmarks", {}).get(m["id"], m["revealed"])
 	stamps.clear()
+	# saves from before the one pin had stamps of five kinds: none kept
+	holder = int(d.get("holder", 1))
+	napin = bool(d.get("napin", false))
 	for s in d.get("stamps", []):
-		stamps.append({"type": s["type"], "pos": Vector2(float(s["x"]), float(s["z"]))})
+		if napin and s["type"] == "napin":
+			stamps = [{"type": "napin", "pos": Vector2(float(s["x"]), float(s["z"]))}]
 	changed.emit()

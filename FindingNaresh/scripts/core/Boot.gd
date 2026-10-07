@@ -34,6 +34,9 @@ var overlay_text: RichTextLabel
 var started := false
 var paused := false
 var kbm_owner := 0                 ## which player the keyboard/mouse drives
+## Solo testing: TAB leaves the player you switch away from holding what they
+## held (F1 → Puzzles, the first row). The user, 2026-10-07.
+var keep_holding := true
 var layout: int = Layout.SIDE_BY_SIDE
 var views: Array[SubViewportContainer] = []
 
@@ -93,6 +96,9 @@ func _ready() -> void:
 	map_state.add_to_group("map_state")
 	add_child(map_state)
 	map_state.setup(builder)
+	# the one paper map: on the desk at P2's in a new game (the opening),
+	# with P1 otherwise (play-tests, gyms); a load sets its own
+	map_state.holder = -1 if opening_run else 0
 
 	_spawn_camper()
 	_load_settings()
@@ -587,8 +593,13 @@ func _input(event: InputEvent) -> void:
 		match (event as InputEventKey).keycode:
 			KEY_TAB:
 				if devices.size() > 1 and devices[1].kind == InputDevice.Kind.KBM:
+					var was := devices[kbm_owner]
 					kbm_owner = 1 - kbm_owner
 					_apply_kbm_owner()
+					if keep_holding:
+						was.active = true          # read its held keys once more, then park it
+						was.park_keeping()
+					devices[kbm_owner].take_over()
 					_set_layout(layout)
 			KEY_F2:
 				_set_layout((layout + 1) % 3)

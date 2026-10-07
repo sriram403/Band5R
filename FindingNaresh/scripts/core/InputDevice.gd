@@ -14,6 +14,13 @@ const DEADZONE := 0.18
 var kind: int = Kind.KBM
 var pad: int = -1              ## joypad device id when kind == PAD
 var active := true             ## false parks the device (used by the solo-test swap)
+## Solo testing (the user, 2026-10-07): what this player was holding when TAB
+## took the keyboard away, kept held while parked (a lever, a crank, W up a
+## ladder). Cleared when the keyboard comes back.
+var kept := {}
+## Keys still down from before a TAB: ignored until let go, so the player
+## you switch to doesn't "press" what the other one was holding.
+var _ignore := {}
 var look_sensitivity := 1.0    ## multiplies both mouse and stick look
 var invert_y := false
 
@@ -127,6 +134,8 @@ func glyph(action: String) -> String:
 			"zoom": return "LT"
 			"horn": return "L3"
 			"command": return "D-Up"
+			"fwd": return "Stick up"
+			"back": return "Stick down"
 			_: return "?"
 	match action:
 		"interact": return "E"
@@ -151,6 +160,8 @@ func glyph(action: String) -> String:
 		"zoom": return "RMB"
 		"horn": return "Q"
 		"command": return "V"
+		"fwd": return "W"
+		"back": return "S"
 		_: return "?"
 
 
@@ -164,10 +175,45 @@ func poll() -> void:
 	if not active:
 		_mouse_delta = Vector2.ZERO
 		_latched.clear()
+		for a in kept:
+			_held[a] = true
 		return
 	for a in all_actions():
-		_held[a] = _raw_held(a) or _latched.has(a)
+		var raw := _raw_held(a)
+		if _ignore.has(a):
+			if raw:
+				continue
+			_ignore.erase(a)
+		_held[a] = raw or _latched.has(a)
 	_latched.clear()
+
+
+## TAB away (solo testing): keep holding what's held now.
+func park_keeping() -> void:
+	kept.clear()
+	for a in _held:
+		if _held[a] and a in ["interact", "fwd", "back", "left", "right", "sprint", "crouch", "zoom"]:
+			kept[a] = true
+	active = false
+
+
+## TAB back (or the switch onto this player): the keys you're pressing now
+## start fresh.
+func take_over() -> void:
+	kept.clear()
+	_ignore.clear()
+	for a in all_actions():
+		if _raw_held(a):
+			_ignore[a] = true
+	active = true
+
+
+## What it's keeping held, for the HUD ("E", "W").
+func kept_text() -> String:
+	var out: Array[String] = []
+	for a in kept:
+		out.append(glyph(a))
+	return " + ".join(out)
 
 
 ## Fed every input event so very short taps are never missed between polls.
@@ -197,7 +243,7 @@ func feed_mouse(rel: Vector2) -> void:
 
 
 func held(action: String) -> bool:
-	if not active:
+	if not active and not kept.has(action):
 		return false
 	return _held.get(action, false)
 
@@ -211,7 +257,9 @@ func just_pressed(action: String) -> bool:
 ## x = strafe (right positive), y = forward (forward positive)
 func move() -> Vector2:
 	if not active:
-		return Vector2.ZERO
+		# parked by a TAB, still walking / climbing if W was kept held
+		return Vector2((1.0 if kept.has("right") else 0.0) - (1.0 if kept.has("left") else 0.0),
+			(1.0 if kept.has("fwd") else 0.0) - (1.0 if kept.has("back") else 0.0)).limit_length(1.0)
 	if kind == Kind.PAD:
 		var v := Vector2(
 			Input.get_joy_axis(pad, JOY_AXIS_LEFT_X),

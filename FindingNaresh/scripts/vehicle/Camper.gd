@@ -900,6 +900,36 @@ func exit_transform_for(role: String) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, yaw), world_pos)
 
 
+## Shoved out of their door by the other seat (a fun mechanic, the user
+## 2026-10-07): at any speed, thrown with the van's speed plus a shove
+## sideways, the same tumble as being hit by it. A pushed driver leaves the
+## van rolling on with nobody at the wheel.
+func push_out(victim: PlayerRig, by: PlayerRig) -> void:
+	if victim.seat == null or victim.vehicle != self:
+		return
+	var role := victim.seat_role
+	var side := -1.0 if role == "driver" else 1.0
+	var v := linear_velocity
+	victim.exit_vehicle()
+	print("[push] P%d pushed P%d out of the %s's door at %.1f m/s" % [by.index + 1, victim.index + 1, role, v.length()])
+	victim.knock(v + global_transform.basis.x * side * 4.0 + Vector3.UP * 2.5, self)
+	Sfx.play3d("door_open", victim.global_position, 2.0)
+	victim.say("P%d shoved you out of the van!" % (by.index + 1), 3.0)
+
+
+## A head-butt: a hollow thump and the body rocks on its springs.
+func thump(at: Vector3, dir: Vector3) -> void:
+	Sfx.play3d("hit_metal", at, 2.0)
+	Hearing.emit(at, Hearing.DOOR, "thump")
+	if not freeze:
+		apply_impulse(dir * 260.0, at - global_position)
+	var local := global_transform.basis.inverse() * dir
+	var tw := create_tween()
+	tw.tween_property(_body_root, "rotation", Vector3(-local.z * 0.05, 0, local.x * 0.05), 0.08)
+	tw.tween_property(_body_root, "rotation", Vector3(local.z * 0.03, 0, -local.x * 0.03), 0.18)
+	tw.tween_property(_body_root, "rotation", Vector3.ZERO, 0.3)
+
+
 func swap_roles() -> void:
 	if linear_velocity.length() > 1.0:
 		return
@@ -1139,7 +1169,7 @@ searching..."
 			return t
 	var ms := get_tree().get_first_node_in_group("map_state") as MapState
 	if ms == null or ms.stamps.is_empty():
-		return "NAV\nno marks\nstamp the map (M)"
+		return "NAV\nno pin\nput the napin on the map" if ms != null and ms.napin else "NAV\nno pin"
 	var st: Dictionary = ms.stamps[ms.stamps.size() - 1]
 	var goal: Vector2 = st["pos"]
 	var to := Vector3(goal.x, 0, goal.y) - global_position

@@ -84,7 +84,7 @@ static func collect(boot: Node) -> Dictionary:
 			e["slot"] = stowed[it.name]
 		items.append(e)
 	var station := boot.get_tree().get_first_node_in_group("cooling_station") as CoolingStation
-	var windmill := boot.get_tree().get_first_node_in_group("windmill_brake") as WindmillBrake
+	var windmill := boot.get_tree().get_first_node_in_group("windmill") as WindmillPower
 	var lift := boot.get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
 	var maze := boot.get_tree().get_first_node_in_group("barn_maze") as BarnMaze
 	var relay := boot.get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
@@ -195,7 +195,7 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	for bp in boot.get_tree().get_nodes_in_group("binocular_pickup"):
 		if boot.story.flags.has("taken_" + (bp as BinocularPickup).tag):
 			bp.queue_free()
-	var windmill := boot.get_tree().get_first_node_in_group("windmill_brake") as WindmillBrake
+	var windmill := boot.get_tree().get_first_node_in_group("windmill") as WindmillPower
 	if windmill and d.has("windmill"):
 		windmill.from_dict(d["windmill"])
 	var lift := boot.get_tree().get_first_node_in_group("lift_bridge") as LiftBridge

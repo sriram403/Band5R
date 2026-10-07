@@ -147,12 +147,13 @@ const PADS := [
 	{"pos": NARESH_HOME, "radius": 18.0, "blend": 10.0},
 	{"pos": FISHING_VILLAGE, "radius": 30.0, "blend": 12.0},
 	{"pos": SALT_PANS, "radius": 42.0, "blend": 12.0},
+	{"pos": WINDMILL, "radius": 9.0, "blend": 10.0},   # level under the four legs (puzzle #2)
 ]
 
 ## Places kept clear of scattered trees (centre, radius).
 const CLEARINGS := [
 	[Vector2(1720, 640), 70.0], [Vector2(405, -150), 34.0], [Vector2(130, 470), 26.0],
-	[Vector2(-1590, 1475), 75.0], [Vector2(-640, 990), 30.0], [Vector2(-340, 665), 30.0],
+	[Vector2(-1590, 1475), 75.0], [Vector2(-640, 990), 46.0], [Vector2(-340, 665), 30.0],
 	[Vector2(-600, -1300), 24.0], [Vector2(-500, 205), 32.0], [Vector2(-519, 215), 20.0], [Vector2(-490, 1590), 30.0],
 	[Vector2(-1250, 1600), 150.0], [Vector2(1395, -85), 40.0], [Vector2(1715, -620), 60.0],
 	[Vector2(1690, -1120), 60.0], [Vector2(-1605, -950), 36.0], [Vector2(-1300, 900), 36.0],

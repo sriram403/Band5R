@@ -50,10 +50,25 @@ func _build() -> void:
 	for y in [3.93, 5.38]:
 		add_child(Build.box(Vector3(1.78, 0.08, 0.08), blue, Vector3(-2.5, y, 4.19), Vector3.ZERO, "WindowFrame"))
 	_part(Vector3(2.4, 0.8, 1.1), Vector3(-3.4, 3.65, -1.8), wood, "UpstairsDesk")
-	add_child(Build.box(Vector3(0.75, 0.02, 0.55), ToonMat.make(Color(0.94, 0.88, 0.66)),
-		Vector3(-3.9, 4.08, -1.7), Vector3.ZERO, "PaperMapOnDesk"))
-	add_child(Build.interact_area(Vector3(0.9, 0.55, 0.5), Vector3(-3.9, 4.15, -0.95),
-		"Open the paper map", func(p): p.set_map_open(true), "MapDesk"))
+	var map_on_desk := Build.box(Vector3(0.75, 0.02, 0.55), ToonMat.make(Color(0.94, 0.88, 0.66)),
+		Vector3(-3.9, 4.08, -1.7), Vector3.ZERO, "PaperMapOnDesk")
+	add_child(map_on_desk)
+	# the one paper map (puzzle #2): taken from here, then always in someone's pocket
+	var desk := Build.interact_area(Vector3(0.9, 0.55, 0.5), Vector3(-3.9, 4.15, -0.95),
+		"Take the paper map", func(p):
+			var ms = get_tree().current_scene.get("map_state")
+			if ms != null and ms.holder < 0:
+				ms.holder = p.index
+				ms.changed.emit()
+				map_on_desk.visible = false
+				Sfx.play3d("paper_close", p.global_position + Vector3.UP, -2.0)
+				p.say("The paper map. Naresh has pencilled a ring round the windmill. It's yours to carry now: M opens it.", 6.0),
+		"MapDesk")
+	desk.set_meta("prompt_fn", func(_p) -> String:
+		var ms = get_tree().current_scene.get("map_state")
+		map_on_desk.visible = ms == null or ms.holder < 0
+		return "Take the paper map" if map_on_desk.visible else "")
+	add_child(desk)
 	add_child(Build.box(Vector3(0.42, 0.12, 0.55), ToonMat.make(Color(0.36, 0.26, 0.18)),
 		Vector3(-2.8, 4.1, -1.7), Vector3.ZERO, "HouseJournal"))
 	add_child(Build.interact_area(Vector3(0.65, 0.55, 0.5), Vector3(-2.8, 4.15, -0.95),
