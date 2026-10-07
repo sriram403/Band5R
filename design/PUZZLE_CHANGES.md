@@ -501,6 +501,29 @@ fragment by his mug; the gear steps skippable; S5-S7 all in.
   further out a van can still get round: east by weaving between the
   forest's trees (6-10 m apart), west across the open hill beyond the
   thicket. Question for the user.
+- **The user's answer (2026-10-07): woods block vans, everywhere.**
+  `LevelScatter._undergrowth`: where trees stand close (a tree with three
+  others within 12 m), neighbours up to 11 m apart are joined by undergrowth
+  only the van collides with (layer VAN_BLOCK; people, Naresh and creatures
+  walk through), with brambles and now and then a fallen log to see, never
+  across a road or the river. 35 647 links between 53 423 trees, +1.3 s of
+  world build. And the windmill's meadow (open grass all the way to the
+  valley road) is fenced along the lane's verge from the gate 230 m down to
+  the woods, ending in a thicket; a **stile** (FOOTPATH) lets you walk in
+  where the van stops. Measured (`gate_bypass`, 12 runs): at the gate's
+  fence, into its thickets, through the woods east (100-170 m out), and
+  from the lane all along the meadow and past its end: the van never gets
+  through.
+- **The fall (the user, 2026-10-07):** it comes down on whoever is
+  standing next to it (within 12 m of its middle); if nobody is, on the
+  one at the starter lever.
+- **The street lamps "going nowhere" (the user, 2026-10-07: make it look as
+  if a storm blew the rest away; foreshadowing):** past the four lit lamps
+  on each road, the next lamp leans hard with its head hanging by the
+  cable and the wire sagging to it, its snapped end trailing in the grass;
+  the next is snapped at head height, its top in the grass and its glass
+  in bits; the next is a stump. Torn branches along the verge, a tree
+  pulled up by its roots.
 
 ### Round 2: questions (answered above)
 

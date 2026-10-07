@@ -120,9 +120,10 @@ Too slow, and the windmill falls on you.
    ("JUNCTION CLOSED / NO POWER"), with fences and boulders either side.
    The windmill stands off to the left.
    - **You should see:** the van can't get past. Both of you get out.
-2. **At the starter lever** (a red handle on a post between the road and
-   the windmill), read **Naresh's note** on the post (E / X). It tells you
-   what to do.
+2. **Over the stile** (a gap with a step in the fence beside the road,
+   marked FOOTPATH) into the windmill's meadow. At the **starter lever** (a
+   red handle on a post between the road and the windmill), read
+   **Naresh's note** on the post (E / X). It tells you what to do.
 3. **Lever player:** hold E / X on the lever, and **keep holding** (you can
    look round while you hold).
    - **You should see:** the fan creeps round, then faster and faster, with
@@ -141,7 +142,8 @@ Too slow, and the windmill falls on you.
      they shout (or tag it, T / RT) which leg is going.
 5. **Try the mistake once:** let a leg slide for 8 s.
    - **You should see:** a groan, the windmill leans further, and 2 s later
-     it falls **towards whoever is nearest**. Under it: a crash, dust, the
+     it falls **on whoever is standing next to it** (or, if nobody is, on
+     the one at the lever). Under it: a crash, dust, the
      screen goes white. A few seconds later it stands again and you're
      both by the gate, ready to start over (your partner gets "you ok? I
      think I'm flat").

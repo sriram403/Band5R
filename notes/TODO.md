@@ -50,7 +50,16 @@ being built and tested), so this always shows where the work is right now.
         the CLANG filled the butter's view. **Open:** a van can still get
         round far out (east through the trees, west over the open hill):
         your call. A butted can only goes ~0.8 m (weak; to look at)
-  - [ ] Your look at the video and the bypass question, then push
+  - [x] Your answer: woods block vans (option 1). Built: undergrowth
+        between close trees (van-only, brambles and logs to see), the
+        windmill's meadow fenced along the lane with a stile; your two asks
+        on the way: the fall comes down on whoever is next to it, else the
+        lever player; the lamp line beyond the last lamps wrecked by a storm
+        (foreshadowing). gate_bypass (12 runs), windmill, fall, fun, solo,
+        save, smoke, set:creatures: 0 failures. Walks puzzle2 + solo2
+        recorded again, sent. set:driving running (the drives through J1
+        now open the gate first)
+  - [ ] Your look at the video, then merge (g5) and push
     - [ ] the walkway bigger, the chest and note easy to see and reach,
           a few lived-in props
     - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being

@@ -263,6 +263,24 @@ happened, the fix, and the habit to keep.
   new aim, so E held on nothing. Passed with a 0.2 s wait after the look.
   **Habit:** after `look_at_point`, wait a few frames (and log the prompt)
   before pressing; the prompt in the log tells you what E will do.
+- **Assumed** (2026-10-08) a new blocker only touched its own puzzle's
+  tests. **Reality:** the junction gate also stopped the old drive tests
+  (journey, routes) that pass J1, and the meadow fence stopped every walk
+  from the van to the lever. **Habit:** when adding anything that blocks a
+  way (a gate, a fence, undergrowth), grep the tests and walks for every
+  one that passes that way, before the long run.
+- **Assumed** (2026-10-08) the stile's gap was open because the fence was
+  split "at the stile". **Reality:** I picked its spot by straight-line
+  distance from the gate and split the fence by distance along it; the two
+  disagreed and a fence slab lay across the gap. **Habit:** one measure for
+  one thing; derive the second from the first.
+- **Assumed** (2026-10-08) the bypass test's "just off the lane" starts
+  were outside the meadow. **Reality:** 9 m off the lane's middle is inside
+  a fence 4.9 m out; the test "failed" the fence it was meant to prove.
+  Then the stile sat exactly where the van stops (the walk couldn't reach
+  it). **Habit:** place test starts from the real thing (the lane's own
+  points, the fence's own line), and look at where the van really parks
+  before putting a way in beside it.
 - **Assumed** (2026-10-07) the windmill was ready because its checks
   passed and the screenshots I looked at were fine. **Reality:** the user
   found at once: the chest up top awkward to reach and its note hidden,
