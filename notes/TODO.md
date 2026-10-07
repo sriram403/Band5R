@@ -41,7 +41,16 @@ being built and tested), so this always shows where the work is right now.
         awkward placement" (PRINCIPLES 10, CLAUDE.md, AGENTS.md, memory)
   - [x] **Round 2 agreed** (all, S6-S8, + a bigger walkway; new rule:
         lived in, never programmatic)
-  - [~] **Building round 2** in `../MPG_dev` branch `g5`:
+  - [x] **Round 2 built** (`../MPG_dev` branch `g5`, merged into main,
+        not pushed; `design/PUZZLE_CHANGES.md` #2 "Round 2: as built").
+        Walk `puzzle2` recorded again (280 s, every step passing), sent.
+        smoke 23, set:opening 5, set:puzzles 7, windmill, fall, fun, solo,
+        save: 0 failures. Found on the way: a G that threw a crate also
+        head-butted (the crate flew 30 m); the napin sat on the closed lid;
+        the CLANG filled the butter's view. **Open:** a van can still get
+        round far out (east through the trees, west over the open hill):
+        your call. A butted can only goes ~0.8 m (weak; to look at)
+  - [ ] Your look at the video and the bypass question, then push
     - [ ] the walkway bigger, the chest and note easy to see and reach,
           a few lived-in props
     - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being
