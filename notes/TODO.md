@@ -35,8 +35,12 @@ being built and tested), so this always shows where the work is right now.
         default). Test `solo` (0 failures), walk `solo2` recorded (92 s:
         one keyboard gets the windmill turning), `appdata/videos/solo2.mp4`.
         Sheet: "Testing alone" at the top of TEST_PUZZLES
-  - [ ] **Your own test of #2** (alone, with TAB), then merge into main
-        and push on your OK
+  - [x] **Your own test of #2** (2026-10-07): five changes (butt visuals,
+        legs showing each butt, the chest and its note, a power hut with a
+        wire to the gate, a proper gate) + the rule "built for humans: no
+        awkward placement" (PRINCIPLES 10, CLAUDE.md, AGENTS.md, memory)
+  - [~] **Round 2 proposed** (`design/PUZZLE_CHANGES.md` #2 "Round 2"),
+        S6-S8; waiting for your answers, nothing built
 - [x] **2026-10-06: puzzle #2, the windmill: your changes heard, my
   proposal written** (`design/PUZZLE_CHANGES.md` #2: a 24 m windmill with
   four legs and one neck, the J1 power gate, the lever held to spin it up,

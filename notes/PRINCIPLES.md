@@ -123,6 +123,11 @@ v5).
   ability. **At least three fun mechanics** like the head-butt (usable on
   partner, Naresh, the van). Mistakes have real consequences (the
   windmill falls on you; start again).
+- **(the user, 2026-10-07) We build for humans, who get irritated by
+  silly mistakes.** Before showing anything, look at every placed thing
+  from where a player stands: visible, easy to reach, its note readable,
+  nothing floating or sunk into the ground, blockers that really block
+  (walk and drive round them). Every action shows visibly that it worked.
 
 ## Sources
 

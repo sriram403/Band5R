@@ -36,6 +36,10 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   ask repeats an earlier puzzle or idea, say so and suggest a way round.
   A challenge can be the thing instead of a puzzle. At least three fun
   mechanics like the head-butt. Mistakes have real consequences.
+- **Built for humans (the user, 2026-10-07).** Look at every placed thing
+  from where a player stands before showing it: visible, reachable, notes
+  readable, nothing floating or sunk, blockers that really block (drive
+  round them). Every action shows visibly that it worked.
 
 ## Two copies of the project
 

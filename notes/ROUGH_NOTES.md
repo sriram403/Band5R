@@ -263,6 +263,16 @@ happened, the fix, and the habit to keep.
   new aim, so E held on nothing. Passed with a 0.2 s wait after the look.
   **Habit:** after `look_at_point`, wait a few frames (and log the prompt)
   before pressing; the prompt in the log tells you what E will do.
+- **Assumed** (2026-10-07) the windmill was ready because its checks
+  passed and the screenshots I looked at were fine. **Reality:** the user
+  found at once: the chest up top awkward to reach and its note hidden,
+  the gate's fence floating on one side and sunk into the hill on the
+  other, the van able to drive round it on the grass, and no visible sign
+  a head-butt landed. I had seen the chest shot ("dark, acceptable for a
+  blockout") and the fence in the gate shot and let both pass. **Fix:**
+  round 2. **Habit:** a screenshot is for judging as a player, not for
+  confirming a check: anything that looks off is a bug; blockers get a
+  test that tries to get round them.
 - **Assumed** (2026-10-07) the solo walk could press TAB right after a
   walk ended. **Reality:** the walk's W release and the TAB landed in the
   same tick, so the player left behind kept "W held" and walked 80 m off

@@ -393,6 +393,78 @@ fragment by his mug; the gear steps skippable; S5-S7 all in.
 
 ---
 
+### Round 2: what the user asked for (2026-10-07, after playing it)
+
+1. **The head-butt needs visuals:** a wind-up and an impact, everywhere.
+2. **The legs:** every butt should show it pushed the leg back into place.
+3. **The chest up top** was awkward to reach and its note hidden: both
+   easy to see and reach. (And from now on: nothing placed awkwardly, for
+   any place: we build for humans.)
+4. **A small room next to the windmill** (closed is fine) with a wire from
+   it to the gate: show the power travelling to the gate and the lamps.
+5. **A proper gate:** the fence floated at one end and went into the
+   ground at the other, and the van could drive round it over the grass.
+
+### Round 2: my proposal
+
+1. **The head-butt, seen by both of you.**
+   - *Wind-up* (0.15 s): your view pulls back and up a little, as you rear
+     your head; your partner sees your avatar's head tip back.
+   - *The lunge and the impact* (0.1 s): your view snaps forward with a
+     short shake. Where it lands: a white burst of little stars, a "BONK!"
+     that pops up and fades (1 s), and dust if it's the ground or a leg.
+   - *Hitting nothing:* the lunge and a "whoosh", no burst.
+   - *Butted yourself:* a ring of stars circles your view for 1 s.
+2. **The legs: you see each butt land.**
+   - A sliding leg's foot gets a red flashing light (it's going: easy to
+     spot from the lever too).
+   - Each butt: the foot jumps back on its footing with a little overshoot,
+     sparks at the shoe, a dust puff, and a dent counter on the footing:
+     1, 2, 3 white marks, one per butt that counted.
+   - Back in place: a heavy bolt-down plate slams onto the shoe (a clank)
+     and the light turns green and stays green. You can always see which
+     legs are done.
+3. **The chest and its note.** The chest moves to the open side of the
+   walkway, facing you as you step off the ladder, 1.5 m from the top
+   rung, in the light, painted bright (red with a yellow lid). Naresh's
+   note is pinned on the chest's lid at eye height when open, and on a post
+   by it before that, readable from the ladder top. The view spot is the
+   other side. I'll check it from where you stand, in screenshots.
+4. **The power hut and the wire.**
+   - A small brick switch hut (2.5 x 2 x 2.5 m, locked door, a small
+     window, "WINDMILL No. 3 / SWITCH HOUSE") between the windmill and the
+     road. A thick cable runs from the windmill's collar down a leg into
+     it.
+   - From the hut, wooden poles every 12 m carry a wire to the gate and on
+     along the lane past it, where the street lamps are.
+   - When it catches the wind: the hut's window lights up and it hums, then
+     a bright spark of light runs along the wire, pole to pole (about 3 s),
+     into the gate (its lamp lights, the boom lifts), then on along the
+     road, each lamp lighting as it passes.
+5. **A proper gate.**
+   - The fence follows the ground: a post every 2.5 m, sitting on the
+     ground, each rail running post to post. Nothing floats or sinks.
+   - It runs out 60 m each side and ends in a thicket (trees and boulders
+     close together) so you can't drive round its ends either.
+   - A test drives the van at both ends of the fence and round the gate:
+     it must not get through. And screenshots of the fence from the road.
+
+### Round 2: my extra ideas (yes or no each)
+
+- **S6. A power meter on the hut** facing the lever: a big dial 0 to
+  100 %, so the lever player sees how far it's wound up without guessing.
+- **S7. The leg light visible from the lever** is part of 2 already; also
+  make it a sound cue with direction (a screech from that leg's side), so
+  the runner can find it by ear.
+- **S8. Butting something solid** (a wall, a tree): a dull thunk and you
+  stagger back a step. Silly, cheap, makes the butt feel physical.
+
+### Round 2: questions
+
+1. **The chest:** at the walkway's open side as above, fine?
+2. **The wire's spark** travelling to the gate and lamps: yes?
+3. **Which of S6-S8?**
+
 ### The proposal (2026-10-06)
 
 ### What the user asked for (2026-10-06)
