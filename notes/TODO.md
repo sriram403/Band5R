@@ -28,8 +28,8 @@ being built and tested), so this always shows where the work is right now.
         counts too); E went to the ladder behind your partner instead of
         the map (the nearer one wins); after a fall you were put behind
         the lever's post (now the lane side); the ladder said "[?/?] Climb"
-  - [~] smoke + set:puzzles running; then **your look at the video**,
-        then merge into main and push on your OK
+  - [x] smoke (23 scenarios) and set:puzzles (7): 0 failures
+  - [ ] **Your look at the video**, then merge into main and push on your OK
 - [x] **2026-10-06: puzzle #2, the windmill: your changes heard, my
   proposal written** (`design/PUZZLE_CHANGES.md` #2: a 24 m windmill with
   four legs and one neck, the J1 power gate, the lever held to spin it up,
