@@ -467,6 +467,41 @@ fragment by his mug; the gear steps skippable; S5-S7 all in.
 2. The spark along the wire: yes.
 3. S6, S7, S8: all yes.
 
+### Round 2: as built (2026-10-07, `../MPG_dev` branch `g5`)
+
+- **The walkway** is bigger (6.8 x 6.6 m, struts under it). Stepping off
+  the ladder, the chest (red, yellow lid and bands) is 1.2 m straight
+  ahead against the back of the gearbox housing; Naresh's note above it at
+  eye height. The napin only shows once the lid's up. Left lying about: a
+  toolbox with a flask, a coil of rope, a folded tarp, an oil can.
+- **The head-butt:** 0.14 s rearing back (your view and your avatar's
+  head), the lunge with a shake, stars and a "BONK!" where it lands (metal
+  adds sparks: "CLANG!"), stars circling the view of whoever's butted. S8:
+  a wall, a tree or a post: "THUNK", you stagger back a step, stars.
+- **The legs:** a warning light on each footing (red flashing while it
+  slides, green once back); each butt jumps the foot back with an
+  overshoot, dust and a white mark on the footing (1-3); back in place, a
+  bolt plate slams down. S7: the screech comes from that leg's foot.
+- **The switch house** (`puzzles/WindmillWire.gd`) on the lane side of the
+  windmill, facing the lever: brick, a locked door, a bench, a bucket, a
+  rain barrel, "WINDMILL No. 3 / SWITCH HOUSE", S6 the POWER dial (its
+  needle follows the fan). A cable runs down a leg into it; poles (each its
+  own lean and height) carry the wire to a pole by the gate and on from
+  street lamp to street lamp, both roads after J1. Caught the wind: the
+  window lights, it hums, a spark runs along the wire; it reaches the gate
+  in 1.7 s (the boom lifts) and lights the lamps one by one as it passes.
+- **The gate:** a yellow motor housing on a concrete pad, the boom resting
+  in a fork, the sign on its own post. Fences (`world/Fence.gd`) follow the
+  ground post by post (spacing 2.4-3.2 m, each post its own lean and
+  height, rails post to post), 150 m west up the hill and 80 m east into
+  the trees, each ending in a thicket (`world/Thicket.gd`: old trees,
+  young ones crowding them, bushes, half-sunk rocks).
+- **Measured** (`gate_bypass`): driving at the fence's middle, its ends and
+  into the thickets, the van is stopped every time (7 of 7). **Not solved:**
+  further out a van can still get round: east by weaving between the
+  forest's trees (6-10 m apart), west across the open hill beyond the
+  thicket. Question for the user.
+
 ### Round 2: questions (answered above)
 
 1. **The chest:** at the walkway's open side as above, fine?

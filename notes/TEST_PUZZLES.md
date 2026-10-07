@@ -129,13 +129,16 @@ Too slow, and the windmill falls on you.
      a creak that quickens and a rising whoosh. Let go and it runs down
      again (twice as fast as it wound up).
 4. **The other player:** stand under the windmill. Four times as it speeds
-   up, one leg screeches and its foot **slides out** off its cracked stone
-   footing (dust, the whole windmill leans that way). Run to it, face the
-   leg and **head-butt it: G / RB, three times**.
-   - **You should see:** each butt clangs and pushes it back a bit; on the
-     third it drops onto its footing ("CLANG"). A leg can slip again once
-     in a while. The lever player has the better view: they shout (or tag
-     it, T / RT) which leg is going.
+   up, one leg screeches (the sound comes from that leg) and its foot
+   **slides out** off its cracked stone footing: dust, its light flashes
+   red, the whole windmill leans that way. Run to it, face the leg and
+   **head-butt it: G / RB**.
+   - **You should see:** your head rears back, lunges, stars and "CLANG!";
+     the foot jumps back with dust and a white mark appears on the footing
+     (up to 3). Back in place: the bolt plate slams down, the light turns
+     green and stays green. A leg can slip again once in a while. The lever
+     player has the better view (and the power dial on the switch house):
+     they shout (or tag it, T / RT) which leg is going.
 5. **Try the mistake once:** let a leg slide for 8 s.
    - **You should see:** a groan, the windmill leans further, and 2 s later
      it falls **towards whoever is nearest**. Under it: a crash, dust, the
@@ -143,16 +146,18 @@ Too slow, and the windmill falls on you.
      both by the gate, ready to start over (your partner gets "you ok? I
      think I'm flat").
 6. **Keep holding until it catches the wind** (about 45 s of holding).
-   - **You should see:** a deeper hum; the gate's lamp lights and the
-     barrier swings up; the street lamps beyond it light one by one. The
-     lever player can let go: the wind keeps it turning.
+   - **You should see:** a deeper hum; the switch house's window lights
+     up and a spark runs along the wire, pole to pole, to the gate (the
+     barrier swings up), then on, lighting the street lamps one by one.
+     The lever player can let go: the wind keeps it turning.
 7. **The ladder:** a few seconds later the shaking shakes the rolled-up
    rope ladder loose; it clatters down the back of the windmill. Climb it
    (E / X, hold W / stick up): 24 m, about 10 s.
    - **You should see:** from the walkway round the head, the fan
      thundering past and the whole valley: "It all goes onto the map".
-8. **The chest** on the walkway: E / X opens it, again to take the
-   **napin**. Naresh's note is on the wall above it.
+8. **The chest** is right in front of you as you step off the ladder:
+   E / X opens it, again to take the **napin**. Naresh's note is on the
+   wall just above it.
    - **You should see:** whoever has the map can now stick the napin in it
      (M, then click / A); the van's nav points at it.
 9. **Down:** look at the top of the ladder, E / X, hold S / stick down.
