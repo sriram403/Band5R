@@ -688,7 +688,7 @@ func _build_lever() -> void:
 	_lever.add_child(Build.cyl(0.04, 1.1, ToonMat.make(Color(0.75, 0.2, 0.18)), Vector3(0, 0.55, 0), Vector3.ZERO, 6, "Handle"))
 	_lever.add_child(Build.sphere(0.08, ToonMat.make(Color(0.1, 0.1, 0.1)), Vector3(0, 1.1, 0), Vector3.ONE, "Knob"))
 	# a cable from the stand towards the windmill
-	base.add_child(Build.label3d("STARTER\nhold down", Vector3(0, 1.35, -0.3), Vector3(0, 180, 0), 0.16, Color(0.95, 0.92, 0.8)))
+	base.add_child(Build.label3d("STARTER\nhold down", Vector3(0, 0.85, -0.26), Vector3(0, 180, 0), 0.07, Color(0.95, 0.92, 0.8)))
 	var a := Build.interact_area(Vector3(1.0, 1.8, 1.0), Vector3(0, 1.0, 0), "", func(_p): pass, "LeverArea")
 	a.set_meta("tag_name", "the starter lever")
 	a.set_meta("prompt_fn", func(_p) -> String:
@@ -699,7 +699,7 @@ func _build_lever() -> void:
 		return "The windmill is turning on its own now" if caught else "")
 	a.set_meta("hold_fn", func(p, dt: float): _hold_lever(p, dt))
 	base.add_child(a)
-	NareshNote.make(base, "wm_lever", Vector3(0, 0.75, -0.26), 180.0,
+	NareshNote.make(base, "wm_lever", Vector3(0, 0.45, -0.26), 180.0,
 		"Starter lever. Hold it down till she catches the wind, don't let go.\nThe footings are cracked and the legs walk when she spins up.\nHead-butt them back (G). Works every time.\n- N")
 
 

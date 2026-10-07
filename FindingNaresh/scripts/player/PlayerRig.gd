@@ -1049,9 +1049,16 @@ func headbutt() -> void:
 		(col as Camper).thump(hit["position"], flat)
 	elif col is RigidBody3D:
 		var rb := col as RigidBody3D
-		if rb.freeze or (rb is Carryable and not (rb as Carryable).holders.is_empty()):
+		if rb is Carryable:
+			var it := rb as Carryable
+			if not it.holders.is_empty() or it.stowed_in != null:
+				return
+			it.freeze = false        # one set out in place (a shelf, a drawer) goes flying too
+			it.sleeping = false
+		elif rb.freeze:
 			return
-		rb.apply_central_impulse((flat * 3.0 + Vector3.UP * 1.2) * rb.mass)
+		# up and away: a straight shove only slid a can half a metre on grass
+		rb.apply_central_impulse((flat * 4.5 + Vector3.UP * 3.0) * rb.mass)
 		Sfx.play3d("hit_wood", hit["position"], -4.0)
 
 

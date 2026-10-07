@@ -3432,7 +3432,8 @@ func t_windmill() -> void:
 		if r["name"] == "valley_road":
 			valley_known = not (r["chunks"] as Array).has(false)
 	check(valley_known, "the view from the top: both roads on to Last Fuel go onto the map")
-	await look_at_point(q, wm.global_transform * Vector3(0, WindmillPower.HUB_Y - 2.0, WindmillPower.ROTOR_Z))
+	await place_player(q, _on_walkway(wm, Vector3(-1.7, 0, -1.6)), 0.0)
+	await look_at_point(q, boot.builder.poi["j1"] + (boot.builder.poi["j1"] - wm.global_position) * 4.0)
 	await shot("windmill_view")
 	# the chest
 	var chest := wm.tower.get_node("Chest") as Node3D
@@ -3478,6 +3479,8 @@ func t_windmill_fall() -> void:
 	var q := p2()
 	await place_player(p, boot.builder.poi["windmill_lever"], 0.0)
 	await look_at_point(p, wm.global_transform * (WindmillPower.LEVER_AT + Vector3(0, 1.4, 0)))
+	await wait(0.2)
+	log_line("P1 at the lever: '%s' at %s, seat %s" % [p.prompt_text, p.global_position, p.seat])
 	# P2 stands in the open, 12 m from the legs, nearer than P1
 	var spot := wm.global_transform * Vector3(-14.0, 0, 2.0)
 	await place_player(q, _on_ground(spot), 0.0)
@@ -9621,3 +9624,82 @@ func ww_fix_b() -> bool:
 ## Where things are at the water works (station-local -> world).
 func ww_at(x: float, y: float, z: float) -> Vector3:
 	return station().global_transform * Vector3(x, y, z)
+
+
+# --- puzzle #2, the windmill: helpers for the walk (tools/live/make_puzzle2.py) ---
+
+func wm() -> WindmillPower:
+	return get_tree().get_first_node_in_group("windmill") as WindmillPower
+
+
+## A point in the windmill's own frame (-Z faces the lane), on the ground
+## when y is near 0.
+func wm_at(x: float, y: float, z: float) -> Vector3:
+	var w := wm().global_transform * Vector3(x, 0, z)
+	return Vector3(w.x, (Landscape.ground(w.x, w.z) if y < 1.0 else wm().global_position.y) + y, w.z)
+
+
+## The lane `back` metres short of the junction gate.
+func wm_gate_approach(back: float) -> Vector3:
+	var g: Vector3 = boot.builder.poi["windmill_gate"]
+	return g + wm().gate.global_transform.basis.z * back
+
+
+func wm_van_short_of_gate() -> bool:
+	var g: Vector3 = boot.builder.poi["windmill_gate"]
+	return (camper().global_position - g).dot(-wm().gate.global_transform.basis.z) < -1.0
+
+
+func wm_valley_known() -> bool:
+	for r in boot.map_state.roads:
+		if r["name"] == "valley_road":
+			return not (r["chunks"] as Array).has(false)
+	return false
+
+
+## P turns to watch the sliding leg (the mistake: nobody butts it).
+func wm_face_sliding(p: PlayerRig) -> bool:
+	var k := wm().sliding_leg()
+	if k < 0:
+		return false
+	await look_at_point(p, wm().leg_foot(k) + Vector3.UP * 2.0)
+	return true
+
+
+## P2 (pad) on guard under the windmill: to each leg as it slides, walking,
+## and head-butts it back (RB) until it sits. True once it catches the wind.
+func wm_guard_legs(max_s: float) -> bool:
+	var w := wm()
+	var q := p2()
+	var t := 0
+	while not w.caught and not w.falling and t < int(max_s * 60.0):
+		await physics_frames(1)
+		t += 1
+		var k := w.sliding_leg()
+		if k < 0:
+			continue
+		var foot := w.leg_foot(k)
+		var inward := w.global_position - foot
+		inward.y = 0.0
+		await pad_walk_to(q, foot + inward.normalized() * 1.9, 0.5, 10.0)
+		await look_at_point(q, foot.lerp(w.global_position + Vector3.UP * WindmillPower.COLLAR_Y, 0.25))
+		await physics_frames(4)
+		for i in 5:
+			if w.leg_state[k] != 1:
+				break
+			await pad_tap(JOY_BUTTON_RIGHT_SHOULDER)
+			await wait(0.45)
+		log_line("guard: leg %d now state %d (power %.0f %%)" % [k, w.leg_state[k], w.power * 100.0])
+	return w.caught
+
+
+## With P's map open: the pencil to a named place.
+func map_cursor_to(p: PlayerRig, place: String) -> bool:
+	if not p.map_open or not boot.builder.poi.has(place):
+		return false
+	var at: Vector3 = boot.builder.poi[place]
+	var b := MapState.BOUNDS
+	p.paper_map.cursor = Vector2((at.x - b.position.x) / b.size.x, (at.z - b.position.y) / b.size.y)
+	p.paper_map.queue_redraw()
+	await physics_frames(2)
+	return true
