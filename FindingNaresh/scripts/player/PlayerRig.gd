@@ -1039,10 +1039,10 @@ func headbutt() -> void:
 		# head counts (a thin leaning windmill leg beside your head, the
 		# 2026-10-07 walk: the rays missed it)
 		var ball := SphereShape3D.new()
-		ball.radius = 0.5
+		ball.radius = 0.6
 		var sq := PhysicsShapeQueryParameters3D.new()
 		sq.shape = ball
-		sq.transform = Transform3D(Basis(), xf.origin + fwd * 0.75 + Vector3.DOWN * 0.2)
+		sq.transform = Transform3D(Basis(), xf.origin + fwd * 1.0 + Vector3.DOWN * 0.2)
 		sq.collision_mask = 1 | 2 | 8 | Carryable.LAYER
 		sq.exclude = ex
 		for h in space.intersect_shape(sq, 8):

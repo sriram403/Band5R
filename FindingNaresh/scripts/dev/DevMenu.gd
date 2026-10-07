@@ -389,7 +389,9 @@ func _rows_for(t: int) -> Array:
 					"[b]%s[/b]\n\n%s\n\n[color=#8a9099]id: %s%s[/color]" % [o["text"], o.get("hint", ""), o["id"], "  (now)" if now else ""]))
 			return rows
 		"Puzzles":
-			var rows: Array = [_header("Reset a puzzle and go there")]
+			var rows: Array = [_row("Solo testing: TAB keeps holding: %s" % ("on" if boot.keep_holding else "off"), "keep_holding", null,
+				"[b]Solo testing[/b]\n\nWith no controller, TAB moves the keyboard to the other player. With this on, the player you leave keeps holding what they held: E on a lever or a crank, W up a ladder. Their screen says HOLDING. TAB back and let go to release."),
+				_header("Reset a puzzle and go there")]
 			for k in PUZZLES.size():
 				var e: Array = PUZZLES[k]
 				rows.append(_row("%2d. %s" % [k + 1, e[0]], "puzzle", k,
@@ -562,6 +564,9 @@ func run(action: String, arg = null) -> void:
 			_note = "Objective: " + boot.story.objective_text(0) + ("   (you're at %s)" % where if where != "" else "")
 		"puzzle":
 			_note = play_puzzle(int(arg))
+		"keep_holding":
+			boot.keep_holding = not boot.keep_holding
+			_note = "TAB keeps holding: %s." % ("on" if boot.keep_holding else "off")
 		"van_flat":
 			c.engine_on = false
 			c.battery = 0.0

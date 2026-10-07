@@ -33,7 +33,7 @@ const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traff
 const SMOKE_GYM := ["mouse", "taps", "enter", "cockpit", "exit", "swap"]
 const SMOKE_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "audio", "dev", "mirrors", "map", "story", "power", "relay_kb", "climb", "look", "pad", "perf", "beach", "save"]
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "windmill_fall", "fun", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "climb", "carry", "look", "pad", "teleports", "puzzle_resets", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "windmill_fall", "fun", "solo", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "climb", "carry", "look", "pad", "teleports", "puzzle_resets", "perf", "save"]
 
 
 func _ready() -> void:
@@ -372,7 +372,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -3547,6 +3547,66 @@ func _pad_walk(p: PlayerRig, target: Vector3, what: String, max_s := 20.0) -> bo
 	log_line("PAD WALK STUCK going to %s: at %s, %.1f m short" % [what, p.global_position, Vector2(target.x - p.global_position.x, target.z - p.global_position.z).length()])
 	await shot("walk_stuck_" + what.replace(" ", "_"))
 	return false
+
+
+## Solo testing (the user, 2026-10-07): one keyboard, no controller. P1
+## holds the windmill's lever, TAB: P1 keeps holding (the fan keeps winding
+## up, P1's screen says HOLDING) while the keyboard walks P2; TAB back and
+## let go: the lever is released. And W kept held up a ladder.
+func t_solo() -> void:
+	var wm := wm()
+	if wm == null:
+		return
+	if boot.devices[1].kind != InputDevice.Kind.KBM:
+		log_line("a controller is in: TAB doesn't swap, skipped")
+		return
+	wm.reset()
+	boot.keep_holding = true
+	if boot.kbm_owner != 0:
+		await tap(KEY_TAB)
+	var p := p1()
+	var q := p2()
+	await place_player(p, boot.builder.poi["windmill_lever"], 0.0)
+	await look_at_point(p, wm.global_transform * (WindmillPower.LEVER_AT + Vector3(0, 1.4, 0)))
+	await place_player(q, _on_ground(wm.global_transform * Vector3(-8.0, 0, -6.0)), 0.0)
+	await wait(0.3)
+	key(KEY_E, true)
+	await wait(1.0)
+	check(wm.lever_held, "P1 holds the lever (E)")
+	await tap(KEY_TAB)
+	await wait(0.2)
+	key(KEY_E, false)
+	await wait(2.0)
+	var pw := wm.power
+	var role: String = boot.huds[0]._role.text
+	log_line("after TAB: P1 '%s', lever held %s, power %.0f %%" % [role, wm.lever_held, pw * 100.0])
+	check(boot.kbm_owner == 1 and wm.lever_held and role.contains("HOLDING E"), "TAB: the keyboard moves to P2, P1 keeps holding the lever (HOLDING E)")
+	check(String(boot.huds[1]._role.text).contains("P1 is holding E"), "... and P2's screen says so too (solo: one view at a time)")
+	# the keyboard now walks P2; E let go above didn't count for P2
+	var q0 := q.global_position
+	await hold_physics(KEY_W, 1.0)
+	check(q.global_position.distance_to(q0) > 2.0 and wm.lever_held and wm.power > pw, "P2 walks on the keyboard while the fan keeps winding up")
+	await tap(KEY_TAB)
+	await wait(0.4)
+	check(boot.kbm_owner == 0 and not wm.lever_held and not boot.huds[0]._role.text.contains("HOLDING"), "TAB back without E: P1 lets go")
+	# a ladder: W kept held, P1 keeps climbing while you play P2
+	wm.from_dict({"caught": true})
+	var lad := wm._ladder
+	await place_player(p, lad.global_transform * Vector3(0, 0.3, 1.4), lad.climb_yaw())
+	await look_at_point(p, lad.global_transform * Vector3(0, 1.6, 0))
+	await wait(0.2)
+	await tap(KEY_E)
+	key(KEY_W, true)
+	await wait(0.6)
+	await tap(KEY_TAB)
+	key(KEY_W, false)
+	var f := 0
+	while p.ladder != null and f < 60 * 15:
+		await physics_frames(1)
+		f += 1
+	check(p.ladder == null and p.global_position.y > wm.global_position.y + 22.0, "W kept held: P1 climbs all the way up while the keyboard is P2's (%.1f s)" % (f / 60.0))
+	await tap(KEY_TAB)
+	wm.reset()
 
 
 ## The three fun mechanics (the user, 2026-10-07): the head-butt (partner,
@@ -9708,3 +9768,40 @@ func map_cursor_to(p: PlayerRig, place: String) -> bool:
 	p.paper_map.queue_redraw()
 	await physics_frames(2)
 	return true
+
+
+## Solo testing: P2 on the keyboard (after a TAB) guards the legs: round the
+## van, then to each sliding leg, butting it back with G.
+func wm_guard_legs_kb(max_s: float) -> bool:
+	var w := wm()
+	var q := p2()
+	var t := 0
+	while not w.caught and not w.falling and t < int(max_s * 60.0):
+		await physics_frames(1)
+		t += 1
+		var k := w.sliding_leg()
+		if k < 0:
+			continue
+		var foot := w.leg_foot(k)
+		var inward := w.global_position - foot
+		inward.y = 0.0
+		var at_head := foot.lerp(w.global_position + Vector3.UP * WindmillPower.COLLAR_Y, 1.55 / WindmillPower.COLLAR_Y)
+		var stand := at_head + inward.normalized() * 0.95
+		await walk_to(q, Vector3(stand.x, q.global_position.y, stand.z), "leg %d" % k, 0.35, 10.0)
+		await look_at_point(q, at_head)
+		await physics_frames(4)
+		for i in 5:
+			if w.leg_state[k] != 1:
+				break
+			await tap(KEY_G)
+			await wait(0.45)
+		log_line("guard (keyboard): leg %d now state %d (power %.0f %%), lever held %s" % [k, w.leg_state[k], w.power * 100.0, w.lever_held])
+	return w.caught
+
+
+## Solo testing: P2 on the keyboard, out of the van and round to the legs.
+func wm_p2_kb_under() -> bool:
+	var q := p2()
+	await round_van(q, -1.0, false)
+	await walk_to(q, wm_at(-8.5, 0.2, -9.0), "towards the windmill", 0.8, 20.0)
+	return await walk_to(q, wm_at(-6.5, 0.2, -2.0), "by the legs", 0.8, 20.0)

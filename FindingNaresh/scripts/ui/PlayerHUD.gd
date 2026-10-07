@@ -339,6 +339,13 @@ func _process(delta: float) -> void:
 	else:
 		_warn.text = ""
 		_role.text = "on foot" + ("  ·  sprinting" if player.dev and player.dev.held("sprint") else "")
+	if player.dev and not player.dev.active and not player.dev.kept.is_empty():
+		_role.text += "  ·  HOLDING %s (TAB back to let go)" % player.dev.kept_text()
+	# solo, one view at a time: the one you play says what the other's keeping held
+	for n in get_tree().get_nodes_in_group("player"):
+		var o := n as PlayerRig
+		if o != player and o.dev and not o.dev.active and not o.dev.kept.is_empty():
+			_role.text += "  ·  P%d is holding %s" % [o.index + 1, o.dev.kept_text()]
 
 
 ## A tag that is off screen (or behind you) gets an arrow at the edge of
