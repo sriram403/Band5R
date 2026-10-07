@@ -301,7 +301,41 @@ fragment by his mug; the gear steps skippable; S5-S7 all in.
 
 ---
 
-## 2. The windmill: *proposed* (2026-10-06), waiting for your answers
+## 2. The windmill: *agreed* (2026-10-07), being built
+
+### Your answers (2026-10-07)
+
+1. **Power here:** yes, a windmill making power is realistic. The lift
+   bridge (#5) gets a different job when we reach it.
+2. **One napin, shared.**
+3. **When it falls:** restart the challenge right there.
+4. **The map:** P1 has no map until the pick-up, and **only one player
+   holds the map at a time**. To use it the other has to go up to them
+   and take it.
+5. **S1-S4 yes; S5 no**, your three fun mechanics instead:
+   - **the head-butt** (above);
+   - **the map snatch:** grab the map off your partner and sprint away
+     while they chase you;
+   - **the push out of the van:** either player can shove the other out
+     of the van at any time, even at full speed.
+
+**How I'll build the two new ones (my choices, judge them in the video):**
+- *The map snatch:* the map is one thing in someone's pocket (it doesn't
+  fill your hands). M opens it only for whoever has it; the other gets
+  "P2 has the map". Look at your partner within 2 m and press **E**:
+  "Take the map" (it works when they have it open too, and between the
+  van's seats). Then run: sprinting is as fast as theirs, so it's a real
+  chase. The map is saved with who has it.
+- *The push out of the van:* seated, empty hands, press **G** (pad: hold
+  **RB** for half a second, since RB opens the journal in a parked van).
+  The other seat's player is thrown out of their door with the van's speed
+  plus a shove sideways: the same tumble as being hit by the van. A pushed
+  driver leaves the van rolling on with nobody at the wheel. Naresh on
+  the bench is safe (not for now).
+
+---
+
+### The proposal (2026-10-06)
 
 ### What the user asked for (2026-10-06)
 
