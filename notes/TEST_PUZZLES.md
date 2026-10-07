@@ -27,6 +27,9 @@ gives you the binoculars and brings Naresh along.
 | Map | M | D-pad Down |
 | Phone | P | D-pad Right |
 | Throw, fire a flare | G / LMB | RB |
+| Head-butt (hands empty) | G | RB |
+| Push the other out (in the van) | G | hold RB |
+| Take the map off your partner | E (look at them) | X |
 | Swing the nav (in the van) | N | A |
 | Hint | hold H | R3 |
 
@@ -94,30 +97,66 @@ partner.
 
 *If stuck:* A points on to valve B, and B points to the blue tank.
 
-### 2. The windmill
+### 2. The windmill (reworked 2026-10-07: your changes)
 
-**Getting there:** F1 → Puzzles → **2. The windmill**.
+**Getting there:** F1 → Puzzles → **2. The windmill**. You start in the
+van on the lane, 30 m short of the junction gate.
 
-**The idea:** a rope is snagged on one blade. The climber up top tags that
-blade. The player at the brake stops it at the bottom, so the climber can
-cut the rope.
+**The idea:** the junction gate has no power, and the old windmill that
+fed it has stopped. One of you holds the starter lever the whole time;
+the other runs round the legs, head-butting each one back as it slides.
+Too slow, and the windmill falls on you.
 
-1. **Climber:** at the ladder on the back of the tower, press E and hold W.
-   - **You should see:** you step off onto a platform under the blades.
-2. **Climber:** look at the blade with the rope round it and tag it.
-   - **You should see:** a pin on both screens, "the snagged blade". It
-     moves with the blade.
-3. **Other player:** at the red brake lever out front, press E to let the
-   brake off. Press E again when the tagged blade reaches the bottom.
-   - **You should see:** the blades creep round and stop. If they stop too
-     early or too late, the climber is told "out of reach": try again.
-4. **Climber:** hold E to cut the rope. **Other player:** brake off.
-   - **You should see:** the blades spin up. A few seconds later, the
-     miller's box at the foot springs open.
-5. Take the map from the box and open your own map (M).
-   - **You should see:** both roads to Last Fuel drawn in.
-6. **Climber:** to come down, look at the top of the ladder, press E and
-   hold S.
+1. **Drive up to the gate.** It's a red-and-white barrier across the road
+   ("JUNCTION CLOSED / NO POWER"), with fences and boulders either side.
+   The windmill stands off to the left.
+   - **You should see:** the van can't get past. Both of you get out.
+2. **At the starter lever** (a red handle on a post between the road and
+   the windmill), read **Naresh's note** on the post (E / X). It tells you
+   what to do.
+3. **Lever player:** hold E / X on the lever, and **keep holding** (you can
+   look round while you hold).
+   - **You should see:** the fan creeps round, then faster and faster, with
+     a creak that quickens and a rising whoosh. Let go and it runs down
+     again (twice as fast as it wound up).
+4. **The other player:** stand under the windmill. Four times as it speeds
+   up, one leg screeches and its foot **slides out** off its cracked stone
+   footing (dust, the whole windmill leans that way). Run to it, face the
+   leg and **head-butt it: G / RB, three times**.
+   - **You should see:** each butt clangs and pushes it back a bit; on the
+     third it drops onto its footing ("CLANG"). A leg can slip again once
+     in a while. The lever player has the better view: they shout (or tag
+     it, T / RT) which leg is going.
+5. **Try the mistake once:** let a leg slide for 8 s.
+   - **You should see:** a groan, the windmill leans further, and 2 s later
+     it falls **towards whoever is nearest**. Under it: a crash, dust, the
+     screen goes white. A few seconds later it stands again and you're
+     both by the gate, ready to start over (your partner gets "you ok? I
+     think I'm flat").
+6. **Keep holding until it catches the wind** (about 45 s of holding).
+   - **You should see:** a deeper hum; the gate's lamp lights and the
+     barrier swings up; the street lamps beyond it light one by one. The
+     lever player can let go: the wind keeps it turning.
+7. **The ladder:** a few seconds later the shaking shakes the rolled-up
+   rope ladder loose; it clatters down the back of the windmill. Climb it
+   (E / X, hold W / stick up): 24 m, about 10 s.
+   - **You should see:** from the walkway round the head, the fan
+     thundering past and the whole valley: "It all goes onto the map".
+8. **The chest** on the walkway: E / X opens it, again to take the
+   **napin**. Naresh's note is on the wall above it.
+   - **You should see:** whoever has the map can now stick the napin in it
+     (M, then click / A); the van's nav points at it.
+9. **Down:** look at the top of the ladder, E / X, hold S / stick down.
+
+**The fun mechanics (try them any time from now):**
+- **Head-butt** (G / RB, empty hands): your partner staggers back; the van
+  rocks; a can flies. Not creatures.
+- **The map:** only one of you has it (P2 from the opening). The other's M
+  says who has it. Walk up to them, look at them and press E / X to
+  **take it off them**, even while they're reading it, and run. Works
+  between the van's seats too.
+- **Push out of the van:** seated, **G** (pad: **hold RB** half a second)
+  shoves the other one out of their door, at any speed.
 
 ### 3. The barn maze (optional, Valley Road)
 

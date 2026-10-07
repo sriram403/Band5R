@@ -6,7 +6,31 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- [~] **2026-10-06: puzzle #2, the windmill: your changes heard, my
+- [~] **2026-10-07: puzzle #2 agreed** (your answers: power here, one
+  shared napin, restart on a fall, one map held by one player, S1-S4; your
+  three fun mechanics: head-butt, map snatch, push out of the van).
+  **Building in `../MPG_dev` branch `g4`:**
+  - [x] `puzzles/WindmillPower.gd` (replaces WindmillBrake): the 24 m
+        windmill, the lever, the legs, the fall + restart, the ladder, the
+        chest + napin, the J1 gate + fence, street lamps (S3), S2 re-slip
+        (`design/PUZZLE_CHANGES.md` #2 "As built")
+  - [x] Head-butt, one map / one holder, the napin, the push out
+  - [x] Story, DevMenu (Puzzles → 2 starts in the van at the gate),
+        SaveGame, jumps
+  - [x] Tests: `windmill` (0 failures, 68 s), `windmill_fall` (0),
+        `fun` (0, after the butt pops loose things up), map, story, dev,
+        feedback, tower, puzzle_resets, save: 0; set:opening (5): 0
+  - [x] TEST_PUZZLES #2 rewritten (+ the controls table)
+  - [x] The walk `puzzle2` recorded (236 s, every step passing):
+        `appdata/videos/puzzle2.mp4`, sent. Found by the walk and fixed:
+        the stone footings blocked walking (sunk to 0.12 m); a butt at a
+        leaning leg beside your head missed (a ball just ahead of the head
+        counts too); E went to the ladder behind your partner instead of
+        the map (the nearer one wins); after a fall you were put behind
+        the lever's post (now the lane side); the ladder said "[?/?] Climb"
+  - [~] smoke + set:puzzles running; then **your look at the video**,
+        then merge into main and push on your OK
+- [x] **2026-10-06: puzzle #2, the windmill: your changes heard, my
   proposal written** (`design/PUZZLE_CHANGES.md` #2: a 24 m windmill with
   four legs and one neck, the J1 power gate, the lever held to spin it up,
   sliding legs head-butted back, it falls on you if you're slow, the

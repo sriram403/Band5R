@@ -354,6 +354,18 @@ The engine-level details (exact Godot calls, numbers) are also in
 - **Instructions in Naresh's words.** He came through every place days
   ahead: his notes say how things work, his "we" carries the twist; plain
   narration only for what you see and feel.
+- **Every stop gets both out of the van (the user, the windmill).** The
+  blocker makes the van stop (a dead gate); the task needs two on foot
+  (one holds the lever, one butts the legs). Never repeat a puzzle's play
+  or its purpose, and say so when an ask repeats one.
+- **Fun mechanics are their own reward:** the head-butt, snatching the one
+  map, pushing your partner out of the van. Learned where they're needed,
+  usable everywhere after.
+- **Thin, leaning targets need a forgiving hit.** A head-butt ray aimed at
+  a windmill leg missed when the leg leaned past your head; a small ball
+  just ahead of the head counts too.
+- **The look ray sees through people:** E on your partner lost to a ladder
+  behind them. Compare distances: the nearer one wins.
 
 ## 5. Godot / GDScript habits that bit us
 

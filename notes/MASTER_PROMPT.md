@@ -48,7 +48,16 @@ they/them.
 
 ---
 
-## 2. Status right now (2026-09-29; latest at the top, 2026-10-05)
+## 2. Status right now (2026-09-29; latest at the top, 2026-10-07)
+
+- **2026-10-07: puzzle #2, the windmill, agreed and built** (`../MPG_dev`
+  branch `g4`, not merged, not pushed): the 24 m windmill, the J1 gate,
+  the starter lever held for 45 s, legs head-butted back, the fall and
+  restart, the ladder, the napin; one paper map held by one player; the
+  three fun mechanics (head-butt, map snatch, push out of the van).
+  `design/PUZZLE_CHANGES.md` #2 "As built". Walk `puzzle2` recorded and
+  sent; **waiting for the user's look at the video**, then merge + push.
+  New design rules (rule 25).
 
 - **2026-10-05 (late): puzzle #1, the water works, reworked, approved and
   pushed; hand-over to a new thread for puzzle #2, the windmill.** G is
@@ -578,6 +587,12 @@ their OK. While reworking it, turn its instructions into Naresh's notes
 (rule 24). The order after that: the 16 puzzles in `TEST_PUZZLES.md`
 order, then the rest of G (sound and music, settings, the .exe, the final
 playthrough; the user's answers on those are still open, see `TODO.md`).
+
+**Update (2026-10-07):** #2 built on `../MPG_dev` branch `g4` and its
+video sent (`appdata/videos/puzzle2.mp4`); waiting for the user's look.
+On their OK: merge `g4` into main, push (sriram403), then #3 (the barn
+maze). Remember for #5: the lift bridge must not be powered by the water
+works any more (the windmill already makes power to open a way).
 
 **Before (2026-10-05):** Milestones A-F approved and pushed (main
 `c1235d8`). F was approved from recorded walkthroughs: I played every part

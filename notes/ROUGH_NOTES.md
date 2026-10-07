@@ -251,6 +251,21 @@ is careful not to repeat them on the next. Models don't learn while they work
 disagrees with what you assumed.** Each entry: what I assumed, what really
 happened, the fix, and the habit to keep.
 
+- **Assumed** (2026-10-07) a Python patch in a bash heredoc could match a
+  GDScript line holding `\n` (the lever's label). **Reality:** the fourth
+  time: the assert failed, and the rest of that patch (a test fix) never
+  ran either. **Fix:** the patch as a .py file written with the file tool.
+  **Habit:** any patch text with a backslash goes in a file, every time;
+  for the rest, heredocs only for text with no `\`.
+- **Assumed** (2026-10-07) a test could press E the moment it had turned
+  the player to the lever. **Reality:** the windmill fall test held E for
+  20 s with nothing happening (0 %): the interact ray hadn't updated to the
+  new aim, so E held on nothing. Passed with a 0.2 s wait after the look.
+  **Habit:** after `look_at_point`, wait a few frames (and log the prompt)
+  before pressing; the prompt in the log tells you what E will do.
+- **Found** (2026-10-07): cans "set out in place" (shelves, drawers) are
+  frozen until picked up, so the first head-butt did nothing to them; a
+  butt now unfreezes a loose carryable first.
 - **Assumed** (2026-10-06) the GitHub test run was worth keeping green.
   **Reality:** the user asked "why GitHub test again?": it had been red
   for 11 days unnoticed, duplicated the PC tests, and everything it found

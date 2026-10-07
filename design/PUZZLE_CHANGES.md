@@ -333,6 +333,64 @@ fragment by his mug; the gear steps skippable; S5-S7 all in.
   driver leaves the van rolling on with nobody at the wheel. Naresh on
   the bench is safe (not for now).
 
+### As built (2026-10-07, `../MPG_dev` branch `g4`)
+
+- **`puzzles/WindmillPower.gd`** replaces the brake puzzle. The windmill
+  stands 44 m off Home Lane, its fan facing the lane: four legs on cracked
+  stone footings (8 m apart), a collar at 7 m, a 2 m rusty neck to the
+  walkway at 22.6 m, the head and tail vane, the 18-blade fan (12 m across)
+  at 24 m. A flat pad under it, and no trees within 46 m.
+- **The junction gate** across Home Lane just short of J1: a red-and-white
+  boom, "JUNCTION CLOSED / NO POWER", a dead lamp, 40 m of fence and
+  boulders either side. Measured: driving at it, the van stops 3 m short.
+- **The starter lever** 18 m out in front of the legs, with Naresh's note.
+  Held (E / X): 0 to full in 45 s; let go, it runs down twice as fast.
+- **The legs:** at 20 / 40 / 60 / 80 % one leg (random) slides out 0.5 m
+  over 8 s, the windmill leaning up to 5 deg that way. Three head-butts
+  from the start of the slide put it back. S2: a butted leg slips again one
+  time in four while it's still winding up. The speed can't reach full
+  while a leg is out.
+- **The fall:** a leg left 8 s: 2 s of groaning, then it topples over 2.6 s
+  towards the nearest player on foot. Under it (its length, the neck's
+  width, the fan's near the top): white, frozen. 3 s later it stands again,
+  still, and everyone near is put back by the lever (S4: the partner's text
+  "you ok? I think I'm flat").
+- **Full speed:** a deeper hum, the gate's lamp on, the boom swings up, 9
+  street lamps light one by one (S3: the lane to J1 and both roads after
+  it). 5 s later the rope ladder unrolls down the back (1.6 s) and can be
+  climbed (24 m, ~10 s).
+- **The walkway:** stepping onto it puts both roads to Last Fuel, the lake,
+  the barn and the lookout onto the map ("What a view"); the chest (E to
+  open, E to take) holds the **napin**; Naresh's second note above it.
+- **The napin:** `MapState.STAMP_TYPES = ["napin"]`, one pin, putting it
+  again moves it; none before the chest ("No pin yet: you can only look");
+  the nav reads "NAPIN 1.2 km / RIGHT >". The beach step is "put the napin
+  on it".
+- **One map, one holder** (`MapState.holder`, saved): on the desk upstairs
+  at P2's in a new game ("Take the paper map": P2's opening step 4 now);
+  M only for the holder, the other is told who has it; look at the holder
+  within 2.3 m and press E / X: "Take the map off P1" (even open, even
+  between the van's seats).
+- **The head-butt** (G / RB, hands empty, on foot): a lunge of the view;
+  your partner staggers back ~1.3 m with a jolt and "* BONK *"; Naresh is
+  knocked and says something; the van rocks on its springs; loose things
+  (even ones set out on shelves) pop up and away; a creature only hears it.
+- **The push** (seated: G, pad hold RB 0.5 s): the other seat's player is
+  thrown out of their door with the van's speed plus a sideways shove
+  (tested at 33 km/h: tumbles, gets up). A pushed driver leaves the van
+  rolling on.
+- **F1:** Puzzles → 2 puts you both in the van 30 m short of the gate; a
+  jump past the windmill sets it turning (and the napin found past the
+  chest), at or before it resets it and takes the napin back; any jump
+  gives P2 the map if it was still on the desk.
+- **Tests:** `windmill` (the gate stops the van, P1 walks to the lever and
+  holds, P2 walks to the first sliding leg and butts all four, the gate,
+  the lamps, the ladder, the climb, the view, the chest, back down),
+  `windmill_fall`, `fun` (head-butts, the map snatch on foot and in the
+  van, the push at speed, the pad's held RB), and the old ones changed for
+  one pin and one holder (map, feedback, tower, story, dev, puzzle_resets,
+  save, the opening set).
+
 ---
 
 ### The proposal (2026-10-06)
