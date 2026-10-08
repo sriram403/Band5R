@@ -86,3 +86,72 @@ Per entry: the puzzle, its branch and merge, then three lists.
 
 **Found later** (by the long runs)
 - (none yet)
+
+---
+
+## #3 The barn maze + the weather (branch `g6`; not merged, not pushed)
+
+**What changed**
+- `puzzles/BarnMaze.gd` rewritten: 14 x 14 cells of 3.5 m (50 m), 3 m
+  hedges as one mesh (one StaticBody of box shapes), loops, the courtyard,
+  12 landmarks (tall, low, twins), painted arrows, 5 pits (fall -> the
+  drain by the front gate), 5 jump scares (pop only walking back out of a
+  wrong turn), the flag on a pole (worn, own camera hides it), the bell,
+  the chest (MazeSpare, MazeFuel 10 L, MazeCoolant, Naresh's push note),
+  the back gate, snow from the courtyard to the chest, footprints. Moved:
+  behind the barn (barn frame (6, 0, -36)); the old west-side maze gone.
+- The barn: the silo's dome replaced by a deck, rail and cage ladder
+  (`SiloLadder`), Naresh's sketch board and note (`LevelLandmarks`
+  `_silo_top`, `_silo_sketch`). POIs `maze_gate`, `maze_back`,
+  `silo_ladder`, `silo_top`, `barn_yard`; `maze` moved.
+- `LevelLayout`: the barn pad is now `MAZE_YARD` (-508, 183), radius 50,
+  blend 14 (was BARN_YARD r 30); a clearing r 54 there.
+- **World-wide weather:** `world/Weather.gd` (new, group `weather`): clouds,
+  light snow per player (GPU particles) from J1, far thunder, the maze's
+  heavy snow, the clear spell, `snow_cover` (a global shader value,
+  `project.godot [shader_globals]`). `world/CloudSky.gd` (new): the sky is
+  a shader now (was ProceduralSkyMaterial), radiance redrawn every frame
+  (REALTIME, 64). `Mood`: `clouds`, `cloud_dark`, `snow` (white fog to
+  15 m), sun dimmed by clouds.
+- **World-wide materials:** `core/SnowMat.gd` (new): the terrain, pines,
+  canopies, rocks and bushes use it instead of ToonMat / StandardMaterial;
+  the terrain's vertex alpha = where snow may lie (0 on the road).
+- The push out of the van: only after the maze (`Story.flags["push"]`,
+  `PlayerRig.can_push`). `PlayerRig.fade_color`, `straw()`, `jolt()`;
+  `PlayerHUD` straw overlay. `Camper`: a spare can go back on the empty
+  rear mount. Sounds made here: bell, caw, moo, sting, crack
+  (`tools/gen/maze_sounds.py`). DevMenu: Puzzles 3 starts in the barn
+  yard; places silo top, maze way in.
+
+**What it could break (our guess)**
+- **Frame rate everywhere:** the sky shader + realtime radiance, the snow
+  particles, the snow shader on every tree and the ground (perf, the
+  promenade's dusk fps check, mirrors, driving tests).
+- **The look everywhere:** the sky (clouds, sun disc, colours at dusk and
+  in the storm), the ground's brightness (same albedo 0.6, but a new
+  shader), trees and rocks (outline kept), MultiMesh fade at range
+  (visibility fade with a custom shader).
+- Anything that reads the sky material as ProceduralSkyMaterial (Mood was
+  the only one).
+- The barn area: the bigger pad may change heights near the valley road
+  (the road 66 m away); scatter, clearings; tests that used the loft or the
+  old maze position (`maze`, `tour`, `overview`, `teleports`, `dev`).
+- The push: `fun` (now needs the flag), any walk or test that pushes
+  (puzzle2's walk step 2.10 pushes the driver out!).
+- Saves: the maze's dict (`dust_done` -> `snow_done`, `back_open`).
+- Story jumps / Puzzles reset: `reset()` also clears `push`.
+
+**Tests that cover it**
+- `maze` (21 checks), `maze_views` (pictures), `weather` (stages, pictures,
+  fps), `fun`, `puzzle_resets`, `dev`, `mood`, `story`, `save`: 0 failures.
+  smoke: 23 scenarios, 1 failure (the promenade's dusk fps, 91, while the
+  full run went alongside: to rerun alone).
+- Walk `puzzle3` (13 steps), recorded.
+- set:puzzles: 2 failures (the water works' crate climb, 0.44 m) with three
+  games running and PlayTest.gd edited mid-run; `waterworks` alone: 0
+  failures (climbed to 1.25 m). Not a break.
+- Not yet: the walk `puzzle2` again (its push needs the flag now), set:driving,
+  full.
+
+**Found later**
+- (none yet)

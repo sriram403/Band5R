@@ -73,22 +73,34 @@ being built and tested), so this always shows where the work is right now.
       next optional puzzle, #4; clouds with sun at the start; snow only
       here; clear sun at the last tower; Naresh's sketch, no hay blower;
       S1-S4). Building in `../MPG_dev` branch `g6`:
-      - [ ] the maze: 14 x 14 cells of 3.5 m, loops, 3 m hedges, fence,
-            front gate, flag rack, back gate
-      - [ ] the silo: cage ladder, cap with rail, Naresh's sketch + note
-      - [ ] landmarks (tall, low, twins, painted arrows), the bell (S2)
-      - [ ] pits (5) -> out of the drain by the front gate
-      - [ ] jump scares (5 corners)
-      - [ ] the chest: spare tyre, fuel can, coolant; the push unlocked
-      - [ ] weather: cloud sky everywhere, far thunder, the maze's snow
-            (from the middle, clears at the chest), footprints (S1),
-            Naresh's text (S3), the curtain seen from the ridge (S4)
-      - [ ] (your add) light snow while travelling from J1; the world
+      - [x] the maze: 14 x 14 cells of 3.5 m (50 m), loops, 3 m hedges,
+            the arch, flag rack, back gate (behind the barn now)
+      - [x] the silo: cage ladder, deck with rail, Naresh's sketch + note
+      - [x] landmarks (12: tall, low, twins), painted arrows, the bell (S2)
+      - [x] pits (5) -> out of the drain by the front gate, straw on view
+      - [x] jump scares (5, only walking back out of a wrong turn)
+      - [x] the chest: spare tyre, fuel can, coolant; the push unlocked
+            (the spare goes on the van's empty mount)
+      - [x] weather: cloud sky everywhere (a sky shader), far thunder, the
+            maze's snow (from the middle, clears at the chest), footprints
+            (S1), Naresh's text (S3)
+      - [x] S4: the snow curtain over the barn, seen from the ridge
+      - [x] (your add) light snow while travelling from J1; the world
             slowly whitens after the maze (terrain, trees, rocks; road
-            dark); sleet into rain on the ghat; melted by the storm
-      - [ ] DevMenu, Story, SaveGame, reset
-      - [ ] tests, screenshots from where a player stands, sheet, walk,
-            record, send
+            dark); stops over the ghat, melted by the coast
+      - [x] DevMenu (starts in the barn yard), Story, SaveGame, reset
+      - [x] tests: maze (21 checks), weather, maze_views, fun, dev, save,
+            puzzle_resets, mood, story: 0 failures. smoke: 1 (the dusk
+            promenade at 91 fps with the full run alongside: rerun alone)
+      - [x] sheet #3 rewritten (TEST_PUZZLES, in `g6`); ledger entry #3
+      - [x] the walk `puzzle3` (13 steps, every step passing) recorded:
+            `../MPG_dev/appdata/videos/puzzle3.mp4` (4 min), sent. Found by
+            it and fixed: a spent use zone (the open back gate) hid the spare
+            behind it; P1 too far from the arch note; P2 round the van's
+            front; Puzzles 3 starts with the spare mount empty (as after the
+            opening's puncture)
+      - [ ] frame rate alone (after the full run in MPG ends)
+      - [ ] **your look at the video**, then merge `g6` into main and push
     - [ ] the walkway bigger, the chest and note easy to see and reach,
           a few lived-in props
     - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being

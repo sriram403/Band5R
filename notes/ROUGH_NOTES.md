@@ -671,3 +671,11 @@ happened, the fix, and the habit to keep.
   step leaves you in (the battery!).
 
 - **2026-10-08, a long proposal appended with a bash heredoc.** Assumed: a quoted heredoc ('EOF') takes any text. Reality: bash failed with "unexpected EOF while looking for matching quote" and wrote nothing. Fix: wrote the text with the file-write tool and appended it with a small Python script (asserts first). Habit: long prose goes through the file-write tool, never a shell heredoc (MASTER_PROMPT 7 says so for patches too).
+
+- **2026-10-08, a build log to /tmp.** Assumed: /tmp in Git Bash is a harmless scratch place. Reality: it is C:\Users\...\Temp, on the C: drive (rule 1). Fix: deleted; logs go to appdata/ in the copy I work in. Habit: every log path starts with appdata/ (or the project), never /tmp.
+
+- **2026-10-08, the heredoc again, an hour after logging it.** Assumed: a quoted heredoc is fine for a short Python edit. Reality: a long command with a second heredoc (a .py file full of quotes) failed to parse, and nothing in it ran. Fix: wrote the file with the file-write tool. Habit: before typing `<<` in a command, stop: any file content goes through the file-write tool; one-line shell edits only.
+
+- **2026-10-08, a walk check guarded with "size() > 0 and ...".** Assumed: the walk's Expression stops at a false `and` like GDScript. Reality: Godot's Expression evaluates both sides, so the index on an empty list errored and failed the walk twice. Fix: a PlayTest helper (`last_note_has`). Habit: any walk check that indexes goes through a helper.
+
+- **2026-10-08, a spent use zone hid the reward behind it.** Assumed: a zone whose prompt goes blank ("" once the gate is open) is out of the way. Reality: the look ray still stops on it, so the spare lying behind the open back gate's zone showed no prompt and couldn't be picked up. Fix: a spent zone's collision layer goes to 0 (back on at reset). Habit: when a zone's job is done, switch it off, don't just blank its prompt; test picking up the rewards, not only that they exist.
