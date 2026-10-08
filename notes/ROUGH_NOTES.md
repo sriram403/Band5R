@@ -669,3 +669,5 @@ happened, the fix, and the habit to keep.
   lines = the order you act; fallbacks after, never inside; name only
   what's on screen; check each step is possible in the state the previous
   step leaves you in (the battery!).
+
+- **2026-10-08, a long proposal appended with a bash heredoc.** Assumed: a quoted heredoc ('EOF') takes any text. Reality: bash failed with "unexpected EOF while looking for matching quote" and wrote nothing. Fix: wrote the text with the file-write tool and appended it with a small Python script (asserts first). Habit: long prose goes through the file-write tool, never a shell heredoc (MASTER_PROMPT 7 says so for patches too).
