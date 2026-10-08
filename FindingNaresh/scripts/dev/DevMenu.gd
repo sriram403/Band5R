@@ -885,6 +885,17 @@ func play_puzzle(k: int) -> String:
 			var at: Vector3 = boot.builder.poi[e[2]]
 			van_to(van_spot(at + Vector3(-18, 0, 6)), 0.0)
 			boot.camper.repair_all()
+	if String(e[2]) == "maze_gate":
+		# the van parked in the yard in front of the barn, facing the road;
+		# both just out of it
+		var yard: Vector3 = boot.builder.poi["barn_yard"]
+		var bz: Vector3 = (boot.world.find_child("Barn", false, false) as Node3D).global_transform.basis.z
+		van_to(yard, atan2(-bz.x, -bz.z))
+		boot.camper.repair_all()
+		# as on a real run: the opening's puncture used the spare
+		boot.camper.spare_available = false
+		boot.camper.refresh_tyre_visuals()
+		teleport(boot.camper.global_transform * Vector3(-3.2, 0, -1.0))
 	if e[1] == "windmill":
 		# in the van on the lane, 30 m short of the junction gate, facing it
 		var lane: Route = boot.builder.network.road("home_lane")

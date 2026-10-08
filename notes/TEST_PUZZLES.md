@@ -171,27 +171,70 @@ Too slow, and the windmill falls on you.
   says who has it. Walk up to them, look at them and press E / X to
   **take it off them**, even while they're reading it, and run. Works
   between the van's seats too.
-- **Push out of the van:** seated, **G** (pad: **hold RB** half a second)
-  shoves the other one out of their door, at any speed.
+- **Push out of the van:** now the barn maze's reward (#3): after its chest,
+  seated, **G** (pad: **hold RB** half a second) shoves the other one out of
+  their door, at any speed.
 
-### 3. The barn maze (optional, Valley Road)
+### 3. The barn maze (optional, Valley Road; reworked 2026-10-08: your changes)
 
-**Getting there:** F1 → Puzzles → **3. The barn maze**.
+**Getting there:** F1 → Puzzles → **3. The barn maze**. You start out of
+the van, parked in the yard in front of the red barn.
 
-**The idea:** the guide on the loft balcony sees the whole maze. The
-walker inside sees only hedges.
+**The idea:** a big hedge maze behind the barn (50 m across, hedges 3 m
+high). One of you guides from the top of the barn's silo, the other walks
+in carrying a flag. Halfway it snows so hard the guide can't see anything:
+they guide from what they remembered.
 
-1. **Guide:** climb the ladder on the barn's west end to the balcony.
-   **Walker:** go into the maze.
-2. **Guide:** tag the turns for the walker.
-3. **Walker:** in the middle of the maze, hay dust blows in.
-   - **You should see:** the guide can't see into the dust. The walker
-     describes what's near (a red gate, a scarecrow, a blue drum, a cart).
-4. **Walker:** open the feed chest at the far end.
-   - **You should see:** a coolant jug and a crate.
+1. **Round the barn** (past the silo) to the way in: a painted arch,
+   "HEDGE MAZE". **Naresh's note** is on the left post (E / X).
+2. **Guide:** climb the **cage ladder on the silo** (E / X, hold W / stick
+   up; 13 m). Read his **note on the rail** and look at his **sketch**
+   pinned beside it: half the maze, some landmarks, the rest unfinished.
+   - **You should see:** the near half of the maze like a map; the far
+     half only as hedge tops. Dark **square** patches of straw on the
+     paths are **pits** (the round straw patches are just straw).
+3. **Walker:** take a **flag** from the rack by the arch (E / X). Its red
+   rag sticks up above the hedges, so the guide can follow you. Go in.
+4. **Guide:** talk the walker through (tags, T / RT, work too). The
+   landmarks: tall ones you both see (a weathervane rooster, a carousel
+   horse, a dead tree full of crows, a hay elevator), low ones only the
+   walker sees (a plank over a ditch, a broken chair, a well, a bathtub of
+   flowers, a red phone box, a stack of tyres) and twins (two chairs,
+   one broken; two scarecrows, one with a lantern). Painted arrows on the
+   ground: only the guide can read them, and two of them lie.
+5. **Try the mistake once:** step on a dark square.
+   - **You should see:** a crack, the boards drop, black; you climb out of
+     a **drain by the front gate**, straw all over your view. Back to the
+     start.
+6. **Try a wrong turn,** then walk back out of it.
+   - **You should see:** at a corner, something **pops out of the hedge**
+     at you (a scarecrow, a crow, a cow's head, a mannequin, a lantern),
+     with a sting the first time. It never happens on the way in.
+7. **The courtyard in the middle** (a farm bell on a frame):
+   - **You should see:** the sky darkens, the wind howls, and within ~10 s
+     it **snows hard**: the walker sees about 10 m, the guide nothing but
+     white. Snow settles on the hedge tops and covers the ground (and the
+     pit squares). Your footprints show and fill in after half a minute.
+     A text from Naresh: "it's SNOWING".
+   - **Ring the bell** (E / X): the guide hears where you are.
+8. **The back half, from memory:** the guide calls it ("after the plank,
+   left; if you see the broken chair you're right"). Mind the pit on the
+   way: it's still there under the snow.
+9. **The feed chest** in the far corner (E / X): **a spare tyre, a fuel
+   can (10 L) and a coolant jug**, and **Naresh's note: the push**.
+   - **You should see:** the snow stops and **it clears**: sun on the white
+     hedges for about 3 minutes; then the clouds close in again.
+10. **The back gate** beside the chest opens from inside (E / X). Carry
+    the things to the van. The **spare** goes on the van's empty rear
+    mount: hold E / X at the back of the van.
+11. **The push** (learned now): in the van, seated, **G** (pad: hold RB)
+    shoves the other one out, even driving.
 
-*Already agreed for later (on the polish list):* the guide stops a hay
-blower in the loft, and a faint plan of the maze is pinned on the balcony.
+**The weather from now on (your plan):** clouds from the very start, far
+thunder now and then; from the windmill a light snowfall while you drive;
+after the maze the world slowly turns white (a dusting by Last Fuel, white
+fields by the bridge; the road stays dark); over the ghat it stops and
+melts towards the coast and the storm. Clear sun only on the drive home.
 
 ### 4. The lookout boards (optional, Ridge Track)
 

@@ -68,6 +68,34 @@ var _prints: Array = []          ## [node, age]
 var _last_print := {}            ## player -> where the last footprint went
 var _falling := {}               ## player -> true while falling
 var _weather: Node
+var _zone_layer := 0
+var _curtain: MeshInstance3D
+
+## S4: from afar (the ridge lookout, the valley road) a squall of snow hangs
+## over the barn until the maze has had its snow; up close it's the real snow.
+const CURTAIN_SHADER := """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled;
+uniform float amount = 1.0;
+float hash(vec2 p) {
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
+}
+float noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+void fragment() {
+	float streak = noise(vec2(UV.x * 90.0, UV.y * 6.0 + TIME * 0.9)) * 0.6 + noise(vec2(UV.x * 23.0, UV.y * 2.0 + TIME * 0.4)) * 0.4;
+	float fade = smoothstep(0.0, 0.25, UV.y) * smoothstep(1.0, 0.7, UV.y);
+	ALBEDO = vec3(0.82, 0.84, 0.88);
+	ALPHA = clamp((0.32 + streak * 0.4) * fade * amount, 0.0, 1.0);
+}
+"""
+const CURTAIN_NEAR := 160.0      ## m: closer than this, the real snow
 
 
 ## `xf`: the maze's middle on the ground, in the barn's frame.
@@ -248,6 +276,36 @@ func _build() -> void:
 	_place_scares()
 	_courtyard()
 	_chest()
+	_build_curtain()
+
+
+func _build_curtain() -> void:
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 75.0
+	cyl.bottom_radius = 60.0
+	cyl.height = 140.0
+	cyl.radial_segments = 24
+	cyl.cap_top = false
+	cyl.cap_bottom = false
+	var sh := Shader.new()
+	sh.code = CURTAIN_SHADER
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	_curtain = MeshInstance3D.new()
+	_curtain.name = "SnowCurtain"
+	_curtain.mesh = cyl
+	_curtain.material_override = m
+	_curtain.position = Vector3(0, 60.0, 0)
+	_curtain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_curtain)
+
+
+func _show_curtain() -> void:
+	var near := false
+	for n in get_tree().get_nodes_in_group("player"):
+		if (n as Node3D).global_position.distance_to(global_position) < CURTAIN_NEAR:
+			near = true
+	_curtain.visible = not near and not snow_done
 
 
 ## The hedges as one mesh: every wall two slightly ragged blocks (height,
@@ -917,12 +975,21 @@ func _chest() -> void:
 	g.set_meta("tag_name", "the back gate")
 	g.set_meta("prompt_fn", func(_p) -> String: return "" if back_open else "Open the back gate")
 	_back_gate.add_child(g)
+	_zone_layer = g.collision_layer
+
+
+## A spent use zone stops catching the look ray (the open back gate's zone
+## hid the spare lying behind it: nothing could be picked up there).
+func _zones() -> void:
+	(_back_gate.get_node("BackGateArea") as Area3D).collision_layer = 0 if back_open else _zone_layer
+	(find_child("ChestArea", true, false) as Area3D).collision_layer = 0 if chest_open else _zone_layer
 
 
 func open_back(_p = null) -> void:
 	if back_open:
 		return
 	back_open = true
+	_zones()
 	Sfx.play3d("latch", _back_gate.global_position + Vector3.UP, 0.0)
 	Sfx.play3d("creak", _back_gate.global_position + Vector3.UP, 0.0)
 	var leaf := _back_gate.get_node("Leaf") as Node3D
@@ -934,6 +1001,7 @@ func open_chest(p: PlayerRig) -> void:
 	if chest_open:
 		return
 	chest_open = true
+	_zones()
 	var tw := create_tween()
 	tw.tween_property(_chest_lid, "rotation:x", deg_to_rad(-105.0), 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	Sfx.play3d("latch", _chest_lid.global_position, 0.0)
@@ -1087,6 +1155,7 @@ func _physics_process(delta: float) -> void:
 	_show_snow()
 	_footprints(delta)
 	_crows_check(delta)
+	_show_curtain()
 
 
 func _process(_delta: float) -> void:
@@ -1191,6 +1260,7 @@ func from_dict(d: Dictionary) -> void:
 	back_open = bool(d.get("back_open", false))
 	(_back_gate.get_node("Leaf") as Node3D).rotation.y = deg_to_rad(100.0) if back_open else 0.0
 	_back_body.process_mode = Node.PROCESS_MODE_DISABLED if back_open else Node.PROCESS_MODE_INHERIT
+	_zones()
 	for pt in pits:
 		pt["open_t"] = 0.0
 		(pt["cover"] as Node3D).position.y = 0.0

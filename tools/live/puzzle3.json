@@ -1,0 +1,707 @@
+{
+ "name": "puzzle3",
+ "setup": [
+  {
+   "do": "eval",
+   "expr": "boot._on_joy_changed(0, true)"
+  },
+  {
+   "do": "eval",
+   "expr": "boot.map_state.set('holder', 1)"
+  }
+ ],
+ "steps": [
+  {
+   "name": "3.0 F1 Puzzles: the barn maze",
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Puzzles",
+     "row": "The barn maze"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "fresh: the chest shut, both on foot by the van in the yard",
+     "expr": "not mz().chest_open and p1().seat == null and p2().seat == null and boot.camper.global_position.distance_to(boot.builder.poi['barn_yard']) < 4.0",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "3.1 round the barn: P1 reads Naresh's note at the way in, P2 to the silo",
+   "max": 90,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:mz_at(15.5, 0.2, 9.0)",
+     "arrive": 0.8,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:mz_at(17.4, 0.2, -9.4)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:mz().find_child('NareshNote_maze_gate', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:mz_at(15.0, 0.2, 9.0)",
+     "arrive": 0.8,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:mz_at(15.0, 0.2, -5.4)",
+     "arrive": 0.6,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:mz_at(11.0, 0.2, -5.25)",
+     "arrive": 0.35,
+     "max": 20
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "his note read: the holes, the silo, the flag",
+     "expr": "last_note_has('silo')",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "3.2 P2 climbs the silo (13 m)",
+   "max": 40,
+   "do": [
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:mz_at(11.0, 1.6, -4.68)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "until",
+     "expr": "p2().ladder != null",
+     "max": 2
+    },
+    {
+     "do": "pad_axis",
+     "axis": "LY",
+     "v": -1.0
+    },
+    {
+     "do": "until",
+     "expr": "p2().ladder == null",
+     "max": 15
+    },
+    {
+     "do": "pad_axis",
+     "axis": "LY",
+     "v": 0.0
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "on the silo's deck",
+     "expr": "p2().global_position.y > mz().global_position.y + 12.5 and p2().is_on_floor()",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "3.3 up top: the maze below, Naresh's sketch, his note",
+   "max": 40,
+   "do": [
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:mz().global_position + Vector3(0, 1.0, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:mz().get_parent().find_child('MazeSketch', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 4.0
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:mz().get_parent().find_child('NareshNote_maze_silo', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 4.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "his note: learn the back half before the snow",
+     "expr": "last_note_has('snows')",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "3.4 P1 takes a flag",
+   "max": 20,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:mz_at(20.0, 0.2, -8.2)",
+     "arrive": 0.4,
+     "max": 10
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:mz().find_child('FlagRack', true, false).global_position + Vector3(0, 1.0, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    },
+    {
+     "do": "spawn",
+     "fn": "mz_guide_watch"
+    }
+   ],
+   "expect": [
+    {
+     "name": "P1 carries a flag",
+     "expr": "mz().has_flag(p1())",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "3.5 the mistake: P1 walks onto a pit and drops through",
+   "max": 90,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:mz_at(17.4, 0.2, -9.4)",
+     "arrive": 0.6,
+     "max": 10
+    },
+    {
+     "do": "call",
+     "fn": "mz_walk",
+     "args": [
+      "p1",
+      0,
+      "expr:mz_pit_index() - 1"
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "mz_step_on_pit",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 4.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "out of the drain by the front gate, straw on the view",
+     "expr": "mz().falls == 1 and p1().global_position.distance_to(boot.builder.poi['maze_gate']) < 4.0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "3.6 again, and a wrong turn: walking back out, something pops out of the hedge",
+   "max": 120,
+   "do": [
+    {
+     "do": "call",
+     "fn": "mz_walk",
+     "args": [
+      "p1",
+      0,
+      "expr:mz_detour()[1]"
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "mz_take_detour",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the scare popped",
+     "expr": "mz().scares_fired >= 1",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "3.7 on to the courtyard: the snow comes; P1 rings the bell",
+   "max": 120,
+   "do": [
+    {
+     "do": "call",
+     "fn": "mz_walk",
+     "args": [
+      "p1",
+      "expr:mz_detour()[1]",
+      "expr:mz_centre_index()"
+     ]
+    },
+    {
+     "do": "until",
+     "expr": "mz().snowing",
+     "max": 5
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:mz().find_child('FarmBell', true, false).global_position + Vector3(0, 1.2, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 10.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "heavy snow: white close in, the guide sees nothing below",
+     "expr": "mz().snowing and get_tree().get_first_node_in_group('weather').heavy > 0.8",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "3.8 the back half in the snow, from the guide's memory",
+   "max": 150,
+   "do": [
+    {
+     "do": "call",
+     "fn": "mz_walk",
+     "args": [
+      "p1",
+      "expr:mz_centre_index()",
+      "expr:mz().way.size() - 1"
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "at the chest; the snow stops",
+     "expr": "mz().cell_at(p1().global_position) == mz().goal and not mz().snowing",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "3.9 the feed chest: a spare tyre, fuel, coolant - and Naresh's note: the push",
+   "max": 40,
+   "do": [
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:mz().find_child('FeedChest', true, false).global_position + Vector3(0, 0.5, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 2.5
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:mz().find_child('NareshNote_maze_push', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 6.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the chest open, the push learned",
+     "expr": "mz().chest_open and boot.story.flags.has('push')",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "3.10 it clears: the sun on the snowy hedges",
+   "max": 30,
+   "do": [
+    {
+     "do": "eval",
+     "expr": "set('mz_watching', false)"
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:mz().global_position + Vector3(0, 1.0, 0)"
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:p1().global_position + Vector3(0, 25, 0) - mz().global_transform.basis.z * 10.0"
+    },
+    {
+     "do": "wait",
+     "s": 10.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "a spell of sun",
+     "expr": "get_tree().get_first_node_in_group('weather').clear_t > 100.0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "3.11 out of the back gate with the spare; on the van's empty mount",
+   "max": 150,
+   "do": [
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:mz().find_child('BackGate', true, false).global_transform * Vector3(0.3, 1.0, -1.5)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:boot.world.find_child('MazeSpare', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:mz().global_transform * mz().back_spot()",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:mz_at(-21.5, 0.2, -9.0)",
+     "arrive": 1.0,
+     "max": 40
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:mz_at(-12.0, 0.2, 9.0)",
+     "arrive": 1.0,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.camper.global_transform * Vector3(0.0, 0.2, 4.4)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:boot.camper.global_transform * Vector3(0.0, 2.05, 3.25)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "hold",
+     "key": "E",
+     "s": 2.6
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the spare's on the back of the van",
+     "expr": "boot.camper.spare_available and boot.world.find_child('MazeSpare', true, false) == null",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "3.12 P2 comes down; both in; P1 drives off and shoves P2 out",
+   "max": 120,
+   "do": [
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:mz_at(11.0, 1.6, -4.68)"
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:mz_at(11.0, 13.4, -3.3)",
+     "arrive": 0.35,
+     "max": 10
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:mz_at(11.0, 13.6, -4.7)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "until",
+     "expr": "p2().ladder != null",
+     "max": 2
+    },
+    {
+     "do": "pad_axis",
+     "axis": "LY",
+     "v": 1.0
+    },
+    {
+     "do": "until",
+     "expr": "p2().ladder == null",
+     "max": 15
+    },
+    {
+     "do": "pad_axis",
+     "axis": "LY",
+     "v": 0.0
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:mz_at(15.0, 0.2, 9.0)",
+     "arrive": 0.8,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.camper.global_transform * Vector3(-3.0, 0.2, -5.2)",
+     "arrive": 0.7,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.camper.global_transform * Vector3(3.0, 0.2, -5.2)",
+     "arrive": 0.7,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.camper.global_transform * Vector3(2.3, 0.2, -1.2)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:boot.camper.global_transform * Vector3(0.9, 1.4, -1.2)"
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.camper.global_transform * Vector3(-2.3, 0.2, -1.2)",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:boot.camper.global_transform * Vector3(-0.9, 1.4, -1.2)"
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "until",
+     "expr": "p1().seat != null and p2().seat != null",
+     "max": 3
+    },
+    {
+     "do": "tap",
+     "key": "X"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "tap",
+     "key": "Space"
+    },
+    {
+     "do": "down",
+     "key": "W"
+    },
+    {
+     "do": "until",
+     "expr": "boot.camper.linear_velocity.length() > 7.0",
+     "max": 10
+    },
+    {
+     "do": "tap",
+     "key": "G"
+    },
+    {
+     "do": "up",
+     "key": "W"
+    },
+    {
+     "do": "wait",
+     "s": 5.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "P2 tumbles out of the moving van",
+     "expr": "p2().seat == null and p1().seat != null",
+     "within": 2
+    }
+   ]
+  }
+ ]
+}

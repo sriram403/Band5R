@@ -340,6 +340,7 @@ func _barn(at: Vector3) -> void:
 	poi["maze_gate"] = root.transform * (MAZE_AT + maze.gate_spot())
 	poi["maze_back"] = root.transform * (MAZE_AT + maze.back_spot())
 	poi["silo_ladder"] = root.transform * Vector3(11.0, 0, -6.0)
+	poi["barn_yard"] = root.transform * Vector3(2.0, 0, 17.0)
 	poi["silo_top"] = root.transform * Vector3(11.0, 13.2, -3.2)
 
 

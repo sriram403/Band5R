@@ -25,7 +25,7 @@ python tools/live.py --walk "tools/live/$w.json" >/dev/null 2>&1 &
 # the game plays the walk on its own; follow its log
 log=appdata/playtest/FindingNaresh/live/walk.log
 for i in $(seq 1 1200); do
-	grep -qE "^(DONE|FAILED)" "$log" 2>/dev/null && break
+	grep -qE "^(DONE|FAILED|FAIL )" "$log" 2>/dev/null && break
 	sleep 3
 done
 sleep 4                          # a few seconds after the last step
