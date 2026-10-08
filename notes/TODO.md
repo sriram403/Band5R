@@ -59,8 +59,12 @@ being built and tested), so this always shows where the work is right now.
         save, smoke, set:creatures: 0 failures. Walks puzzle2 + solo2
         recorded again, sent; merged into main (not pushed). set:driving
         stopped (you: the long sets only before a push)
-  - [ ] Your look at the video / your play; then, on your OK to push:
-        set:driving + full, fix, push
+  - [x] **Pushed** on your "push" (2026-10-08, main `e96c48b`)
+  - [~] The full run in the background in `MPG` (log
+        `appdata/full_after_push2.log`); findings go under #2 in
+        `notes/CHANGE_LEDGER.md`, fixed next round
+- [ ] **Next: puzzle #3, the barn maze** (optional, Valley Road): you play
+      it (F1 → Puzzles → 3) and say what to change
     - [ ] the walkway bigger, the chest and note easy to see and reach,
           a few lived-in props
     - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being
