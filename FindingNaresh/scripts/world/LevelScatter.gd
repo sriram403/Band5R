@@ -200,10 +200,11 @@ func _scatter() -> void:
 	# and fade out with distance: a 4 km forest in one batch drew everything,
 	# everywhere, every frame.
 	world.add_child(_tiled("Trunks", trunk_mesh, ToonMat.make(C_TRUNK, 0.02), trunks, [], 1500.0))
-	world.add_child(_tiled("Pines", pine_mesh, ToonMat.make(Color.WHITE, 0.035), pines, pine_cols, 1500.0))
-	world.add_child(_tiled("Canopies", blob_mesh, ToonMat.make(Color.WHITE, 0.035), blobs, blob_cols, 1500.0))
-	world.add_child(_tiled("Rocks", rock_mesh, ToonMat.make(Color.WHITE, 0.02), rocks, rock_cols, 900.0))
-	world.add_child(_tiled("Bushes", bush_mesh, ToonMat.make(Color.WHITE, 0.02), bushes, bush_cols, 700.0))
+	# SnowMat: snow settles on their tops as the world whitens (puzzle #3)
+	world.add_child(_tiled("Pines", pine_mesh, SnowMat.make(Color.WHITE, 0.035, 0.92, 0.3), pines, pine_cols, 1500.0))
+	world.add_child(_tiled("Canopies", blob_mesh, SnowMat.make(Color.WHITE, 0.035, 0.92, -0.1), blobs, blob_cols, 1500.0))
+	world.add_child(_tiled("Rocks", rock_mesh, SnowMat.make(Color.WHITE, 0.02), rocks, rock_cols, 900.0))
+	world.add_child(_tiled("Bushes", bush_mesh, SnowMat.make(Color.WHITE, 0.02, 0.92, -0.05), bushes, bush_cols, 700.0))
 	var log_mesh := CylinderMesh.new()
 	log_mesh.top_radius = 0.26
 	log_mesh.bottom_radius = 0.32
@@ -396,7 +397,9 @@ func _multi(nm: String, mesh: Mesh, mat: Material, xforms: Array, colors: Array)
 	node.name = nm
 	node.multimesh = mm
 	var m := mat
-	if colors.size() > 0 and m is StandardMaterial3D:
+	if colors.size() > 0 and m is ShaderMaterial:
+		m = SnowMat.with_vcol(m as ShaderMaterial)
+	elif colors.size() > 0 and m is StandardMaterial3D:
 		var sm: StandardMaterial3D = (m as StandardMaterial3D).duplicate()
 		sm.vertex_color_use_as_albedo = true
 		m = sm

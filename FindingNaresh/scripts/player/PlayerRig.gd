@@ -82,6 +82,9 @@ var base_fov := 78.0                   ## the layout's field of view, set by Boo
 var taken_grace := 0.0                 ## s left in which no creature can take you
 var taken_hold := 0.0                  ## s left frozen while being taken (Taken.gd)
 var whiteout := 0.0                    ## 0..1 white over this player's view
+const WHITE_FADE := Color(0.97, 0.97, 1.0)
+var fade_color := WHITE_FADE           ## the colour `whiteout` fades to (a pit: black)
+var straw_t := 0.0                     ## s of straw left on your view (out of the maze's drain)
 var in_box := false                    ## hiding under the cardboard box
 var box: CardboardBox = null           ## the box you are in
 var peeking := false                   ## leaning out from cover
@@ -283,6 +286,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			flashlight.light_energy = 5.5
 	taken_grace = maxf(0.0, taken_grace - delta)
+	straw_t = maxf(0.0, straw_t - delta)
 	if slime_t > 0.0:
 		slime_t -= delta
 		if slime_t <= 0.0:
@@ -310,7 +314,7 @@ func _physics_process(delta: float) -> void:
 		_butt_wind -= delta
 		if _butt_wind <= 0.0:
 			_strike()
-	if seat != null:
+	if seat != null and can_push():
 		_push_controls(delta)
 		if seat == null:
 			return
@@ -1171,6 +1175,23 @@ func take_map_from(o: PlayerRig) -> void:
 	say("You've got the map.", 2.0)
 	o.say("P%d snatched the map off you!" % (index + 1), 2.5)
 	print("[map] P%d took the map from P%d" % [index + 1, o.index + 1])
+
+
+## The push is the barn maze's reward (puzzle #3, the user 2026-10-08):
+## Naresh's note in its feed chest teaches it.
+func can_push() -> bool:
+	var st := get_tree().get_first_node_in_group("story") as Story
+	return st != null and st.flags.has("push")
+
+
+## Straw all over your view for `seconds` (out of the maze's drain).
+func straw(seconds: float) -> void:
+	straw_t = maxf(straw_t, seconds)
+
+
+## A fright: the view jolts.
+func jolt() -> void:
+	_shake_t = 0.3
 
 
 ## Seated: G (pad: hold RB) shoves the other one out of their door, at any

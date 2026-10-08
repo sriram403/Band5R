@@ -37,13 +37,20 @@ var flash := 0.0
 ## 0..1 underground (the rail tunnel, F6): the sky's light gone, night for
 ## the creatures' eyes. Set by RailTunnel.
 var dark := 0.0
+## The weather (set by Weather): cloud cover 0..1, how dark the clouds are,
+## and the barn maze's heavy snow 0..1 (white fog closing in to ~15 m).
+var clouds := 0.45
+var cloud_dark := 0.0
+var snow := 0.0
+const SNOW_FOG := [1.0, 15.0]
+const SNOW_FOG_COL := Color(0.84, 0.86, 0.90)
 const STORM_FOG := [4.0, 85.0]        ## fog begin / end in the full storm
 const STORM_FOG_COL := Color(0.20, 0.22, 0.26)
 const FLASH_COL := Color(0.78, 0.82, 0.95)
 var _shown_storm := -1.0
 var target := 1.0
 var _env: Environment
-var _sky: ProceduralSkyMaterial
+var _sky: ShaderMaterial
 var _sun: DirectionalLight3D
 var _shown := -1.0
 var _check_t := 0.0
@@ -55,7 +62,7 @@ func _ready() -> void:
 	var we := world.get_node_or_null("Environment") as WorldEnvironment
 	if we != null:
 		_env = we.environment
-		_sky = _env.sky.sky_material as ProceduralSkyMaterial
+		_sky = _env.sky.sky_material as ShaderMaterial
 	_sun = world.get_node_or_null("Sun") as DirectionalLight3D
 	apply()
 
@@ -73,7 +80,7 @@ func _process(delta: float) -> void:
 		_check_t = 0.5
 		_way_out()
 	value = move_toward(value, target, EASE * delta)
-	if absf(value - _shown) > 0.002 or absf(storm + flash * 3.0 + dark * 7.0 - _shown_storm) > 0.002:
+	if absf(value - _shown) > 0.002 or absf(_extras() - _shown_storm) > 0.002:
 		apply()
 
 
@@ -98,13 +105,16 @@ func _way_out() -> void:
 
 func apply() -> void:
 	_shown = value
-	_shown_storm = storm + flash * 3.0 + dark * 7.0
+	_shown_storm = _extras()
 	if _sky != null:
 		var dark := Color(0.12, 0.13, 0.16)
-		_sky.sky_top_color = (_blend("sky_top") as Color).lerp(dark, storm * 0.85).lerp(FLASH_COL, flash * 0.5)
-		var hz := (_blend("sky_horizon") as Color).lerp(STORM_FOG_COL, storm * 0.9).lerp(FLASH_COL, flash * 0.7)
-		_sky.sky_horizon_color = hz
-		_sky.ground_horizon_color = hz.darkened(0.25)
+		var top := (_blend("sky_top") as Color).lerp(Color(0.46, 0.50, 0.56), clouds * 0.35).lerp(dark, storm * 0.85).lerp(FLASH_COL, flash * 0.5)
+		var hz := (_blend("sky_horizon") as Color).lerp(Color(0.74, 0.76, 0.79), clouds * 0.4).lerp(STORM_FOG_COL, storm * 0.9).lerp(FLASH_COL, flash * 0.7)
+		_sky.set_shader_parameter("sky_top", top)
+		_sky.set_shader_parameter("sky_horizon", hz)
+		_sky.set_shader_parameter("ground_horizon", hz.darkened(0.25))
+		_sky.set_shader_parameter("cover", clampf(maxf(clouds, storm), 0.0, 1.0))
+		_sky.set_shader_parameter("cloud_dark", clampf(maxf(cloud_dark, storm * 0.8) + (1.0 - value) * 0.3, 0.0, 1.0))
 	if _env != null:
 		_env.fog_light_color = _blend("fog")
 		_env.fog_depth_begin = lerpf(_blend("fog_begin"), 3.0, fog_boost)
@@ -115,14 +125,20 @@ func apply() -> void:
 			_env.fog_depth_begin = lerpf(_env.fog_depth_begin, STORM_FOG[0], storm)
 			_env.fog_depth_end = minf(_env.fog_depth_end, lerpf(_env.fog_depth_end, STORM_FOG[1], storm))
 			_env.fog_light_color = _env.fog_light_color.lerp(STORM_FOG_COL, storm)
-		_env.fog_density = lerpf(0.55, 1.0, storm)
-		_env.fog_sky_affect = 0.85 * storm        # the sky melts into the rain
+		if snow > 0.0:
+			# eased: the white closes in quickly once it's snowing properly
+			var s := 1.0 - pow(1.0 - snow, 4.0)
+			_env.fog_depth_begin = lerpf(_env.fog_depth_begin, SNOW_FOG[0], s)
+			_env.fog_depth_end = minf(_env.fog_depth_end, lerpf(_env.fog_depth_end, SNOW_FOG[1], s))
+			_env.fog_light_color = _env.fog_light_color.lerp(SNOW_FOG_COL, s)
+		_env.fog_density = lerpf(0.55, 1.0, maxf(storm, snow))
+		_env.fog_sky_affect = maxf(0.85 * storm, snow)   # the sky melts into the rain, the snow
 		if flash > 0.0:
 			_env.fog_light_color = _env.fog_light_color.lerp(FLASH_COL, flash * 0.6)
 		_env.ambient_light_energy = (_blend("ambient") * (1.0 - 0.35 * storm) + flash * 1.4) * (1.0 - 0.92 * dark)
 		_env.adjustment_saturation = _blend("saturation") * (1.0 - 0.25 * storm)
 	if _sun != null:
-		_sun.light_energy = _blend("sun") * (1.0 - 0.7 * storm) * (1.0 - 0.9 * dark)
+		_sun.light_energy = _blend("sun") * (1.0 - 0.7 * storm) * (1.0 - 0.9 * dark) * (1.0 - 0.22 * clouds - 0.5 * snow)
 		_sun.light_color = _blend("sun_color")
 	var amb := get_parent().get_node_or_null("Ambience") as Ambience
 	if amb != null:
@@ -140,6 +156,11 @@ func light() -> int:
 	if value < 0.2 or dark > 0.5:
 		return 2
 	return 1 if value < 0.45 else 0
+
+
+## Everything besides the dial that changes the look (to know when to redraw).
+func _extras() -> float:
+	return storm + flash * 3.0 + dark * 7.0 + clouds * 11.0 + cloud_dark * 13.0 + snow * 17.0
 
 
 func _blend(key: String):

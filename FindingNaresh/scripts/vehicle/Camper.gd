@@ -707,6 +707,20 @@ func _build_tyre_service() -> void:
 		return "Take the spare wheel" if tyre_flat and tyre_stage == 0 and _tyre_parked() else "")
 	spare.set_meta("blocked_fn", func() -> String:
 		return "Park and set the handbrake before changing the wheel" if tyre_flat and tyre_stage == 0 and not _tyre_parked() else "")
+	# puzzle #3: a spare from the barn maze's chest goes on the empty mount
+	spare.set_meta("held_prompt_fn", func(_p, item) -> String:
+		return "Hold to mount the spare on the back" if item.kind == "spare_wheel" and not spare_available and not tyre_flat else "")
+	spare.set_meta("held_action", func(p, item, dt: float, _first: bool):
+		if item.kind == "spare_wheel" and not spare_available and not tyre_flat:
+			tyre_work += dt
+			if tyre_work >= 2.0:
+				p.drop_held()
+				item.queue_free()
+				tyre_work = 0.0
+				tyre_stage = 0
+				spare_available = true
+				refresh_tyre_visuals()
+				p.say("The spare's on the back. One more flat you can fix.", 3.0))
 	_body_root.add_child(spare)
 
 	var jack_visual := Build.box(Vector3(0.5, 0.45, 0.55), ToonMat.make(Color(0.90, 0.66, 0.16)), Vector3(-1.30, 0.25, -WHEELBASE), Vector3.ZERO, "WheelJack")
