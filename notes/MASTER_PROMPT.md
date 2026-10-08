@@ -50,6 +50,13 @@ they/them.
 
 ## 2. Status right now (2026-09-29; latest at the top, 2026-10-07)
 
+- **2026-10-08: puzzle #2 approved and pushed** (main `e96c48b`) after
+  round 2 (butt visuals, legs that show each butt, the chest in front of
+  the ladder, the switch house and the wire's spark, a proper gate, woods
+  that stop the van, the meadow fence and stile, the fall rule, the
+  storm-wrecked lamps). New ways of working: lived in, never programmatic;
+  built for humans; the change ledger and long runs only after a push
+  (rules 25-26). A full run is going in the background (section 6).
 - **2026-10-07: puzzle #2, the windmill, agreed and built** (`../MPG_dev`
   branch `g4`, not merged, not pushed): the 24 m windmill, the J1 gate,
   the starter lever held for 45 s, legs head-butted back, the fall and
@@ -596,10 +603,15 @@ their OK. While reworking it, turn its instructions into Naresh's notes
 order, then the rest of G (sound and music, settings, the .exe, the final
 playthrough; the user's answers on those are still open, see `TODO.md`).
 
-**Update (2026-10-07):** #2 built on `../MPG_dev` branch `g4` and its
-video sent (`appdata/videos/puzzle2.mp4`); waiting for the user's look.
-On their OK: merge `g4` into main, push (sriram403), then #3 (the barn
-maze). Remember for #5: the lift bridge must not be powered by the water
+**Update (2026-10-08):** #2 (the windmill) done in two rounds, approved
+("push") and pushed (main `e96c48b`). A full run was started in the
+background in `MPG` right after the push (`appdata/full_after_push2.log`,
+rule 26): **in a new thread, first read its result** (the FAIL and
+"==== RUN" lines; if it broke off, `tools/run_test.sh resume`), match
+failures to `notes/CHANGE_LEDGER.md` #2 ("could break"), write them under
+"Found later", fix in `../MPG_dev`. **Next: #3, the barn maze** (the user
+plays F1 → Puzzles → 3 and says what to change; propose, build, record,
+push). Remember for #5: the lift bridge must not be powered by the water
 works any more (the windmill already makes power to open a way).
 
 **Before (2026-10-05):** Milestones A-F approved and pushed (main
