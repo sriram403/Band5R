@@ -63,8 +63,13 @@ being built and tested), so this always shows where the work is right now.
   - [~] The full run in the background in `MPG` (log
         `appdata/full_after_push2.log`); findings go under #2 in
         `notes/CHANGE_LEDGER.md`, fixed next round
-- [ ] **Next: puzzle #3, the barn maze** (optional, Valley Road): you play
-      it (F1 → Puzzles → 3) and say what to change
+- [~] **2026-10-08: puzzle #3, the barn maze: your changes heard, my
+      proposal written** (`design/PUZZLE_CHANGES.md` #3: ~50 m maze, the
+      silo as the guide's tower, a flag for the walker, ~12 landmarks with
+      twins, 5 pits back to the gate, snow from the middle, guiding from
+      memory, jump scares, the chest with tyre / fuel / coolant; the
+      weather across the journey; flagged: the push already exists).
+      **Waiting for your answers (6 questions); nothing built.**
     - [ ] the walkway bigger, the chest and note easy to see and reach,
           a few lived-in props
     - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being

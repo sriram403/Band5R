@@ -693,3 +693,196 @@ Question 1.
    load the last save?
 4. **Before the pick-up:** P1 has no map (my pick), or both can look?
 5. **Which of S1-S5?**
+
+---
+
+## 3. The barn maze: *proposed* (2026-10-08)
+
+### What the user asked for (2026-10-08)
+
+- **Much bigger**, and **confusing for both**: the guide and the walker.
+- **Pits** the walker can fall through; a fall puts you back at the
+  **front gate** of the maze.
+- **Cool landmarks inside** for the guide to guide by (a wooden plank, a
+  broken chair: "after the plank take a left; if you see the broken chair
+  you're probably right, if not go back and take the right").
+- **Snow:** when the walker reaches the middle it starts **snowing
+  heavily**; the guide can't see any more and guides from what they
+  **memorised** (they talk out loud, no text). When they reach the end it
+  **clears up** for a while.
+- **The reward:** a chest at the end with a **spare tyre, a fuel can and
+  coolant**, and a new ability: **pushing your partner out while they're
+  driving**. It's optional, so doing it pays off for the rest of the trip.
+- **Jump scares:** tight corners with a scarecrow (and other things) on the
+  side you don't face on the way in, so you meet them when you come back
+  fast round the corner.
+- **The weather across the whole game (from now on, not clear sky):** snow
+  clouds all over the sky from the start, brewing (with sound) up to here;
+  snow at the maze; then brewing again into the rain storm we already
+  have; **clear sun only after leaving Naresh's home** for the drive back;
+  and from the **last tower** you see the whole map (the clouds and the
+  weather, or a clear sky: question 4).
+
+### Things I have to point out (rule 25: repeats and old ideas)
+
+- **The push out of the van already exists, at any speed.** It came with
+  the windmill (round 1: seated, G / pad hold RB, tested at 33 km/h: they
+  tumble out and get up). Way round (question 1, my pick): **move it here**
+  as the maze's reward. The windmill keeps the head-butt and the map
+  snatch, and the push becomes the prize for doing the optional puzzle,
+  just as you described it.
+- **The old ideas for this maze** (you asked me to bring them back):
+  `design/PUZZLES.md` W2 (2026-09-25): "wrong turns loop you back to the
+  entrance", and the hay dust that blinds the guide while the walker
+  describes what's near. `notes/POLISH.md` P1 (agreed 2026-09-26): a **hay
+  blower** in the loft that the guide stops, and a **plan of the maze**
+  pinned on the balcony (walls and landmarks, no route). Now: the pits do
+  the "back to the entrance", and **the snow replaces the hay dust and the
+  hay blower** (one blinding, not two). The plan: question 5.
+- **Close to the ghat (#6):** there, fog blinds the driver and the
+  passenger guides from pace notes. Here both are blind and the guide
+  guides **from memory**, with no notes. Different enough, I think. Say if
+  you feel it repeats.
+
+### My proposal
+
+**The size.** Now: 6 x 6 cells of 3 m (18 m across, 33 cells to the
+chest). New: **14 x 14 cells of 3.5 m, about 50 m across** (nearly 8 times
+the area), hedges **3 m** tall (thick, untrimmed, a bit ragged). The walk
+to the chest is about **250-300 m if you never go wrong**. It isn't a
+"perfect" maze: there are **a few loops**, so keeping a hand on the wall
+doesn't work, and you can go round in circles without noticing. The barn
+yard's flat pad grows to fit; the maze gets a fence and a front gate, so it
+looks like a farm attraction ("HEDGE MAZE" on a faded painted board).
+
+**The guide's tower: the barn's grain silo.** The loft balcony is 5 m up:
+from there you can't see into a 50 m maze. The barn already has a 13 m
+silo. It gets a **cage ladder** and a railed cap to stand on, at the corner
+of the maze by the front gate. From up there:
+- the near half looks like a map; the far half is **wall tops at a low
+  angle**: you can see where the hedges run, but not every gap. So the
+  guide has to work it out too, and can get it wrong (your "confusing for
+  the guide").
+- **The walker carries a flag:** a bamboo cattle pole with a red rag, from
+  a rack at the front gate ("maze rules: take a flag"), 4.5 m tall, so its
+  tip shows above the hedges. Without it the guide only sees the walker
+  close by. Tags (T) still work both ways.
+
+**Landmarks inside (about 12), three kinds, so you have to talk:**
+- **Tall ones, seen by both** (the guide's anchors): a rusty **windpump
+  rooster** on a pole, a **dead tree** full of crows (they lift off when
+  you pass), a **carousel horse** on its twisted pole, a **hay elevator**
+  leaning over a hedge.
+- **Low ones, only the walker sees** (the guide only sees a dark shape from
+  above): **the wooden plank** across a ditch, **the broken chair**, an
+  old **well with a bucket**, a **bathtub full of flowers**, a **red phone
+  box**, a **stack of tyres**.
+- **Twins, to confuse:** **two chairs**, one broken; **two scarecrows**,
+  one with a lantern. "Is it the broken one?" is a real question.
+- **Painted arrows on the ground** that only the guide can read from above
+  (old paint, some pointing the wrong way: a prank by whoever ran the
+  maze). The walker walks over them without noticing.
+
+**The pits (5).** Old silage pits under rotten boards and loose hay. At
+eye level they look like the floor. **From the silo they show as a darker,
+square patch** of straw (the guide can warn "don't walk on the dark
+square after the tyres"), except where a hedge hides them. Step on one: the
+boards crack (you hear it and get half a second), you drop 3 m in the dark,
+and you **climb out of a drain in the ditch by the front gate**: back at
+the start, facing in, straw on your view for a few seconds. Two pits are
+on the right way (step round the edge, there's room); three are in dead
+ends and loops.
+
+**The snow (the middle of the maze).** When the walker reaches the
+middle, the sky darkens, the wind picks up, and **in about 10 s it's
+snowing heavily**:
+- the walker sees about **8 m**; from the silo you see **nothing but white
+  below you** (the flag is lost too);
+- snow settles on the hedge tops and covers the ground: **the dark squares
+  over the pits disappear**;
+- the guide guides **from memory**: "after the plank, left; if you see the
+  broken chair you're right". (So the time before the middle is when the
+  guide studies the second half. Naresh's note at the silo says so.)
+- it keeps snowing until the walker reaches the chest (falling into a pit
+  in the snow puts you back at the gate in the snow: the first half from
+  memory too);
+- at the chest **it clears** in about 15 s: hedges white, the sun out for
+  about **3 minutes**, drips and the birds back. Then the clouds close in
+  again.
+
+**The jump scares (tight corners).** On the way in, the hedges make you
+face one way. Behind about **5 tight corners**, things stand facing the
+way back: **a scarecrow** right at the corner (head height, arms out),
+**a crow** that bursts out of the hedge with a shriek, **a cow's head
+through the hedge** (a real cow on the other side: it moos), **a
+mannequin in a raincoat**, **a hanging lantern** that swings. You meet
+them on the way back: after a wrong turn, a dead end, or a pit fall. A
+sting sound only the first time. No creatures (the maze stays safe; the
+fright is just for fun).
+
+**The end.** The **feed chest** in the last bay (E opens it): **a spare
+tyre, a fuel can (10 L) and a coolant jug**. A **back gate** opens from
+inside onto the barn yard, so the van can pull up beside it and you load
+them in. Naresh's note in the chest teaches the push (question 1).
+
+**Naresh's notes (rule 24):**
+- at the front gate: *"Took me three goes. The hay hides holes, I went
+  through twice. From the silo you can see them. N."*
+- at the silo top: *"He says it snows here. In this valley. Learn the back
+  half while you can still see it. N."*
+- in the chest: the push (*"If the one driving won't stop for snacks,
+  shove them out. G. N."*).
+
+### The weather across the journey (your plan, as I'd build it)
+
+| Where | Sky | Sound |
+|---|---|---|
+| The opening (homes, town) | white-grey clouds building, sun through the gaps (question 2) | far-off thunder now and then |
+| J1, the windmill | heavier, darker towards the valley | the wind rises |
+| **The maze** (valley road) | **snow clouds overhead; heavy snow from the middle** | wind howling, muffled snow |
+| After the maze | clears for ~3 min, then closes in again | |
+| Last Fuel → the ghat | brewing into rain clouds (the grey we have) | |
+| The ghat, Bessi, the return | the rain storm we already have | |
+| **Leaving Naresh's home** | **clear sun**, the first time in the game | birds, the drive home |
+| **The last tower** | the whole map from above (question 4) | |
+
+What it needs: a **cloud sky** (Godot's built-in sky has no clouds: a
+small sky shader with moving noise clouds, its cover and darkness from the
+mood dial), **snow** (the rain's particles made slow, white and drifting,
+per player like the rain), snow settling (a white layer on the maze's
+hedges and ground that grows, and fades after), and the far-off thunder.
+**Built now:** the cloud sky everywhere, the sounds, and the maze's
+snow. **Built when we get there:** the weather of each later place, and
+the last tower's view.
+
+### My extra ideas (suggestions: yes or no each)
+
+- **S1. Footprints in the snow** that fill in again after about 30 s:
+  fresh prints mean "you were just here: you're going round in circles".
+- **S2. A farm bell** in the middle of the maze. Ring it (E) and the guide
+  hears where it is from the silo, even in the snow: "the bell, then
+  right".
+- **S3. Naresh's old text when the snow starts:** "it's SNOWING. he says
+  it's a sign" (the friend again).
+- **S4. Ridge-route players see it too:** from the lookout deck, the snow
+  falling over the valley, a white curtain in the distance.
+- **S5. A snowball,** if you'd rather keep the push at the windmill (Q1):
+  while the snow lies (only at the maze), E scoops one, G throws it; a hit
+  covers your partner's view in white for 2 s.
+
+### Questions for you
+
+1. **The push:** move it here as the maze's reward (my pick), or keep it
+   at the windmill and give a new ability here (S5, or the leg-up, S5a at
+   the windmill)?
+2. **The opening's sky:** white-grey clouds building with the sun through
+   the gaps (my pick, so it still feels like a good day out), or grey from
+   the first minute?
+3. **Snow only at the maze** (my pick; with S4 the ridge players see it
+   from afar), or on the ridge too?
+4. **The last tower:** the whole world in clear sun (my pick: the reward
+   after the storm), or the weather still visible over each place?
+5. **The plan of the maze** (polish P1): Naresh's half-finished sketch
+   with the landmarks, some missing (my pick), the full plan, or none? And
+   the hay blower goes, since the snow replaces it?
+6. **Which of S1-S5?**

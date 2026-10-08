@@ -16,7 +16,7 @@ Per entry: the puzzle, its branch and merge, then three lists.
 
 ---
 
-## #2 The windmill (rounds 1-2, branches `g4`, `g5`; merged into main 2026-10-08, not pushed)
+## #2 The windmill (rounds 1-2, branches `g4`, `g5`; merged into main and pushed 2026-10-08, `e96c48b`)
 
 **What changed**
 - `puzzles/WindmillPower.gd` (new; `WindmillBrake.gd` deleted): the 24 m
