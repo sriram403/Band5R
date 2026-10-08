@@ -83,6 +83,9 @@ being built and tested), so this always shows where the work is right now.
       - [ ] weather: cloud sky everywhere, far thunder, the maze's snow
             (from the middle, clears at the chest), footprints (S1),
             Naresh's text (S3), the curtain seen from the ridge (S4)
+      - [ ] (your add) light snow while travelling from J1; the world
+            slowly whitens after the maze (terrain, trees, rocks; road
+            dark); sleet into rain on the ghat; melted by the storm
       - [ ] DevMenu, Story, SaveGame, reset
       - [ ] tests, screenshots from where a player stands, sheet, walk,
             record, send

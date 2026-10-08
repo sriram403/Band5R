@@ -713,6 +713,21 @@ Question 1.
    landmarks missing; the hay blower goes (POLISH P1 replaced by this).
 6. **S1-S4 yes.** S5 (the snowball here) no: the push is the reward here.
 
+**The snow, more exactly (the user, 2026-10-08, after the answers):**
+heavy snow **only in the maze**. Everywhere else, while you travel, a
+**light, pretty snowfall**. It's only starting, so the road and the world
+aren't white at first: **after the maze the world is slowly covered** as
+you go on (fields, verges, tree tops and rocks first; the road stays dark
+where the tyres run). How I'll build it (say if it's wrong):
+- the light snow falls from **J1 (the windmill) on**: the opening stays a
+  cloudy good day out with no snow (my pick, from answer 2);
+- the cover grows with the journey after the maze: a dusting by Last Fuel,
+  white fields by the water works and the bridge; players who took the
+  ridge get the same from J2 on;
+- on the ghat the snow turns to sleet and then into the rain storm we
+  have; the rain melts it (Bessi's beach and the return have none);
+- clear sun and no snow from leaving Naresh's home.
+
 The leg-up (you asked what it is): an idea from the windmill (S5a there):
 one player crouches, the other steps on their back and stands up, about
 1.5 m higher, to reach or see something they couldn't alone. Not asked
