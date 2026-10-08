@@ -24,7 +24,9 @@ talk; P1 below is the one already agreed. **The talk started 2026-10-05:**
 each puzzle's changes (asked, proposed, agreed) are in
 `design/PUZZLE_CHANGES.md`.
 
-- [ ] **P1. Barn maze (W2): give the guide a job during the hay dust**
+- [x] **P1. Barn maze (W2): give the guide a job during the hay dust**
+      *Replaced 2026-10-08 by puzzle #3's rework (`design/PUZZLE_CHANGES.md` #3):
+      the snow replaces the dust and the hay blower; Naresh's sketch replaces the plan.*
       (user, 2026-09-26). Now, when the dust blows over the middle, the guide
       on the loft balcony can only stand and wait while the walker talks.
       Agreed: option 3, both of these:

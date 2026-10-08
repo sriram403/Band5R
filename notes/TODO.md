@@ -69,7 +69,23 @@ being built and tested), so this always shows where the work is right now.
       twins, 5 pits back to the gate, snow from the middle, guiding from
       memory, jump scares, the chest with tyre / fuel / coolant; the
       weather across the journey; flagged: the push already exists).
-      **Waiting for your answers (6 questions); nothing built.**
+      **Agreed** (2026-10-08: the push moves here; the snowball to the
+      next optional puzzle, #4; clouds with sun at the start; snow only
+      here; clear sun at the last tower; Naresh's sketch, no hay blower;
+      S1-S4). Building in `../MPG_dev` branch `g6`:
+      - [ ] the maze: 14 x 14 cells of 3.5 m, loops, 3 m hedges, fence,
+            front gate, flag rack, back gate
+      - [ ] the silo: cage ladder, cap with rail, Naresh's sketch + note
+      - [ ] landmarks (tall, low, twins, painted arrows), the bell (S2)
+      - [ ] pits (5) -> out of the drain by the front gate
+      - [ ] jump scares (5 corners)
+      - [ ] the chest: spare tyre, fuel can, coolant; the push unlocked
+      - [ ] weather: cloud sky everywhere, far thunder, the maze's snow
+            (from the middle, clears at the chest), footprints (S1),
+            Naresh's text (S3), the curtain seen from the ridge (S4)
+      - [ ] DevMenu, Story, SaveGame, reset
+      - [ ] tests, screenshots from where a player stands, sheet, walk,
+            record, send
     - [ ] the walkway bigger, the chest and note easy to see and reach,
           a few lived-in props
     - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being

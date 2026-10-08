@@ -696,7 +696,28 @@ Question 1.
 
 ---
 
-## 3. The barn maze: *proposed* (2026-10-08)
+## 3. The barn maze: *agreed* (2026-10-08), being built
+
+### Your answers (2026-10-08)
+
+1. **The push moves here**, the maze's reward (the windmill keeps the
+   head-butt and the map snatch). **The snowball:** you love it; it goes to
+   the **next optional puzzle** (#4, the lookout boards on the Ridge
+   Track). Snow falls only at the maze (answer 3), so there it would be
+   **old snow lying on the high ridge** (patches in the shade): to agree
+   when we get to #4.
+2. **The opening's sky:** clouds building with the sun through the gaps.
+3. **Snow only at the maze** (the ridge players see it from afar, S4).
+4. **The last tower:** the whole world in clear sun.
+5. **The plan:** Naresh's half-finished sketch at the silo top, some
+   landmarks missing; the hay blower goes (POLISH P1 replaced by this).
+6. **S1-S4 yes.** S5 (the snowball here) no: the push is the reward here.
+
+The leg-up (you asked what it is): an idea from the windmill (S5a there):
+one player crouches, the other steps on their back and stands up, about
+1.5 m higher, to reach or see something they couldn't alone. Not asked
+for; noted as a possible fun mechanic for a later place.
+
 
 ### What the user asked for (2026-10-08)
 
