@@ -122,7 +122,12 @@ being built and tested), so this always shows where the work is right now.
                   a figure 1 m away is a blur (now >= 1.8 m or not now), the
                   fake's bricks hidden in the hedge, the push note's zone
                   hiding the spare, the van parked against the hay bales
-            - [ ] **your look at the video**, then merge `g6` and push
+            - [x] **your look at the video** (2026-10-12): round 3 wanted
+                  (the guide sees through the snow, flags: two, hidden doors
+                  take them, spares in the maze, no drop; the guide draws
+                  the plan as the walker finds it)
+            - [~] **round 3 proposal** (PUZZLE_CHANGES #3 "Round 3", S15, 4
+                  questions). **Waiting for your answers; nothing built.**
             Still open: frame rate alone, the full run's resume (not
             started: you asked first)
     - [ ] the walkway bigger, the chest and note easy to see and reach,

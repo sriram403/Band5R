@@ -1034,3 +1034,39 @@ and fades when you stop and look. Rush, and it's right behind you.
 1. 18 x 18 (63 m). 2. The guide goes down when they choose (Naresh's note
 nudges). 3. No child's voice: a music box made here. 4. About 3 real
 doors, 4 fake, 1 back to itself. 5. S9-S14 all yes.
+
+### Round 3: what the user asked for (2026-10-12, after the round 2 video)
+
+- Don't hide the maze from the guide with the snow: they should still see
+  the walker and help if they want.
+- Flags: nothing should take the flag (no drop on a stumble). Going through
+  a **hidden door** loses it. The walker gets **at most two flags** at the
+  start and keeps them. **Spare flags** stand around the maze to pick up.
+- The guide can't see the maze clearly from the silo: let them **draw the
+  map** as the walker discovers it (the plan half empty; each new area the
+  walker finds can be drawn in; landmarks on it), and guide by it. Or the
+  walker does it alone and the guide fetches the van. Asked for my opinion.
+
+### Round 3: my proposal
+
+1. **The snow:** a blizzard for the walker (about 15 m), the silo still sees
+   the maze and the flag through the falling snow (each player gets their
+   own fog). The van run becomes a choice (Naresh's note).
+2. **Flags:** the stumble only jolts. Two flags from the rack (one up, one
+   spare on your back). **Hidden doors:** low gaps at a hedge's foot behind
+   brambles, shortcuts; crawling through, the flag snags and stays in the
+   hedge (visible from the silo); the spare goes up. About 4 old marker
+   flags stuck in the ground around the maze to pick up.
+3. **The guide's plan:** Naresh's half-finished sketch on the rail; E opens
+   it full screen. Cells the walker has been through but nobody's drawn
+   show faint; hold E (~3 s) to ink them in (hedges, doors, pits, landmarks
+   as symbols). No live "you are here" (the flag does that).
+- **S15:** the guide can pencil a cross on the plan ("go here").
+
+### Round 3: questions
+
+1. Thick for the walker, the silo still sees (my pick)?
+2. The flags as above?
+3. The plan guide only, no "you are here" (my pick)?
+4. S15 yes or no?
+
