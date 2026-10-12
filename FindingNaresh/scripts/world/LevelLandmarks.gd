@@ -391,30 +391,9 @@ func _silo_top(root: Node3D, top: Vector3) -> void:
 		root.add_child(Build.box(Vector3(0.04, 10.6, 0.04), steel, top + Vector3(s, -5.2, -SILO_R - 0.85), Vector3.ZERO, "CageBar"))
 
 
-## Naresh's half-finished sketch of the maze, on a board at the silo's rail:
-## the near half's hedges and some landmarks, the far half barely started.
+## Naresh's half-finished sketch of the maze, on a board at the silo's rail.
+## Round 3: it's the guide's plan; the maze draws it (E there opens it big).
 func _silo_sketch(root: Node3D, maze: BarnMaze) -> void:
-	const PX := 256
-	var img := Image.create(PX, PX, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0.95, 0.92, 0.80))
-	var ink := Color(0.32, 0.32, 0.40)
-	var half := BarnMaze.N * BarnMaze.CELL * 0.5
-	var to_px := func(x: float, z: float) -> Vector2i:
-		return Vector2i(int((x + half) / (half * 2.0) * (PX - 17)) + 8, int((z + half) / (half * 2.0) * (PX - 17)) + 8)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 77
-	for x in BarnMaze.N + 1:
-		for z in BarnMaze.N + 1:
-			# drawn: the near half, and a few walls of the far half
-			var near := z >= BarnMaze.N / 2
-			if x < BarnMaze.N and maze.walls_h[x][z] and (near or rng.randf() < 0.15):
-				_px_line(img, to_px.call(-half + x * BarnMaze.CELL, -half + z * BarnMaze.CELL), to_px.call(-half + (x + 1) * BarnMaze.CELL, -half + z * BarnMaze.CELL), ink)
-			if z < BarnMaze.N and maze.walls_v[x][z] and (near or rng.randf() < 0.15):
-				_px_line(img, to_px.call(-half + x * BarnMaze.CELL, -half + z * BarnMaze.CELL), to_px.call(-half + x * BarnMaze.CELL, -half + (z + 1) * BarnMaze.CELL), ink)
-	var tex := ImageTexture.create_from_image(img)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_texture = tex
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	const W := 0.9
 	var board := Node3D.new()
 	board.name = "MazeSketch"
@@ -422,31 +401,11 @@ func _silo_sketch(root: Node3D, maze: BarnMaze) -> void:
 	board.position = Vector3(11.0, 13.0, -2.0) + Vector3(1.73, 1.25, -2.07)
 	board.rotation_degrees = Vector3(-15, -35, 0)
 	root.add_child(board)
-	var q := MeshInstance3D.new()
-	var qm := QuadMesh.new()
-	qm.size = Vector2(W, W)
-	q.mesh = qm
-	q.material_override = mat
-	board.add_child(q)
 	board.add_child(Build.box(Vector3(W + 0.06, W + 0.06, 0.03), ToonMat.make(Color(0.45, 0.32, 0.22)), Vector3(0, 0, -0.02), Vector3.ZERO, "Backing"))
-	# his labels: some landmarks, not all (the phone box, the bathtub, the
-	# elevator and the dead tree are missing; the chair has a question mark)
-	var labels := {"rooster": "rooster", "horse": "horse", "tyres": "tyres", "scarecrow_lantern": "scarecrow\n(lantern)",
-		"plank": "plank", "broken_chair": "chair?", "well": "well"}
-	for key in labels:
-		if not maze.marks.has(key):
-			continue
-		var c: Vector2i = maze.marks[key]
-		var lp := maze.cell_pos(c)
-		var u := (lp.x + half) / (half * 2.0)
-		var v := (lp.z + half) / (half * 2.0)
-		board.add_child(Build.label3d(String(labels[key]).replace("\\n", "\n"), Vector3((u - 0.5) * W, (0.5 - v) * W, 0.005), Vector3.ZERO, 0.022, Color(0.55, 0.12, 0.10)))
-	var bell := maze.cell_pos(BarnMaze.CENTRE[0]) * 0.5 + maze.cell_pos(BarnMaze.CENTRE[3]) * 0.5
-	board.add_child(Build.label3d("BELL", Vector3(((bell.x + half) / (half * 2.0) - 0.5) * W, (0.5 - (bell.z + half) / (half * 2.0)) * W, 0.005), Vector3.ZERO, 0.026, Color(0.55, 0.12, 0.10)))
-	board.add_child(Build.label3d("in  ^", Vector3(((maze.cell_pos(maze.entrance).x + half) / (half * 2.0) - 0.5) * W, -W * 0.5 + 0.03, 0.005), Vector3.ZERO, 0.024, Color(0.55, 0.12, 0.10)))
-	board.add_child(Build.label3d("...the rest in the snow? - N.", Vector3(0, W * 0.5 - 0.04, 0.005), Vector3.ZERO, 0.024, Color(0.25, 0.25, 0.32)))
+	board.add_child(Build.label3d("...the rest in the snow? - N.", Vector3(0, W * 0.5 - 0.03, 0.006), Vector3.ZERO, 0.022, Color(0.25, 0.25, 0.32)))
+	maze.attach_board(board, W)
 	NareshNote.make(root, "maze_silo", Vector3(11.0, 13.0, -2.0) + Vector3(-1.53, 0.95, -2.31), 33.5,
-		"He says it snows here. In this valley. Learn the back half while you can still see it. When it whites out up here you're no use: get the van round the track to the back gate, and honk. One honk: they're close.")
+		"He says it snows here. In this valley. Draw the rest in as they find it - my sketch is only half. If you'd rather they find their own way, get the van round the track to the back gate, and honk. One honk: they're close.")
 
 
 static func _px_line(img: Image, a: Vector2i, b: Vector2i, col: Color) -> void:

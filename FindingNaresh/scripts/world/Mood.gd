@@ -41,7 +41,13 @@ var dark := 0.0
 ## and the barn maze's heavy snow 0..1 (white fog closing in to ~15 m).
 var clouds := 0.45
 var cloud_dark := 0.0
-var snow := 0.0
+var snow := 0.0                  ## the heaviest anyone has (the sun dims for it)
+## Round 3 (the user, 2026-10-13): the blizzard is each player's own: the
+## walker in the maze sees ~15 m, the guide on the silo still sees the maze.
+## Every player's camera gets a copy of the environment; `snow_by[player]`
+## (0..1, set by Weather) closes in that copy's fog only.
+var snow_by := {}
+var _player_envs := {}           ## PlayerRig -> its camera's Environment
 const SNOW_FOG := [1.0, 15.0]
 const SNOW_FOG_COL := Color(0.84, 0.86, 0.90)
 const STORM_FOG := [4.0, 85.0]        ## fog begin / end in the full storm
@@ -125,14 +131,8 @@ func apply() -> void:
 			_env.fog_depth_begin = lerpf(_env.fog_depth_begin, STORM_FOG[0], storm)
 			_env.fog_depth_end = minf(_env.fog_depth_end, lerpf(_env.fog_depth_end, STORM_FOG[1], storm))
 			_env.fog_light_color = _env.fog_light_color.lerp(STORM_FOG_COL, storm)
-		if snow > 0.0:
-			# eased: the white closes in quickly once it's snowing properly
-			var s := 1.0 - pow(1.0 - snow, 4.0)
-			_env.fog_depth_begin = lerpf(_env.fog_depth_begin, SNOW_FOG[0], s)
-			_env.fog_depth_end = minf(_env.fog_depth_end, lerpf(_env.fog_depth_end, SNOW_FOG[1], s))
-			_env.fog_light_color = _env.fog_light_color.lerp(SNOW_FOG_COL, s)
-		_env.fog_density = lerpf(0.55, 1.0, maxf(storm, snow))
-		_env.fog_sky_affect = maxf(0.85 * storm, snow)   # the sky melts into the rain, the snow
+		_env.fog_density = lerpf(0.55, 1.0, storm)
+		_env.fog_sky_affect = 0.85 * storm        # the sky melts into the rain
 		if flash > 0.0:
 			_env.fog_light_color = _env.fog_light_color.lerp(FLASH_COL, flash * 0.6)
 		_env.ambient_light_energy = (_blend("ambient") * (1.0 - 0.35 * storm) + flash * 1.4) * (1.0 - 0.92 * dark)
@@ -140,6 +140,7 @@ func apply() -> void:
 	if _sun != null:
 		_sun.light_energy = _blend("sun") * (1.0 - 0.7 * storm) * (1.0 - 0.9 * dark) * (1.0 - 0.22 * clouds - 0.5 * snow)
 		_sun.light_color = _blend("sun_color")
+	_apply_players()
 	var amb := get_parent().get_node_or_null("Ambience") as Ambience
 	if amb != null:
 		amb.liveliness = value
@@ -160,7 +161,44 @@ func light() -> int:
 
 ## Everything besides the dial that changes the look (to know when to redraw).
 func _extras() -> float:
-	return storm + flash * 3.0 + dark * 7.0 + clouds * 11.0 + cloud_dark * 13.0 + snow * 17.0
+	var x := storm + flash * 3.0 + dark * 7.0 + clouds * 11.0 + cloud_dark * 13.0 + snow * 17.0
+	var k := 19.0
+	for p in snow_by:
+		x += float(snow_by[p]) * k
+		k += 4.0
+	return x + _player_envs.size() * 0.01
+
+
+## Each player's own copy of the environment: the shared look, then their
+## own snow on top.
+func _apply_players() -> void:
+	if _env == null:
+		return
+	for n in get_tree().get_nodes_in_group("player"):
+		var p := n as PlayerRig
+		if p.cam == null:
+			continue
+		if not _player_envs.has(p):
+			_player_envs[p] = _env.duplicate()       # the sky is shared, not copied
+			p.cam.environment = _player_envs[p]
+		var e := _player_envs[p] as Environment
+		for k in ["fog_light_color", "fog_depth_begin", "fog_depth_end", "fog_density", "fog_sky_affect",
+				"ambient_light_energy", "adjustment_saturation"]:
+			e.set(k, _env.get(k))
+		var sn: float = snow_by.get(p, 0.0)
+		if sn > 0.0:
+			# eased: the white closes in quickly once it's snowing properly
+			var s := 1.0 - pow(1.0 - sn, 4.0)
+			e.fog_depth_begin = lerpf(e.fog_depth_begin, SNOW_FOG[0], s)
+			e.fog_depth_end = minf(e.fog_depth_end, lerpf(e.fog_depth_end, SNOW_FOG[1], s))
+			e.fog_light_color = e.fog_light_color.lerp(SNOW_FOG_COL, s)
+			e.fog_density = maxf(e.fog_density, lerpf(0.55, 1.0, sn))
+			e.fog_sky_affect = maxf(e.fog_sky_affect, sn)
+
+
+## A player's camera environment (tests).
+func env_of(p: PlayerRig) -> Environment:
+	return _player_envs.get(p, _env)
 
 
 func _blend(key: String):

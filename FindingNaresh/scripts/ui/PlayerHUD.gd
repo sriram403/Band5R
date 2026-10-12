@@ -175,6 +175,10 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 		map_view.bind(ms)
 	add_child(map_view)
 	p.paper_map = map_view
+	# the barn maze's plan (puzzle #3 round 3), opened at the silo's board
+	var plan := MazePlan.new()
+	add_child(plan)
+	p.maze_plan = plan
 
 	var journal := JournalPanel.new()
 	journal.player = p

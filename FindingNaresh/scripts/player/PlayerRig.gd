@@ -61,6 +61,9 @@ var prompt_text := ""
 var held: Carryable = null             ## item in this player's hands
 var paper_map: PaperMap = null         ## injected by this player's HUD
 var map_open := false
+var maze_plan: MazePlan = null         ## the barn maze's plan (round 3), injected by the HUD
+var plan_open := false
+var _plan_t := 0.0                     ## s since the plan was opened
 var _plan_vel := Vector2.ZERO          ## intended horizontal velocity (see _walk)
 var journal_open := false              ## reading the van's travel journal
 var phone_open := false                ## read-only opening texts
@@ -335,7 +338,9 @@ func _physics_process(delta: float) -> void:
 	else:
 		_walk(delta)
 	var was_holding := held != null     # G that throws doesn't also head-butt
-	if map_open:
+	if plan_open:
+		_plan_controls(get_physics_process_delta_time())
+	elif map_open:
 		_map_controls()
 	else:
 		_scan()
@@ -357,7 +362,9 @@ func _process(delta: float) -> void:
 		zoom = lerpf(zoom, want, 1.0 - exp(-delta * 14.0))
 		if absf(zoom - want) < 0.01:
 			zoom = want
-		if map_open and paper_map != null:
+		if plan_open and maze_plan != null:
+			maze_plan.move_cursor(dev.cursor_delta(delta))
+		elif map_open and paper_map != null:
 			paper_map.move_cursor(dev.cursor_delta(delta))
 		elif wheel_open:
 			_wheel_point(delta)
@@ -410,12 +417,14 @@ func _walk(delta: float) -> void:
 	var f := slow()
 	if not is_on_floor():
 		velocity.y -= GRAVITY * f * f * delta
-	elif dev.just_pressed("jump") and not map_open and not in_box:
+	elif dev.just_pressed("jump") and not map_open and not plan_open and not in_box:
 		velocity.y = JUMP_VELOCITY * f
 
 	var mv := dev.move()
 	if map_open:
 		mv *= 0.4        # shuffle along while reading
+	if plan_open:
+		mv = Vector2.ZERO
 	var dir := (transform.basis.x * mv.x + -transform.basis.z * mv.y)
 	dir.y = 0.0
 	if dir.length() > 1.0:
@@ -1273,6 +1282,63 @@ func _map_controls() -> void:
 	elif dev.just_pressed("map_prev"):
 		paper_map.cycle_stamp(-1)
 		Sfx.play3d("tick", head.global_position, -8.0)
+
+
+# --- the barn maze's plan (round 3) ---------------------------------------------------
+
+func open_plan(m: BarnMaze) -> void:
+	if maze_plan == null:
+		return
+	maze_plan.maze = m
+	maze_plan.player = self
+	_plan_t = 0.0
+	set_plan_open(true)
+
+
+func set_plan_open(open: bool) -> void:
+	if open != plan_open:
+		Sfx.play3d("paper_open" if open else "paper_close", head.global_position, -4.0)
+	plan_open = open
+	if maze_plan != null:
+		maze_plan.visible = open
+		maze_plan.draw_t = 0.0
+		maze_plan.queue_redraw()
+	if open and prompt_text != "":
+		prompt_text = ""
+		prompt_changed.emit("")
+
+
+## Hold E: draw in what the walker found. Click / A: a pencil cross (S15);
+## right-click / X: rub one out. M / D-Down (or E with nothing new) puts it away.
+func _plan_controls(dt: float) -> void:
+	_plan_t += dt
+	var m := maze_plan.maze
+	if m == null or seat != null or global_position.distance_to(m.get_parent().global_transform * Vector3(12.7, 13.2, -4.1)) > 4.0:
+		set_plan_open(false)
+		return
+	if _plan_t < 0.3:
+		return                         # the E that opened it
+	if dev.just_pressed("map"):
+		set_plan_open(false)
+		return
+	if dev.held("interact") and not m.pending.is_empty():
+		maze_plan.draw_t += dt
+		if maze_plan.draw_t >= MazePlan.DRAW_S:
+			maze_plan.draw_t = 0.0
+			m.draw_pending()
+			Sfx.play3d("page", head.global_position, -2.0)
+			say("You draw in what they've found.", 2.0)
+	else:
+		maze_plan.draw_t = 0.0
+		if dev.just_pressed("interact") and m.pending.is_empty():
+			set_plan_open(false)
+			return
+	if dev.just_pressed("map_place"):
+		m.add_cross(maze_plan.cursor_cell())
+		Sfx.play3d("tick", head.global_position, -6.0)
+	elif dev.just_pressed("map_remove"):
+		if m.remove_cross(maze_plan.cursor_cell()):
+			Sfx.play3d("page", head.global_position, -8.0)
 
 
 func say(text: String, seconds := 6.0) -> void:

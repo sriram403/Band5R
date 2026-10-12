@@ -17,7 +17,11 @@ extends Node3D
 ##   each time you look away; never moves while watched.
 ## - S10 small footprints: fresh child-sized prints run ahead, and twice
 ##   they go the wrong way.
-## - S13 a fright has a cost: caught running, you stumble and drop the flag.
+## - Caught running, you stumble (round 3: the flag stays with you).
+## Round 3 (the user, 2026-10-13): fewer frights. Only when the walker goes
+## round in circles (back in a cell they've been through before): then up to
+## SPELL frights at random spots. Getting somewhere new, further in towards
+## the chest, ends the spell: no frights while you're making progress.
 
 const GAP := 10.0                ## s between frights
 const SPRINTING := 5.5           ## m/s: running
@@ -26,12 +30,17 @@ const SPIN := 2.0                ## rad within TURN_WINDOW: a spin / look back
 const TURN_WINDOW := 0.45
 const GAZE := 1.0                ## s looking at a distraction arms it
 const FIGURE_S := 0.9            ## s a figure stays
-const SOUND_GAP := Vector2(16.0, 32.0)
+const SOUND_GAP := Vector2(6.0, 14.0)
+const SPELL := 3                 ## frights per spell of going round in circles
 
 var enabled := true              ## tests switch the frights off for plain walks
 var fired := 0                   ## frights so far (tests)
 var last_kind := ""
 var stumbles := 0
+var visits := {}                 ## cell -> times the walker came into it
+var best := -1                   ## the furthest (dist) the walker has got
+var spell := 0                   ## frights in this spell of being lost
+var _cell := {}                  ## player -> the cell they're in
 
 var maze: BarnMaze
 var _gap_t := 0.0
@@ -86,6 +95,27 @@ func _fwd(p: PlayerRig) -> Vector3:
 func _looks_at(p: PlayerRig, at: Vector3, deg: float) -> bool:
 	var to := at - p.head.global_position
 	return _fwd(p).angle_to(to.normalized()) < deg_to_rad(deg)
+
+
+# --- lost or not (round 3) --------------------------------------------------------------
+
+func _visit(p: PlayerRig) -> void:
+	var c := maze.cell_at(p.global_position)
+	if c.x < 0 or _cell.get(p, Vector2i(-1, -1)) == c:
+		return
+	_cell[p] = c
+	visits[c] = int(visits.get(c, 0)) + 1
+	var d := int(maze.dist.get(c, 0))
+	if d > best:
+		best = d
+		spell = 0                    # somewhere new, further in: not lost
+
+
+## Going round in circles: back in a cell they've been through, with frights
+## left in this spell.
+func lost(p: PlayerRig) -> bool:
+	var c := maze.cell_at(p.global_position)
+	return c.x >= 0 and int(visits.get(c, 0)) >= 2 and spell < SPELL
 
 
 # --- the figures ------------------------------------------------------------------
@@ -152,20 +182,20 @@ func flash(p: PlayerRig, kind: String) -> bool:
 
 func _fired(kind: String) -> void:
 	fired += 1
+	spell += 1
 	last_kind = kind
 	_gap_t = GAP
 
 
-## S13: caught by a fright while running, you stumble and drop the flag.
+## Caught by a fright while running, you stumble back (round 3: the flag
+## stays with you).
 func _cost(p: PlayerRig) -> void:
 	if Vector2(p.velocity.x, p.velocity.z).length() < SPRINTING:
 		p.jolt()
 		return
 	stumbles += 1
 	p.knock(-_fwd(p) * 1.5 + Vector3.UP * 1.5)
-	if maze.has_flag(p):
-		maze.drop_flag(p)
-	p.say("You stumble back into the snow - and the flag's gone from your hand.", 3.0)
+	p.say("You stumble back into the snow.", 2.0)
 
 
 # --- the distractions ----------------------------------------------------------------
@@ -212,7 +242,7 @@ func _check_distractions(p: PlayerRig, delta: float) -> void:
 			dd["gaze"] = float(dd["gaze"]) + delta
 			if float(dd["gaze"]) >= GAZE:
 				dd["armed"] = true
-		elif dd["armed"] and not _looks_at(p, at, 60.0) and _gap_t <= 0.0:
+		elif dd["armed"] and not _looks_at(p, at, 60.0) and _gap_t <= 0.0 and lost(p):
 			if flash(p, "distraction"):
 				dd["done"] = true
 
@@ -254,7 +284,7 @@ func _follow(p: PlayerRig, delta: float) -> void:
 		_unseen_t = 0.0
 		return
 	_unseen_t += delta
-	if _unseen_t < 1.5:
+	if _unseen_t < 1.5 or not lost(p):
 		return
 	_unseen_t = 0.0
 	var pth := maze.path(_follow_cell, pc)
@@ -381,6 +411,8 @@ func _physics_process(delta: float) -> void:
 	var walker: PlayerRig = null
 	for n in get_tree().get_nodes_in_group("player"):
 		var p := n as PlayerRig
+		if p.seat == null and p.global_position.y < maze.global_position.y + 3.0:
+			_visit(p)            # everywhere in the maze (the walk-back scares use it too)
 		if not in_snow_half(p):
 			_yaws.erase(p)
 			continue
@@ -401,7 +433,7 @@ func _physics_process(delta: float) -> void:
 			continue
 		_follow(p, delta)
 		_check_distractions(p, delta)
-		if _gap_t > 0.0:
+		if _gap_t > 0.0 or not lost(p):
 			continue
 		var spd := Vector2(p.velocity.x, p.velocity.z).length()
 		if dyaw > SPIN and last_kind != "spin":
@@ -446,6 +478,10 @@ func _sound(p: PlayerRig) -> void:
 
 
 func reset() -> void:
+	visits = {}
+	best = -1
+	spell = 0
+	_cell = {}
 	fired = 0
 	stumbles = 0
 	last_kind = ""

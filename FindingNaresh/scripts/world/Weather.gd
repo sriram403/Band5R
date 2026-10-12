@@ -137,12 +137,18 @@ func _process(delta: float) -> void:
 		snow_cover = move_toward(snow_cover, float(w[3]), COVER_EASE * delta)
 	_set_cover(snow_cover)
 	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	var mz := _maze()
 	if mood != null:
 		mood.clouds = clouds
 		mood.cloud_dark = cloud_dark
-		mood.snow = heavy
+		mood.snow = heavy * 0.6
+		# round 3: thick for whoever is down in the maze, a haze up the silo
+		for n in get_tree().get_nodes_in_group("player"):
+			var q := n as PlayerRig
+			var near := mz != null and q.global_position.distance_to(mz.global_position) < MAZE_NEAR
+			var up := mz != null and q.global_position.y > mz.global_position.y + 6.0
+			mood.snow_by[q] = heavy * (0.12 if up else 1.0) if near else 0.0
 	_wind.target = clampf(heavy * 0.9 + falling * 0.8, 0.0, 1.0)
-	var mz := _maze()
 	for n in get_tree().get_nodes_in_group("player"):
 		var p := n as PlayerRig
 		var amount := falling

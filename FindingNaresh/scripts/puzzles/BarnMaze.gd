@@ -32,6 +32,8 @@ const SNOW_IN := 10.0            ## s for the snow to come on
 const CLEAR_S := 180.0           ## s of sun after it clears
 const PRINT_LIFE := 30.0         ## S1: s a footprint in the snow lasts
 const SCARE_WAIT := 20.0         ## s before a scare can pop again
+const GAP_W := 1.0               ## round 3: the hidden gaps, crouch to get through
+const GAP_H := 1.25
 
 var walls_h: Array = []          ## [x][z] wall on the -Z side of cell (x, z); z == N is the near edge
 var walls_v: Array = []          ## [x][z] wall on the -X side of cell (x, z); x == N is the +X edge
@@ -66,7 +68,25 @@ var _caps: MeshInstance3D
 var _bell: Node3D
 var _crows: Array[Node3D] = []
 var _crows_t := 0.0
-var _flags := {}                 ## player -> flag node (the walker's flag on a pole)
+var _flags := {}                 ## player -> the flag up on its pole
+var _spares := {}                ## player -> the spare on their back (round 3: two at most)
+var rack_left := 2               ## flags still in the rack at the way in
+var gaps: Array = []             ## round 3: hidden low gaps {a, b}: shortcuts that snag your flag
+var snagged := 0                 ## flags left stuck in a gap (tests)
+var _in_gap := {}
+var markers: Array = []          ## round 3: old marker flags stuck in the ground {node, cell, taken}
+## Round 3: the guide's plan (the sketch on the silo's rail). Cells drawn in,
+## cells the walker has been through but nobody has drawn yet, the guide's
+## pencil crosses (S15).
+var drawn := {}
+var pending := {}
+var crosses: Array[Vector2i] = []
+var plan_changed := 0            ## bumps whenever the plan should be redrawn
+var _board: Node3D
+var _board_w := 0.9
+var _board_img: Image
+var _board_tex: ImageTexture
+var _board_labels := {}
 var _last_cell := {}             ## player -> last cell (the scares)
 var _prints: Array = []          ## [node, age]
 var _last_print := {}            ## player -> where the last footprint went
@@ -132,6 +152,7 @@ func _generate() -> void:
 	walls_v[goal.x][goal.y] = false
 	_distances()
 	_plan_doors()
+	_plan_gaps()
 
 
 func _distances() -> void:
@@ -222,6 +243,39 @@ func _plan_doors() -> void:
 		var d: Vector2i = c - neighbours(c)[0]
 		door_plan.append({"kind": "fake", "front": c, "back": c + d})
 		_door_cells[c] = true
+
+
+## Round 3: two hidden gaps low in a hedge (one in each half): a shortcut
+## you crawl through, where the flag pole snags. Kept as walls for the way.
+func _plan_gaps() -> void:
+	gaps = []
+	for half in [false, true]:
+		var best := []
+		var best_d := 7
+		for x in N:
+			for z in N:
+				var a := Vector2i(x, z)
+				for d in [Vector2i(1, 0), Vector2i(0, 1)]:
+					var b: Vector2i = a + d
+					if not _inside(b) or not wall_between(a, b) or _door_cells.has(a) or _door_cells.has(b):
+						continue
+					if a == goal or b == goal or a == entrance or b == entrance or a in CENTRE or b in CENTRE:
+						continue
+					if is_back(a) != half or is_back(b) != half or not dist.has(a) or not dist.has(b):
+						continue
+					var dd := absi(int(dist[a]) - int(dist[b]))
+					if dd > best_d:
+						best_d = dd
+						best = [a, b]
+		if not best.is_empty():
+			gaps.append({"a": best[0], "b": best[1]})
+
+
+func is_gap(a: Vector2i, b: Vector2i) -> bool:
+	for g in gaps:
+		if (g["a"] == a and g["b"] == b) or (g["a"] == b and g["b"] == a):
+			return true
+	return false
 
 
 func _set_wall(a: Vector2i, b: Vector2i, on: bool) -> void:
@@ -388,6 +442,8 @@ func _build() -> void:
 	_courtyard()
 	_chest()
 	_build_doors()
+	_build_gaps()
+	_build_markers()
 	_marks()
 	_track()
 	_build_curtain()
@@ -409,6 +465,60 @@ func _build_doors() -> void:
 		if dp["kind"] == "fake":
 			at += f.normalized() * (HEDGE_T * 0.5 + 0.05)   # on the hedge's face
 		doors.append(MazeDoor.make(self, String(dp["kind"]), at, atan2(f.x, f.z), a, b))
+
+
+## The brambles half over each hidden gap, both sides (no collision).
+func _build_gaps() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = SEED + 3
+	var thorn := ToonMat.make(Color(0.24, 0.20, 0.12), 0.0)
+	var leaf := ToonMat.make(Color(0.20, 0.34, 0.16), 0.0)
+	for g in gaps:
+		var mid := edge_pos(g["a"], g["b"])
+		var ax: bool = (g["a"] as Vector2i).x == (g["b"] as Vector2i).x
+		var n := Node3D.new()
+		n.name = "HiddenGap"
+		n.position = mid
+		n.rotation.y = 0.0 if ax else PI * 0.5
+		add_child(n)
+		for sgn in [-1.0, 1.0]:
+			for k in 7:
+				var x := rng.randf_range(-GAP_W * 0.7, GAP_W * 0.7)
+				var y := rng.randf_range(0.2, 1.1)
+				n.add_child(Build.box(Vector3(rng.randf_range(0.5, 0.9), 0.05, 0.05), thorn if k % 2 == 0 else leaf,
+					Vector3(x, y, sgn * (HEDGE_T * 0.5 + 0.05)), Vector3(0, rng.randf_range(-30, 30), rng.randf_range(-50, 50)), "Bramble"))
+
+
+## Round 3: old marker flags stuck in the ground round the maze (someone
+## laid the way out once). Take one if yours snagged.
+func _build_markers() -> void:
+	markers = []
+	var cand: Array[Vector2i] = []
+	for x in N:
+		for z in N:
+			var c := Vector2i(x, z)
+			if c in way or _used.has(c) or _door_cells.has(c) or c in CENTRE or not dist.has(c):
+				continue
+			cand.append(c)
+	cand.sort_custom(func(a, b): return int(dist[a]) < int(dist[b]))
+	for f in [0.2, 0.45, 0.65, 0.85]:
+		if cand.is_empty():
+			break
+		var c: Vector2i = cand[clampi(int(f * cand.size()), 0, cand.size() - 1)]
+		_used[c] = true
+		var n := Node3D.new()
+		n.name = "MarkerFlag"
+		n.position = cell_pos(c) + Vector3(0.6, 0, -0.5)
+		n.rotation_degrees = Vector3(0, 0, 6)
+		n.add_child(Build.cyl(0.03, 4.4, ToonMat.make(Color(0.74, 0.66, 0.42), 0.0), Vector3(0, 2.0, 0), Vector3.ZERO, 5, "Pole"))
+		n.add_child(Build.box(Vector3(0.55, 0.36, 0.02), ToonMat.make(Color(0.75, 0.30, 0.10), 0.0), Vector3(0.28, 4.0, 0), Vector3.ZERO, "Rag"))
+		var m := {"node": n, "cell": c, "taken": false}
+		var a := Build.interact_area(Vector3(1.0, 1.8, 1.0), Vector3(0, 0.9, 0), "Take the flag", func(q): take_marker(q, m), "MarkerArea")
+		a.set_meta("tag_name", "an old flag")
+		a.set_meta("prompt_fn", func(q) -> String: return "" if m["taken"] or flag_count(q) >= 2 else "Take the flag")
+		n.add_child(a)
+		add_child(n)
+		markers.append(m)
 
 
 ## Round 2: marks you can see from the silo and the track: a red lantern on
@@ -538,6 +648,27 @@ func _hedges(rng: RandomNumberGenerator) -> void:
 		for sgn in [-1.0, 1.0]:
 			var off: float = (MazeDoor.W * 0.5 + 0.16 + fill * 0.5) * sgn
 			segs.append([mid + (Vector3(off, 0, 0) if wall_along_x else Vector3(0, 0, off)), wall_along_x, fill])
+	# round 3: the gap walls come out of the list; built below with a hole
+	var gap_mids: Array = []
+	for g in gaps:
+		gap_mids.append([edge_pos(g["a"], g["b"]), (g["a"] as Vector2i).x == (g["b"] as Vector2i).x])
+	var keep: Array = []
+	for sg in segs:
+		var hit := false
+		for gm in gap_mids:
+			if sg.size() <= 2 and (sg[0] as Vector3).distance_to(gm[0]) < 0.1:
+				hit = true
+		if not hit:
+			keep.append(sg)
+	segs = keep
+	for gm in gap_mids:
+		var mid: Vector3 = gm[0]
+		var ax: bool = gm[1]
+		var side := (CELL + HEDGE_T - GAP_W) * 0.5
+		for sgn in [-1.0, 1.0]:
+			var off: float = (GAP_W * 0.5 + side * 0.5) * sgn
+			_piece(st, caps, body, mid + (Vector3(off, 0, 0) if ax else Vector3(0, 0, off)), ax, side, 0.0, HEDGE_H)
+		_piece(st, caps, body, mid, ax, GAP_W + 0.04, GAP_H, HEDGE_H - GAP_H)
 	for sg in segs:
 		var at: Vector3 = sg[0]
 		var along_x: bool = sg[1]
@@ -577,6 +708,20 @@ func _hedges(rng: RandomNumberGenerator) -> void:
 	_caps.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_caps.visible = false
 	add_child(_caps)
+
+
+## One plain hedge block (round 3's gap walls): mesh, cap, collision.
+func _piece(st: SurfaceTool, caps: SurfaceTool, body: StaticBody3D, at: Vector3, along_x: bool, length: float, y0: float, h: float) -> void:
+	var size := Vector3(length, h, HEDGE_T) if along_x else Vector3(HEDGE_T, h, length)
+	var col := Color(0.28, 0.44, 0.22)
+	_box(st, at + Vector3.UP * (y0 + h * 0.5), size, col)
+	_box(caps, at + Vector3.UP * (y0 + h + 0.07), Vector3(size.x + 0.06, 0.16, size.z + 0.06), Color(0.93, 0.95, 0.98))
+	var cs := CollisionShape3D.new()
+	var sh := BoxShape3D.new()
+	sh.size = size
+	cs.shape = sh
+	cs.position = at + Vector3.UP * (y0 + h * 0.5)
+	body.add_child(cs)
 
 
 ## A box into a SurfaceTool, normals set per face (winding-proof with an
@@ -681,7 +826,10 @@ func _front_gate() -> void:
 		rack.add_child(Build.box(Vector3(0.4, 0.3, 0.02), ToonMat.make(Color(0.85, 0.12, 0.10), 0.0), Vector3(s + 0.2, 4.2, -0.35), Vector3.ZERO, "RackRag"))
 	var a := Build.interact_area(Vector3(1.3, 2.0, 1.0), Vector3(0, 1.0, 0), "Take a flag", func(p): give_flag(p), "FlagArea")
 	a.set_meta("tag_name", "the flag rack")
-	a.set_meta("prompt_fn", func(p) -> String: return "Put the flag back" if _flags.has(p) else "Take a flag (it shows above the hedges)")
+	a.set_meta("prompt_fn", func(p) -> String:
+		if rack_left <= 0 or flag_count(p) >= 2:
+			return ""
+		return "Take a spare flag" if flag_count(p) == 1 else "Take a flag (it shows above the hedges)")
 	rack.add_child(a)
 	NareshNote.make(arch, "maze_gate", Vector3(-1.65, 1.5, 0.48), 0.0,
 		"Took me three goes. The hay hides holes - I went through twice. From the silo you can see them. Take a flag so the one up top can see you.")
@@ -1087,8 +1235,11 @@ func _check_scares(delta: float) -> void:
 		if c == was or c.x < 0:
 			continue
 		for sc in scares:
-			if sc["cell"] == c and sc["from"] == was and float(sc["t"]) <= 0.0:
+			# round 3: only when going round in circles (the frights' rule)
+			if sc["cell"] == c and sc["from"] == was and float(sc["t"]) <= 0.0 and (frights == null or frights.lost(p)):
 				pop(sc, p)
+				if frights != null:
+					frights.spell += 1
 
 
 ## A scare pops out at `p` (tests call it too).
@@ -1254,32 +1405,114 @@ func open_chest(p: PlayerRig) -> void:
 ## A bamboo cattle pole with a red rag, worn on your back: its tip shows above
 ## the hedges. Your own camera doesn't draw it.
 func give_flag(p: PlayerRig) -> void:
-	if _flags.has(p):
-		_drop_flag(p)
+	if rack_left <= 0:
+		p.say("The rack's empty.", 2.0)
 		return
+	if not _add_flag(p):
+		return
+	rack_left -= 1
+	_rack_poles()
+	if flag_count(p) == 1:
+		p.say("You take a flag on a pole: it sticks up above the hedges, so the one on the silo can see where you are. There's room on your back for a spare.", 4.5)
+	else:
+		p.say("A spare on your back. If the first one snags, this one goes up.", 3.0)
+
+
+## One more flag for `p`: up on its pole, or the spare on the back (two at
+## most, round 3).
+func _add_flag(p: PlayerRig) -> bool:
+	if flag_count(p) >= 2:
+		p.say("Two's all you can carry.", 2.0)
+		return false
+	Sfx.play3d("pickup", p.global_position + Vector3.UP, 0.0)
+	if not _flags.has(p):
+		_flags[p] = _flag_node(p, false)
+	else:
+		_spares[p] = _flag_node(p, true)
+	return true
+
+
+func _flag_node(p: PlayerRig, spare: bool) -> Node3D:
 	var f := Node3D.new()
-	f.name = "WalkerFlag%d" % (p.index + 1)
+	f.name = ("WalkerSpare%d" if spare else "WalkerFlag%d") % (p.index + 1)
 	var layer := 1 << (1 + p.index)
-	var pole := Build.cyl(0.03, 4.4, ToonMat.make(Color(0.80, 0.72, 0.45), 0.0), Vector3(0, 2.4, 0), Vector3.ZERO, 5, "Pole")
-	var rag := Build.box(Vector3(0.6, 0.4, 0.02), ToonMat.make(Color(0.90, 0.10, 0.08), 0.0, 1.0, Color(0.5, 0.0, 0.0)), Vector3(0.3, 4.35, 0), Vector3.ZERO, "Rag")
+	var pole_h := 1.5 if spare else 4.4
+	var pole := Build.cyl(0.03, pole_h, ToonMat.make(Color(0.80, 0.72, 0.45), 0.0), Vector3(0, pole_h * 0.5 + (0.6 if spare else 0.2), 0), Vector3.ZERO, 5, "Pole")
+	var rag := Build.box(Vector3(0.12, 0.4, 0.12) if spare else Vector3(0.6, 0.4, 0.02), ToonMat.make(Color(0.90, 0.10, 0.08), 0.0, 1.0, Color(0.5, 0.0, 0.0)),
+		Vector3(0.0 if spare else 0.3, pole_h + (0.3 if spare else 0.15), 0), Vector3.ZERO, "Rag")
 	for mi in [pole, rag]:
 		(mi as MeshInstance3D).layers = layer
 		f.add_child(mi)
+	if spare:
+		f.rotation_degrees.z = 25.0
 	f.top_level = true
 	p.add_child(f)
-	_flags[p] = f
-	_rack_poles()
-	Sfx.play3d("pickup", p.global_position + Vector3.UP, 0.0)
-	p.say("You take a flag on a pole: it sticks up above the hedges, so the one on the silo can see where you are.", 4.0)
+	return f
+
+
+func flag_count(p: PlayerRig) -> int:
+	return (1 if _flags.has(p) else 0) + (1 if _spares.has(p) else 0)
+
+
+func take_marker(p: PlayerRig, m: Dictionary) -> void:
+	if m["taken"] or not _add_flag(p):
+		return
+	m["taken"] = true
+	(m["node"] as Node3D).visible = false
+	p.say("An old flag, faded. It'll do.", 2.5)
+
+
+## Through a hidden gap: the pole snags and stays stuck in the hedge; the
+## spare goes up (or nobody up top can see you any more).
+func _snag(p: PlayerRig, mid: Vector3) -> void:
+	var f := _flags[p] as Node3D
+	_flags.erase(p)
+	snagged += 1
+	f.top_level = false
+	f.get_parent().remove_child(f)
+	add_child(f)
+	f.position = mid + Vector3(0, 0.6, 0)
+	f.rotation_degrees = Vector3(0, 0, 35)
+	for mi in f.get_children():
+		(mi as MeshInstance3D).layers = 1
+	Sfx.play3d("hit_wood", global_transform * mid + Vector3.UP, 2.0)
+	if _spares.has(p):
+		(_spares[p] as Node).queue_free()
+		_spares.erase(p)
+		_flags[p] = _flag_node(p, false)
+		p.say("The pole snags in the brambles and stays there. You put the spare up.", 3.5)
+	else:
+		p.say("The pole snags in the brambles and stays there. Nobody up top can see you now.", 3.5)
+	print("[maze] P%d's flag snagged in a gap" % (p.index + 1))
+
+
+func _check_gaps() -> void:
+	for n in get_tree().get_nodes_in_group("player"):
+		var p := n as PlayerRig
+		var l := global_transform.affine_inverse() * p.global_position
+		var inside := false
+		for g in gaps:
+			var mid := edge_pos(g["a"], g["b"])
+			var ax: bool = (g["a"] as Vector2i).x == (g["b"] as Vector2i).x
+			var along := (l.x - mid.x) if ax else (l.z - mid.z)
+			var across := (l.z - mid.z) if ax else (l.x - mid.x)
+			if absf(along) < GAP_W * 0.6 and absf(across) < 0.45:
+				inside = true
+				if _flags.has(p) and not _in_gap.has(p):
+					_snag(p, mid)
+		if inside:
+			_in_gap[p] = true
+		else:
+			_in_gap.erase(p)
 
 
 func _drop_flag(p) -> void:
-	if _flags.has(p):
-		var f = _flags[p]
-		if is_instance_valid(f):
-			(f as Node).queue_free()
-		_flags.erase(p)
-		_rack_poles()
+	for d in [_flags, _spares]:
+		if d.has(p):
+			var f = d[p]
+			if is_instance_valid(f):
+				(f as Node).queue_free()
+			d.erase(p)
 
 
 ## The rack shows the poles still in it.
@@ -1290,45 +1523,199 @@ func _rack_poles() -> void:
 	var k := 0
 	for n in rack.get_children():
 		if String(n.name).begins_with("RackPole") or String(n.name).begins_with("RackRag"):
-			(n as Node3D).visible = (k / 2) >= _flags.size()
+			(n as Node3D).visible = (k / 2) < rack_left
 			k += 1
 
 
-## S13: dropped in the snow (a fright while running): it lies there until
-## someone picks it up again.
-func drop_flag(p: PlayerRig) -> void:
-	_drop_flag(p)
-	var lying := Node3D.new()
-	lying.name = "DroppedFlag"
-	add_child(lying)
-	lying.global_position = p.global_position + Vector3(0, 0.05, 0)
-	lying.rotation = Vector3(0, p.yaw, PI * 0.5)
-	lying.add_child(Build.cyl(0.03, 4.4, ToonMat.make(Color(0.80, 0.72, 0.45), 0.0), Vector3(0, 2.2, 0), Vector3.ZERO, 5, "Pole"))
-	lying.add_child(Build.box(Vector3(0.6, 0.4, 0.02), ToonMat.make(Color(0.90, 0.10, 0.08), 0.0), Vector3(0.3, 4.2, 0), Vector3.ZERO, "Rag"))
-	var a := Build.interact_area(Vector3(1.2, 1.2, 1.2), Vector3.ZERO, "Pick up the flag", func(q):
-		give_flag(q)
-		lying.queue_free(), "FlagArea")
-	a.top_level = true
-	lying.add_child(a)
-	a.global_position = lying.global_position + Vector3.UP * 0.4
-
-
+## S13 is gone (round 3: nothing takes your flag but a hidden gap).
 func has_flag(p: PlayerRig) -> bool:
 	return _flags.has(p)
 
 
 func _move_flags() -> void:
-	for p in _flags.keys():
+	for p in _flags.keys() + _spares.keys():
 		if not is_instance_valid(p):
 			_flags.erase(p)
+			_spares.erase(p)
 			continue
 		var q := p as PlayerRig
-		if q.seat != null or q.global_position.distance_to(global_position) > 70.0:
+		if q.seat != null or q.global_position.distance_to(global_position) > 80.0:
 			_drop_flag(q)
 			continue
-		var f := _flags[q] as Node3D
 		var o := q.get_global_transform_interpolated().origin
-		f.global_transform = Transform3D(Basis(Vector3.UP, q.yaw), o + Basis(Vector3.UP, q.yaw) * Vector3(0, 0, 0.25))
+		var b := Basis(Vector3.UP, q.yaw)
+		if _flags.has(q):
+			(_flags[q] as Node3D).global_transform = Transform3D(b, o + b * Vector3(0, 0, 0.25))
+		if _spares.has(q):
+			(_spares[q] as Node3D).global_transform = Transform3D(b * Basis(Vector3.FORWARD, deg_to_rad(25.0)), o + b * Vector3(0.15, 0, 0.3))
+
+
+# --- round 3: the guide's plan ---------------------------------------------------------
+
+## Naresh's names for the landmarks on his sketch; the guide's own are plain.
+const PLAN_NAMES := {"rooster": "rooster", "horse": "horse", "tyres": "tyres", "scarecrow_lantern": "scarecrow (lantern)",
+	"plank": "plank", "broken_chair": "chair?", "well": "well", "chair": "chair", "scarecrow": "scarecrow",
+	"tree": "dead tree", "elevator": "elevator", "bathtub": "bathtub", "phonebox": "phone box"}
+const PLAN_PX := 288
+
+
+## Naresh's half: the near half of the maze is drawn from the start.
+func _reset_plan() -> void:
+	drawn = {}
+	pending = {}
+	crosses = []
+	for x in N:
+		for z in range(N / 2, N):
+			drawn[Vector2i(x, z)] = true
+	plan_changed += 1
+	_paint_board()
+
+
+## Cells a walker goes through that aren't drawn yet wait, faint, for the guide.
+func _track_plan() -> void:
+	for n in get_tree().get_nodes_in_group("player"):
+		var q := n as PlayerRig
+		if q.seat != null or q.global_position.y > global_position.y + 3.0:
+			continue
+		var c := cell_at(q.global_position)
+		if c.x >= 0 and not drawn.has(c) and not pending.has(c):
+			pending[c] = true
+			plan_changed += 1
+
+
+## The guide draws in everything the walker has found.
+func draw_pending() -> int:
+	var n := pending.size()
+	for c in pending:
+		drawn[c] = true
+	pending = {}
+	plan_changed += 1
+	_paint_board()
+	print("[maze] the plan: %d cells drawn in (%d in all)" % [n, drawn.size()])
+	return n
+
+
+## S15: a pencil cross on the plan (three at most; the oldest is rubbed out).
+func add_cross(c: Vector2i) -> void:
+	if c in crosses:
+		return
+	crosses.append(c)
+	if crosses.size() > 3:
+		crosses.pop_front()
+	plan_changed += 1
+	_paint_board()
+
+
+func remove_cross(c: Vector2i) -> bool:
+	if c in crosses:
+		crosses.erase(c)
+		plan_changed += 1
+		_paint_board()
+		return true
+	return false
+
+
+## The landmarks the plan shows (drawn cells only): name -> cell.
+func plan_marks() -> Dictionary:
+	var out := {}
+	for k in marks:
+		if drawn.has(marks[k]) and PLAN_NAMES.has(k):
+			out[k] = marks[k]
+	return out
+
+
+## The board on the silo rail (LevelLandmarks makes it): its picture is the
+## plan, redrawn as the guide draws; E there opens it big.
+func attach_board(board: Node3D, w: float) -> void:
+	_board = board
+	_board_w = w
+	_board_img = Image.create(PLAN_PX, PLAN_PX, false, Image.FORMAT_RGBA8)
+	_board_tex = ImageTexture.create_from_image(_board_img)
+	var q := MeshInstance3D.new()
+	var qm := QuadMesh.new()
+	qm.size = Vector2(w, w)
+	q.mesh = qm
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = _board_tex
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	q.material_override = mat
+	q.name = "PlanPicture"
+	board.add_child(q)
+	var a := Build.interact_area(Vector3(1.2, 1.2, 0.8), Vector3(0, 0, 0.35), "Look at the plan", func(pl): pl.open_plan(self), "PlanArea")
+	a.set_meta("tag_name", "the plan")
+	board.add_child(a)
+	_reset_plan()
+
+
+## Plan coordinates 0..1 of a local point (x right, z down the board).
+func plan_uv(l: Vector3) -> Vector2:
+	var half := N * CELL * 0.5
+	return Vector2((l.x + half) / (half * 2.0), (l.z + half) / (half * 2.0))
+
+
+func _paint_board() -> void:
+	if _board_img == null:
+		return
+	_board_img.fill(Color(0.95, 0.92, 0.80))
+	var ink := Color(0.30, 0.30, 0.40)
+	var half := N * CELL * 0.5
+	var px := func(x: float, z: float) -> Vector2i:
+		var u := plan_uv(Vector3(x, 0, z))
+		return Vector2i(int(u.x * (PLAN_PX - 17)) + 8, int(u.y * (PLAN_PX - 17)) + 8)
+	for c in drawn:
+		var cc: Vector2i = c
+		var x0 := -half + cc.x * CELL
+		var z0 := -half + cc.y * CELL
+		for d in [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]:
+			if not wall_side(cc, d):
+				continue
+			var a: Vector2i
+			var b: Vector2i
+			match d:
+				Vector2i(0, -1): a = px.call(x0, z0); b = px.call(x0 + CELL, z0)
+				Vector2i(0, 1): a = px.call(x0, z0 + CELL); b = px.call(x0 + CELL, z0 + CELL)
+				Vector2i(-1, 0): a = px.call(x0, z0); b = px.call(x0, z0 + CELL)
+				_: a = px.call(x0 + CELL, z0); b = px.call(x0 + CELL, z0 + CELL)
+			_px_line(_board_img, a, b, ink)
+	for d in doors:
+		var md := d as MazeDoor
+		if drawn.has(md.cell_front):
+			var u := plan_uv(md.position)
+			var c := Vector2i(int(u.x * (PLAN_PX - 17)) + 8, int(u.y * (PLAN_PX - 17)) + 8)
+			for ox in range(-2, 3):
+				for oy in range(-2, 3):
+					_px(_board_img, c + Vector2i(ox, oy), Color(0.62, 0.30, 0.14))
+	for cr in crosses:
+		var u := plan_uv(cell_pos(cr))
+		var c := Vector2i(int(u.x * (PLAN_PX - 17)) + 8, int(u.y * (PLAN_PX - 17)) + 8)
+		for k in range(-4, 5):
+			_px(_board_img, c + Vector2i(k, k), Color(0.15, 0.15, 0.15))
+			_px(_board_img, c + Vector2i(k, -k), Color(0.15, 0.15, 0.15))
+	_board_tex.update(_board_img)
+	# the names, as small writing on the board
+	for k in _board_labels:
+		(_board_labels[k] as Node).queue_free()
+	_board_labels = {}
+	var pm := plan_marks()
+	for k in pm:
+		var u := plan_uv(cell_pos(pm[k]))
+		var lb := Build.label3d(String(PLAN_NAMES[k]), Vector3((u.x - 0.5) * _board_w, (0.5 - u.y) * _board_w, 0.005), Vector3.ZERO, 0.018, Color(0.55, 0.12, 0.10))
+		_board.add_child(lb)
+		_board_labels[k] = lb
+
+
+static func _px(img: Image, p: Vector2i, col: Color) -> void:
+	if p.x >= 0 and p.y >= 0 and p.x < img.get_width() and p.y < img.get_height():
+		img.set_pixelv(p, col)
+
+
+static func _px_line(img: Image, a: Vector2i, b: Vector2i, col: Color) -> void:
+	var n := maxi(absi(b.x - a.x), absi(b.y - a.y))
+	for i in n + 1:
+		var t := float(i) / maxf(1.0, n)
+		var q := Vector2i(int(lerpf(a.x, b.x, t)), int(lerpf(a.y, b.y, t)))
+		for o in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1)]:
+			_px(img, q + o, col)
 
 
 # --- the snow ------------------------------------------------------------------------
@@ -1395,6 +1782,8 @@ func _physics_process(delta: float) -> void:
 	_crows_check(delta)
 	_show_curtain()
 	_oneways()
+	_check_gaps()
+	_track_plan()
 
 
 ## S12: a one-way door swings shut and latches once you're through.
@@ -1488,8 +1877,18 @@ func reset() -> void:
 	for n in _rewards:
 		Workable.free_reward(n, global_transform * cell_pos(goal), 8.0)
 	_rewards = []
-	for p in _flags.keys():
+	for p in _flags.keys() + _spares.keys():
 		_drop_flag(p)
+	rack_left = 2
+	_rack_poles()
+	snagged = 0
+	for n in get_children():
+		if String(n.name).begins_with("WalkerFlag"):
+			n.queue_free()
+	for m in markers:
+		m["taken"] = false
+		(m["node"] as Node3D).visible = true
+	_reset_plan()
 	from_dict({})
 	var st = get_tree().current_scene.get("story")
 	if st != null:
