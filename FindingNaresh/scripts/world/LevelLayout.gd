@@ -124,7 +124,7 @@ const WINDMILL := Vector3(-640, 0, 990)
 const LOOKOUT := Vector3(-340, 0, 665)
 const BARN := Vector3(-500, 0, 205)
 const BARN_YARD := Vector3(-510, 0, 210)    ## in front of the barn
-const MAZE_YARD := Vector3(-508, 0, 183)    ## the barn and the 50 m maze behind it (puzzle #3)
+const MAZE_YARD := Vector3(-512, 0, 172)    ## the barn, the 63 m maze behind it and its track (puzzle #3)
 const GAS_STATION := Vector3(130, 0, 470)   ## Last Fuel, at J2
 const FACILITY := Vector3(405, 0, -150)     ## pump house yard, on the west bank
 const COAST_TOWER := Vector3(1395, 0, -85)
@@ -146,7 +146,7 @@ const PADS := [
 	{"pos": FACILITY, "radius": 22.0, "blend": 14.0},
 	{"pos": GAS_STATION, "radius": 14.0, "blend": 10.0},
 	{"pos": HOMESTEAD, "radius": 20.0, "blend": 12.0},
-	{"pos": MAZE_YARD, "radius": 50.0, "blend": 14.0},   # the barn and its maze (puzzle #3), one level
+	{"pos": MAZE_YARD, "radius": 64.0, "blend": 12.0},   # the barn and its maze (puzzle #3), one level
 	{"pos": P2_HOME, "radius": 16.0, "blend": 10.0, "height_offset": 10.2, "driveway": true},
 	{"pos": TOWN_FUEL, "radius": 14.0, "blend": 10.0},
 	{"pos": NARESH_HOME, "radius": 18.0, "blend": 10.0},
@@ -159,7 +159,7 @@ const PADS := [
 const CLEARINGS := [
 	[Vector2(1720, 640), 70.0], [Vector2(405, -150), 34.0], [Vector2(130, 470), 26.0],
 	[Vector2(-1590, 1475), 75.0], [Vector2(-640, 990), 46.0], [Vector2(-340, 665), 30.0],
-	[Vector2(-600, -1300), 24.0], [Vector2(-500, 205), 32.0], [Vector2(-519, 215), 20.0], [Vector2(-510, 178), 54.0], [Vector2(-490, 1590), 30.0],
+	[Vector2(-600, -1300), 24.0], [Vector2(-500, 205), 32.0], [Vector2(-519, 215), 20.0], [Vector2(-512, 172), 70.0], [Vector2(-490, 1590), 30.0],
 	[Vector2(-1250, 1600), 150.0], [Vector2(1395, -85), 40.0], [Vector2(1715, -620), 60.0],
 	[Vector2(1690, -1120), 60.0], [Vector2(-1605, -950), 36.0], [Vector2(-1300, 900), 36.0],
 ]

@@ -347,7 +347,7 @@ func _barn(at: Vector3) -> void:
 ## Puzzle #3: the barn's silo is the guide's tower. A flat deck on top with a
 ## railing (a gap where the cage ladder comes up, on the maze side), a small
 ## vent hood in the middle.
-const MAZE_AT := Vector3(6.0, 0.0, -36.0)     ## the maze's middle, in the barn's frame
+const MAZE_AT := Vector3(6.0, 0.0, -43.0)     ## the maze's middle, in the barn's frame
 const SILO_R := 2.6
 
 
@@ -446,7 +446,7 @@ func _silo_sketch(root: Node3D, maze: BarnMaze) -> void:
 	board.add_child(Build.label3d("in  ^", Vector3(((maze.cell_pos(maze.entrance).x + half) / (half * 2.0) - 0.5) * W, -W * 0.5 + 0.03, 0.005), Vector3.ZERO, 0.024, Color(0.55, 0.12, 0.10)))
 	board.add_child(Build.label3d("...the rest in the snow? - N.", Vector3(0, W * 0.5 - 0.04, 0.005), Vector3.ZERO, 0.024, Color(0.25, 0.25, 0.32)))
 	NareshNote.make(root, "maze_silo", Vector3(11.0, 13.0, -2.0) + Vector3(-1.53, 0.95, -2.31), 33.5,
-		"He says it snows here. In this valley. Learn the back half while you can still see it.")
+		"He says it snows here. In this valley. Learn the back half while you can still see it. When it whites out up here you're no use: get the van round the track to the back gate, and honk. One honk: they're close.")
 
 
 static func _px_line(img: Image, a: Vector2i, b: Vector2i, col: Color) -> void:

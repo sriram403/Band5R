@@ -20,13 +20,13 @@ extends Node3D
 ## Local frame: +Z is the near edge (the barn and the silo), the way in is on
 ## it; the chest is in the far corner, with a back gate in the -X edge.
 
-const N := 14                    ## cells a side
+const N := 18                    ## cells a side (63 m; round 2, the user 2026-10-12)
 const CELL := 3.5                ## m
 const HEDGE_H := 3.0
 const HEDGE_T := 0.5
 const SEED := 20261008
-const BRAIDS := 14               ## walls knocked through for loops
-const CENTRE := [Vector2i(6, 6), Vector2i(7, 6), Vector2i(6, 7), Vector2i(7, 7)]
+const BRAIDS := 22               ## walls knocked through for loops
+const CENTRE := [Vector2i(8, 8), Vector2i(9, 8), Vector2i(8, 9), Vector2i(9, 9)]
 const PIT_FALL_S := 1.3          ## s from the crack to climbing out of the drain
 const SNOW_IN := 10.0            ## s for the snow to come on
 const CLEAR_S := 180.0           ## s of sun after it clears
@@ -35,7 +35,7 @@ const SCARE_WAIT := 20.0         ## s before a scare can pop again
 
 var walls_h: Array = []          ## [x][z] wall on the -Z side of cell (x, z); z == N is the near edge
 var walls_v: Array = []          ## [x][z] wall on the -X side of cell (x, z); x == N is the +X edge
-var entrance := Vector2i(10, N - 1)  ## the cell by the gap in the near (+Z) edge
+var entrance := Vector2i(12, N - 1)  ## the cell by the gap in the near (+Z) edge
 var goal := Vector2i(0, 1)       ## the feed chest; the back gate is in its -X side
 var way: Array[Vector2i] = []    ## the shortest way in to the chest
 var dist := {}                   ## cell -> steps from the way in
@@ -48,6 +48,10 @@ var snow := 0.0                  ## 0..1 how much lies (the floor, the hedge top
 var pits: Array = []             ## {cell, centre (local), half (Vector2), cover, hole, open_t}
 var scares: Array = []           ## {cell, from, node, kind, t, done, hide, show}
 var marks := {}                  ## landmark name -> its cell
+var door_plan: Array = []        ## {kind, front, back}: round 2's doors, all in the snow half
+var doors: Array = []            ## the MazeDoor nodes
+var back_from := 0               ## dist beyond which a cell is in the snow half
+var _door_cells := {}
 var falls := 0                   ## pit falls this go (tests)
 var scares_fired := 0
 
@@ -68,6 +72,9 @@ var _prints: Array = []          ## [node, age]
 var _last_print := {}            ## player -> where the last footprint went
 var _falling := {}               ## player -> true while falling
 var _weather: Node
+var frights: MazeFrights
+var _lamp_light: OmniLight3D
+var _lamp_bulb: MeshInstance3D
 var _zone_layer := 0
 var _curtain: MeshInstance3D
 
@@ -119,10 +126,15 @@ func _generate() -> void:
 		for c in way:
 			if c in CENTRE:
 				through = true
-		if through and way.size() >= 60:
+		if through and way.size() >= 80:
 			break
 	# the back gate: out of the last cell's -X side
 	walls_v[goal.x][goal.y] = false
+	_distances()
+	_plan_doors()
+
+
+func _distances() -> void:
 	dist = {}
 	var q: Array[Vector2i] = [entrance]
 	dist[entrance] = 0
@@ -132,6 +144,98 @@ func _generate() -> void:
 			if not dist.has(n):
 				dist[n] = int(dist[c]) + 1
 				q.append(n)
+
+
+## Is the cell in the snow half (past the courtyard)?
+func is_back(c: Vector2i) -> bool:
+	return int(dist.get(c, 0)) > back_from
+
+
+## Round 2's doors, all in the snow half: 3 real ones on the way (the first
+## two shut behind you, S12), 1 that leads round a loop back to itself, 4
+## fake ones at the ends of dead ends.
+func _plan_doors() -> void:
+	door_plan = []
+	_door_cells = {}
+	var ci := 0
+	for i in way.size():
+		if way[i] in CENTRE:
+			ci = i
+	back_from = int(dist[way[ci]]) + 1
+	var k := 0
+	# spread over the snow half of the way (fractions of the whole way piled
+	# two doors onto one edge when the courtyard came late: 2026-10-12)
+	var span := way.size() - 3 - (ci + 2)
+	for f in [0.15, 0.5, 0.85]:
+		var i := ci + 2 + int(f * span)
+		door_plan.append({"kind": "oneway" if k < 2 else "real", "front": way[i], "back": way[i + 1]})
+		_door_cells[way[i]] = true
+		_door_cells[way[i + 1]] = true
+		k += 1
+	# the loop: an open edge off the way whose cells are joined another way round
+	var found := false
+	for x in N:
+		for z in N:
+			if found:
+				break
+			var a := Vector2i(x, z)
+			if not is_back(a) or _door_cells.has(a):
+				continue
+			for d in [Vector2i(1, 0), Vector2i(0, 1)]:
+				var b: Vector2i = a + d
+				if not _inside(b) or wall_between(a, b) or not is_back(b) or _door_cells.has(b):
+					continue
+				var ia := way.find(a)
+				var ib := way.find(b)
+				if ia >= 0 and ib >= 0 and absi(ia - ib) == 1:
+					continue
+				_set_wall(a, b, true)
+				var round := path(a, b).size()
+				_set_wall(a, b, false)
+				if round >= 7 and round <= 16:
+					var fr := a if int(dist[a]) <= int(dist[b]) else b
+					door_plan.append({"kind": "loop", "front": fr, "back": b if fr == a else a})
+					_door_cells[a] = true
+					_door_cells[b] = true
+					found = true
+					break
+	# the fakes: at the far end of dead ends in the snow half
+	var ends: Array[Vector2i] = []
+	for x in N:
+		for z in N:
+			var c := Vector2i(x, z)
+			if is_back(c) and neighbours(c).size() == 1 and not c in way and not _door_cells.has(c) and c != goal:
+				ends.append(c)
+	var picked := 0
+	var j := 0
+	while picked < 4 and j < ends.size():
+		var c: Vector2i = ends[j]
+		var d: Vector2i = c - neighbours(c)[0]
+		door_plan.append({"kind": "fake", "front": c, "back": c + d})
+		_door_cells[c] = true
+		picked += 1
+		j += maxi(1, ends.size() / 4)
+
+
+func _set_wall(a: Vector2i, b: Vector2i, on: bool) -> void:
+	if a.x != b.x:
+		walls_v[maxi(a.x, b.x)][a.y] = on
+	else:
+		walls_h[a.x][maxi(a.y, b.y)] = on
+
+
+## The boundary point between two neighbouring cells (local).
+func edge_pos(a: Vector2i, b: Vector2i) -> Vector3:
+	return (cell_pos(a) + cell_pos(b)) * 0.5
+
+
+## The door between two cells, if there is one.
+func door_between(a: Vector2i, b: Vector2i) -> MazeDoor:
+	for d in doors:
+		var md := d as MazeDoor
+		if (md.cell_front == a and md.cell_back == b) or (md.cell_front == b and md.cell_back == a):
+			return md
+	return null
 
 
 func _carve(seed: int) -> void:
@@ -276,7 +380,96 @@ func _build() -> void:
 	_place_scares()
 	_courtyard()
 	_chest()
+	_build_doors()
+	_marks()
+	_track()
 	_build_curtain()
+	frights = MazeFrights.new()
+	frights.name = "Frights"
+	add_child(frights)
+	frights.setup(self)
+
+
+func _build_doors() -> void:
+	doors = []
+	for dp in door_plan:
+		var a: Vector2i = dp["front"]
+		var b: Vector2i = dp["back"]
+		var mid := edge_pos(a, b)
+		var f := cell_pos(a) - mid
+		f.y = 0.0
+		var at := mid
+		if dp["kind"] == "fake":
+			at += f.normalized() * (HEDGE_T * 0.5 + 0.05)   # on the hedge's face
+		doors.append(MazeDoor.make(self, String(dp["kind"]), at, atan2(f.x, f.z), a, b))
+
+
+## Round 2: marks you can see from the silo and the track: a red lantern on
+## a tall pole over the chest's bay; at the exit a windsock mast, an EXIT
+## board and a lamp over the back gate that lights when the snow comes.
+func _marks() -> void:
+	var pole := ToonMat.make(Color(0.40, 0.30, 0.22), 0.01)
+	var red := ToonMat.make(Color(0.85, 0.12, 0.10), 0.006, 0.5, Color(0.9, 0.15, 0.1))
+	var c := cell_pos(goal) + Vector3(1.2, 0, 1.2)
+	add_child(Build.cyl(0.08, 8.0, pole, c + Vector3(0, 4.0, 0), Vector3.ZERO, 6, "ChestPole"))
+	add_child(Build.box(Vector3(0.3, 0.42, 0.3), red, c + Vector3(0, 8.2, 0), Vector3.ZERO, "ChestLantern"))
+	add_child(Build.box(Vector3(1.1, 0.5, 0.03), ToonMat.make(Color(0.85, 0.12, 0.10), 0.0), c + Vector3(0.6, 7.5, 0), Vector3.ZERO, "ChestPennant"))
+	var out := back_spot() + Vector3(0.6, 0, 2.6)
+	var mast := Storm.make_windsock(out + Vector3(-1.5, 0, 0))
+	mast.name = "ExitWindsock"
+	add_child(mast)
+	var board := Node3D.new()
+	board.name = "ExitBoard"
+	board.position = back_spot() + Vector3(0.9, 0, -2.6)
+	board.rotation.y = -PI * 0.5            # facing out (-X), towards the track
+	add_child(board)
+	for sx in [-0.7, 0.7]:
+		board.add_child(Build.cyl(0.06, 1.8, pole, Vector3(sx, 0.9, 0), Vector3.ZERO, 5, "Post"))
+	board.add_child(Build.box(Vector3(1.8, 0.7, 0.06), ToonMat.make(Color(0.92, 0.88, 0.75)), Vector3(0, 1.6, 0), Vector3.ZERO, "Board"))
+	board.add_child(Build.label3d("EXIT", Vector3(0, 1.6, 0.04), Vector3.ZERO, 0.5, Color(0.70, 0.10, 0.08)))
+	var lamp := Node3D.new()
+	lamp.name = "ExitLamp"
+	lamp.position = cell_pos(goal) + Vector3(-CELL * 0.5 - 0.6, 0, -1.9)
+	add_child(lamp)
+	lamp.add_child(Build.cyl(0.07, 3.6, pole, Vector3(0, 1.8, 0), Vector3.ZERO, 6, "Post"))
+	lamp.add_child(Build.box(Vector3(0.6, 0.06, 0.06), pole, Vector3(0.3, 3.55, 0), Vector3.ZERO, "Arm"))
+	_lamp_bulb = Build.sphere(0.14, ToonMat.make(Color(0.95, 0.85, 0.55), 0.004), Vector3(0.55, 3.4, 0), Vector3.ONE, "Bulb")
+	lamp.add_child(_lamp_bulb)
+	_lamp_light = OmniLight3D.new()
+	_lamp_light.position = Vector3(0.55, 3.3, 0)
+	_lamp_light.light_color = Color(1.0, 0.85, 0.55)
+	_lamp_light.omni_range = 14.0
+	_lamp_light.light_energy = 0.0
+	lamp.add_child(_lamp_light)
+
+
+func _lamp(on: bool) -> void:
+	_lamp_light.light_energy = 2.5 if on else 0.0
+	_lamp_bulb.material_override = ToonMat.make(Color(1.0, 0.9, 0.6), 0.004, 0.5, Color(1.0, 0.8, 0.4)) if on else null
+
+
+## A worn dirt track from the barn yard round the maze's west side to the
+## back gate, for the van (round 2: the guide drives round in the snow).
+const TRACK := [Vector3(-4, 0, 60), Vector3(-20, 0, 55), Vector3(-37, 0, 35), Vector3(-37, 0, -22), Vector3(-34, 0, -26)]
+
+
+func _track() -> void:
+	var dirt := ToonMat.make(Color(0.46, 0.38, 0.27), 0.0)
+	var rut := ToonMat.make(Color(0.34, 0.28, 0.20), 0.0)
+	for i in TRACK.size() - 1:
+		var a: Vector3 = TRACK[i]
+		var b: Vector3 = TRACK[i + 1]
+		var mid := (a + b) * 0.5
+		var length := a.distance_to(b) + 3.0
+		var yaw := rad_to_deg(atan2(b.x - a.x, b.z - a.z))
+		var seg := Node3D.new()
+		seg.name = "Track%d" % i
+		seg.position = mid
+		seg.rotation_degrees.y = yaw
+		add_child(seg)
+		seg.add_child(Build.box(Vector3(3.4, 0.02, length), dirt, Vector3(0, 0.025, 0), Vector3.ZERO, "Dirt"))
+		for sx in [-0.85, 0.85]:
+			seg.add_child(Build.box(Vector3(0.4, 0.02, length), rut, Vector3(sx, 0.035, 0), Vector3.ZERO, "Rut"))
 
 
 func _build_curtain() -> void:
@@ -326,16 +519,30 @@ func _hedges(rng: RandomNumberGenerator) -> void:
 				segs.append([Vector3(-half + (x + 0.5) * CELL, 0, -half + z * CELL), true])
 			if z < N and walls_v[x][z]:
 				segs.append([Vector3(-half + x * CELL, 0, -half + (z + 0.5) * CELL), false])
+	# round 2: a door in an open edge has hedge either side of its frame
+	var fill := (CELL + HEDGE_T - MazeDoor.W - 0.32) * 0.5
+	for dp in door_plan:
+		if dp["kind"] == "fake":
+			continue
+		var a: Vector2i = dp["front"]
+		var b: Vector2i = dp["back"]
+		var mid := edge_pos(a, b)
+		var wall_along_x: bool = a.x == b.x
+		for sgn in [-1.0, 1.0]:
+			var off: float = (MazeDoor.W * 0.5 + 0.16 + fill * 0.5) * sgn
+			segs.append([mid + (Vector3(off, 0, 0) if wall_along_x else Vector3(0, 0, off)), wall_along_x, fill])
 	for sg in segs:
 		var at: Vector3 = sg[0]
 		var along_x: bool = sg[1]
-		var length := CELL + HEDGE_T
-		for k in 2:
+		var length: float = sg[2] if sg.size() > 2 else CELL + HEDGE_T
+		for k in (2 if sg.size() <= 2 else 1):
 			var h := HEDGE_H + rng.randf_range(-0.18, 0.22)
 			var t := HEDGE_T + rng.randf_range(-0.05, 0.06)
-			var off := (k - 0.5) * length * 0.5
+			var parts := 2 if sg.size() <= 2 else 1
+			var off := (k - 0.5) * length * 0.5 if parts == 2 else 0.0
 			var c := at + (Vector3(off, 0, 0) if along_x else Vector3(0, 0, off))
-			var size := Vector3(length * 0.5 + 0.02, h, t) if along_x else Vector3(t, h, length * 0.5 + 0.02)
+			var plen := length / parts
+			var size := Vector3(plen + 0.02, h, t) if along_x else Vector3(t, h, plen + 0.02)
 			var col := Color(0.24, 0.40, 0.20).lerp(Color(0.33, 0.50, 0.24), rng.randf())
 			_box(st, c + Vector3.UP * h * 0.5, size, col)
 			_box(caps, c + Vector3.UP * (h + 0.07), Vector3(size.x + 0.06, 0.16, size.z + 0.06), Color(0.93, 0.95, 0.98))
@@ -510,7 +717,7 @@ func _dead_ends() -> Array[Vector2i]:
 	for x in N:
 		for z in N:
 			var c := Vector2i(x, z)
-			if neighbours(c).size() == 1 and not c in way and c != goal and c != entrance:
+			if neighbours(c).size() == 1 and not c in way and c != goal and c != entrance and not _door_cells.has(c):
 				out.append(c)
 	return out
 
@@ -1020,8 +1227,12 @@ func open_chest(p: PlayerRig) -> void:
 	root.add_child(jug)
 	jug.global_position = global_transform * (base + Vector3(0.8, 0.9, 1.0))
 	_rewards = [wheel, can, jug]
-	_rewards.append(NareshNote.make(self, "maze_push", base + Vector3(0, 0.95, 0.42), 0.0,
-		"If the one driving won't stop for snacks: shove them out. In the van, G (pad: hold RB). He did it to me twice."))
+	# pinned inside the lid: you see it as it opens (in front of the chest its
+	# read zone hid the spare from the look: 2026-10-12)
+	var note := NareshNote.make(_chest_lid, "maze_push", Vector3(0.35, 0.1, 0.5), 0.0,
+		"If the one driving won't stop for snacks: shove them out. In the van, G (pad: hold RB). He did it to me twice.")
+	note.rotation_degrees = Vector3(-90, 0, 0)
+	_rewards.append(note)
 	var st = get_tree().current_scene.get("story")
 	if st != null:
 		st.flags["maze_done"] = true
@@ -1076,6 +1287,25 @@ func _rack_poles() -> void:
 			k += 1
 
 
+## S13: dropped in the snow (a fright while running): it lies there until
+## someone picks it up again.
+func drop_flag(p: PlayerRig) -> void:
+	_drop_flag(p)
+	var lying := Node3D.new()
+	lying.name = "DroppedFlag"
+	add_child(lying)
+	lying.global_position = p.global_position + Vector3(0, 0.05, 0)
+	lying.rotation = Vector3(0, p.yaw, PI * 0.5)
+	lying.add_child(Build.cyl(0.03, 4.4, ToonMat.make(Color(0.80, 0.72, 0.45), 0.0), Vector3(0, 2.2, 0), Vector3.ZERO, 5, "Pole"))
+	lying.add_child(Build.box(Vector3(0.6, 0.4, 0.02), ToonMat.make(Color(0.90, 0.10, 0.08), 0.0), Vector3(0.3, 4.2, 0), Vector3.ZERO, "Rag"))
+	var a := Build.interact_area(Vector3(1.2, 1.2, 1.2), Vector3.ZERO, "Pick up the flag", func(q):
+		give_flag(q)
+		lying.queue_free(), "FlagArea")
+	a.top_level = true
+	lying.add_child(a)
+	a.global_position = lying.global_position + Vector3.UP * 0.4
+
+
 func has_flag(p: PlayerRig) -> bool:
 	return _flags.has(p)
 
@@ -1111,6 +1341,7 @@ func start_snow() -> void:
 	var w := _weather_node()
 	if w != null:
 		w.set("heavy_target", 1.0)
+	_lamp(true)
 	for n in get_tree().get_nodes_in_group("player"):
 		var q := n as PlayerRig
 		if q.global_position.distance_to(global_position) < 90.0:
@@ -1156,6 +1387,25 @@ func _physics_process(delta: float) -> void:
 	_footprints(delta)
 	_crows_check(delta)
 	_show_curtain()
+	_oneways()
+
+
+## S12: a one-way door swings shut and latches once you're through.
+func _oneways() -> void:
+	for d in doors:
+		var md := d as MazeDoor
+		if md.kind != "oneway" or not md.is_open:
+			continue
+		var through := false
+		var in_way := false
+		for n in get_tree().get_nodes_in_group("player"):
+			var sd := md.side_of((n as Node3D).global_position)
+			if sd < -1.8 and (n as Node3D).global_position.distance_to(md.global_position) < 6.0:
+				through = true
+			if absf(sd) < 0.9 and (n as Node3D).global_position.distance_to(md.global_position) < 2.0:
+				in_way = true
+		if through and not in_way:
+			md.slam(true)
 
 
 func _process(_delta: float) -> void:
@@ -1273,3 +1523,11 @@ func from_dict(d: Dictionary) -> void:
 	for pr in _prints:
 		(pr[0] as Node).queue_free()
 	_prints.clear()
+	for dr in doors:
+		(dr as MazeDoor).reset()
+	for n in get_children():
+		if String(n.name).begins_with("DroppedFlag"):
+			n.queue_free()
+	_lamp(false)
+	if frights != null:
+		frights.reset()

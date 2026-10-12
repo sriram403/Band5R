@@ -107,7 +107,29 @@ def crack():
     write("crack_1.wav", lowpass(x, 0.55) + thud)
 
 
+def musicbox():
+    """Round 2: a music box, an old nursery-like tune (made up here), slightly
+    out of tune and dragging, looped (~11 s)."""
+    notes = [(76, 1), (79, 1), (76, 1), (72, 1), (74, 2), (71, 2), (72, 1), (76, 1), (74, 1), (71, 1), (69, 2), (68, 2),
+             (69, 1), (72, 1), (71, 1), (68, 1), (64, 2), (66, 1), (68, 1), (69, 4)]
+    beat = 0.36
+    total = sum(n[1] for n in notes) * beat + 1.5
+    x = np.zeros(int(RATE * total))
+    t0 = 0.0
+    for i, (m, d) in enumerate(notes):
+        f = 440.0 * 2 ** ((m - 69) / 12.0) * (1.0 + 0.006 * np.sin(i * 1.7))   # the comb is worn: off pitch
+        n = int(RATE * 1.6)
+        t = np.arange(n) / RATE
+        tine = np.sin(2 * np.pi * f * t) + 0.35 * np.sin(2 * np.pi * f * 3.01 * t) * np.exp(-t * 9) + 0.15 * np.sin(2 * np.pi * f * 5.4 * t) * np.exp(-t * 20)
+        tine *= np.exp(-t * 3.2) * np.minimum(1, t * 800)
+        i0 = int(RATE * t0)
+        x[i0:i0 + n] += tine[: max(0, min(n, len(x) - i0))]
+        t0 += d * beat * (1.0 + 0.04 * i / len(notes))      # winding down
+    write("musicbox_1.wav", x * 0.6)
+
+
 if __name__ == "__main__":
+    musicbox()
     bell()
     caw("caw_1.wav", 520)
     caw("caw_2.wav", 470)

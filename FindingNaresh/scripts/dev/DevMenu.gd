@@ -890,7 +890,7 @@ func play_puzzle(k: int) -> String:
 		# both just out of it
 		var yard: Vector3 = boot.builder.poi["barn_yard"]
 		var bz: Vector3 = (boot.world.find_child("Barn", false, false) as Node3D).global_transform.basis.z
-		van_to(yard, atan2(-bz.x, -bz.z))
+		van_to(yard, atan2(bz.x, bz.z))       # facing the barn and the track round the maze
 		boot.camper.repair_all()
 		# as on a real run: the opening's puncture used the spare
 		boot.camper.spare_available = false
