@@ -922,3 +922,109 @@ the last tower's view.
    with the landmarks, some missing (my pick), the full plan, or none? And
    the hay blower goes, since the snow replaces it?
 6. **Which of S1-S5?**
+
+
+### Round 2: what the user asked for (2026-10-12, after the video)
+
+- **Bigger** still.
+- **Marks** so you can see where the chest and the exit are.
+- **Once the snow has fully covered it, the guide goes down, takes the van
+  and drives round to the exit**, so everything is loaded the moment the
+  walker comes out.
+- **In the snow-covered part only:** more confusing ends and openings:
+  **doors** (one leads on to the next part of the maze; some open onto a
+  hedge, nothing behind them).
+- **Scary music, like a kid** (humming, a nursery tune), when the walker
+  rushes through without looking properly.
+- **Scares on the way in too** (in the snow part): when you run, take
+  corners fast, spin round or look back; **a distraction on the ground**:
+  look at it, turn back, and something's there; **sound scares**: a crow,
+  something falling, a knock on wood. "The sky is the limit."
+
+### Round 2: my proposal
+
+**Bigger:** 18 x 18 cells of 3.5 m, **63 m across** (1.6 times the area),
+the way through ~300-350 m. The flat ground round it grows (radius ~62 m)
+and gets a **track all round the maze**, so the van can drive from the yard
+to the back gate (~150 m). (20 x 20 = 70 m is possible too, but then the
+flat ground reaches the valley road: question 1.)
+
+**Two halves.** The front half stays as it is (seen from the silo). The
+**back half is the snow part** (from the courtyard on): everything new is
+there, so the guide's memory and the scares go together.
+
+**The marks** (seen from the silo before the snow, and from the track):
+- **the chest:** a tall pole with a **red lantern and a red pennant** above
+  its bay;
+- **the exit (the back gate):** a **windsock on a mast** and a painted
+  board **EXIT** on the outside of the hedge; a lamp over the gate that
+  lights when the snow comes, so the driver finds it.
+
+**The guide's new job: the van run.** When the snow is full, the silo is
+useless (all white). Naresh's note up there says so: *"When it whites out
+up here, get the van round to the back gate."* The guide climbs down,
+drives round the track (it's snowing on them too: slow, ~15 m to see, the
+gate lamp to aim at) and parks at the exit. **The horn** (Q / L3) is the
+walker's new beacon: they hear where the exit is. Meanwhile the walker
+calls out what they see and the guide answers from memory (talking from the
+van). The walker comes out of the back gate, the van is right there, load
+up, go.
+
+**Doors** (back half only, 6-8 of them, old field gates and stable doors
+set into the hedges, all looking the same):
+- **real doors** (2-3): the only way on to the next part;
+- **fake doors** (3-4): open onto a hedge, a brick wall, or a painted
+  backdrop of more maze;
+- **a door that leads back to itself** (1): through it and round a loop,
+  you come out of the same door (or one exactly like it).
+
+**The kid's tune** (back half): a **music box** playing a nursery tune and
+a child humming along, faint. It **grows louder the faster and more
+carelessly you move** (running, not stopping at junctions, spinning round),
+and fades when you stop and look. Rush, and it's right behind you.
+
+**Scares in the snow part, on the way in too:**
+- **fast corners:** sprint round a corner and something is there (the
+  scarecrow at head height, the mannequin) for a second;
+- **looking back / spinning:** spin round fast and there's a figure behind
+  you for half a second, gone when you look properly;
+- **the distraction:** something on the ground catches your eye (a doll in
+  the snow, a glinting music box, a child's red glove). Look at it for a
+  second or two, turn back to the way you were going, and something is
+  standing there;
+- **sounds only:** a crow bursting off the hedge, a bucket clattering down,
+  three knocks on wood from the other side of the hedge, a door creaking
+  somewhere, a child's giggle (if question 3 allows).
+- They never repeat back to back, at most one every ~10 s, and never
+  hurt you (S7 gives them a small cost).
+
+### Round 2: my extra ideas (yes or no each)
+
+- **S9. The one that follows.** In the snow, a scarecrow stands at the far
+  end of your corridor. Every time you look away and back, it's a bit
+  nearer. It never moves while you look at it. At the exit it's gone.
+- **S10. Small footprints.** In the snow, a child's footprints run ahead
+  of you, fresh, and they go the **wrong way** at two junctions.
+- **S11. The tune is a hint.** The music box gets louder when you go the
+  wrong way, quieter on the right way (only if you stop and listen).
+- **S12. One-way doors.** Two of the real doors swing shut and lock behind
+  you: no going back that way, so you have to be sure.
+- **S13. A scare has a cost.** Caught by one while running, you stumble
+  and drop the flag in the snow (pick it up again; the guide loses you
+  meanwhile).
+- **S14. The guide's horn code.** One honk = "you're getting closer" (the
+  driver sees the walker's flag over the hedge near the gate); not a rule,
+  just something they can agree.
+
+### Round 2: questions
+
+1. **Size:** 18 x 18 (63 m, my pick) or 20 x 20 (70 m; the flat ground
+   then reaches the valley road)?
+2. **The van run:** the guide goes when the snow is full (my pick, nudged
+   by Naresh's note), or the game makes them (the silo hatch freezes shut
+   and they have to go down)?
+3. **The kid's tune and giggle:** made here (a music box I can make; a
+   child's voice I can't make well), or a CC0 recording (credited in
+   CREDITS.md, you'd hear it first)?
+4. **Doors:** about 3 real, 4 fake, 1 back to itself (my pick)?
+5. **Which of S9-S14?**

@@ -100,7 +100,15 @@ being built and tested), so this always shows where the work is right now.
             front; Puzzles 3 starts with the spare mount empty (as after the
             opening's puncture)
       - [ ] frame rate alone (after the full run in MPG ends)
-      - [ ] **your look at the video**, then merge `g6` into main and push
+      - [x] **your look at the video** (2026-10-12): round 2 wanted: bigger,
+            marks for the chest and exit, the guide drives the van round to
+            the exit in the snow, doors (real, fake), a kid's tune when you
+            rush, scares on the way in too (corners, looking back, a
+            distraction on the ground, sounds)
+      - [~] **round 2 proposal written** (`design/PUZZLE_CHANGES.md` #3
+            "Round 2", S9-S14, 5 questions). **Waiting for your answers;
+            nothing built.** Still open: frame rate alone, the full run's
+            resume (not started: you asked first)
     - [ ] the walkway bigger, the chest and note easy to see and reach,
           a few lived-in props
     - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being
