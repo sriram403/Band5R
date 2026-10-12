@@ -684,3 +684,5 @@ happened, the fix, and the habit to keep.
 
 - **2026-10-12, two doors on one edge.** Assumed: doors at 62/76/90 % of the way land in the snow half, apart. Reality: the courtyard came late (~70 %), the clamp pushed two of them to the same edge; opening one left the other shut, and the walker stood at an open door for three runs while I blamed the physics. Fix: spread them over the snow half's own span. Habit: when an open thing still blocks, list every object at that spot before suspecting the engine.
 - **2026-10-12, a teleport counted as a spin.** Assumed: a fast yaw change is the player whipping round. Reality: a teleport that sets your facing (the pit's drain, F1, the tests) is a 'spin' too and started the frights' 10 s gap. Fix: a jump of > 3 m in a frame clears the turn history. Habit: any detector of player motion ignores teleports.
+
+- **2026-10-12, `as` in a walk expression.** Assumed: the walk's Expression takes GDScript casts. Reality: `(x as MazeDoor).cell_back` doesn't parse; the walk passed the error text on as an argument. Habit: walk expressions use plain property access (no `as`, no short-circuit), or a PlayTest helper.

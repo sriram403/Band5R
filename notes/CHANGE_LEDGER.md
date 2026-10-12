@@ -153,5 +153,19 @@ Per entry: the puzzle, its branch and merge, then three lists.
 - Not yet: the walk `puzzle2` again (its push needs the flag now), set:driving,
   full.
 
-**Found later**
-- (none yet)
+**Round 2 (2026-10-12, still `g6`)**
+- What changed: 18 x 18 (63 m), `MAZE_AT` (6, 0, -43), the pad (-512, 172)
+  r 64, the clearing r 70; `puzzles/MazeDoor.gd` (new: real, oneway, fake,
+  loop); `puzzles/MazeFrights.gd` (new: the music box, spins, corners,
+  distractions, sounds, the follower, small prints, the stumble);
+  `tools/gen/maze_sounds.py` musicbox; the marks (chest lantern pole, exit
+  windsock, EXIT board, the gate lamp); the dirt track round to the back
+  gate (`BarnMaze.TRACK`); `barn_yard` moved out to (2, 0, 24) and Puzzles
+  3 parks the van facing along the track; the push note in the chest lid.
+- Could break: the bigger flat ground near the valley road (66 m), trees
+  and clearings; the van's track (anything placed on it); frame rate (one
+  more light, particles, a music player); the maze's save (doors aren't
+  saved: a load resets them, shut).
+- Tests: `maze` (the walk through the doors, both one-ways latched),
+  `maze_frights`, `maze_van` (round the track in 27 s): 0 failures. Walk
+  `puzzle3` (15 steps, 323 s) recorded.
