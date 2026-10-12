@@ -206,15 +206,22 @@ func _plan_doors() -> void:
 			var c := Vector2i(x, z)
 			if is_back(c) and neighbours(c).size() == 1 and not c in way and not _door_cells.has(c) and c != goal:
 				ends.append(c)
-	var picked := 0
-	var j := 0
-	while picked < 4 and j < ends.size():
+	# spread by how far in they are, so there's one between each pair of doors
+	ends.sort_custom(func(x, y): return int(dist[x]) < int(dist[y]))
+	var taken := {}
+	for f in [0.1, 0.35, 0.6, 0.85]:
+		if ends.is_empty():
+			break
+		var j := clampi(int(f * ends.size()), 0, ends.size() - 1)
+		while taken.has(j) and j < ends.size() - 1:
+			j += 1
+		if taken.has(j):
+			continue
+		taken[j] = true
 		var c: Vector2i = ends[j]
 		var d: Vector2i = c - neighbours(c)[0]
 		door_plan.append({"kind": "fake", "front": c, "back": c + d})
 		_door_cells[c] = true
-		picked += 1
-		j += maxi(1, ends.size() / 4)
 
 
 func _set_wall(a: Vector2i, b: Vector2i, on: bool) -> void:
@@ -450,7 +457,7 @@ func _lamp(on: bool) -> void:
 
 ## A worn dirt track from the barn yard round the maze's west side to the
 ## back gate, for the van (round 2: the guide drives round in the snow).
-const TRACK := [Vector3(-4, 0, 60), Vector3(-20, 0, 55), Vector3(-37, 0, 35), Vector3(-37, 0, -22), Vector3(-34, 0, -26)]
+const TRACK := [Vector3(-4, 0, 67), Vector3(-20, 0, 62), Vector3(-37, 0, 35), Vector3(-37, 0, -27)]   ## ends beside the back gate, the van clear of the hedge
 
 
 func _track() -> void:

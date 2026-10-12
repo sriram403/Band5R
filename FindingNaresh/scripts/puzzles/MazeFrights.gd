@@ -117,18 +117,27 @@ func _build_figures() -> void:
 		_figures.append(f)
 
 
+## Room in front of `p`'s view for a figure (m), short of any hedge.
+func room_ahead(p: PlayerRig) -> float:
+	var dir := _fwd(p)
+	dir.y = 0.0
+	dir = dir.normalized()
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(p.head.global_position, p.head.global_position + dir * 2.6, 1, [p.get_rid()])
+	var hit := space.intersect_ray(q)
+	return 2.6 if hit.is_empty() else p.head.global_position.distance_to(hit["position"]) - 0.45
+
+
 ## A figure right in front of `p`'s view (short of any hedge), for a moment.
-func flash(p: PlayerRig, kind: String) -> void:
+## Closer than ~1.8 m it's only a blur filling the view: then not now.
+func flash(p: PlayerRig, kind: String) -> bool:
+	if room_ahead(p) < 1.8:
+		return false
 	var f: Node3D = _figures[_rng.randi_range(0, _figures.size() - 1)]
 	var dir := _fwd(p)
 	dir.y = 0.0
 	dir = dir.normalized()
-	var dist := 2.6
-	var space := get_world_3d().direct_space_state
-	var q := PhysicsRayQueryParameters3D.create(p.head.global_position, p.head.global_position + dir * dist, 1, [p.get_rid()])
-	var hit := space.intersect_ray(q)
-	if not hit.is_empty():
-		dist = maxf(1.1, p.head.global_position.distance_to(hit["position"]) - 0.45)
+	var dist := minf(2.6, room_ahead(p))
 	var at := p.global_position + dir * dist
 	at.y = maze.global_position.y
 	f.global_transform = Transform3D(Basis.looking_at(-dir, Vector3.UP), at)
@@ -138,6 +147,7 @@ func flash(p: PlayerRig, kind: String) -> void:
 	_cost(p)
 	get_tree().create_timer(FIGURE_S).timeout.connect(func(): f.visible = false)
 	print("[maze] fright '%s' at P%d" % [kind, p.index + 1])
+	return true
 
 
 func _fired(kind: String) -> void:
@@ -203,8 +213,8 @@ func _check_distractions(p: PlayerRig, delta: float) -> void:
 			if float(dd["gaze"]) >= GAZE:
 				dd["armed"] = true
 		elif dd["armed"] and not _looks_at(p, at, 60.0) and _gap_t <= 0.0:
-			dd["done"] = true
-			flash(p, "distraction")
+			if flash(p, "distraction"):
+				dd["done"] = true
 
 
 # --- S9 the one that follows -----------------------------------------------------------
@@ -395,11 +405,11 @@ func _physics_process(delta: float) -> void:
 			continue
 		var spd := Vector2(p.velocity.x, p.velocity.z).length()
 		if dyaw > SPIN and last_kind != "spin":
-			hist.clear()
-			flash(p, "spin")
+			if flash(p, "spin"):
+				hist.clear()
 		elif spd > SPRINTING and dyaw > TURN_FAST and last_kind != "corner":
-			hist.clear()
-			flash(p, "corner")
+			if flash(p, "corner"):
+				hist.clear()
 		else:
 			_sound_t -= delta
 			if _sound_t <= 0.0 and spd > 0.5:

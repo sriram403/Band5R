@@ -51,10 +51,15 @@ func _ready() -> void:
 	add_child(Build.box(Vector3(W + 0.5, 0.18, 0.6), wood, Vector3(0, H + 0.2, 0), Vector3.ZERO, "Lintel"))
 	if kind == "fake":
 		# what's behind it: old brick, flush with the back of the frame
-		add_child(Build.solid_box(Vector3(W, H, 0.1), ToonMat.make(Color(0.52, 0.24, 0.18)), Vector3(0, H * 0.5, -0.25), Vector3.ZERO, "Bricks"))
-		var mortar := ToonMat.flat(Color(0.70, 0.66, 0.58))
-		for r in 9:
-			add_child(Build.box(Vector3(W - 0.02, 0.02, 0.01), mortar, Vector3(0, 0.25 * (r + 1), -0.195), Vector3.ZERO, "Mortar"))
+		# just in front of the hedge's face (inside it they didn't show: 2026-10-12)
+		add_child(Build.solid_box(Vector3(W, H, 0.03), ToonMat.make(Color(0.56, 0.24, 0.17)), Vector3(0, H * 0.5, -0.035), Vector3.ZERO, "Bricks"))
+		var mortar := ToonMat.flat(Color(0.74, 0.70, 0.62))
+		for r in 11:
+			add_child(Build.box(Vector3(W - 0.02, 0.025, 0.01), mortar, Vector3(0, 0.2 * (r + 1), -0.015), Vector3.ZERO, "Mortar"))
+			for c in 3:
+				var x := -W * 0.5 + (c + 0.5 + (0.5 if r % 2 == 0 else 0.0)) * W / 3.0
+				if x < W * 0.5:
+					add_child(Build.box(Vector3(0.025, 0.2, 0.01), mortar, Vector3(x, 0.2 * (r + 0.5), -0.015), Vector3.ZERO, "Joint"))
 	# the leaf on its hinge
 	_hinge = Node3D.new()
 	_hinge.name = "Hinge"

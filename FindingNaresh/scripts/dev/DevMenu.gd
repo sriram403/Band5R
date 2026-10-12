@@ -889,8 +889,10 @@ func play_puzzle(k: int) -> String:
 		# the van parked in the yard in front of the barn, facing the road;
 		# both just out of it
 		var yard: Vector3 = boot.builder.poi["barn_yard"]
-		var bz: Vector3 = (boot.world.find_child("Barn", false, false) as Node3D).global_transform.basis.z
-		van_to(yard, atan2(bz.x, bz.z))       # facing the barn and the track round the maze
+		# facing along the track round the maze
+		var mzn := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+		var dir: Vector3 = mzn.global_transform.basis * (BarnMaze.TRACK[1] - BarnMaze.TRACK[0])
+		van_to(yard, atan2(-dir.x, -dir.z))
 		boot.camper.repair_all()
 		# as on a real run: the opening's puncture used the spare
 		boot.camper.spare_available = false

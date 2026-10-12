@@ -175,12 +175,12 @@ Too slow, and the windmill falls on you.
   seated, **G** (pad: **hold RB** half a second) shoves the other one out of
   their door, at any speed.
 
-### 3. The barn maze (optional, Valley Road; reworked 2026-10-08: your changes)
+### 3. The barn maze (optional, Valley Road; reworked 2026-10-08, round 2 2026-10-12)
 
 **Getting there:** F1 → Puzzles → **3. The barn maze**. You start out of
 the van, parked in the yard in front of the red barn.
 
-**The idea:** a big hedge maze behind the barn (50 m across, hedges 3 m
+**The idea:** a big hedge maze behind the barn (63 m across, hedges 3 m
 high). One of you guides from the top of the barn's silo, the other walks
 in carrying a flag. Halfway it snows so hard the guide can't see anything:
 they guide from what they remembered.
@@ -220,8 +220,30 @@ they guide from what they remembered.
 8. **The back half, from memory:** the guide calls it ("after the plank,
    left; if you see the broken chair you're right"). Mind the pit on the
    way: it's still there under the snow.
+8b. **Round 2, the snow half (past the courtyard):**
+   - **The guide's van run:** up top it's all white now. Naresh's note on
+     the rail says: get the van round the track to the back gate and honk.
+     Climb down, drive the dirt track round the maze's left side (slow, in
+     the snow), park by the EXIT board and the windsock, honk (Q / L3).
+   - **Doors** in the hedges, all alike: three are the way on (the first
+     two swing shut behind you and won't open from that side), one leads
+     round a loop back to itself, four open onto a brick wall.
+   - **The music box:** run, rush the corners, spin round, and it gets
+     louder; stop and look and it fades. Standing still, it's louder down a
+     wrong turn.
+   - **Frights, on the way in too:** sprint round a corner or whip round
+     and a figure is right there for a moment (caught running, you stumble
+     and drop the flag: pick it up again). Something on the ground (a doll,
+     a red glove, a shoe, a music box): look at it, turn back, and something
+     is standing there. Sounds from beyond the hedge: a crow, a bucket, three
+     knocks, a door creaking. A scarecrow down the corridor comes a bit
+     nearer every time you look away. Small footprints run ahead in the
+     snow, and twice they go the wrong way.
 9. **The feed chest** in the far corner (E / X): **a spare tyre, a fuel
-   can (10 L) and a coolant jug**, and **Naresh's note: the push**.
+   can (10 L) and a coolant jug**, and **Naresh's note in the lid: the
+   push**. The chest's bay is marked by a red lantern and pennant on a tall
+   pole; the exit by a windsock, an EXIT board and a lamp that lights when
+   the snow comes.
    - **You should see:** the snow stops and **it clears**: sun on the white
      hedges for about 3 minutes; then the clouds close in again.
 10. **The back gate** beside the chest opens from inside (E / X). Carry
