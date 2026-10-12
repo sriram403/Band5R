@@ -126,8 +126,14 @@ being built and tested), so this always shows where the work is right now.
                   (the guide sees through the snow, flags: two, hidden doors
                   take them, spares in the maze, no drop; the guide draws
                   the plan as the walker finds it)
-            - [~] **round 3 proposal** (PUZZLE_CHANGES #3 "Round 3", S15, 4
-                  questions). **Waiting for your answers; nothing built.**
+            - [x] **round 3 agreed** (2026-10-13; plus: frights only when
+                  roaming the same area, up to 3, none while progressing)
+            - [ ] per-player fog: the walker's blizzard, the silo sees
+            - [ ] flags: two from the rack, hidden gaps snag one, 4 spares
+                  in the maze, the stumble only jolts
+            - [ ] the guide's plan: pending cells, hold E to draw, S15 cross
+            - [ ] frights only when lost (<= 3 per spell)
+            - [ ] tests, walk, record, send
             Still open: frame rate alone, the full run's resume (not
             started: you asked first)
     - [ ] the walkway bigger, the chest and note easy to see and reach,

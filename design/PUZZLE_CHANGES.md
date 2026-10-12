@@ -1070,3 +1070,12 @@ doors, 4 fake, 1 back to itself. 5. S9-S14 all yes.
 3. The plan guide only, no "you are here" (my pick)?
 4. S15 yes or no?
 
+### Round 3: your answers (2026-10-13): **agreed**
+
+1. Yes (thick for the walker, the silo still sees). 2. Yes (the flags). 3. My
+pick (guide only, no "you are here"). 4. S15 yes.
+**Plus (the user): fewer frights.** Only when the walker roams the same
+area again (a cell they've been through before): then up to 3 frights at
+random spots there. Discovering new ground and getting closer to the chest:
+no frights at all.
+
