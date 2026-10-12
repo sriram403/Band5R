@@ -1028,3 +1028,9 @@ and fades when you stop and look. Rush, and it's right behind you.
    CREDITS.md, you'd hear it first)?
 4. **Doors:** about 3 real, 4 fake, 1 back to itself (my pick)?
 5. **Which of S9-S14?**
+
+### Round 2: your answers (2026-10-12): **agreed**
+
+1. 18 x 18 (63 m). 2. The guide goes down when they choose (Naresh's note
+nudges). 3. No child's voice: a music box made here. 4. About 3 real
+doors, 4 fake, 1 back to itself. 5. S9-S14 all yes.

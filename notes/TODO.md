@@ -106,9 +106,19 @@ being built and tested), so this always shows where the work is right now.
             rush, scares on the way in too (corners, looking back, a
             distraction on the ground, sounds)
       - [~] **round 2 proposal written** (`design/PUZZLE_CHANGES.md` #3
-            "Round 2", S9-S14, 5 questions). **Waiting for your answers;
-            nothing built.** Still open: frame rate alone, the full run's
-            resume (not started: you asked first)
+            "Round 2", S9-S14). **Agreed** (2026-10-12: 18 x 18, the guide
+            chooses, no child voice, doors 3/4/1, S9-S14). Building in
+            `../MPG_dev` `g6`:
+            - [ ] 18 x 18, the bigger flat ground, the track round to the exit
+            - [ ] marks: the chest's lantern pole, the exit's windsock, board, lamp
+            - [ ] doors (real, one-way S12, fake, the loop) in the back half
+            - [ ] the music box (rush, S11 hint)
+            - [ ] scares on the way in: corners, spins, distractions, sounds;
+                  S9 the follower, S10 small footprints, S13 the stumble
+            - [ ] Naresh's silo note: the van run, the horn (S14)
+            - [ ] tests, walk (with the van run), record, send
+            Still open: frame rate alone, the full run's resume (not
+            started: you asked first)
     - [ ] the walkway bigger, the chest and note easy to see and reach,
           a few lived-in props
     - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being
