@@ -221,15 +221,15 @@
    ],
    "expect": [
     {
-     "name": "his note: learn the back half; when it whites out, the van to the back gate",
-     "expr": "last_note_has('back gate')",
+     "name": "his note: draw the rest in as they find it, or fetch the van",
+     "expr": "last_note_has('Draw the rest')",
      "within": 2
     }
    ]
   },
   {
-   "name": "3.4 P1 takes a flag",
-   "max": 20,
+   "name": "3.4 P1 takes both flags: one up, one spare on the back",
+   "max": 25,
    "do": [
     {
      "do": "walk",
@@ -253,7 +253,24 @@
     },
     {
      "do": "wait",
-     "s": 1.5
+     "s": 2.0
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:mz().find_child('FlagRack', true, false).global_position + Vector3(0, 1.0, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
     },
     {
      "do": "spawn",
@@ -262,8 +279,8 @@
    ],
    "expect": [
     {
-     "name": "P1 carries a flag",
-     "expr": "mz().has_flag(p1())",
+     "name": "two flags, the rack empty",
+     "expr": "mz().flag_count(p1()) == 2 and mz().rack_left == 0",
      "within": 2
     }
    ]
@@ -309,7 +326,7 @@
    ]
   },
   {
-   "name": "3.6 again, and a wrong turn: walking back out, something pops out of the hedge",
+   "name": "3.6 again, and a wrong turn: walking back out of it, something pops out of the hedge",
    "max": 150,
    "do": [
     {
@@ -335,22 +352,70 @@
    ],
    "expect": [
     {
-     "name": "the scare popped",
+     "name": "the scare popped (back over the same ground)",
      "expr": "mz().scares_fired >= 1",
      "within": 2
     }
    ]
   },
   {
-   "name": "3.7 on to the courtyard: the snow comes; P1 rings the bell",
-   "max": 150,
+   "name": "3.7 a hidden gap in the brambles: crouch through - the flag snags, the spare goes up",
+   "max": 120,
+   "do": [
+    {
+     "do": "call",
+     "fn": "mz_gap_detour",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "one flag left stuck in the gap, the spare up",
+     "expr": "mz().snagged == 1 and mz().flag_count(p1()) == 1",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "3.8 an old marker flag in the maze: two again",
+   "max": 120,
+   "do": [
+    {
+     "do": "call",
+     "fn": "mz_marker_detour",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "two flags again",
+     "expr": "mz().flag_count(p1()) == 2",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "3.9 on to the courtyard: the snow comes; P1 rings the bell; the silo still sees",
+   "max": 200,
    "do": [
     {
      "do": "call",
      "fn": "mz_walk",
      "args": [
       "p1",
-      "expr:mz_detour()[1]",
+      "expr:mz().way.find(mz().cell_at(p1().global_position)) + 1",
       "expr:mz_centre_index()"
      ]
     },
@@ -379,20 +444,95 @@
    ],
    "expect": [
     {
-     "name": "heavy snow: the guide sees nothing below",
-     "expr": "mz().snowing and get_tree().get_first_node_in_group('weather').heavy > 0.8",
+     "name": "a blizzard in the maze, the silo still sees it",
+     "expr": "mz().snowing and get_tree().get_first_node_in_group('mood').env_of(p1()).fog_depth_end < 25.0 and get_tree().get_first_node_in_group('mood').env_of(p2()).fog_depth_end > 60.0",
      "within": 3
     }
    ]
   },
   {
-   "name": "3.8 the silo is useless now: P2 climbs down and gets in the van",
-   "max": 120,
+   "name": "3.10 P1 on in the snow, past a fake door; P2 at the plan: draws in what P1 found, pencils a cross",
+   "max": 200,
    "do": [
+    {
+     "do": "call",
+     "fn": "mz_walk",
+     "args": [
+      "p1",
+      "expr:mz_centre_index()",
+      "expr:mz().way.find(mz().doors[0].cell_front) - 1"
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "mz_fake_detour",
+     "args": [
+      "p1"
+     ]
+    },
     {
      "do": "eval",
      "expr": "set('mz_watching', false)"
     },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:mz().get_parent().find_child('MazeSketch', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    },
+    {
+     "do": "pad_hold",
+     "btn": "X",
+     "s": 3.4
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    },
+    {
+     "do": "eval",
+     "expr": "p2().maze_plan.set('cursor', mz().plan_uv(mz().cell_pos(mz().doors[0].cell_back)))"
+    },
+    {
+     "do": "pad_tap",
+     "btn": "A"
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    },
+    {
+     "do": "pad_tap",
+     "btn": "DOWN"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "the plan drawn in, a cross on it",
+     "expr": "mz().pending.size() == 0 and mz().crosses.size() == 1 and fake_opened()",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "3.11 P2 decides to fetch the van: down the silo, into the driver's seat",
+   "max": 120,
+   "do": [
     {
      "do": "look",
      "who": 2,
@@ -401,7 +541,7 @@
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:mz_at(11.0, 13.4, -3.3)",
+     "to": "expr:mz_at(11.0, 13.4, -3.4)",
      "arrive": 0.35,
      "max": 10
     },
@@ -412,7 +552,7 @@
     },
     {
      "do": "wait",
-     "s": 0.3
+     "s": 0.4
     },
     {
      "do": "pad_tap",
@@ -502,7 +642,7 @@
    ]
   },
   {
-   "name": "3.9 P2 drives the track round to the back gate; P1 on in the snow: the doors, a distraction",
+   "name": "3.12 P2 drives round to the back gate; P1 through a one-way door, then goes round in circles: the music box, frights",
    "max": 200,
    "do": [
     {
@@ -518,29 +658,27 @@
      "fn": "mz_walk",
      "args": [
       "p1",
-      "expr:mz_centre_index()",
-      "expr:mz().way.find(mz().doors[0].cell_front) - 1"
-     ]
-    },
-    {
-     "do": "call",
-     "fn": "mz_fake_detour",
-     "args": [
-      "p1"
-     ]
-    },
-    {
-     "do": "call",
-     "fn": "mz_walk",
-     "args": [
-      "p1",
       "expr:mz().way.find(mz().cell_at(p1().global_position)) + 1",
       "expr:mz().way.find(mz().doors[0].cell_back) + 1"
      ]
     },
     {
      "do": "call",
-     "fn": "mz_distraction",
+     "fn": "mz_get_lost",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "mz_spin",
+     "args": [
+      "p1"
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "mz_get_lost",
      "args": [
       "p1"
      ]
@@ -552,51 +690,14 @@
    ],
    "expect": [
     {
-     "name": "through a one-way door (shut behind), a fake door opened, a fright",
+     "name": "the one-way shut behind; lost, a fright or two",
      "expr": "mz().doors[0].locked and mz().frights.fired >= 1",
      "within": 3
     }
    ]
   },
   {
-   "name": "3.10 P1 runs (the music box swells), a fright at a corner, the flag dropped; a spin",
-   "max": 150,
-   "do": [
-    {
-     "do": "eval",
-     "expr": "set('mz_sprint', true)"
-    },
-    {
-     "do": "call",
-     "fn": "mz_walk",
-     "args": [
-      "p1",
-      "expr:mz().way.find(mz().cell_at(p1().global_position)) + 1",
-      "expr:mz().way.find(mz().cell_at(p1().global_position)) + 7"
-     ]
-    },
-    {
-     "do": "eval",
-     "expr": "set('mz_sprint', false)"
-    },
-    {
-     "do": "call",
-     "fn": "mz_spin",
-     "args": [
-      "p1"
-     ]
-    }
-   ],
-   "expect": [
-    {
-     "name": "a few frights so far",
-     "expr": "mz().frights.fired >= 2",
-     "within": 2
-    }
-   ]
-  },
-  {
-   "name": "3.11 on to the chest from memory; P2 waits at the gate and honks",
+   "name": "3.13 on to the chest; P2 waits at the gate and honks",
    "max": 200,
    "do": [
     {
@@ -647,7 +748,7 @@
    ]
   },
   {
-   "name": "3.12 the chest: a spare, fuel, coolant, and the note in the lid: the push",
+   "name": "3.14 the chest: a spare, fuel, coolant, and the note in the lid: the push",
    "max": 40,
    "do": [
     {
@@ -694,7 +795,7 @@
    ]
   },
   {
-   "name": "3.13 out of the back gate: the van's right there; the spare on its mount",
+   "name": "3.15 out of the back gate: the van's right there; the spare on its mount",
    "max": 90,
    "do": [
     {
@@ -726,6 +827,13 @@
      "who": 1,
      "to": "expr:mz().global_transform * mz().back_spot()",
      "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.camper.global_transform * Vector3(3.0, 0.2, 4.9)",
+     "arrive": 0.7,
      "max": 20
     },
     {
@@ -763,7 +871,7 @@
    ]
   },
   {
-   "name": "3.14 P1 jumps in; P2 drives off - and P1 shoves the driver out",
+   "name": "3.16 P1 jumps in; P2 drives off - and P1 shoves the driver out",
    "max": 60,
    "do": [
     {

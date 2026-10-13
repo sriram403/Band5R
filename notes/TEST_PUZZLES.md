@@ -175,7 +175,7 @@ Too slow, and the windmill falls on you.
   seated, **G** (pad: **hold RB** half a second) shoves the other one out of
   their door, at any speed.
 
-### 3. The barn maze (optional, Valley Road; reworked 2026-10-08, round 2 2026-10-12)
+### 3. The barn maze (optional, Valley Road; reworked 2026-10-08, rounds 2 and 3 2026-10-12/13)
 
 **Getting there:** F1 → Puzzles → **3. The barn maze**. You start out of
 the van, parked in the yard in front of the red barn.
@@ -220,6 +220,23 @@ they guide from what they remembered.
 8. **The back half, from memory:** the guide calls it ("after the plank,
    left; if you see the broken chair you're right"). Mind the pit on the
    way: it's still there under the snow.
+8a. **Round 3:**
+   - **Flags:** the rack holds two. Take both: one up on its pole, one spare
+     on your back. Nothing takes them, except a **hidden gap**: a low hole
+     at the foot of a hedge, half behind brambles, a shortcut you crouch
+     through (Ctrl / B). The pole snags and stays stuck in the brambles; the
+     spare goes up. Four **old marker flags** stand round the maze: E / X
+     takes one (two at most).
+   - **The snow** is a blizzard for the walker; from the silo you still see
+     the maze and the flag through it.
+   - **The plan:** at the board on the silo rail, E / X opens it big. Where
+     the walker has been shows faint; **hold E / X** (3 s) to draw it in
+     (hedges, doors, landmarks by name). **Click / A** pencils a cross,
+     right-click / X rubs it out, M / D-Down puts it away. It doesn't show
+     where the walker is: the flag does that.
+   - **Frights** only come when the walker goes round in circles (back over
+     ground they've walked): up to three, at random. Getting somewhere new,
+     closer to the chest, ends it.
 8b. **Round 2, the snow half (past the courtyard):**
    - **The guide's van run:** up top it's all white now. Naresh's note on
      the rail says: get the van round the track to the back gate and honk.

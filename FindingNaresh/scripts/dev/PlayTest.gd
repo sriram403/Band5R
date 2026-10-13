@@ -10611,6 +10611,90 @@ func mz_take_spare(p: PlayerRig) -> bool:
 	return false
 
 
+## Round 3: from the way, to the front half's hidden gap, crouch through it
+## (the flag snags), and back to the way on the other side.
+func mz_gap_detour(p: PlayerRig) -> bool:
+	var m := mz()
+	var g: Dictionary = {}
+	for x in m.gaps:
+		if not m.is_back(x["a"]):
+			g = x
+	if g.is_empty():
+		return false
+	var here := m.cell_at(p.global_position)
+	var a: Vector2i = g["a"]
+	var b: Vector2i = g["b"]
+	if m.path(here, b).size() < m.path(here, a).size():
+		var t := a
+		a = b
+		b = t
+	if not await mz_walk_cells(p, m.path(here, a).slice(1), here):
+		return false
+	await look_at_point(p, mz_cell(b) + Vector3.UP * 0.6)
+	key(KEY_CTRL, true)
+	await wait(0.4)
+	var ok := await walk_to(p, mz_cell(b), "through the hidden gap", 0.6, 8.0)
+	key(KEY_CTRL, false)
+	await wait(1.5)
+	# on to the nearest cell of the way from there
+	var best: Array = []
+	for c in m.way:
+		var pth := m.path(b, c)
+		if best.is_empty() or pth.size() < best.size():
+			best = pth
+	return ok and await mz_walk_cells(p, best.slice(1), b)
+
+
+## Round 3: to the nearest old marker flag (no doors on the way there), take
+## it, and back to where you were.
+func mz_marker_detour(p: PlayerRig) -> bool:
+	var m := mz()
+	var here := m.cell_at(p.global_position)
+	var best: Dictionary = {}
+	var best_n := 999
+	for mk in m.markers:
+		if mk["taken"]:
+			continue
+		var pth := m.path(here, mk["cell"])
+		var blocked := false
+		for k in range(1, pth.size()):
+			if m.door_between(pth[k - 1], pth[k]) != null:
+				blocked = true
+		if not blocked and pth.size() < best_n:
+			best_n = pth.size()
+			best = mk
+	if best.is_empty():
+		return false
+	if not await mz_walk_cells(p, m.path(here, best["cell"]).slice(1), here):
+		return false
+	var n := best["node"] as Node3D
+	await look_at_point(p, n.global_position + Vector3.UP * 0.9)
+	await wait(0.3)
+	await tap(KEY_E)
+	await wait(1.2)
+	return await mz_walk_cells(p, m.path(best["cell"], here).slice(1), best["cell"])
+
+
+## Round 3: going round in circles (back two cells and on again), running:
+## the music box swells, and being lost brings a fright or two.
+func mz_get_lost(p: PlayerRig) -> bool:
+	var m := mz()
+	var i := m.way.find(m.cell_at(p.global_position))
+	# not back through a door (a one-way won't open from behind): on a bit first
+	var tries := 0
+	while i >= 3 and tries < 6 and (m.door_between(m.way[i], m.way[i - 1]) != null or m.door_between(m.way[i - 1], m.way[i - 2]) != null):
+		await mz_walk(p, i + 1, i + 1)
+		i += 1
+		tries += 1
+	if i < 3:
+		return false
+	mz_sprint = true
+	var ok := await mz_walk_cells(p, [m.way[i - 1], m.way[i - 2]], m.way[i])
+	ok = ok and await mz_walk_cells(p, [m.way[i - 1], m.way[i]], m.way[i - 2])
+	mz_sprint = false
+	return ok
+
+
 func fake_opened() -> bool:
 	for d in mz().doors:
 		if (d as MazeDoor).kind == "fake" and (d as MazeDoor).is_open:

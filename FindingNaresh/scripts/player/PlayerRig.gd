@@ -1239,7 +1239,8 @@ func can_read_map() -> bool:
 
 
 func _update_map() -> void:
-	if paper_map == null:
+	# the same key puts the maze's plan away: it mustn't open the map as well
+	if paper_map == null or plan_open:
 		return
 	if dev.just_pressed("map"):
 		var ms := paper_map.state

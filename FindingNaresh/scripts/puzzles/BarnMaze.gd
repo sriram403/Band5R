@@ -1235,7 +1235,10 @@ func _check_scares(delta: float) -> void:
 		if c == was or c.x < 0:
 			continue
 		for sc in scares:
-			# round 3: only when going round in circles (the frights' rule)
+			# round 3: only when going round in circles (the frights' rule;
+			# the visit counted first: the frights run after the maze)
+			if frights != null and p.seat == null:
+				frights._visit(p)
 			if sc["cell"] == c and sc["from"] == was and float(sc["t"]) <= 0.0 and (frights == null or frights.lost(p)):
 				pop(sc, p)
 				if frights != null:
