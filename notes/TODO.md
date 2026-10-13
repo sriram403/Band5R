@@ -128,12 +128,16 @@ being built and tested), so this always shows where the work is right now.
                   the plan as the walker finds it)
             - [x] **round 3 agreed** (2026-10-13; plus: frights only when
                   roaming the same area, up to 3, none while progressing)
-            - [ ] per-player fog: the walker's blizzard, the silo sees
-            - [ ] flags: two from the rack, hidden gaps snag one, 4 spares
+            - [x] per-player fog: the walker's blizzard, the silo sees
+            - [x] flags: two from the rack, hidden gaps snag one, 4 spares
                   in the maze, the stumble only jolts
-            - [ ] the guide's plan: pending cells, hold E to draw, S15 cross
-            - [ ] frights only when lost (<= 3 per spell)
-            - [ ] tests, walk, record, send
+            - [x] the guide's plan: pending cells, hold E to draw, S15 cross
+            - [x] frights only when lost (<= 3 per spell)
+            - [x] tests maze, maze_frights, maze_r3: 0 failures; walk
+                  `puzzle3` (17 steps) recorded, sent. Found by the walk: one
+                  press of M / D-Down closed the plan and opened the road map
+            - [ ] **your look at the video**, then merge `g6` and push
+            - [ ] frame rate alone; the full run's resume (your go-ahead)
             Still open: frame rate alone, the full run's resume (not
             started: you asked first)
     - [ ] the walkway bigger, the chest and note easy to see and reach,

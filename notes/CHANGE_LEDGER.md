@@ -169,3 +169,25 @@ Per entry: the puzzle, its branch and merge, then three lists.
 - Tests: `maze` (the walk through the doors, both one-ways latched),
   `maze_frights`, `maze_van` (round the track in 27 s): 0 failures. Walk
   `puzzle3` (15 steps, 323 s) recorded.
+
+**Round 3 (2026-10-13, still `g6`)**
+- What changed: each player's camera has its own Environment
+  (`Mood._player_envs`, `snow_by`, `env_of`): the snow fog only for whoever
+  is in the maze; the world's environment no longer gets it. Flags: two
+  (`rack_left`, `_spares`, `flag_count`), hidden gaps (`gaps`, `GAP_W/H`,
+  `_snag`; built as two sides and a lintel), four marker flags; the stumble
+  keeps the flag. The plan (`drawn`, `pending`, `crosses`, `attach_board`,
+  `ui/MazePlan.gd`, `PlayerRig.plan_open`, `open_plan`, `_plan_controls`;
+  the map ignores M / D-Down while the plan is open). Frights only when
+  lost (`MazeFrights.visits/best/spell/lost`; the walk-back scares too).
+  Pad / keyboard glyphs for map_place / map_remove.
+- Could break: anything reading the camera's fog (the player's camera no
+  longer uses the world's Environment: a new Mood field not in the copy
+  list wouldn't reach the players); the mirrors / photo camera (still the
+  world's env); the paper map's M while the plan is open; E at the silo top
+  (the plan's zone by the ladder).
+- Tests: maze, maze_frights, maze_r3: 0 failures. Walk `puzzle3` (17 steps,
+  382 s) recorded.
+
+**Found later** (by the long runs)
+- (none yet)
