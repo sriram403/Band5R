@@ -109,6 +109,9 @@ func build() -> Node3D:
 	var mood := Mood.new()
 	mood.name = "Mood"
 	world.add_child(mood)
+	var weather := Weather.new()
+	weather.name = "Weather"
+	world.add_child(weather)
 	return world
 
 
@@ -268,16 +271,11 @@ func _spawns() -> void:
 func _environment() -> WorldEnvironment:
 	var env := Environment.new()
 	var sky := Sky.new()
-	var psm := ProceduralSkyMaterial.new()
-	psm.sky_top_color = Color(0.16, 0.40, 0.82)
-	psm.sky_horizon_color = Color(0.62, 0.80, 0.93)
-	psm.sky_curve = 0.22
-	psm.sky_energy_multiplier = 1.0
-	psm.ground_bottom_color = Color(0.20, 0.28, 0.22)
-	psm.ground_horizon_color = Color(0.46, 0.60, 0.62)
-	psm.sun_angle_max = 9.0
-	psm.sun_curve = 0.10
-	sky.sky_material = psm
+	# clouds from the start (puzzle #3's weather): world/CloudSky.gd; the
+	# radiance is redrawn every frame (the clouds drift), kept small
+	sky.sky_material = CloudSky.material()
+	sky.process_mode = Sky.PROCESS_MODE_REALTIME
+	sky.radiance_size = Sky.RADIANCE_SIZE_64
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY

@@ -372,7 +372,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -3890,6 +3890,12 @@ func t_fun() -> void:
 	await tap(KEY_E)
 	check(ms.holder == 0 and p.seat != null, "in the van, P1 takes the map back off P2 (and stays seated)")
 	p._seat_yaw = 0.0
+	# the push is the barn maze's reward: before it, G in the van does nothing
+	boot.story.flags.erase("push")
+	await tap(KEY_G)
+	await wait(0.3)
+	check(q.seat != null, "before the barn maze, G in the van pushes nobody out")
+	boot.story.flags["push"] = true
 	if not c.engine_on:
 		c.toggle_engine()
 	c.set_parking_brake(false)
@@ -4444,71 +4450,596 @@ func t_tower() -> void:
 	ms.stamps.clear()
 
 
-## W2, the hay maze by the barn: up the loft ladder; the walls stop you
-## walking straight through; walk the way the loft would call it; the dust
-## blows in over the middle; the feed chest at the end.
+## Puzzle #3, the barn maze: up the silo's ladder; the walker takes a flag
+## (it shows above the hedges); the hedges stop you walking straight through;
+## walk the way round the pits; heavy snow from the courtyard; the chest (a
+## spare, fuel, coolant, the push learned), the snow clears; out of the back
+## gate; a pit fall comes out of the drain by the gate; a jump scare pops
+## only when you walk back out of a wrong turn.
 func t_maze() -> void:
 	var b: LevelBuilder = boot.builder
 	var maze := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
-	var lad := boot.world.find_child("LoftLadder", true, false) as Ladder
-	check(maze != null and lad != null, "the barn has a maze and a ladder to its loft")
+	var lad := boot.world.find_child("SiloLadder", true, false) as Ladder
+	var weather := get_tree().get_first_node_in_group("weather") as Weather
+	check(maze != null and lad != null and weather != null, "the barn has the hedge maze, a ladder up its silo, and the weather")
 	if maze == null or lad == null:
 		return
-	maze.from_dict({})
-	var way := maze.path(maze.entrance, maze.goal)
-	log_line("maze: %d cells from the way in to the chest" % way.size())
-	check(way.size() >= 8 and way[way.size() - 1] == maze.goal, "there is one way through, and it's long enough (%d cells)" % way.size())
+	maze.reset()
+	maze.frights.enabled = false
+	boot.story.flags.erase("push")
+	log_line("maze: %d cells from the way in to the chest; %d pits, %d scares; marks %s" % [maze.way.size(), maze.pits.size(), maze.scares.size(), str(maze.marks.keys())])
+	check(maze.way.size() >= 80, "the way through is a real walk (%d cells, %.0f m)" % [maze.way.size(), maze.way.size() * BarnMaze.CELL])
+	var kinds := {}
+	for d in maze.doors:
+		kinds[(d as MazeDoor).kind] = int(kinds.get((d as MazeDoor).kind, 0)) + 1
+	log_line("doors: %s" % str(kinds))
+	check(int(kinds.get("oneway", 0)) == 2 and int(kinds.get("real", 0)) == 1 and int(kinds.get("fake", 0)) >= 3 and int(kinds.get("loop", 0)) == 1, "the snow half's doors: 3 on the way (2 one-way), a loop, fakes (%s)" % str(kinds))
+	var through := false
+	for c in maze.way:
+		through = through or c in BarnMaze.CENTRE
+	check(through, "the way passes the courtyard in the middle (where the snow starts)")
+	check(maze.pits.size() == 5 and maze.scares.size() == 5 and maze.marks.size() >= 12, "5 pits, 5 jump scares, %d landmarks" % maze.marks.size())
 	var p := p1()
 	var q := p2()
-	# P1 up the loft ladder with the real keys
-	await place_player(p, b.poi["loft_ladder"] + Vector3(0, 0.4, 0), lad.climb_yaw())
+	# P1 up the silo with the real keys
+	await place_player(p, b.poi["silo_ladder"] + Vector3(0, 0.4, 0), lad.climb_yaw())
 	await look_at_point(p, lad.global_transform * Vector3(0, 1.6, 0))
 	await wait(0.2)
 	await tap(KEY_E)
 	key(KEY_W, true)
 	var t0 := Time.get_ticks_msec()
-	while p.ladder != null and Time.get_ticks_msec() - t0 < 10000:
+	while p.ladder != null and Time.get_ticks_msec() - t0 < 14000:
 		await physics_frames(1)
 	key(KEY_W, false)
 	await wait(0.4)
-	log_line("loft: at %s, %.2f m from the balcony" % [p.global_position, p.global_position.distance_to(b.poi["loft"])])
-	check(p.ladder == null and p.global_position.distance_to(b.poi["loft"]) < 1.8 and p.is_on_floor(), "up the ladder onto the loft balcony")
+	log_line("silo: at %s, %.2f m from the top spot, %.1f s" % [p.global_position, p.global_position.distance_to(b.poi["silo_top"]), (Time.get_ticks_msec() - t0) / 1000.0])
+	check(p.ladder == null and p.global_position.y > b.poi["maze"].y + 12.5 and p.is_on_floor(), "up the silo's ladder onto its deck (13 m)")
 	await look_at_point(p, b.poi["maze"])
-	await shot("maze_loft")
-	# the walker: P1 comes down (teleport), P2 takes the loft
-	await place_player(q, b.poi["loft"] + Vector3(0, 0.3, 0), 0.0)
-	await look_at_point(q, b.poi["maze"])
-	var at_in := maze.global_transform * (maze.cell_pos(maze.entrance) + Vector3(0, 0, BarnMaze.CELL))
-	await place_player(p, at_in + Vector3(0, 0.4, 0), 0.0)
+	await shot("maze_silo")
+	var sketch := boot.world.find_child("MazeSketch", true, false) as Node3D
+	if sketch != null:
+		await look_at_point(p, sketch.global_position)
+		await shot("maze_sketch")
+	# the guide (P2) stays up top; the walker (P1, the keyboard) at the way in takes a flag
+	await place_player(q, b.poi["silo_top"] + Vector3(0, 0.3, 0), 0.0)
+	var guide := q
+	q = p
+	p = guide
+	await place_player(q, b.poi["maze_gate"] + Vector3(0, 0.4, 0), maze.global_rotation.y)
+	var rack := boot.world.find_child("FlagRack", true, false) as Node3D
+	await look_at_point(q, rack.global_position + Vector3.UP * 1.0)
+	log_line("at the rack: '%s'" % q.prompt_text)
+	await tap(KEY_E)
 	await wait(0.3)
+	var flag := q.find_child("WalkerFlag1", true, false) as Node3D
+	check(maze.has_flag(q) and flag != null, "the walker takes a flag from the rack (E)")
+	await shot("maze_gate")
 	# straight at the chest: the hedges stop you
+	var at_in := maze.global_transform * (maze.cell_pos(maze.entrance) + Vector3(0, 0, BarnMaze.CELL * 0.4))
+	await place_player(q, at_in + Vector3(0, 0.4, 0), maze.global_rotation.y)
 	var chest_at := maze.global_transform * maze.cell_pos(maze.goal)
-	var straight := await walk_to(p, chest_at, "straight through the maze", 0.8, 4.0)
+	var straight := await walk_to(q, chest_at, "straight through the maze", 0.8, 4.0)
 	check(not straight, "you can't walk straight through the hedges")
-	await place_player(p, at_in + Vector3(0, 0.4, 0), 0.0)
+	if flag != null:
+		var tip := flag.global_transform * Vector3(0.3, 4.35, 0)
+		log_line("flag tip %.1f m above the ground (hedges %.1f m)" % [tip.y - maze.global_position.y, BarnMaze.HEDGE_H])
+		check(tip.y - maze.global_position.y > BarnMaze.HEDGE_H + 0.8, "the flag shows above the hedges")
+		await look_at_point(p, tip)
+		await shot("maze_flag_from_silo")
+	# walk the way, cell by cell (round the pits' edges: the way's cell middles)
+	await place_player(q, at_in + Vector3(0, 0.4, 0), maze.global_rotation.y)
 	var ok := true
-	var dust_seen := false
-	for c in way:
+	var snow_seen := false
+	var falls0 := maze.falls
+	var prev := Vector2i(-1, -1)
+	for c in maze.way:
 		var target := maze.global_transform * maze.cell_pos(c)
-		# the chest stands in the middle of the last cell: stop in front of it
-		if not await walk_to(p, target, "maze cell %s" % str(c), 1.3 if c == maze.goal else 0.7, 8.0):
+		if prev.x >= 0:
+			await mz_door(q, prev, c)
+		prev = c
+		if not await walk_to(q, target, "maze cell %s" % str(c), 1.3 if c == maze.goal else 0.6, 10.0):
+			var fw := -q.global_transform.basis.z
+			for hgt in [0.3, 1.0, 1.6]:
+				var o: Vector3 = q.global_position + Vector3.UP * hgt
+				log_line("  blocked? at %.1f m up: %s" % [hgt, ray_hit(o, o + fw * 1.5)])
+			log_line("  walker local to the maze %s, door local %s" % [maze.global_transform.affine_inverse() * q.global_position, maze.global_transform.affine_inverse() * (maze.door_between(prev, c).global_position if maze.door_between(prev, c) else Vector3.ZERO)])
 			ok = false
 			break
-		if maze.dust_on and not dust_seen:
-			dust_seen = true
-			await shot("maze_dust")
-	check(ok and maze.cell_at(p.global_position) == maze.goal, "walked the way through, turn by turn, to the far end")
-	check(dust_seen, "hay dust blows over the middle as you pass")
-	await look_at_point(p, chest_at + Vector3.UP * 0.4)
+		if maze.snowing and weather.heavy > 0.6 and not snow_seen:
+			snow_seen = true
+			await wait(4.0)
+			var mood := get_tree().get_first_node_in_group("mood") as Mood
+			var env := mood.env_of(q)
+			var genv := mood.env_of(p)
+			log_line("snow: heavy %.2f, the walker's fog %.0f-%.0f m, the silo's %.0f-%.0f m" % [weather.heavy, env.fog_depth_begin, env.fog_depth_end, genv.fog_depth_begin, genv.fog_depth_end])
+			check(env.fog_depth_end < 25.0, "in the maze, in the snow, you see %.0f m at most" % env.fog_depth_end)
+			check(genv.fog_depth_end > 60.0, "round 3: up the silo you still see the maze (%.0f m)" % genv.fog_depth_end)
+			await shot("maze_snow_walker")
+			# the guide's view: the walker (the keyboard's view) goes up for a look
+			var back := q.global_position
+			await place_player(q, b.poi["silo_top"] + Vector3(0, 0.3, 0), 0.0)
+			await look_at_point(q, b.poi["maze"])
+			await shot("maze_snow_silo")
+			await place_player(q, back + Vector3(0, 0.3, 0), q.yaw)
+	check(ok and maze.cell_at(q.global_position) == maze.goal and maze.falls == falls0, "walked the way through, turn by turn, round the pits, to the far end")
+	check(snow_seen, "heavy snow from the middle: the walker sees a few metres, the silo nothing")
+	check(not maze.snowing and maze.snow_done, "at the chest the snow stops")
+	var shut := 0
+	for d in maze.doors:
+		if (d as MazeDoor).kind == "oneway" and (d as MazeDoor).locked:
+			shut += 1
+	check(shut == 2, "both one-way doors swung shut and latched behind the walker (%d)" % shut)
+	await look_at_point(q, chest_at + Vector3(0.6, 0.4, -0.6).rotated(Vector3.UP, maze.global_rotation.y))
 	await wait(0.2)
 	await tap(KEY_E)
 	await wait(0.8)
-	check(maze.chest_open and boot.world.find_child("MazeCoolant", true, false) != null and boot.story.flags.has("maze_done"), "the feed chest: a jug of coolant and a crate")
+	var all_there := boot.world.find_child("MazeSpare", true, false) != null and boot.world.find_child("MazeFuel", true, false) != null and boot.world.find_child("MazeCoolant", true, false) != null
+	check(maze.chest_open and all_there and boot.story.flags.has("push") and boot.story.flags.has("maze_done"), "the feed chest: a spare tyre, fuel and coolant, and the push is learned")
 	await shot("maze_chest")
-	for nm in ["MazeCoolant", "MazeCrate"]:
+	await wait(6.0)
+	log_line("after: clouds %.2f, heavy %.2f, clear %.0f s, snow lying %.2f" % [weather.clouds, weather.heavy, weather.clear_t, maze.snow])
+	check(weather.clear_t > 100.0 and weather.heavy < 0.5, "it clears up: a spell of sun")
+	await look_at_point(p, b.poi["maze"])
+	await shot("maze_cleared")
+	# the back gate opens from inside, onto the yard
+	maze.open_back(q)
+	await wait(1.4)
+	# the spare: pick it up (E) and put it on the van's empty mount (hold E)
+	var spare := boot.world.find_child("MazeSpare", true, false) as SpareWheel
+	await look_at_point(q, spare.global_position)
+	log_line("looking at the spare: '%s' (%.1f m away, at %s, the ray hits %s)" % [q.prompt_text, q.head.global_position.distance_to(spare.global_position), spare.global_position - maze.global_position, ray_hit(q.head.global_position, spare.global_position)])
+	await tap(KEY_E)
+	await wait(0.4)
+	log_line("holding: %s" % (q.held.name if q.held != null else "nothing"))
+	check(q.held == spare, "P1 picks up the spare tyre")
+	var c := camper()
+	c.linear_velocity = Vector3.ZERO
+	c.global_transform = Transform3D(Basis.looking_at(-(maze.get_parent() as Node3D).global_transform.basis.z, Vector3.UP), b.poi["barn_yard"] + Vector3.UP * 0.9)
+	c.reset_physics_interpolation()
+	c.parking_brake = true
+	c.spare_available = false
+	c.refresh_tyre_visuals()
+	await wait(2.0)
+	await place_player(q, c.global_transform * Vector3(0, 0.4, 4.4), 0.0)
+	await look_at_point(q, c.global_transform * Vector3(0, 2.05, 3.25))
+	await wait(0.3)
+	log_line("at the van's back, holding %s: '%s'" % [q.held.name if q.held != null else "nothing", q.prompt_text])
+	await hold_physics(KEY_E, 2.6)
+	await wait(0.5)
+	check(c.spare_available and not is_instance_valid(spare), "the spare goes on the van's empty mount (hold E)")
+	await shot("maze_spare_mounted")
+	await place_player(q, maze.global_transform * maze.cell_pos(maze.goal) + Vector3(0, 0.4, 0), 0.0)
+	var out_ok := await walk_to(q, maze.global_transform * maze.back_spot(), "out of the back gate", 0.8, 8.0)
+	check(out_ok, "out through the back gate")
+	# a pit: walk over one on the way and you come out of the drain by the gate
+	var pt: Dictionary = maze.pits[0]
+	var pc := maze.global_transform * (pt["centre"] as Vector3)
+	var cellc := maze.global_transform * maze.cell_pos(pt["cell"])
+	await place_player(q, cellc + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.3)
+	var f0 := maze.falls
+	# walk onto it until the boards go (not a walk_to: it would walk back)
+	var d := pc - q.global_position
+	q.yaw = atan2(-d.x, -d.z)
+	q.rotation.y = q.yaw
+	key(KEY_W, true)
+	var tw := 0
+	while maze.falls == f0 and tw < 240:
+		await physics_frames(1)
+		tw += 1
+	key(KEY_W, false)
+	await wait(2.4)
+	var gate: Vector3 = b.poi["maze_gate"]
+	log_line("pit: falls %d -> %d, P2 %.1f m from the gate, straw %.1f s" % [f0, maze.falls, q.global_position.distance_to(gate), q.straw_t])
+	check(maze.falls == f0 + 1 and q.global_position.distance_to(gate) < 4.0, "stepping on a pit: through the boards, out of the drain by the front gate")
+	await shot("maze_drain")
+	# a jump scare: walking back out of a wrong turn
+	var sc: Dictionary = maze.scares[0]
+	var fired := maze.scares_fired
+	# round 3: only when going round in circles: been here before
+	maze.frights.visits[sc["cell"]] = 2
+	maze.frights.spell = 0
+	await place_player(q, maze.global_transform * maze.cell_pos(sc["from"]) + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.3)
+	await walk_to(q, maze.global_transform * maze.cell_pos(sc["cell"]), "back out of a wrong turn", 0.6, 5.0)
+	await wait(0.25)
+	check(maze.scares_fired == fired + 1, "walking back out of a wrong turn: the %s pops out of the hedge" % sc["kind"])
+	await shot("maze_scare")
+	# and walking in, it doesn't
+	await wait(1.0)
+	await place_player(q, maze.global_transform * maze.cell_pos(sc["cell"]) + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.3)
+	sc["t"] = 0.0
+	await walk_to(q, maze.global_transform * maze.cell_pos(sc["from"]), "into the wrong turn", 0.6, 5.0)
+	check(maze.scares_fired == fired + 1, "walking into the wrong turn: nothing pops")
+	for nm in ["MazeSpare", "MazeFuel", "MazeCoolant"]:
 		var it: Node = boot.world.find_child(nm, true, false)
 		if it != null:
 			it.queue_free()
+	maze.reset()
+	maze.frights.enabled = true
+	boot.story.flags.erase("push")
+	weather.clear_t = 0.0
+
+
+## Puzzle #3 round 2: the snow half's frights one by one: the music box
+## louder when you run, a spin, a distraction, the follower, a fake door,
+## the stumble that drops the flag.
+func t_maze_frights() -> void:
+	var b: LevelBuilder = boot.builder
+	var maze := mz()
+	var fr := maze.frights
+	maze.reset()
+	fr.enabled = true
+	maze.start_snow()
+	await wait(3.0)
+	maze.snow = 1.0
+	var p := p1()
+	var w := maze.way
+	var ci := mz_centre_index()
+	var i0 := ci + 4
+	await place_player(p, mz_cell(w[i0]) + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(p, mz_cell(w[i0 + 1]) + Vector3.UP * 1.5)
+	await wait(0.5)
+	check(fr.in_snow_half(p), "past the courtyard, in the snow: the snow half")
+	# round 3: making progress (new cells, further in): no frights at all
+	fr._gap_t = 0.0
+	fr.last_kind = ""
+	var f00 := fr.fired
+	await mz_walk(p, i0 + 1, i0 + 2)
+	await mz_spin(p)
+	check(fr.fired == f00 and not fr.lost(p), "on new ground, getting closer: a spin brings no fright")
+	# going round in circles: back the way you came, then on again
+	await mz_walk_cells(p, [w[i0 + 1], w[i0]], w[i0 + 2])
+	await mz_walk_cells(p, [w[i0 + 1]], w[i0])
+	log_line("lost? visits here %d, spell %d" % [int(fr.visits.get(w[i0 + 1], 0)), fr.spell])
+	check(fr.lost(p), "back over the same ground: lost (the frights may come)")
+	check(fr._prints.visible, "S10: small footprints in the snow")
+	# the music box: still -> quiet; sprinting about -> loud
+	await wait(2.0)
+	var quiet := fr._music.volume_db
+	fr._gap_t = 99.0                   # no figures for this part
+	mz_sprint = true
+	await mz_walk(p, i0 + 1, i0 + 4)
+	mz_sprint = false
+	var loud := fr._music.volume_db
+	log_line("music box: still %.0f dB, after running %.0f dB (rush %.2f)" % [quiet, loud, float(fr._rush.get(p, 0.0))])
+	check(loud > quiet + 6.0, "the music box gets louder when you run about (%.0f -> %.0f dB)" % [quiet, loud])
+	fr.spell = 0
+	# a spin: something's right in front of you (the distractions put by, so
+	# one armed while running can't go first)
+	for dd in fr._distractions:
+		dd["done"] = true
+	fr._gap_t = 0.0
+	fr.last_kind = ""
+	var f0 := fr.fired
+	p.velocity = Vector3.ZERO
+	await wait(1.0)
+	fr._gap_t = 0.0
+	fr.last_kind = ""
+	fr.visits[maze.cell_at(p.global_position)] = 3      # been round here before
+	fr.spell = 0
+	log_line("before the spin: in the snow half %s, enabled %s, gap %.1f, hist %d" % [fr.in_snow_half(p), fr.enabled, fr._gap_t, (fr._yaws.get(p, []) as Array).size()])
+	await mz_spin(p)
+	log_line("after the spin: fired %d -> %d, last '%s'" % [f0, fr.fired, fr.last_kind])
+	check(fr.fired > f0 and fr.last_kind == "spin", "spin round: a figure right in front of you")
+	await shot("maze_fright_spin")
+	# a distraction: look at it, turn back, something's there
+	fr._gap_t = 0.0
+	fr.last_kind = ""
+	fr.spell = 0
+	fr._distractions[0]["done"] = false
+	fr._distractions[0]["armed"] = false
+	fr._distractions[0]["gaze"] = 0.0
+	f0 = fr.fired
+	await place_player(p, (fr._distractions[0]["node"] as Node3D).global_position + Vector3(0, 0.4, 2.0), 0.0)
+	fr.visits[maze.cell_at(p.global_position)] = 3        # been round here before
+	for c in maze.neighbours(maze.cell_at(p.global_position)):
+		fr.visits[c] = 3
+	await mz_distraction(p)
+	if fr.fired == f0:
+		# armed: it comes when you look down an open stretch, walking on
+		var di := w.find(maze.cell_at((fr._distractions[0]["node"] as Node3D).global_position))
+		var t := 0
+		while fr.fired == f0 and t < 4:
+			await mz_walk(p, di + 1 + t, di + 1 + t)
+			t += 1
+	log_line("distraction: fired %d -> %d, last '%s', gap %.1f, armed %s, gaze %.1f, in the snow half %s" % [f0, fr.fired, fr.last_kind, fr._gap_t, fr._distractions[0]["armed"], float(fr._distractions[0]["gaze"]), fr.in_snow_half(p)])
+	check(fr.fired == f0 + 1 and fr.last_kind == "distraction", "look at the thing on the ground, turn back: something's there")
+	await shot("maze_fright_distraction")
+	# S9 the follower: look away, it comes a cell nearer (only while lost)
+	await place_player(p, mz_cell(w[i0]) + Vector3(0, 0.4, 0), 0.0)
+	fr.visits[w[i0]] = 3
+	fr.spell = 0
+	await wait(1.0)
+	var fc := fr._follow_cell
+	await look_at_point(p, p.global_position - (fr._follower.global_position - p.global_position) + Vector3.UP * 1.5)
+	await wait(2.2)
+	log_line("follower: %s -> %s, visible %s" % [str(fc), str(fr._follow_cell), fr._follower.visible])
+	check(fr._follower.visible and fc.x >= 0 and fr._follow_cell != fc, "S9: look away and the scarecrow is a cell nearer")
+	# a fake door: a brick wall behind it
+	var fake: MazeDoor = null
+	for d in maze.doors:
+		if (d as MazeDoor).kind == "fake":
+			fake = d
+	await place_player(p, mz_cell(fake.cell_front) + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(p, fake.global_position + Vector3.UP * 1.1)
+	await wait(0.3)
+	log_line("at a fake door: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await wait(1.2)
+	check(fake.is_open, "a door in the snow half opens onto... a brick wall")
+	await shot("maze_fake_door")
+	# caught running, you stumble, and (round 3) the flag stays with you
+	await place_player(p, mz_cell(w[i0]) + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(p, mz_cell(w[i0 + 1]) + Vector3.UP * 1.6)
+	await wait(0.5)
+	maze.give_flag(p)
+	fr._gap_t = 0.0
+	fr.last_kind = ""
+	p.velocity = -p.global_transform.basis.z * 7.0
+	fr.flash(p, "corner")
+	await wait(0.3)
+	check(fr.stumbles >= 1 and maze.has_flag(p), "a fright while running: you stumble, the flag stays with you")
+	maze._end_snow()
+	maze.reset()
+
+
+## Puzzle #3 round 3: two flags at most (the rack holds two), a hidden gap
+## snags the one up and the spare goes up, an old marker flag to take, the
+## guide's plan (found cells wait in pencil; hold E draws them in; a cross).
+func t_maze_r3() -> void:
+	var b: LevelBuilder = boot.builder
+	var maze := mz()
+	maze.reset()
+	maze.frights.enabled = false
+	var p := p1()
+	var q := p2()
+	check(maze.gaps.size() == 2 and maze.markers.size() == 4, "two hidden gaps, four old marker flags (%d, %d)" % [maze.gaps.size(), maze.markers.size()])
+	# the rack: two, then empty
+	await place_player(p, b.poi["maze_gate"] + Vector3(0, 0.4, 0), maze.global_rotation.y)
+	var rack := boot.world.find_child("FlagRack", true, false) as Node3D
+	for k in 3:
+		await look_at_point(p, rack.global_position + Vector3.UP * 1.0)
+		await wait(0.2)
+		log_line("at the rack: '%s'" % p.prompt_text)
+		await tap(KEY_E)
+		await wait(0.4)
+	check(maze.flag_count(p) == 2 and maze.rack_left == 0, "two flags from the rack (one up, one spare), then it's empty")
+	await shot("maze_two_flags")
+	# a hidden gap: crouch through, the flag snags, the spare goes up
+	var g: Dictionary = maze.gaps[0]
+	var a: Vector2i = g["a"]
+	var c: Vector2i = g["b"]
+	await place_player(p, mz_cell(a) + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(p, mz_cell(c) + Vector3.UP * 0.6)
+	await wait(0.3)
+	await shot("maze_gap")
+	key(KEY_CTRL, true)
+	await wait(0.4)
+	var through := await walk_to(p, mz_cell(c), "through the hidden gap", 0.6, 8.0)
+	key(KEY_CTRL, false)
+	await wait(0.5)
+	log_line("through the gap: %s, flags %d, snagged %d" % [through, maze.flag_count(p), maze.snagged])
+	check(through and maze.snagged == 1 and maze.flag_count(p) == 1 and maze.has_flag(p), "crouched through a hidden gap: the flag snags in it, the spare goes up")
+	await look_at_point(p, maze.global_transform * maze.edge_pos(a, c) + Vector3.UP * 1.0)
+	await shot("maze_snagged")
+	# standing, you can't get through a gap
+	await place_player(p, mz_cell(a) + Vector3(0, 0.4, 0), 0.0)
+	var standing := await walk_to(p, mz_cell(c), "standing through the gap", 0.6, 3.0)
+	check(not standing, "standing up you can't get through a hidden gap")
+	# an old marker flag
+	var m: Dictionary = maze.markers[0]
+	var mn := m["node"] as Node3D
+	await place_player(p, mn.global_position + (mz_cell(m["cell"]) - mn.global_position).normalized() * 1.2 + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(p, mn.global_position + Vector3.UP * 0.9)
+	await wait(0.3)
+	log_line("at an old flag: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await wait(0.4)
+	check(m["taken"] and maze.flag_count(p) == 2, "an old marker flag in the maze: taken (two again)")
+	# the plan: the walker's new cells wait in pencil; P2 at the board draws them in
+	var far: Array = []
+	for cc in maze.way:
+		if not maze.drawn.has(cc):
+			far.append(cc)
+	await place_player(p, mz_cell(far[0]) + Vector3(0, 0.4, 0), 0.0)
+	await mz_walk_cells(p, far.slice(1, 5), far[0])
+	log_line("the plan: %d drawn, %d waiting" % [maze.drawn.size(), maze.pending.size()])
+	check(maze.pending.size() >= 4, "where the walker went, the plan waits in pencil (%d cells)" % maze.pending.size())
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	var board := maze.get_parent().find_child("MazeSketch", true, false) as Node3D
+	await place_player(q, b.poi["silo_top"] + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(q, board.global_position)
+	await wait(0.3)
+	log_line("P2 at the board: '%s'" % q.prompt_text)
+	await pad_tap(JOY_BUTTON_X)
+	await wait(0.6)
+	check(q.plan_open, "P2 opens the plan at the board")
+	await shot("maze_plan_open")
+	var before := maze.drawn.size()
+	pad_button(JOY_BUTTON_X, true)
+	await wait(3.4)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.3)
+	check(maze.pending.is_empty() and maze.drawn.size() > before, "hold X: the new bit is drawn in (%d -> %d cells)" % [before, maze.drawn.size()])
+	q.maze_plan.cursor = maze.plan_uv(maze.cell_pos(maze.goal))
+	await pad_tap(JOY_BUTTON_A)
+	await wait(0.3)
+	check(maze.crosses.size() == 1 and maze.crosses[0] == maze.goal, "S15: a pencil cross where the guide points")
+	await shot("maze_plan_drawn")
+	await pad_tap(JOY_BUTTON_DPAD_DOWN)
+	await wait(0.4)
+	check(not q.plan_open, "D-Down puts the plan away")
+	await look_at_point(q, board.global_position)
+	await shot("maze_plan_board")
+	maze.frights.enabled = true
+	maze.reset()
+
+
+## Puzzle #3 round 2: the van run: from the barn yard round the track to the
+## back gate, P2 driving with the pad.
+func t_maze_van() -> void:
+	var b: LevelBuilder = boot.builder
+	var maze := mz()
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	var c := camper()
+	c.repair_all()
+	var dir: Vector3 = maze.global_transform.basis * (BarnMaze.TRACK[1] - BarnMaze.TRACK[0])
+	c.linear_velocity = Vector3.ZERO
+	c.global_transform = Transform3D(Basis.looking_at(dir, Vector3.UP), b.poi["barn_yard"] + Vector3.UP * 0.9)
+	c.reset_physics_interpolation()
+	c.parking_brake = true
+	await wait(2.0)
+	var q := p2()
+	q.enter_seat(c, c.seat_nodes["driver"], "driver")
+	await physics_frames(3)
+	if not c.engine_on:
+		c.toggle_engine()
+	var r := mz_track(false)
+	log_line("track: %d samples, %.0f m, from %s to %s; the van at %s" % [r.point_count(), r.total_length, r.start_point(), r.end_point(), c.global_position])
+	mz_pad_drive(false, 15.0)
+	var t := 0
+	while not mz_drive_done and t < 90:
+		await wait(1.0)
+		t += 1
+		if t % 3 == 0:
+			var n := r.nearest(c.global_position.x, c.global_position.z)
+			log_line("  %d s: van %s, %.0f km/h, track index %d of %d, %.1f m off it" % [t, c.global_position, c.linear_velocity.length() * 3.6, n["index"], r.point_count(), float(n["dist"])])
+	var end := maze.global_transform * maze.back_spot()
+	log_line("van stopped %.1f m from the back gate after %d s" % [c.global_position.distance_to(end), t])
+	check(c.global_position.distance_to(end) < 8.0, "P2 drives the van round the track to the back gate")
+	await shot("maze_van_at_gate")
+	q.exit_vehicle()
+
+
+## Puzzle #3's weather across the journey: the stages (clouds at the start,
+## light snow from the windmill, the world whitening after the maze, melted
+## past the ghat, clear sun for the drive home), a picture at each place, the
+## frame rate with the snow falling round both players.
+func t_weather() -> void:
+	var b: LevelBuilder = boot.builder
+	var w := get_tree().get_first_node_in_group("weather") as Weather
+	var mood := get_tree().get_first_node_in_group("mood") as Mood
+	check(w != null, "the weather is there")
+	if w == null:
+		return
+	var st: Story = boot.story
+	for f in ["storm_on", "naresh_home_done", "maze_done", "push"]:
+		st.flags.erase(f)
+	get_tree().call_group("storm_front", "match_story")
+	var stages := [[1.0, "the opening", "p2_home", false], [0.95, "the windmill on", "j1", false], [0.85, "Last Fuel", "j2", false],
+		[0.78, "the bridge", "bridge", false], [0.7, "over the ghat", "ghat_pass", false]]
+	var got := []
+	for sg in stages:
+		mood.set_now(float(sg[0]))
+		var want: Array = w.wanted()
+		got.append(want)
+		log_line("%s: clouds %.2f dark %.2f snow falling %.2f cover %.2f" % [sg[1], want[0], want[1], want[2], want[3]])
+	check(float(got[0][2]) == 0.0 and float(got[0][0]) > 0.3 and float(got[0][0]) < 0.6, "the opening: clouds building, no snow")
+	check(float(got[1][2]) > 0.05 and float(got[1][3]) == 0.0, "from the windmill: light snow falling, nothing lying yet")
+	check(float(got[2][3]) > 0.3 and float(got[3][3]) > float(got[2][3]), "after: the world whitens more and more (Last Fuel %.2f, the bridge %.2f)" % [got[2][3], got[3][3]])
+	check(float(got[4][2]) == 0.0 and float(got[4][3]) == 0.0, "over the ghat: the snow stops and melts on the way to the coast")
+	st.flags["naresh_home_done"] = true
+	check(float(w.wanted()[0]) == 0.0 and float(w.wanted()[3]) == 0.0, "after Naresh's home: clear sun, no snow")
+	st.flags.erase("naresh_home_done")
+	# pictures, the values set straight away
+	w.frozen = true
+	var p := p1()
+	for sg in [[1.0, "p2_home", 0.45, 0.0, 0.0, 0.0], [0.95, "j1", 0.65, 0.1, 0.16, 0.0], [0.85, "j2", 0.72, 0.1, 0.16, 0.45], [0.78, "bridge", 0.8, 0.2, 0.16, 0.75]]:
+		mood.set_now(float(sg[0]))
+		w.clouds = sg[2]
+		w.cloud_dark = sg[3]
+		w.falling = sg[4]
+		w.snow_cover = sg[5]
+		var at: Vector3 = b.poi[sg[1]]
+		var road := b.network.nearest(at.x, at.z)
+		var spot: Vector3 = (road["road"] as Route).point(int(road["index"])) if road["road"] != null else at
+		await place_player(p, spot + Vector3(6, 2.0, 6), 0.0)
+		await look_at_point(p, spot + Vector3(-40, 8, -40))
+		await wait(1.5)
+		await shot("weather_" + String(sg[1]))
+	# frame rate: the light snow round both players, driving
+	w.clouds = 0.65
+	w.falling = Weather.LIGHT
+	w.snow_cover = 0.45
+	mood.set_now(0.9)
+	camper().repair_all()
+	await reset_camper(6)
+	await seat_p1_driver()
+	var c := camper()
+	if not c.engine_on:
+		c.toggle_engine()
+	if p2().seat == null:
+		p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	var ad := AutoDriver.new(self, boot.builder.route, c)
+	var frames := 0
+	var t := 0.0
+	while t < 8.0:
+		var dt := get_process_delta_time()
+		await get_tree().process_frame
+		t += dt
+		ad.step(45.0)
+		if t > 3.0:
+			frames += 1
+	ad.release()
+	var fps := frames / 5.0
+	log_line("driving in the light snow (clouds, flakes, a white world): %.0f fps" % fps)
+	await shot("weather_driving")
+	if not headless:
+		check(fps >= 110.0, "the snow and the cloudy sky keep the frame rate up (%.0f fps)" % fps)
+	c.set_parking_brake(true)
+	w.frozen = false
+	w.snow_cover = 0.0
+	w.falling = 0.0
+	mood.set_now(1.0)
+
+
+## Puzzle #3 from where a player stands ("built for humans"): the guide's
+## view from the silo before and in the snow, the way in, the sketch; each
+## landmark from the walker's eye. Screenshots to look at, few checks.
+func t_maze_views() -> void:
+	var b: LevelBuilder = boot.builder
+	var maze := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+	var weather := get_tree().get_first_node_in_group("weather") as Weather
+	maze.reset()
+	var p := p1()
+	# S4: the snow hanging over the barn, from the ridge lookout
+	await place_player(p, b.poi["lookout_deck"] + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, b.poi["maze"] + Vector3(0, 30, 0))
+	await wait(1.0)
+	check((maze.find_child("SnowCurtain", false, false) as Node3D).visible, "from the ridge lookout, snow hangs over the barn (S4)")
+	await shot("mv_curtain_from_ridge")
+	await place_player(p, b.poi["silo_top"] + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(p, b.poi["maze"])
+	await wait(0.5)
+	log_line("silo: P1 at %s, head %s, cam %s" % [p.global_position, p.head.global_position, get_viewport().get_camera_3d().global_position if get_viewport().get_camera_3d() else Vector3.ZERO])
+	await shot("mv_silo")
+	maze.start_snow()
+	await wait(14.0)
+	var env: Environment = boot.world.get_node("Environment").environment
+	log_line("snow: heavy %.2f, fog %.1f-%.1f, colour %s, sun %.2f, ambient %.2f, whiteout %.2f" % [weather.heavy, env.fog_depth_begin, env.fog_depth_end, env.fog_light_color, boot.world.get_node("Sun").light_energy, env.ambient_light_energy, p.whiteout])
+	await shot("mv_silo_snow")
+	maze._end_snow()
+	await wait(3.0)
+	await place_player(p, b.poi["maze_gate"] + Vector3(0, 0.4, 0) + Vector3(0, 0, 6).rotated(Vector3.UP, maze.global_rotation.y), maze.global_rotation.y)
+	await wait(0.5)
+	await shot("mv_gate")
+	for nm in maze.marks:
+		var c: Vector2i = maze.marks[nm]
+		var mk := maze.find_child("Mark_" + String(nm), false, false) as Node3D
+		if mk == null:
+			continue
+		var at := mk.global_position
+		var from := maze.global_transform * maze.cell_pos(c)
+		from += (from - at).normalized() * 0.9
+		await place_player(p, from + Vector3(0, 0.4, 0), 0.0)
+		await look_at_point(p, at + Vector3.UP * 0.9)
+		await shot("mv_" + String(nm))
+	weather.clear_t = 0.0
+	maze.reset()
 
 
 ## W4, the binocular relay at the Pine Ridge lookout: two boards out across
@@ -9891,6 +10422,442 @@ func ww_at(x: float, y: float, z: float) -> Vector3:
 
 
 # --- puzzle #2, the windmill: helpers for the walk (tools/live/make_puzzle2.py) ---
+
+# --- puzzle #3, the barn maze (the walk puzzle3) ----------------------------------
+
+## The last of Naresh's notes read contains `text` (false before any: the
+## walk's Expression has no short-circuit, so "size() > 0 and ..." still indexes).
+func last_note_has(text: String) -> bool:
+	var n: Array = boot.story.notes
+	return not n.is_empty() and String(n[n.size() - 1]["text"]).contains(text)
+
+
+func mz() -> BarnMaze:
+	return get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+
+
+## A point in the barn's frame (+Z towards the road), on the ground when y is near 0.
+func mz_at(x: float, y: float, z: float) -> Vector3:
+	var w := (mz().get_parent() as Node3D).global_transform * Vector3(x, 0, z)
+	return Vector3(w.x, (Landscape.ground(w.x, w.z) if y < 1.0 else mz().global_position.y) + y, w.z)
+
+
+func mz_cell(c: Vector2i) -> Vector3:
+	return mz().global_transform * mz().cell_pos(c)
+
+
+var mz_sprint := false            ## the walk helpers hold Shift (running)
+
+
+## Walk (P1, the keyboard) along the way through the maze, cells `a` to `b`,
+## opening the doors on it (round 2) and picking the flag up if a fright
+## knocked it out of your hand.
+func mz_walk(p: PlayerRig, a: int, b: int) -> bool:
+	var w := mz().way
+	var cells: Array = []
+	for i in range(a, mini(b, w.size() - 1) + 1):
+		cells.append(w[i])
+	return await mz_walk_cells(p, cells, w[a - 1] if a > 0 else Vector2i(-1, -1))
+
+
+func mz_walk_cells(p: PlayerRig, cells: Array, from := Vector2i(-1, -1)) -> bool:
+	var prev := from
+	for c in cells:
+		if prev.x >= 0:
+			await mz_door(p, prev, c)
+		key(KEY_SHIFT, mz_sprint)
+		var ok := await walk_to(p, mz_cell(c), "maze cell %s" % str(c), 1.3 if c == mz().goal else 0.6, 10.0)
+		key(KEY_SHIFT, false)
+		if p.knocked_t > 0.0 or not ok:
+			# a fright knocked you over: get up, pick the flag up, go on
+			var t := 0
+			while p.knocked_t > 0.0 and t < 300:
+				await physics_frames(1)
+				t += 1
+			await mz_pick_flag(p)
+			ok = await walk_to(p, mz_cell(c), "maze cell %s" % str(c), 1.3 if c == mz().goal else 0.6, 10.0)
+		if not ok:
+			return false
+		prev = c
+	return true
+
+
+## The door between two cells, opened (E) if it's shut.
+func mz_door(p: PlayerRig, a: Vector2i, b: Vector2i) -> void:
+	var d := mz().door_between(a, b)
+	if d == null or d.is_open:
+		return
+	await walk_to(p, mz_cell(a), "to the door", 0.5, 6.0)
+	await look_at_point(p, d.global_position + Vector3.UP * 1.1)
+	await wait(0.3)
+	log_line("door %s (%s) %s->%s: '%s', ray hits %s" % [d.name, d.kind, str(a), str(b), p.prompt_text, ray_hit(p.head.global_position, d.global_position + Vector3.UP * 1.1)])
+	await tap(KEY_E)
+	await wait(1.1)
+	log_line("  -> open %s, locked %s, hinge %.2f, shape disabled %s" % [d.is_open, d.locked, (d.get_node("Hinge") as Node3D).rotation.y, d._leaf_shape.disabled])
+	for dd in mz().doors:
+		log_line("     %s: %s -> %s" % [dd.name, str(dd.cell_front), str(dd.cell_back)])
+
+
+func mz_pick_flag(p: PlayerRig) -> void:
+	var f := mz().find_child("DroppedFlag", false, false) as Node3D
+	if f == null:
+		return
+	await walk_to(p, f.global_position, "to the dropped flag", 0.8, 6.0)
+	await look_at_point(p, f.global_position + Vector3.UP * 0.3)
+	await wait(0.2)
+	await tap(KEY_E)
+	await wait(0.5)
+
+
+## Spin round fast (a look back): the yaw whipped half a turn in a few frames.
+func mz_spin(p: PlayerRig) -> void:
+	for k in 6:
+		p.yaw += PI / 6.0
+		p.rotation.y = p.yaw
+		await physics_frames(1)
+	await wait(1.5)
+
+
+## The next distraction on the ground ahead: look at it a moment, then back
+## the way you were going.
+func mz_distraction(p: PlayerRig) -> void:
+	var fr := mz().frights
+	for dd in fr._distractions:
+		if dd["done"]:
+			continue
+		var at: Vector3 = (dd["node"] as Node3D).global_position
+		await walk_to(p, at, "to a distraction", 2.6, 15.0)
+		# turn to it at a normal pace (a snap would count as a spin)
+		var dt := at - p.global_position
+		var ya := p.yaw
+		var yb := ya + angle_difference(ya, atan2(-dt.x, -dt.z))
+		var eye := p.head.global_position
+		var pb := atan2(at.y - eye.y, Vector2(at.x - eye.x, at.z - eye.z).length())
+		for k in 30:
+			p.yaw = lerpf(ya, yb, (k + 1) / 30.0)
+			p.rotation.y = p.yaw
+			p.pitch = lerpf(p.pitch, pb, 0.15)
+			await physics_frames(2)
+		await look_at_point(p, at)
+		await wait(1.5)
+		# turn back to the way on (the open corridor) at a normal pace: a
+		# whip round would be a spin instead
+		var c := mz().cell_at(at)
+		var i := mz().way.find(c)
+		var on := mz_cell(mz().way[mini(i + 1, mz().way.size() - 1)])
+		if on.distance_to(p.global_position) < 1.0:
+			on = mz_cell(mz().way[maxi(i - 1, 0)])
+		var d1 := on - p.global_position
+		var y0 := p.yaw
+		var y1 := y0 + angle_difference(y0, atan2(-d1.x, -d1.z))
+		for k in 30:
+			p.yaw = lerpf(y0, y1, (k + 1) / 30.0)
+			p.rotation.y = p.yaw
+			p.pitch = lerpf(p.pitch, 0.0, 0.2)
+			await physics_frames(2)
+		await wait(1.2)
+		return
+
+
+## A fake door near the walker: there (from the way), open it - bricks -
+## and back to the way cell you left from.
+func mz_fake_detour(p: PlayerRig) -> bool:
+	var m := mz()
+	var here := m.cell_at(p.global_position)
+	var best: MazeDoor = null
+	var best_n := 999
+	for d in m.doors:
+		var md := d as MazeDoor
+		if md.kind != "fake" or md.is_open:
+			continue
+		var pth := m.path(here, md.cell_front)
+		var n := pth.size()
+		# not back through a door (a one-way latched behind you)
+		var blocked := false
+		for k in range(1, pth.size()):
+			if m.door_between(pth[k - 1], pth[k]) != null:
+				blocked = true
+		if n > 0 and n < best_n and not blocked:
+			best_n = n
+			best = md
+	if best == null or best_n > 30:
+		log_line("no fake door reachable from %s without a door on the way" % str(here))
+		return true
+	var there := m.path(here, best.cell_front)
+	if not await mz_walk_cells(p, there.slice(1), here):
+		return false
+	await look_at_point(p, best.global_position + Vector3.UP * 1.1)
+	await wait(0.3)
+	await tap(KEY_E)
+	await wait(2.5)
+	var back := m.path(best.cell_front, here)
+	return await mz_walk_cells(p, back.slice(1), best.cell_front)
+
+
+## Pick the maze's spare tyre up: right up to it, look, E (twice if need be).
+func mz_take_spare(p: PlayerRig) -> bool:
+	for k in 2:
+		var w := boot.world.find_child("MazeSpare", true, false) as Node3D
+		if w == null:
+			return false
+		await walk_to(p, w.global_position, "to the spare", 1.4, 6.0)
+		await look_at_point(p, w.global_position)
+		await wait(0.3)
+		log_line("at the spare: '%s', the ray hits %s" % [p.prompt_text, ray_hit(p.head.global_position, w.global_position)])
+		await tap(KEY_E)
+		await wait(0.5)
+		if p.held != null:
+			return true
+	return false
+
+
+## Round 3: from the way, to the front half's hidden gap, crouch through it
+## (the flag snags), and back to the way on the other side.
+func mz_gap_detour(p: PlayerRig) -> bool:
+	var m := mz()
+	var g: Dictionary = {}
+	for x in m.gaps:
+		if not m.is_back(x["a"]):
+			g = x
+	if g.is_empty():
+		return false
+	var here := m.cell_at(p.global_position)
+	var a: Vector2i = g["a"]
+	var b: Vector2i = g["b"]
+	if m.path(here, b).size() < m.path(here, a).size():
+		var t := a
+		a = b
+		b = t
+	if not await mz_walk_cells(p, m.path(here, a).slice(1), here):
+		return false
+	await look_at_point(p, mz_cell(b) + Vector3.UP * 0.6)
+	key(KEY_CTRL, true)
+	await wait(0.4)
+	var ok := await walk_to(p, mz_cell(b), "through the hidden gap", 0.6, 8.0)
+	key(KEY_CTRL, false)
+	await wait(1.5)
+	# on to the nearest cell of the way from there
+	var best: Array = []
+	for c in m.way:
+		var pth := m.path(b, c)
+		if best.is_empty() or pth.size() < best.size():
+			best = pth
+	return ok and await mz_walk_cells(p, best.slice(1), b)
+
+
+## Round 3: to the nearest old marker flag (no doors on the way there), take
+## it, and back to where you were.
+func mz_marker_detour(p: PlayerRig) -> bool:
+	var m := mz()
+	var here := m.cell_at(p.global_position)
+	var best: Dictionary = {}
+	var best_n := 999
+	for mk in m.markers:
+		if mk["taken"]:
+			continue
+		var pth := m.path(here, mk["cell"])
+		var blocked := false
+		for k in range(1, pth.size()):
+			if m.door_between(pth[k - 1], pth[k]) != null:
+				blocked = true
+		if not blocked and pth.size() < best_n:
+			best_n = pth.size()
+			best = mk
+	if best.is_empty():
+		return false
+	if not await mz_walk_cells(p, m.path(here, best["cell"]).slice(1), here):
+		return false
+	var n := best["node"] as Node3D
+	await look_at_point(p, n.global_position + Vector3.UP * 0.9)
+	await wait(0.3)
+	await tap(KEY_E)
+	await wait(1.2)
+	return await mz_walk_cells(p, m.path(best["cell"], here).slice(1), best["cell"])
+
+
+## Round 3: going round in circles (back two cells and on again), running:
+## the music box swells, and being lost brings a fright or two.
+func mz_get_lost(p: PlayerRig) -> bool:
+	var m := mz()
+	var i := m.way.find(m.cell_at(p.global_position))
+	# not back through a door (a one-way won't open from behind): on a bit first
+	var tries := 0
+	while i >= 3 and tries < 6 and (m.door_between(m.way[i], m.way[i - 1]) != null or m.door_between(m.way[i - 1], m.way[i - 2]) != null):
+		await mz_walk(p, i + 1, i + 1)
+		i += 1
+		tries += 1
+	if i < 3:
+		return false
+	mz_sprint = true
+	var ok := await mz_walk_cells(p, [m.way[i - 1], m.way[i - 2]], m.way[i])
+	ok = ok and await mz_walk_cells(p, [m.way[i - 1], m.way[i]], m.way[i - 2])
+	mz_sprint = false
+	return ok
+
+
+func fake_opened() -> bool:
+	for d in mz().doors:
+		if (d as MazeDoor).kind == "fake" and (d as MazeDoor).is_open:
+			return true
+	return false
+
+
+## The track round the maze to the back gate (world), as a Route.
+func mz_track(back: bool) -> Route:
+	var pts := PackedVector3Array()
+	var src: Array = BarnMaze.TRACK.duplicate()
+	if back:
+		src.reverse()
+	# a point every 2 m (from_points keeps only what it's given: with the four
+	# corners the driver aimed straight through the barn)
+	for k in src.size() - 1:
+		var a := mz().global_transform * (src[k] as Vector3)
+		var bb := mz().global_transform * (src[k + 1] as Vector3)
+		var n := maxi(1, int(a.distance_to(bb) / 2.0))
+		for j in n:
+			var w := a.lerp(bb, float(j) / n)
+			pts.append(Vector3(w.x, Landscape.ground(w.x, w.z), w.z))
+	var e := mz().global_transform * (src[src.size() - 1] as Vector3)
+	pts.append(Vector3(e.x, Landscape.ground(e.x, e.z), e.z))
+	return Route.from_points(pts)
+
+
+var mz_drive_done := false
+
+
+## P2 on the pad drives the van along the track (the van run): steer with the
+## stick, the triggers for speed; stops at the end on the handbrake.
+func mz_pad_drive(back: bool, kmh: float) -> void:
+	mz_drive_done = false
+	var r := mz_track(back)
+	var c := camper()
+	var t := 0.0
+	while t < 90.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		var n := r.nearest(c.global_position.x, c.global_position.z)
+		var i: int = n["index"]
+		var end := r.end_point()
+		var to_end := Vector2(end.x - c.global_position.x, end.z - c.global_position.z).length()
+		var v := c.linear_velocity.length() * 3.6
+		if to_end < 5.0 or (i >= r.point_count() - 2 and to_end < 9.0):
+			pad_axis(JOY_AXIS_TRIGGER_RIGHT, 0.0)
+			pad_axis(JOY_AXIS_TRIGGER_LEFT, 1.0)
+			if v < 1.0:
+				break
+			continue
+		var target := r.point(mini(i + 4 + int(v * 0.12), r.point_count() - 1))
+		var local := c.global_transform.affine_inverse() * target
+		pad_axis(JOY_AXIS_LEFT_X, clampf(atan2(local.x, -local.z) * 2.2, -1.0, 1.0))
+		var want := kmh if to_end > 20.0 else 10.0
+		pad_axis(JOY_AXIS_TRIGGER_RIGHT, 0.8 if v < want else 0.0)
+		pad_axis(JOY_AXIS_TRIGGER_LEFT, 0.6 if v > want + 6.0 else 0.0)
+	pad_axis(JOY_AXIS_LEFT_X, 0.0)
+	pad_axis(JOY_AXIS_TRIGGER_RIGHT, 0.0)
+	pad_axis(JOY_AXIS_TRIGGER_LEFT, 0.0)
+	if not back:
+		pad_tap(JOY_BUTTON_B)          # the handbrake
+	mz_drive_done = true
+
+
+## Index on the way of the first cell of the courtyard (where the snow starts).
+func mz_centre_index() -> int:
+	var w := mz().way
+	for i in w.size():
+		if w[i] in BarnMaze.CENTRE:
+			return i
+	return w.size() / 2
+
+
+## Index on the way of the first pit that sits on it.
+func mz_pit_index() -> int:
+	var w := mz().way
+	for i in w.size():
+		for pt in mz().pits:
+			if pt["cell"] == w[i]:
+				return i
+	return -1
+
+
+## The wrong turn with a jump scare nearest the start: [the scare, the way index it leaves from].
+func mz_detour() -> Array:
+	var m := mz()
+	var best := []
+	for sc in m.scares:
+		var pth := m.path(sc["from"], m.entrance)
+		for c in pth:
+			var i := m.way.find(c)
+			if i >= 0:
+				if best.is_empty() or i < int(best[1]):
+					best = [sc, i]
+				break
+	return best
+
+
+## The walker's mistake: into the wrong turn (to the scare's far cell) and
+## back out - the scare pops in their face.
+func mz_take_detour(p: PlayerRig) -> bool:
+	var d := mz_detour()
+	if d.is_empty():
+		return false
+	var m := mz()
+	var sc: Dictionary = d[0]
+	var from_way: Vector2i = m.way[int(d[1])]
+	# to the scare's corner, one step past it, and back through it (with the
+	# loops, the shortest way to its far cell can come in from elsewhere)
+	var into := m.path(from_way, sc["cell"])
+	if not await mz_walk_cells(p, into.slice(1), from_way):
+		return false
+	if not await mz_walk_cells(p, [sc["from"]], sc["cell"]):
+		return false
+	await wait(0.6)
+	if not await mz_walk_cells(p, [sc["cell"]], sc["from"]):
+		return false
+	await wait(1.0)
+	var back := m.path(sc["cell"], from_way)
+	return await mz_walk_cells(p, back.slice(1), sc["cell"])
+
+
+var mz_watching := false
+
+
+## The guide on the silo keeps their eyes on the walker's flag (for the
+## recorded walk: what P2's half of the screen shows). Runs till stopped.
+func mz_guide_watch() -> void:
+	mz_watching = true
+	while mz_watching:
+		var q := p2()
+		if q.ladder == null and q.global_position.y > mz().global_position.y + 10.0:
+			var f := p1().find_child("WalkerFlag1", true, false) as Node3D
+			var at := (f.global_transform * Vector3(0.3, 4.3, 0)) if f != null else p1().global_position
+			var d := at - q.head.global_position
+			q.yaw = lerp_angle(q.yaw, atan2(-d.x, -d.z), 0.2)
+			q.rotation.y = q.yaw
+			q.pitch = lerpf(q.pitch, atan2(d.y, Vector2(d.x, d.z).length()), 0.2)
+		await physics_frames(2)
+
+
+## Step onto the pit on the way (aimed at its middle) until the boards go.
+func mz_step_on_pit(p: PlayerRig) -> bool:
+	var m := mz()
+	var f0 := m.falls
+	var i := mz_pit_index()
+	var pt: Dictionary = {}
+	for x in m.pits:
+		if x["cell"] == m.way[i]:
+			pt = x
+	var at: Vector3 = m.global_transform * (pt["centre"] as Vector3)
+	var d := at - p.global_position
+	p.yaw = atan2(-d.x, -d.z)
+	p.rotation.y = p.yaw
+	key(KEY_W, true)
+	var t := 0
+	while m.falls == f0 and t < 300:
+		await physics_frames(1)
+		t += 1
+	key(KEY_W, false)
+	return m.falls > f0
+
 
 func wm() -> WindmillPower:
 	return get_tree().get_first_node_in_group("windmill") as WindmillPower

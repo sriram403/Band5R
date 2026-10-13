@@ -19,6 +19,8 @@ const FAMILIES := {
 	"ui_error": "error_", "tick": "tick_", "pluck": "pluck_", "glass": "glass_",
 	# made here (tools/gen/sludge.py): the water works' sludge tank
 	"squelch": "squelch_", "gurgle": "gurgle_", "groan": "groan_", "splat": "splat_",
+	# made here (tools/gen/maze_sounds.py): the barn maze
+	"bell": "bell_", "caw": "caw_", "moo": "moo_", "sting": "sting_", "crack": "crack_",
 }
 
 static var _cache := {}

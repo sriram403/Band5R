@@ -14,6 +14,7 @@ var box_view: BoxView
 var _white: ColorRect
 var _stars: StarsRing
 var _sludge: ColorRect                 ## sludge round the edges of the view (the water works)
+var _straw: ColorRect                  ## straw over the view (out of the maze's drain)
 ## tag owner index -> where its edge arrow was last drawn (tests read this)
 var tag_arrow_at := {}
 var _prompt: Label
@@ -174,6 +175,10 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 		map_view.bind(ms)
 	add_child(map_view)
 	p.paper_map = map_view
+	# the barn maze's plan (puzzle #3 round 3), opened at the silo's board
+	var plan := MazePlan.new()
+	add_child(plan)
+	p.maze_plan = plan
 
 	var journal := JournalPanel.new()
 	journal.player = p
@@ -220,6 +225,17 @@ func setup(p: PlayerRig, van: Camper, title: String, tint: Color) -> void:
 	_sludge.material = sm
 	_sludge.visible = false
 	add_child(_sludge)
+	_straw = ColorRect.new()
+	_straw.name = "Straw"
+	_straw.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_straw.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ssh := Shader.new()
+	ssh.code = STRAW_SHADER
+	var ssm := ShaderMaterial.new()
+	ssm.shader = ssh
+	_straw.material = ssm
+	_straw.visible = false
+	add_child(_straw)
 
 	p.prompt_changed.connect(_on_prompt)
 	p.message.connect(show_note)
@@ -308,7 +324,10 @@ func _process(delta: float) -> void:
 			_objective_hint.text = "(hold %s for a hint)" % (d.glyph("hint") if d else "H")
 	_arrows.queue_redraw()
 	_stars.amount = clampf(player.dazed_t / 0.5, 0.0, 1.0)
-	_white.color.a = player.whiteout
+	_white.color = Color(player.fade_color.r, player.fade_color.g, player.fade_color.b, player.whiteout)
+	_straw.visible = player.straw_t > 0.0
+	if _straw.visible:
+		(_straw.material as ShaderMaterial).set_shader_parameter("amount", clampf(player.straw_t / 1.5, 0.0, 1.0))
 	_white.visible = player.whiteout > 0.001
 	var mess := clampf((1.0 - player.slow()) / (1.0 - PlayerRig.SLIME_SLOW), 0.0, 1.0)
 	_sludge.visible = mess > 0.001
@@ -430,6 +449,29 @@ func _set_bar(tag: String, v: float) -> void:
 
 ## Sludge round the edges of a covered player's view: brown, thicker at the
 ## top, with drips running down (the water works' grey tank).
+## Straw stuck on the view: short slanted yellow blades, thickest at the edges.
+const STRAW_SHADER := """
+shader_type canvas_item;
+uniform float amount = 1.0;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }
+void fragment() {
+	vec2 uv = UV;
+	float edge = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+	vec2 g = uv * vec2(14.0, 9.0);
+	vec2 id = floor(g);
+	vec2 f = fract(g) - 0.5;
+	float ang = hash(id) * 3.14159;
+	vec2 dir = vec2(cos(ang), sin(ang));
+	float along = dot(f, dir);
+	float across = abs(dot(f, vec2(-dir.y, dir.x)));
+	float blade = step(abs(along), 0.42) * smoothstep(0.05, 0.02, across);
+	float keep = step(0.35 + edge * 2.2, hash(id + 5.0));
+	float a = blade * keep * amount;
+	COLOR = vec4(mix(vec3(0.86, 0.72, 0.36), vec3(0.62, 0.48, 0.22), hash(id + 9.0)), a);
+}
+"""
+
+
 const SLUDGE_SHADER := """
 shader_type canvas_item;
 uniform float amount = 1.0;

@@ -136,6 +136,8 @@ func glyph(action: String) -> String:
 			"command": return "D-Up"
 			"fwd": return "Stick up"
 			"back": return "Stick down"
+			"map_place": return "A"
+			"map_remove": return "X"
 			_: return "?"
 	match action:
 		"interact": return "E"
@@ -162,6 +164,8 @@ func glyph(action: String) -> String:
 		"command": return "V"
 		"fwd": return "W"
 		"back": return "S"
+		"map_place": return "LMB"
+		"map_remove": return "RMB"
 		_: return "?"
 
 

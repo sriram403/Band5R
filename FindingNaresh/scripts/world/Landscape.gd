@@ -556,18 +556,16 @@ static func build_terrain() -> StaticBody3D:
 			_normals[k] = Vector3(-hx, 2.0 * STEP, -hz).normalized()
 			var inland := coast_x - x if coast.size() >= 2 else 1e9
 			_colors[k] = _ground_color(x, z, y, slope, grid_road_d[k], grid_river_d[k], grid_gravel[k] == 1, (px[ix] * pz + 1.0) * 0.5, inland)
+			# alpha: where snow may settle (not on the road, where the tyres run)
+			_colors[k].a = clampf(grid_road_d[k] - ROAD_HALF + 0.5, 0.0, 1.0)
 
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
 	# The ground colours were chosen when the terrain was (wrongly) lit from
-	# below; now it takes the full sun, this keeps it at the approved brightness.
-	mat.albedo_color = Color(0.6, 0.6, 0.6)
-	mat.roughness = 0.95
-	mat.metallic = 0.0
-	mat.metallic_specular = 0.06
-	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
-	mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED   # winding-proof
+	# below; now it takes the full sun, albedo 0.6 keeps the approved
+	# brightness. SnowMat: snow settles as the world whitens (puzzle #3),
+	# never on the road (the vertex alpha). Unculled: winding-proof.
+	var mat := SnowMat.make(Color(0.6, 0.6, 0.6), 0.0, 0.95, 0.0, "cull_disabled").duplicate() as ShaderMaterial
+	mat.set_shader_parameter("use_vcol", true)
+	mat.set_shader_parameter("vcol_mask", true)
 
 	var body := StaticBody3D.new()
 	body.name = "Terrain"

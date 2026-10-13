@@ -24,7 +24,7 @@ const TABS := ["Travel", "Story", "Puzzles", "Van", "Spawn", "World", "Gyms"]
 const PUZZLES := [
 	["The water works", "coolant", "facility", "Pump and valves; valve B slips twice. Reward: coolant."],
 	["The windmill", "windmill", "", "Hold the starter lever; head-butt the legs back as they slide; the ladder, the napin. You start in the van at the gate."],
-	["The barn maze", "choose_road", "barn", "Optional (Valley Road): the guide on the loft, the walker in the hedges."],
+	["The barn maze", "choose_road", "maze_gate", "Optional (Valley Road): the guide up the silo, the walker in the hedges; snow from the middle."],
 	["The lookout boards", "choose_road", "lookout", "Optional (Ridge Track): binocular pictures, the dials on the box."],
 	["The lift bridge", "bridge", "bridge_hut", "Levers, the safety mirror, the wedge, the counterweight. The water works counts as done (the power is on)."],
 	["The ghat pace notes", "ghat", "", "Fog on the hairpins, the notes on the swung nav, the glimpse, the first attack. You start in the van at J3."],
@@ -67,8 +67,9 @@ const PLACES := [
 		["dock", "Mirror Lake dock", "Valley Road: a Memory Fragment, Naresh's bench."],
 		["billboard", "The billboard", "Valley Road: 'Bessi and the 5 Roses'."],
 		["barn", "The barn", "Valley Road: W2, the hay maze on its west side."],
-		["loft", "Barn loft balcony", "Above the maze: where the guide stands."],
-		["maze", "Hay maze (the middle)", "Inside the hedges."],
+		["silo_top", "Barn silo top", "Above the maze: where the guide stands."],
+		["maze_gate", "Hedge maze: the way in", "The front gate, the flag rack."],
+		["maze", "Hedge maze (the middle)", "The courtyard and the bell."],
 		["lookout", "Pine Ridge lookout", "Ridge Track: binoculars on the deck; W4, the code boards."],
 		["lookout_deck", "Pine Ridge lookout deck", "Up top, with the binoculars."],
 		["relay_box", "Lookout supply box", "The picture dials at the ramp's foot."],
@@ -884,6 +885,19 @@ func play_puzzle(k: int) -> String:
 			var at: Vector3 = boot.builder.poi[e[2]]
 			van_to(van_spot(at + Vector3(-18, 0, 6)), 0.0)
 			boot.camper.repair_all()
+	if String(e[2]) == "maze_gate":
+		# the van parked in the yard in front of the barn, facing the road;
+		# both just out of it
+		var yard: Vector3 = boot.builder.poi["barn_yard"]
+		# facing along the track round the maze
+		var mzn := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+		var dir: Vector3 = mzn.global_transform.basis * (BarnMaze.TRACK[1] - BarnMaze.TRACK[0])
+		van_to(yard, atan2(-dir.x, -dir.z))
+		boot.camper.repair_all()
+		# as on a real run: the opening's puncture used the spare
+		boot.camper.spare_available = false
+		boot.camper.refresh_tyre_visuals()
+		teleport(boot.camper.global_transform * Vector3(-3.2, 0, -1.0))
 	if e[1] == "windmill":
 		# in the van on the lane, 30 m short of the junction gate, facing it
 		var lane: Route = boot.builder.network.road("home_lane")

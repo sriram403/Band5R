@@ -303,7 +303,7 @@ func _barn(at: Vector3) -> void:
 	root.add_child(Build.box(Vector3(17.6, 0.6, 7.4), ToonMat.make(Color(0.42, 0.30, 0.26)), Vector3(0, 8.6, 2.1), Vector3(38, 0, 0), "RoofB"))
 	root.add_child(Build.box(Vector3(4.4, 5.0, 0.2), white, Vector3(0, 2.5, 5.55), Vector3.ZERO, "Doors"))
 	root.add_child(Build.solid_cyl(2.6, 13.0, ToonMat.make(Color(0.80, 0.78, 0.72)), Vector3(11.0, 6.5, -2.0), Vector3.ZERO, "Silo"))
-	root.add_child(Build.dome(2.7, ToonMat.make(Color(0.60, 0.62, 0.64)), Vector3(11.0, 13.0, -2.0), Vector3.ONE, "SiloCap"))
+	_silo_top(root, Vector3(11.0, 13.0, -2.0))
 	# hay bales out front
 	for hb in 4:
 		root.add_child(Build.solid_cyl(0.8, 1.2, ToonMat.make(Color(0.86, 0.74, 0.40)), Vector3(-5.0 + hb * 1.9, 0.8, 9.0), Vector3(0, 0, 90), "Hay"))
@@ -326,15 +326,98 @@ func _barn(at: Vector3) -> void:
 		root.add_child(Build.cyl(0.1, LOFT_Y, wood, s + Vector3(0, LOFT_Y * 0.5, 0), Vector3.ZERO, 6, "LoftPost"))
 	# the ladder comes up at the balcony's open corner (-Z side, by the wall)
 	Ladder.make(root, Vector3(-8.5, 0, -1.9), LOFT_Y + 0.08, Vector3(0, 0, 1), Vector3(-8.5, LOFT_Y + 0.1, -1.0), "LoftLadder")
+	# puzzle #3: the hedge maze behind the barn, its way in by the silo
 	var maze := BarnMaze.new()
 	maze.name = "BarnMaze"
 	root.add_child(maze)
-	maze.setup(Transform3D(Basis(), Vector3(-22.0, 0.0, 0.0)))
+	maze.setup(Transform3D(Basis(), MAZE_AT))
+	_silo_sketch(root, maze)
 	world.add_child(root)
 	poi["barn"] = pos
 	poi["loft"] = root.transform * Vector3(-9.0, LOFT_Y + 0.1, 0.3)
 	poi["loft_ladder"] = root.transform * Vector3(-8.5, 0, -2.6)
-	poi["maze"] = root.transform * Vector3(-22.0, 0, 0)
+	poi["maze"] = root.transform * MAZE_AT
+	poi["maze_gate"] = root.transform * (MAZE_AT + maze.gate_spot())
+	poi["maze_back"] = root.transform * (MAZE_AT + maze.back_spot())
+	poi["silo_ladder"] = root.transform * Vector3(11.0, 0, -6.0)
+	poi["barn_yard"] = root.transform * Vector3(2.0, 0, 24.0)   # clear of the hay bales, where the track starts
+	poi["silo_top"] = root.transform * Vector3(11.0, 13.2, -3.2)
+
+
+## Puzzle #3: the barn's silo is the guide's tower. A flat deck on top with a
+## railing (a gap where the cage ladder comes up, on the maze side), a small
+## vent hood in the middle.
+const MAZE_AT := Vector3(6.0, 0.0, -43.0)     ## the maze's middle, in the barn's frame
+const SILO_R := 2.6
+
+
+func _silo_top(root: Node3D, top: Vector3) -> void:
+	var steel := ToonMat.make(Color(0.60, 0.62, 0.64), 0.012)
+	var deck := Build.solid_cyl(SILO_R + 0.3, 0.16, ToonMat.make(Color(0.52, 0.50, 0.46)), top + Vector3(0, 0.08, 0), Vector3.ZERO, "SiloDeck")
+	root.add_child(deck)
+	root.add_child(Build.dome(0.9, steel, top + Vector3(0, 0.16, 0), Vector3(1, 0.7, 1), "SiloVent"))
+	var rail := StaticBody3D.new()
+	rail.name = "SiloRail"
+	root.add_child(rail)
+	var r := SILO_R + 0.22
+	var n := 16
+	for k in n:
+		var a0 := TAU * k / n
+		var a1 := TAU * (k + 1) / n
+		var mid := (a0 + a1) * 0.5
+		# the ladder comes up on the -Z side (towards the maze): leave a gap
+		if absf(wrapf(mid + PI * 0.5, -PI, PI)) < 0.3:
+			continue
+		var p0 := top + Vector3(cos(a0) * r, 0, sin(a0) * r)
+		var p1 := top + Vector3(cos(a1) * r, 0, sin(a1) * r)
+		var c := (p0 + p1) * 0.5
+		var length := p0.distance_to(p1)
+		var yaw := rad_to_deg(-atan2(p1.z - p0.z, p1.x - p0.x))
+		root.add_child(Build.box(Vector3(length + 0.04, 0.06, 0.06), steel, c + Vector3(0, 1.16, 0), Vector3(0, yaw, 0), "Rail"))
+		root.add_child(Build.box(Vector3(length + 0.04, 0.04, 0.04), steel, c + Vector3(0, 0.66, 0), Vector3(0, yaw, 0), "MidRail"))
+		root.add_child(Build.cyl(0.03, 1.1, steel, p0 + Vector3(0, 0.71, 0), Vector3.ZERO, 5, "RailPost"))
+		var cs := CollisionShape3D.new()
+		var sh := BoxShape3D.new()
+		sh.size = Vector3(length + 0.04, 1.1, 0.08)
+		cs.shape = sh
+		cs.transform = Transform3D(Basis(Vector3.UP, deg_to_rad(yaw)), c + Vector3(0, 0.71, 0))
+		rail.add_child(cs)
+	# the cage ladder up the maze side
+	Ladder.make(root, top + Vector3(0, -13.0, -SILO_R - 0.08), 13.15, Vector3(0, 0, 1), top + Vector3(0, 0.2, -SILO_R + 0.9), "SiloLadder")
+	for k in 9:
+		var y := 2.5 + k * 1.3
+		root.add_child(Build.box(Vector3(0.9, 0.04, 0.04), steel, top + Vector3(0, y - 13.0, -SILO_R - 0.85), Vector3.ZERO, "CageHoop"))
+	for s in [-0.45, 0.45]:
+		root.add_child(Build.box(Vector3(0.04, 10.6, 0.04), steel, top + Vector3(s, -5.2, -SILO_R - 0.85), Vector3.ZERO, "CageBar"))
+
+
+## Naresh's half-finished sketch of the maze, on a board at the silo's rail.
+## Round 3: it's the guide's plan; the maze draws it (E there opens it big).
+func _silo_sketch(root: Node3D, maze: BarnMaze) -> void:
+	const W := 0.9
+	var board := Node3D.new()
+	board.name = "MazeSketch"
+	# on the rail by the ladder's gap, facing the deck (+Z): read it, then look out
+	board.position = Vector3(11.0, 13.0, -2.0) + Vector3(1.73, 1.25, -2.07)
+	board.rotation_degrees = Vector3(-15, -35, 0)
+	root.add_child(board)
+	board.add_child(Build.box(Vector3(W + 0.06, W + 0.06, 0.03), ToonMat.make(Color(0.45, 0.32, 0.22)), Vector3(0, 0, -0.02), Vector3.ZERO, "Backing"))
+	board.add_child(Build.label3d("...the rest in the snow? - N.", Vector3(0, W * 0.5 - 0.03, 0.006), Vector3.ZERO, 0.022, Color(0.25, 0.25, 0.32)))
+	maze.attach_board(board, W)
+	NareshNote.make(root, "maze_silo", Vector3(11.0, 13.0, -2.0) + Vector3(-1.53, 0.95, -2.31), 33.5,
+		"He says it snows here. In this valley. Draw the rest in as they find it - my sketch is only half. If you'd rather they find their own way, get the van round the track to the back gate, and honk. One honk: they're close.")
+
+
+static func _px_line(img: Image, a: Vector2i, b: Vector2i, col: Color) -> void:
+	var n := maxi(absi(b.x - a.x), absi(b.y - a.y))
+	for i in n + 1:
+		var t := float(i) / maxf(1.0, n)
+		var x := int(lerpf(a.x, b.x, t))
+		var y := int(lerpf(a.y, b.y, t))
+		for o in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1)]:
+			var p: Vector2i = Vector2i(x, y) + o
+			if p.x >= 0 and p.y >= 0 and p.x < img.get_width() and p.y < img.get_height():
+				img.set_pixelv(p, col)
 
 
 ## Timber lookout tower on the crest of Pine Ridge: a deck 6 m up, reached by
