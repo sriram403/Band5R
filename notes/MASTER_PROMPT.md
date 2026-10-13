@@ -50,6 +50,17 @@ they/them.
 
 ## 2. Status right now (2026-09-29; latest at the top, 2026-10-07)
 
+- **2026-10-13: puzzle #3, the barn maze, approved ("all good") and pushed**
+  (main `0f2f077`) after three rounds: a 63 m hedge maze behind the barn,
+  the silo as the guide's tower, flags (two; hidden gaps snag one; marker
+  flags), pits, doors in the snow half (one-way, fake, a loop), the guide's
+  plan drawn in as the walker finds it, the van run round a track to the
+  back gate, frights only when the walker goes round in circles, the chest
+  (spare, fuel, coolant) and the push out of the van (moved here from the
+  windmill). **The weather across the journey** came with it: a cloud sky,
+  light snow from the windmill, the world whitening after the maze, each
+  player's own fog. Frame rate alone: 144 fps. A full run in the background
+  (`appdata/full_after_push3.log`, section 6).
 - **2026-10-08: puzzle #2 approved and pushed** (main `e96c48b`) after
   round 2 (butt visuals, legs that show each butt, the chest in front of
   the ladder, the switch house and the wire's spark, a proper gate, woods
@@ -613,6 +624,20 @@ failures to `notes/CHANGE_LEDGER.md` #2 ("could break"), write them under
 plays F1 → Puzzles → 3 and says what to change; propose, build, record,
 push). Remember for #5: the lift bridge must not be powered by the water
 works any more (the windmill already makes power to open a way).
+
+**Update (2026-10-13):** #3 (the barn maze, rounds 1-3, and the weather)
+approved ("all good") and pushed (main `0f2f077`). A full run started in
+the background in `MPG` right after (`appdata/full_after_push3.log`): **in a
+new thread, read its result first** (FAIL / "==== RUN" / "broke off";
+`tools/run_test.sh resume` if it broke off), match failures to
+`notes/CHANGE_LEDGER.md` #2 and #3, fix in `../MPG_dev`. The previous full
+run (after #2) broke off at its last segment with 4 failures: two frame-rate
+checks taken with two games running (rerun alone: 144 fps) and two in the
+fishing village refuel ("P1 takes the full can off the rack", "the tank's
+filled"): still to look at. **Next: #4, the lookout boards** (the user
+plays F1 → Puzzles → 4); the snowball (agreed for #4: old snow on the high
+ridge). Open question for the user: the van has never run out of spares
+(the "Take the spare" prompt ignores `spare_available`).
 
 **Before (2026-10-05):** Milestones A-F approved and pushed (main
 `c1235d8`). F was approved from recorded walkthroughs: I played every part

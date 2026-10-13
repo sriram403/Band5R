@@ -136,8 +136,16 @@ being built and tested), so this always shows where the work is right now.
             - [x] tests maze, maze_frights, maze_r3: 0 failures; walk
                   `puzzle3` (17 steps) recorded, sent. Found by the walk: one
                   press of M / D-Down closed the plan and opened the road map
-            - [ ] **your look at the video**, then merge `g6` and push
-            - [ ] frame rate alone; the full run's resume (your go-ahead)
+            - [x] **your look at the video**: "all good" (2026-10-13). Merged
+                  `g6`, **pushed** (main `0f2f077`)
+            - [x] frame rate alone: 144 fps (the cap) driving in the snow
+                  and in `perf`; the 91-123 fps readings were two games
+                  running at once
+            - [~] the full run in the background (`appdata/full_after_push3.log`);
+                  findings under #2 / #3 in `notes/CHANGE_LEDGER.md`
+- [ ] **Next: puzzle #4, the lookout boards** (optional, Ridge Track): you
+      play it (F1 → Puzzles → 4) and say what to change. Agreed already: the
+      snowball goes there (old snow lying on the high ridge)
             Still open: frame rate alone, the full run's resume (not
             started: you asked first)
     - [ ] the walkway bigger, the chest and note easy to see and reach,

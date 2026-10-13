@@ -89,7 +89,7 @@ Per entry: the puzzle, its branch and merge, then three lists.
 
 ---
 
-## #3 The barn maze + the weather (branch `g6`; not merged, not pushed)
+## #3 The barn maze + the weather (branch `g6`; merged and pushed 2026-10-13, `0f2f077`)
 
 **What changed**
 - `puzzles/BarnMaze.gd` rewritten: 14 x 14 cells of 3.5 m (50 m), 3 m
