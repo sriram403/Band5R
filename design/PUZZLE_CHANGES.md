@@ -1202,3 +1202,12 @@ dials reset whenever a wrong one is turned (Q3).
 - 5. S1-S4: yes.
 - **New rule: always simple to read** (short lines, plain words, A / B
   questions).
+
+### Your answers (2026-10-14), round 2: **agreed**
+
+- 3. **A wrong code: the box resets itself** (its dials spin round to
+  mixed-up places, a mechanism you hear and see). No snow puff: not
+  realistic. The riddles stay the same.
+- 4. The snowball: yes (old snow on the ridge, crouch + E, G throws; the
+  last riddle on a snow-covered sign near the box).
+- **New rule: realistic** in most places (weather, machines, tools).

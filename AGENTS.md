@@ -40,6 +40,11 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   from where a player stands before showing it: visible, reachable, notes
   readable, nothing floating or sunk, blockers that really block (drive
   round them). Every action shows visibly that it worked.
+- **Realistic, and simple to read (the user, 2026-10-14).** Everything
+  in the world works and looks as it would for real: weather (snow, rain,
+  sun), machines (a wrong code makes the box itself reset), tools
+  (binoculars about 8x, not 12x). Nothing appears out of nowhere. Every
+  message and proposal short and plain; questions as A / B.
 - **Lived in, never programmatic (the user, 2026-10-07).** Built things
   look placed by a person; natural things sit as nature would leave them
   (clumps, half-sunk rocks, no rows). A cramped space gets bigger.

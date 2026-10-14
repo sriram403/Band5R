@@ -161,6 +161,14 @@ v5).
 - Why: every new session must start from a game that is clean as far as
   we know, not from a pile of fixes waiting on a decision.
 
+## 13. Realistic, and simple to read (the user, 2026-10-14)
+
+Things in the game work as they would for real: weather looks like real
+weather, a machine's consequence comes from the machine (a wrong code: the
+box resets and scrambles its own dials), tools have real limits
+(binoculars about 8x). Nothing pops out of nowhere. And every message to
+the user is short and plain: few lines per idea, questions as A / B.
+
 ## Sources
 
 - Walter Isaacson, *Elon Musk* (2023): "the algorithm"; summaries at
