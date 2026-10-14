@@ -611,11 +611,15 @@ func _build_curtain() -> void:
 
 
 func _show_curtain() -> void:
-	var near := false
+	# per player: hidden from whoever is close (they have the real snow), still
+	# there for a partner up on the ridge (on the near one's private layer,
+	# which only the near one's camera leaves out)
+	var near: Array[int] = []
 	for n in get_tree().get_nodes_in_group("player"):
 		if (n as Node3D).global_position.distance_to(global_position) < CURTAIN_NEAR:
-			near = true
-	_curtain.visible = not near and not snow_done
+			near.append((n as PlayerRig).index)
+	_curtain.visible = near.size() < 2 and not snow_done
+	_curtain.layers = 1 << (1 + near[0]) if near.size() == 1 else 1
 
 
 ## The hedges as one mesh: every wall two slightly ragged blocks (height,

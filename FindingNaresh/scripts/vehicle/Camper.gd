@@ -623,6 +623,7 @@ func _build_service() -> void:
 			return "Take " + it.label() if it != null else "")
 		area.set_meta("blocked_fn", func() -> String:
 			return "" if stowed_item(slot) != null else "Rack slot (%s)" % ("fuel cans" if labels[k] == "can" else "any item"))
+		area.set_meta("see_through", true)   # empty, it lets empty hands aim past it
 		area.set_meta("held_prompt_fn", func(_p, item) -> String:
 			if stowed_item(slot) != null:
 				return ""
@@ -695,7 +696,7 @@ func _tyre_parked() -> bool:
 
 func _build_tyre_service() -> void:
 	var spare := Build.interact_area(Vector3(0.9, 1.0, 0.9), Vector3(0, 2.05, 3.25), "", func(p):
-		if tyre_flat and tyre_stage == 0 and _tyre_parked():
+		if tyre_flat and tyre_stage == 0 and spare_available and _tyre_parked():
 			var wheel := SpareWheel.new()
 			wheel.name = "OpeningSpareWheel"
 			get_tree().get_first_node_in_group("world_root").add_child(wheel)
@@ -704,8 +705,10 @@ func _build_tyre_service() -> void:
 			tyre_stage = 1
 			_spare_mesh.visible = false, "SpareMount")
 	spare.set_meta("prompt_fn", func(_p) -> String:
-		return "Take the spare wheel" if tyre_flat and tyre_stage == 0 and _tyre_parked() else "")
+		return "Take the spare wheel" if tyre_flat and tyre_stage == 0 and spare_available and _tyre_parked() else "")
 	spare.set_meta("blocked_fn", func() -> String:
+		if tyre_flat and tyre_stage == 0 and not spare_available:
+			return "No spare on the back: the flat stays until you find another wheel"
 		return "Park and set the handbrake before changing the wheel" if tyre_flat and tyre_stage == 0 and not _tyre_parked() else "")
 	# puzzle #3: a spare from the barn maze's chest goes on the empty mount
 	spare.set_meta("held_prompt_fn", func(_p, item) -> String:

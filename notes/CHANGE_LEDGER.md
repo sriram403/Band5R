@@ -85,7 +85,14 @@ Per entry: the puzzle, its branch and merge, then three lists.
   gate first), **full**.
 
 **Found later** (by the long runs)
-- (none yet)
+- Full run after the push (`appdata/full_after_push2.log`): 4 failures.
+  Two frame-rate checks (two games at once; alone 144 fps). Two in the
+  fishing village (decoy): "P1 takes the full can off the rack" and the
+  refuel after it. Not from #2: an empty rack slot's zone caught the aim
+  of a can in the right-hand slot. Fixed in `g7` (2026-10-14, empty slots
+  are see-through for empty hands); decoy, saltpans, carry, story,
+  opening_p2, smoke: 0 failures (smoke's dusk frame rate with the full
+  run alongside: to rerun alone).
 
 ---
 
@@ -190,4 +197,24 @@ Per entry: the puzzle, its branch and merge, then three lists.
   382 s) recorded.
 
 **Found later** (by the long runs)
-- (none yet)
+- Full run after the push (`appdata/full_after_push3.log`, 2026-10-13/14,
+  resumed twice): 6 failures. Two the rack bug (see #2, fixed in `g7`).
+  `maze_views` S4 curtain from the ridge and `weather` (snow at "the
+  opening" and "over the ghat"): a player left at the maze by earlier
+  tests; the curtain hid for everyone if anyone was near. Fixed in `g7`:
+  the curtain per player, the weather test places both players first.
+  `crash`: the van flipped while still moving and landed on its wheels
+  (test; fixed). maze_views + weather, crash, maze, maze_van, maze_r3,
+  maze_frights: 0 failures (frame rate rerun alone still to do).
+
+---
+
+## Small: the spare is used up (branch `g7`, 2026-10-14, the user's yes)
+
+**What changed** - `Camper`: "Take the spare wheel" only with a spare on
+the mount; without one the mount says "No spare on the back: the flat
+stays until you find another wheel" (the barn maze's chest has one).
+**Could break** - anything that punctures twice without `reset_camper`
+(Naresh's tyre fix, the creature puncture, roadworks after a jump).
+**Tests** - tyre (new check), roadworks, maze, puzzle_resets,
+opening_full, van: 0 failures.

@@ -754,6 +754,9 @@ func t_crash() -> void:
 	log_line("off-road run: max tilt %.0f deg, flipped=%s, speed now %.0f km/h" % [max_tilt, flipped, kmh()])
 	# deliberately roll it: hard turns at speed down a slope
 	c.freeze = false
+	# from a standstill: flipped at 70 km/h it tumbled back onto its wheels (full run, 2026-10-14)
+	c.linear_velocity = Vector3.ZERO
+	c.angular_velocity = Vector3.ZERO
 	c.global_transform = Transform3D(Basis(Vector3.FORWARD, PI) * c.global_transform.basis, c.global_position + Vector3.UP * 2.5)
 	c.snap_visuals()
 	for k in 6:
@@ -2436,9 +2439,13 @@ func t_puzzle_resets() -> void:
 	# done, as after a play: then each row puts it back
 	sta.solve_quietly()
 	sta.slips = 2
-	wm.snagged = false
-	wm.box_open = true
-	wm.map_taken = true
+	# the windmill done (#2's names: the old brake's snagged / box_open /
+	# map_taken stopped this test with a script error, unseen, 2026-10-14)
+	wm.caught = true
+	wm.power = 1.0
+	wm.ladder_down = true
+	wm.chest_open = true
+	wm.napin_taken = true
 	lift.from_dict({"locked": true})
 	maze.from_dict({"chest_open": true, "dust_done": true})
 	relay.from_dict({"dials": [1, 2, 3, 4], "opened": true})
@@ -2643,6 +2650,15 @@ func t_tyre() -> void:
 	check(not c.tyre_flat and not c.spare_available and c.tyre_stage == 0,
 		"lowering the jack restores grip and consumes the spare")
 	await shot("tyre_repaired")
+	# a second flat with the spare used up: nothing to take (the user, 2026-10-14)
+	c.puncture()
+	await face_point(p1(), rear, 2.0, c.global_transform.basis.z)
+	var no_spare := p1().prompt_text
+	await tap(KEY_E)
+	check(no_spare.contains("No spare") and p1().held == null and c.tyre_stage == 0,
+		"a second flat with the spare used: the mount says there's none, E gives nothing ('%s')" % no_spare)
+	c.tyre_flat = false
+	c.refresh_tyre_visuals()
 	boot.dev_menu.van_to(boot.builder.poi["slope_20"], 0.0)
 	await wait(2.5)
 	var slope_start := c.global_position
@@ -4930,6 +4946,10 @@ func t_weather() -> void:
 	for f in ["storm_on", "naresh_home_done", "maze_done", "push"]:
 		st.flags.erase(f)
 	get_tree().call_group("storm_front", "match_story")
+	# both far from the maze (near it, its own dark sky and snow; the full run
+	# left a player there and this read it)
+	await place_player(p1(), b.poi["p2_home"] + Vector3(0, 0.4, 0), 0.0)
+	await place_player(p2(), b.poi["p2_home"] + Vector3(2, 0.4, 0), 0.0)
 	var stages := [[1.0, "the opening", "p2_home", false], [0.95, "the windmill on", "j1", false], [0.85, "Last Fuel", "j2", false],
 		[0.78, "the bridge", "bridge", false], [0.7, "over the ghat", "ghat_pass", false]]
 	var got := []
@@ -5006,11 +5026,15 @@ func t_maze_views() -> void:
 	var weather := get_tree().get_first_node_in_group("weather") as Weather
 	maze.reset()
 	var p := p1()
-	# S4: the snow hanging over the barn, from the ridge lookout
+	# S4: the snow hanging over the barn, from the ridge lookout, with P2 down
+	# by the maze (the full run: P2 left there hid it from P1 too; per player now)
+	await place_player(p2(), b.poi["maze_gate"] + Vector3(0, 0.4, 0), 0.0)
 	await place_player(p, b.poi["lookout_deck"] + Vector3(0, 0.3, 0), 0.0)
 	await look_at_point(p, b.poi["maze"] + Vector3(0, 30, 0))
 	await wait(1.0)
-	check((maze.find_child("SnowCurtain", false, false) as Node3D).visible, "from the ridge lookout, snow hangs over the barn (S4)")
+	var curtain := maze.find_child("SnowCurtain", false, false) as VisualInstance3D
+	check(curtain.visible and (curtain.layers & PlayerRig.cull_mask_for(0)) != 0 and (curtain.layers & PlayerRig.cull_mask_for(1)) == 0,
+		"from the ridge lookout, snow hangs over the barn (S4); not for P2 down at the maze")
 	await shot("mv_curtain_from_ridge")
 	await place_player(p, b.poi["silo_top"] + Vector3(0, 0.3, 0), 0.0)
 	await look_at_point(p, b.poi["maze"])
@@ -8320,8 +8344,18 @@ func t_decoy() -> void:
 		var it := loose as Carryable
 		if it != fv.can_full and it.stowed_in == null and it.holders.is_empty() and it.global_position.distance_to(c.rack_stand()) < 2.5:
 			it.global_position += (it.global_position - c.global_position).normalized() * 6.0 + Vector3.UP
+	# the full can in the right-hand slot, the middle one empty: taken from the
+	# middle of the back, the aim crosses the empty slot's zone first (it
+	# caught the aim once: the full run after #2, 2026-10-08)
+	if fv.can_full.stowed_in != c.storage_slots[2] and c.stowed_item(c.storage_slots[2]) == null:
+		fv.can_full.unstow()
+		fv.can_full.stow(c.storage_slots[2])
+	if c.stowed_item(c.storage_slots[1]) != null:
+		c.stowed_item(c.storage_slots[1]).unstow()
 	await place_player(p, c.rack_stand() + Vector3(0, 0.3, 0), 0.0)
 	await look_at_point(p, fv.can_full.global_position)
+	await physics_frames(2)
+	log_line("aiming at the full can: the ray hits %s, prompt '%s'" % [p.ray.get_collider().name if p.ray.is_colliding() else "nothing", p.prompt_text])
 	await tap(KEY_E)
 	await physics_frames(3)
 	if p.held != fv.can_full:
