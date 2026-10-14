@@ -157,7 +157,10 @@ being built and tested), so this always shows where the work is right now.
       (all puzzles tuned), each fix tested on its own (rule 26)
 - [~] **2026-10-14, new thread: puzzle #4, the lookout boards** (optional,
       Ridge Track; `puzzles/LookoutRelay.gd`): **waiting for your play**
-      (F1 → Puzzles → 4) and what to change. Agreed already: the snowball
+      (F1 → Puzzles → 4) and what to change. **Played; your asks: codes on
+      the landmarks, scroll zoom, hardness 7-8/10. Proposal written
+      (`design/PUZZLE_CHANGES.md` #4, S1-S4, 5 questions); waiting for your
+      answers, nothing built.** Agreed already: the snowball
       goes there (old snow lying on the high ridge). Then: proposal (S1, ...)
       in `design/PUZZLE_CHANGES.md` #4, your answers, build in `../MPG_dev`
       (new branch `g10` from main), tests, walk `puzzle4` recorded, your OK,

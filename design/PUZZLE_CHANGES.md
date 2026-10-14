@@ -1079,3 +1079,114 @@ area again (a cell they've been through before): then up to 3 frights at
 random spots there. Discovering new ground and getting closer to the chest:
 no frights at all.
 
+
+---
+
+## 4. The lookout boards: *proposed* (2026-10-14), nothing built
+
+### What the user asked for (2026-10-14, after playing it)
+
+1. **Put the code pictures on the landmarks themselves** (the windmill,
+   the barn, ...) instead of two boards in the trees: more real.
+2. **Scroll to zoom** the binoculars in and out.
+3. **Harder: 7 or 8 out of 10.** Today it is about 2: read four pictures,
+   turn four dials, no way to get it wrong.
+
+### Things I have to point out (rule 25: repeats)
+
+- **One up a tower telling the one below = the maze's silo guide (#3).**
+  The way round: here **the information goes both ways**. Only the
+  bottom player has the patrol's clue sheet (which landmark, which plate);
+  only the top player can see the plates. Nobody steers anybody's walk.
+- **Binoculars on landmarks is part of the photo (#8).** The way round:
+  #8 is *where you stand* (lining things up); here it is *reading and
+  working out*. No lining up here.
+- **The consequence must not be slow motion again** (the sludge, #1).
+
+### Measured from the deck (Pine Ridge lookout)
+
+| Landmark | Distance | Readable plate (1.6 m) from |
+|---|---|---|
+| Windmill (J1) | ~440 m | 4x |
+| Red barn + silo (the snow curtain) | ~490 m | 4x, when the snow thins |
+| Last Fuel sign (J2) | ~510 m | 4x |
+| Water works' water tower | ~1100 m | ~8x and a steady hand |
+
+(Our measured rule, DESIGN 6.1: zoomed, you read things of distance /
+(160 x zoom).)
+
+### My proposal: the Ridge Patrol's code
+
+**The binoculars:** hold RMB / LT as now; **mouse wheel zooms 2x-12x**
+(pad: RB / LB while LT is held). Above 6x the view **sways with your
+breathing**: crouch or lean on the deck rail (stand still at the rail)
+and it steadies. The far plate needs it.
+
+**The plates:** the Ridge Patrol painted picture plates on the landmarks
+round the valley, **3 on each** (a row: left, middle, right), white on
+dark like the dials. The windmill's tail vane, the barn's gable, the
+silo top, the Last Fuel sign, the water tower's tank. 15 plates, only 4
+are the code.
+
+**The clue sheet (the bottom player's job):** chained to the supply box,
+in the patrol's words, it never names a place:
+- "Dial 1: where the wind is caught. The plate nearest the road."
+- "Dial 2: the red doors. The one the snow hides."
+- "Dial 3: last of the fuel. Count from the sea."
+- "Dial 4: the water that stands up. Not the one you'd guess." (the plate
+  whose shape is on no other landmark)
+
+So the bottom player decodes the riddle and says what to look for; the
+top player finds it, reads the row and says it back; the bottom player
+picks the right plate from the rule. Both have to think, all the time.
+
+**Mistakes cost (real consequences):** a wrong code and the box's
+**spring trips**: the dials spin to random, a puff of old snow bursts
+from the lid into the dialer's face (white view, 4 s), and **the sheet
+flips to the next page: new rules, the plates that count change.**
+Guessing gets you nowhere; three pages, then it loops.
+
+**The snow:** the barn's plate is behind the maze's snow curtain (S4 of
+#3); it shows only when the snow thins, about 4 s in every 20.
+
+**The snowball (agreed for #4, fun mechanic #4):** old snow lies in the
+shade of the ridge round the lookout. Crouch + E at a patch makes a
+snowball; G throws it (it stays with you from here: partner, Naresh, the
+van, a creature's lure). **In the puzzle:** the Last Fuel sign's rule
+needs the **patrol's own sign on the lookout** (20 m up the slope from
+the box), caked in snow; the bottom player knocks the snow off with
+snowballs to read its arrow ("from the sea" / "from the road" changes
+per page).
+
+**The reward:** the full fuel can as now, plus the patrol's stamp on the
+map (Last Fuel and the water works marked).
+
+**How hard (my guess):** 7 / 10: about 8-12 minutes for two people
+talking, against 2 now. To make it 8: four pages and no loop, or the
+dials reset whenever a wrong one is turned (Q3).
+
+### My extra ideas (suggestions: yes or no each)
+
+- **S1. Naresh's note at the box:** "My friend read the far ones out for
+  me. I turned the dials." (Days ahead of you, alone, with nobody who
+  could have read them: the twist, quietly.)
+- **S2. A crow on the windmill's vane** sits in front of a plate. It
+  flies off only at the van's horn (Q), so one of you runs down to the
+  van and back: the van's horn as a tool, and a scramble.
+- **S3. The deck's old range card:** a drawn panorama on the rail with
+  the landmarks' names, half torn: helps the spotter find "the water
+  that stands up" by its shape.
+- **S4. The boards stay** as the patrol's practice boards near the deck
+  (readable at 2x): a warm-up that teaches the zoom and the plates.
+
+### Questions for you
+
+1. **Codes on the landmarks**, 3 plates each, 4 count (as above)? Or one
+   plate each and the riddles alone make it hard?
+2. **Breathing sway above 6x** (steady by crouching / the rail): yes?
+3. **Wrong code:** new page of rules + snow in the face (as above)? Or
+   lighter (just the snow and the dials spun)? Pages loop after 3, or 4
+   pages and no loop (harder)?
+4. **The snowball's job** here: knocking the snow off the patrol's sign
+   (as above)? And G to throw is fine (it's the throw key already)?
+5. S1-S4: yes / no each.
