@@ -629,6 +629,17 @@ func _scan() -> void:
 		return
 	var target: Node = null
 	var text := ""
+	# an empty rack slot ("see_through") doesn't catch the aim of empty hands:
+	# look past it (the can in the right-hand slot, aimed at from the middle of
+	# the van's back, sat behind the empty middle slot's zone)
+	var skipped: Array[CollisionObject3D] = []
+	while ray.is_colliding() and skipped.size() < 3:
+		var sc := ray.get_collider() as CollisionObject3D
+		if sc == null or not sc.get_meta("see_through", false) or (sc.get_meta("blocked_fn") as Callable).call() == "":
+			break
+		skipped.append(sc)
+		ray.add_exception(sc)
+		ray.force_raycast_update()
 	if ray.is_colliding():
 		var col := ray.get_collider()
 		var node := _find_interactable(col)
@@ -657,6 +668,8 @@ func _scan() -> void:
 		text = ""
 	elif target != null:
 		snatch = null
+	for sc in skipped:
+		ray.remove_exception(sc)
 	if text == "" and snatch != null:
 		text = "[%s]  Take the map off P%d" % [dev.glyph("interact"), snatch.index + 1]
 	if text == "" and _near_upset_van() != null:

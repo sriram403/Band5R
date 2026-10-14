@@ -8320,8 +8320,18 @@ func t_decoy() -> void:
 		var it := loose as Carryable
 		if it != fv.can_full and it.stowed_in == null and it.holders.is_empty() and it.global_position.distance_to(c.rack_stand()) < 2.5:
 			it.global_position += (it.global_position - c.global_position).normalized() * 6.0 + Vector3.UP
+	# the full can in the right-hand slot, the middle one empty: taken from the
+	# middle of the back, the aim crosses the empty slot's zone first (it
+	# caught the aim once: the full run after #2, 2026-10-08)
+	if fv.can_full.stowed_in != c.storage_slots[2] and c.stowed_item(c.storage_slots[2]) == null:
+		fv.can_full.unstow()
+		fv.can_full.stow(c.storage_slots[2])
+	if c.stowed_item(c.storage_slots[1]) != null:
+		c.stowed_item(c.storage_slots[1]).unstow()
 	await place_player(p, c.rack_stand() + Vector3(0, 0.3, 0), 0.0)
 	await look_at_point(p, fv.can_full.global_position)
+	await physics_frames(2)
+	log_line("aiming at the full can: the ray hits %s, prompt '%s'" % [p.ray.get_collider().name if p.ray.is_colliding() else "nothing", p.prompt_text])
 	await tap(KEY_E)
 	await physics_frames(3)
 	if p.held != fv.can_full:

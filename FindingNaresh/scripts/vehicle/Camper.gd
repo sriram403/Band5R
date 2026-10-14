@@ -623,6 +623,7 @@ func _build_service() -> void:
 			return "Take " + it.label() if it != null else "")
 		area.set_meta("blocked_fn", func() -> String:
 			return "" if stowed_item(slot) != null else "Rack slot (%s)" % ("fuel cans" if labels[k] == "can" else "any item"))
+		area.set_meta("see_through", true)   # empty, it lets empty hands aim past it
 		area.set_meta("held_prompt_fn", func(_p, item) -> String:
 			if stowed_item(slot) != null:
 				return ""
