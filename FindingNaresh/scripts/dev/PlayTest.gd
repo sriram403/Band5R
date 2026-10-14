@@ -53,6 +53,13 @@ func _ready() -> void:
 	if not OS.get_cmdline_user_args().has("--show"):
 		if not _recording():
 			AudioServer.set_bus_mute(0, true)
+		# The user's real mouse and keyboard never reach a test (the user,
+		# 2026-10-14: alt-tab landed in the test window and the mouse got
+		# stuck there). It can't take focus (no keys, out of alt-tab) and the
+		# mouse passes through it to whatever is behind. The tests' own input
+		# (Input.parse_input_event) doesn't need either. --show for a normal one.
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_MOUSE_PASSTHROUGH, true)
 		_send_window_behind()
 	_run.call_deferred()
 
