@@ -754,6 +754,9 @@ func t_crash() -> void:
 	log_line("off-road run: max tilt %.0f deg, flipped=%s, speed now %.0f km/h" % [max_tilt, flipped, kmh()])
 	# deliberately roll it: hard turns at speed down a slope
 	c.freeze = false
+	# from a standstill: flipped at 70 km/h it tumbled back onto its wheels (full run, 2026-10-14)
+	c.linear_velocity = Vector3.ZERO
+	c.angular_velocity = Vector3.ZERO
 	c.global_transform = Transform3D(Basis(Vector3.FORWARD, PI) * c.global_transform.basis, c.global_position + Vector3.UP * 2.5)
 	c.snap_visuals()
 	for k in 6:
@@ -4930,6 +4933,10 @@ func t_weather() -> void:
 	for f in ["storm_on", "naresh_home_done", "maze_done", "push"]:
 		st.flags.erase(f)
 	get_tree().call_group("storm_front", "match_story")
+	# both far from the maze (near it, its own dark sky and snow; the full run
+	# left a player there and this read it)
+	await place_player(p1(), b.poi["p2_home"] + Vector3(0, 0.4, 0), 0.0)
+	await place_player(p2(), b.poi["p2_home"] + Vector3(2, 0.4, 0), 0.0)
 	var stages := [[1.0, "the opening", "p2_home", false], [0.95, "the windmill on", "j1", false], [0.85, "Last Fuel", "j2", false],
 		[0.78, "the bridge", "bridge", false], [0.7, "over the ghat", "ghat_pass", false]]
 	var got := []
@@ -5006,11 +5013,15 @@ func t_maze_views() -> void:
 	var weather := get_tree().get_first_node_in_group("weather") as Weather
 	maze.reset()
 	var p := p1()
-	# S4: the snow hanging over the barn, from the ridge lookout
+	# S4: the snow hanging over the barn, from the ridge lookout, with P2 down
+	# by the maze (the full run: P2 left there hid it from P1 too; per player now)
+	await place_player(p2(), b.poi["maze_gate"] + Vector3(0, 0.4, 0), 0.0)
 	await place_player(p, b.poi["lookout_deck"] + Vector3(0, 0.3, 0), 0.0)
 	await look_at_point(p, b.poi["maze"] + Vector3(0, 30, 0))
 	await wait(1.0)
-	check((maze.find_child("SnowCurtain", false, false) as Node3D).visible, "from the ridge lookout, snow hangs over the barn (S4)")
+	var curtain := maze.find_child("SnowCurtain", false, false) as VisualInstance3D
+	check(curtain.visible and (curtain.layers & PlayerRig.cull_mask_for(0)) != 0 and (curtain.layers & PlayerRig.cull_mask_for(1)) == 0,
+		"from the ridge lookout, snow hangs over the barn (S4); not for P2 down at the maze")
 	await shot("mv_curtain_from_ridge")
 	await place_player(p, b.poi["silo_top"] + Vector3(0, 0.3, 0), 0.0)
 	await look_at_point(p, b.poi["maze"])

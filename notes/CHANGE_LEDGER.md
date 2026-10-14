@@ -197,4 +197,12 @@ Per entry: the puzzle, its branch and merge, then three lists.
   382 s) recorded.
 
 **Found later** (by the long runs)
-- (none yet)
+- Full run after the push (`appdata/full_after_push3.log`, 2026-10-13/14,
+  resumed twice): 6 failures. Two the rack bug (see #2, fixed in `g7`).
+  `maze_views` S4 curtain from the ridge and `weather` (snow at "the
+  opening" and "over the ghat"): a player left at the maze by earlier
+  tests; the curtain hid for everyone if anyone was near. Fixed in `g7`:
+  the curtain per player, the weather test places both players first.
+  `crash`: the van flipped while still moving and landed on its wheels
+  (test; fixed). maze_views + weather, crash, maze, maze_van, maze_r3,
+  maze_frights: 0 failures (frame rate rerun alone still to do).
