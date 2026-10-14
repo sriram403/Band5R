@@ -228,3 +228,12 @@ opening_full, van: 0 failures.
 The last segment broke off again: over the 3600 s limit (fixed: `routes`
 and `way_out` in their own segment, branch `g8`).
 
+## Full run after the split (`appdata/full_g8.log`, 2026-10-14)
+
+All 22 segments finished (the split works; nothing broke off). 1 failure:
+save "loading restores the can on the rack" (a can left in slot 1 by an
+earlier test; test fixed, branch `g9`). Rerunning the return's tests then
+found a game bug: a random act made Naresh let go of the mast's dish 2
+(no calm zones in the world). Fixed in `g9`: no act while he holds or
+works something he was told to; `naresh` checks it.
+

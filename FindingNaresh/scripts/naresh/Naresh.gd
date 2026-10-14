@@ -1208,7 +1208,10 @@ func _random_acts(delta: float) -> void:
 	act_t -= delta
 	if act_t > 0.0:
 		return
-	if _in_calm_zone():
+	# never in a timed puzzle step: a calm zone, or a crank / lever / door
+	# he was told to hold or work (one let go of the mast's dish 2 mid-turn,
+	# 2026-10-14; the world has no calm zones)
+	if _in_calm_zone() or (state == State.JOB and job in ["hold", "work"]):
 		act_t = RETRY_ACT
 		return
 	var pick := _choose_act()

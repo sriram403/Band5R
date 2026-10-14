@@ -1881,6 +1881,13 @@ func t_save() -> void:
 	c.temp = 91.0
 	c.coolant_leak = false
 	var can := await reset_can("station_can_b", 12.0)
+	# the slot empty first: a can left there by an earlier test was the one
+	# read back after loading (the full run, 2026-10-14)
+	var left: Carryable = c.stowed_item(c.storage_slots[1])
+	if left != null:
+		log_line("rack slot 1 held %s from an earlier test: moved off" % left.name)
+		left.unstow()
+		left.global_position += Vector3(0, 0, 6).rotated(Vector3.UP, c.global_rotation.y) + Vector3.UP
 	can.stow(c.storage_slots[1])
 	ms.add_stamp("napin", Vector2(100, -50))
 	st.index = 6
@@ -7681,6 +7688,20 @@ func t_naresh() -> void:
 	n.act_t = 0.5
 	var came := await until(func() -> bool: return n.acts_log.size() > before, 30.0)
 	check(came, "out of the zone, the acts carry on")
+	# nor while he holds something he was told to (the mast's dish, 2026-10-14)
+	await until(func() -> bool: return n.state != Naresh.State.ACT and n._tele_t <= 0.0, 40.0)
+	n.acts_on = false
+	before = n.acts_log.size()
+	n.state = Naresh.State.JOB
+	n.job = "hold"
+	n.act_t = 0.5
+	n.acts_on = true
+	n._random_acts(1.0)
+	check(n.acts_log.size() == before and n._tele_t <= 0.0, "no random act while he holds something he was told to")
+	n.acts_on = false
+	n.job = ""
+	n.state = Naresh.State.FOLLOW
+	n.acts_on = true
 	await until(func() -> bool: return n.state != Naresh.State.ACT and n._tele_t <= 0.0, 40.0)
 	n.command(p, "wait")
 	n.act_gap = Naresh.ACT_GAP
