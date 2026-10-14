@@ -1190,3 +1190,15 @@ dials reset whenever a wrong one is turned (Q3).
 4. **The snowball's job** here: knocking the snow off the patrol's sign
    (as above)? And G to throw is fine (it's the throw key already)?
 5. S1-S4: yes / no each.
+
+### Your answers (2026-10-14), round 1
+
+- **Binoculars realistic, not 12x.** Changed: the wheel zooms 2x-8x
+  (real binoculars are 7-10x); the water tower's plate made bigger so 8x
+  reads it.
+- 1. **One plate per landmark; the riddles alone make it hard.**
+- 2. Sway: yes.
+- 3. and 4. Not clear (too much text): asked again in plain words.
+- 5. S1-S4: yes.
+- **New rule: always simple to read** (short lines, plain words, A / B
+  questions).
