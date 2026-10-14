@@ -148,7 +148,7 @@ being built and tested), so this always shows where the work is right now.
       (rack slot aim, the maze's curtain per player, weather / crash /
       puzzle_resets tests); frame rate alone 143-144 fps. Your yes: the
       spare is used up (no spare = no "Take the spare"; tyre test checks).
-      `g7` merged into main, **not pushed** (waiting for your OK)
+      `g7` merged, **pushed** on your OK (main `a64379e`); full run in the background (`appdata/full_after_push_g7.log`)
 - [ ] **Next (new thread): puzzle #4, the lookout boards** (optional,
       Ridge Track): you play it (F1 → Puzzles → 4) and say what to change.
       Agreed already: the snowball goes there (old snow on the high ridge)

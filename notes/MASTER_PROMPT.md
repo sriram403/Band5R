@@ -17,7 +17,7 @@ is established fact unless it says otherwise.
 tested, so a new session (any model) can resume if the previous one ran out.
 Last updated: 2026-10-14. Milestone G, the puzzle talk: #1-#3 done and
 pushed; the full run after #3 read and its 6 failures fixed (branch `g7`,
-merged into main locally, **pushed only on the user's OK**); the spare
+merged and **pushed 2026-10-14, main `a64379e`**; a full run in the background, `appdata/full_after_push_g7.log`: read it first in the new thread); the spare
 tyre is now used up. **Next: puzzle #4, the lookout boards, in a new
 thread** (the user starts it by sending this file, then plays F1 →
 Puzzles → 4 and says what to change).
