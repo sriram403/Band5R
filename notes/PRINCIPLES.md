@@ -149,6 +149,14 @@ v5).
 - When a long run fails, read the ledger first: it usually names the
   cause (a gate across the road, undergrowth in the woods).
 
+## 12. Bug fixes go out at once (the user, 2026-10-14)
+
+- A solved bug, with its tests passing, is pushed straight away (merge,
+  push); no asking, no holding it for the next feature. New features and
+  puzzle changes still wait for the user's look.
+- Why: every new session must start from a game that is clean as far as
+  we know, not from a pile of fixes waiting on a decision.
+
 ## Sources
 
 - Walter Isaacson, *Elon Musk* (2023): "the algorithm"; summaries at

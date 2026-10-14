@@ -51,6 +51,12 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   background in `MPG` while the next part is built in `../MPG_dev`; write
   what they find under its ledger entry and fix it next round. One last
   full run at the end of the puzzle tuning, checked against the ledger.
+- **Bug fixes are pushed as they are solved (the user, 2026-10-14).** A
+  fix to a bug (from a long run, a test, the user's report) is pushed as
+  soon as it is solved and its tests pass: commit, merge into `main`,
+  push; no asking, no holding it for the next feature. New features and
+  puzzle changes still wait for the user's look (rule 2). Every new
+  session starts from a game that is clean as far as we know.
 
 ## Two copies of the project
 

@@ -418,6 +418,13 @@ they/them.
     built in `../MPG_dev`; findings go under the ledger entry and are fixed
     next round. If a thread ends while one runs, the hand-over says so and
     where its log is. One last full run at the end of the puzzle tuning.
+27. **Bug fixes are pushed as they are solved (the user, 2026-10-14).**
+    A fix to a bug (found by a long run, a test or the user) is pushed as
+    soon as it is solved and its tests pass: commit, merge into `main`,
+    push (as sriram403), without asking and without holding it for the
+    next feature. This is the exception to rule 2, which still holds for
+    new features and puzzle changes. When a new session starts, the game
+    up to that point is clean as far as we know.
 
 ---
 
