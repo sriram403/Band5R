@@ -155,20 +155,14 @@ being built and tested), so this always shows where the work is right now.
       mast's dish), the save test's slot. main `e2c2bf0`. The next full run
       stopped by you: from now on a full run only at a milestone checkpoint
       (all puzzles tuned), each fix tested on its own (rule 26)
-- [ ] **Next (new thread): puzzle #4, the lookout boards** (optional,
-      Ridge Track): you play it (F1 → Puzzles → 4) and say what to change.
-      Agreed already: the snowball goes there (old snow on the high ridge)
-    - [ ] the walkway bigger, the chest and note easy to see and reach,
-          a few lived-in props
-    - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being
-          butted: stars round your view), S8 the thunk on walls / trees
-    - [ ] legs: red light while sliding, the jump back, sparks, marks,
-          the bolt plate, green light; S7 the screech from its side
-    - [ ] the switch hut, the cable, the poles and wire, the spark to the
-          gate and the lamps; S6 the power dial
-    - [ ] the gate: a fence on the ground, 60 m each side, thickets at
-          the ends; a test that tries to drive round it
-    - [ ] tests, screenshots from where a player stands, record, send
+- [~] **2026-10-14, new thread: puzzle #4, the lookout boards** (optional,
+      Ridge Track; `puzzles/LookoutRelay.gd`): **waiting for your play**
+      (F1 → Puzzles → 4) and what to change. Agreed already: the snowball
+      goes there (old snow lying on the high ridge). Then: proposal (S1, ...)
+      in `design/PUZZLE_CHANGES.md` #4, your answers, build in `../MPG_dev`
+      (new branch `g10` from main), tests, walk `puzzle4` recorded, your OK,
+      push. (The stale windmill round-2 sub-items that sat here were all
+      done in `g5`.)
 - [x] **2026-10-06: puzzle #2, the windmill: your changes heard, my
   proposal written** (`design/PUZZLE_CHANGES.md` #2: a 24 m windmill with
   four legs and one neck, the J1 power gate, the lever held to spin it up,
