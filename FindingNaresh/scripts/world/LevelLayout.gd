@@ -237,12 +237,36 @@ func _in_clearing(x: float, z: float) -> bool:
 	for cl in CLEARINGS:
 		if (Vector2(x, z) - (cl[0] as Vector2)).length() < float(cl[1]):
 			return true
+	return in_view_lane(x, z)
+
+
+## #4: the patrol's view lanes, cut through the trees on the ridge from the
+## lookout deck towards the practice boards and the places with pictures
+## (real fire lookouts keep lanes like these clear). Only near the deck,
+## where the trees on the ridge would hide them; stumps are left.
+const VIEW_LANE_LEN := 260.0
+const VIEW_LANE_HALF := 5.0
+static func in_view_lane(x: float, z: float) -> bool:
 	var p := Vector2(x, z)
 	var deck := relay_deck()
+	if p.distance_to(deck) > VIEW_LANE_LEN + 10.0:
+		return false
 	for bp in relay_boards():
 		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, deck, bp)) < 7.0:
 			return true
+	for t in view_targets():
+		var end: Vector2 = deck + (t - deck).normalized() * VIEW_LANE_LEN
+		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, deck, end)) < VIEW_LANE_HALF:
+			return true
 	return false
+
+
+## Where the pictures are, near enough (the windmill, the switch house by J1,
+## the barn and its silo, Last Fuel, the water works' tower).
+static func view_targets() -> Array[Vector2]:
+	var silo := Vector2(BARN.x, BARN.z) + Vector2(11.0, -2.0).rotated(-deg_to_rad(28.0))
+	return [Vector2(WINDMILL.x, WINDMILL.z), J1, Vector2(BARN.x, BARN.z), silo,
+		Vector2(GAS_STATION.x, GAS_STATION.z), Vector2(FACILITY.x, FACILITY.z)]
 
 
 ## W4: the lookout deck (flat) and where its two code boards stand, out

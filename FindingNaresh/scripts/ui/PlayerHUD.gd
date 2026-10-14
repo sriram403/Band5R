@@ -334,6 +334,8 @@ func _process(delta: float) -> void:
 	if _sludge.visible:
 		(_sludge.material as ShaderMaterial).set_shader_parameter("amount", mess)
 	binoculars.amount = clampf(player.zoom - 1.0, 0.0, 1.0)
+	if binoculars.visible and player.dev != null:
+		binoculars.show_level(player.zoom, player.dev.glyph("zoom_in"), player.dev.glyph("zoom_out"))
 	box_view.amount = move_toward(box_view.amount, 1.0 if player.in_box else 0.0, get_process_delta_time() * 4.0)
 	var seated := player.seat != null
 	_update_hint(delta, seated)

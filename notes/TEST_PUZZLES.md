@@ -41,6 +41,8 @@ in F1 → Puzzles (the first row).
 | Take the map off your partner | E (look at them) | X |
 | Swing the nav (in the van) | N | A |
 | Hint | hold H | R3 |
+| Zoom (binoculars up) | mouse wheel | RB / LB |
+| Make a snowball (at old snow) | E | X |
 
 ---
 
@@ -275,22 +277,45 @@ after the maze the world slowly turns white (a dusting by Last Fuel, white
 fields by the bridge; the road stays dark); over the ghat it stops and
 melts towards the coast and the storm. Clear sun only on the drive home.
 
-### 4. The lookout boards (optional, Ridge Track)
+### 4. The lookout boards (optional, Ridge Track; reworked 2026-10-14)
 
 **Getting there:** F1 → Puzzles → **4. The lookout boards**.
 
-**The idea:** two boards across the valley show pictures you can only read
-through binoculars. The box at the bottom has picture dials.
+**The idea:** the Ridge Patrol's box has four picture dials. The code is
+painted on landmarks out in the valley. One of you reads them from the
+deck with the binoculars. The other reads the patrol's riddles at the box
+and turns the dials.
 
-1. **Top player:** walk up the ramp and take the binoculars on the deck.
-   Hold RMB / LT and look across the valley for the boards "1" and "2".
-   - **You should see:** two pictures on each board (circle, square,
-     triangle, cross, ring or diamond). By eye they are just pale dots.
-2. **Bottom player:** at the green box at the foot of the ramp there are
-   four dials, numbered 1-4 from left to right. E / X turns one. Board 1
-   sets dials 1 and 2; board 2 sets dials 3 and 4.
-   - **You should see:** a CLACK, the box opens, and there's a full fuel
-     can inside.
+1. **Top player:** walk up the ramp. Take the binoculars off the bench.
+   Hold RMB / LT to look. Scroll the mouse wheel (pad: RB / LB) to zoom,
+   from 2x to 8x.
+   - **You should see:** the zoom under the eyepieces ("4x"). At 6x and
+     above the view sways. Crouch, or stand at the rail, and it steadies.
+2. **Top player:** look round the valley. Find the pictures: a dark
+   square with a white shape, on the windmill, the switch house by it,
+   the red barn, the silo, the Last Fuel sign and the far water tower.
+   - **You should see:** the barn and silo sit in a grey snow shower. It
+     thins every 20 seconds or so; wait for it. The water tower is far:
+     8x and a steady view.
+   - The table on the deck points to the places. A piece is broken off.
+3. **Bottom player:** at the green box, read the sheet on its left end
+   (E / X). Read Naresh's note on the back.
+   - **You should see:** four riddles. The fourth is "on the patrol sign,
+     up the slope".
+4. **Bottom player:** the patrol sign is covered in old snow, too high to
+   reach. Make a snowball from the old snow under the deck (E / X). Throw
+   it at the sign (G / LMB, pad RB). Each hit knocks a lump off.
+   - **You should see:** the riddle appears when the last lump falls.
+5. **Both:** work out the riddles together. Turn the dials (E / X), then
+   pull the handle on the right-hand end.
+   - **You should see:** wrong, a clunk and the dials spin round on their
+     own (start again). Right, the lid springs up: a full can of fuel.
+6. **For fun:** throw snowballs at each other, at Naresh, at the van.
+   - **You should see:** "SPLAT!" on your partner; a white splat on the
+     van that melts away. A snowball melts in your hands after 4 minutes.
+
+**Stuck? The answer:** 1 the windmill, 2 the silo, 3 the picture found
+twice (on the barn and on Last Fuel), 4 the water tower.
 
 ### 5. The lift bridge
 

@@ -237,3 +237,65 @@ found a game bug: a random act made Naresh let go of the mast's dish 2
 (no calm zones in the world). Fixed in `g9`: no act while he holds or
 works something he was told to; `naresh` checks it.
 
+---
+
+## #4 The lookout boards (branch `g10`, 2026-10-14; not merged yet)
+
+**What changed**
+- `puzzles/LookoutRelay.gd` rewritten. Six pictures (boards or paint)
+  on the landmarks, each turned to face the deck: the windmill's neck
+  (strapped, 14 m up, child of `WindmillPower.tower`), the silo (a
+  `Decal`), the barn wall, Last Fuel (on a pole extension above the sign),
+  the water tower's tank (a `Decal`, 4.2 m), the switch house. Mounted by
+  `mount_plates(builder)`, called at the end of `LevelBuilder._landmarks`.
+  The code = windmill, silo, the shape on two places (barn = Last Fuel),
+  water tower. The patrol's sheet (riddles) on the box; the handle
+  ("Pull the handle") opens it only on the right code; a wrong try spins
+  the dials to new wrong places (`try_open`, `_spinning`). The patrol sign
+  up the slope (riddle 4) under 4 lumps of old snow (`snow_left`, saved),
+  knocked off by snowballs (`snowball_hit`, group `snow_target`). Snow
+  patches under the deck. The practice boards (the old two). A direction
+  table on the deck (a piece broken out at the water works). Rail rests
+  (group `binocular_rest`). Naresh's note on the box's back (`relay_box`).
+  `start_dials`; `reset()` puts the snow back.
+- `items/Snowball.gd` (new): fun mechanic no. 4. Thrown at what you look
+  at (from the hand to the crosshair's spot, lobbed); bursts on hit: a
+  partner (jolt, "SPLAT"), Naresh (complains), the van (a white splat that
+  melts in a minute), snow targets; heard by creatures like any thrown
+  thing; melts after 4 min held.
+- **Binoculars** (`PlayerRig`): `zoom_level` 2x-8x (wheel; pad RB / LB with
+  LT held), kept between raises, shown under the eyepieces
+  (`BinocularView.show_level`); sway above 5x (`_update_sway`, camera only),
+  less crouched or `resting()` at a rail (or seated). No head-butt with
+  them up; the passenger's LB doesn't swap seats while zoomed (`Camper`).
+  `InputDevice`: actions `zoom_in` / `zoom_out`.
+- **World-wide:** view lanes from the deck (`LevelLayout.in_view_lane`,
+  `view_targets`; 260 m long, 5 m half-width): no trees there, stumps
+  instead (`LevelScatter`).
+- **The barn's snow shower** (`BarnMaze` curtain): soft edges (no glass
+  tube), grey, a low cloud on top (`ShowerCloud`), wider (88-105 m: over the
+  barn and silo), thins ~4 s in every 20 (`curtain_thin()`).
+- DevMenu row text; PlayTest: `relay`, `relay_kb` rewritten; new
+  `relay_views`, `bino_zoom`, `snowball`; `puzzle_resets` checks the snow.
+
+**What it could break (our guess)**
+- Anything that reads the relay's old shape: `code` order, `dials` reset
+  to 0, the box opening as soon as the dials match (now the handle):
+  `save` (loads `snow_left` too), `home` / tower lights (`opened`).
+- The binoculars test in its gym (default 4x kept), tagging through them
+  (aim unchanged; sway is on the camera only), the pad's RB (throw /
+  head-butt) and LB (swap seats) while zoomed.
+- Tree placement near the ridge (fewer trees; stumps): `tour`,
+  `overview`, the ridge track's undergrowth (van-only blockers are also
+  cut in the lanes).
+- The maze's curtain (`maze_views`) now bigger and fading at its edges.
+- Thrown items: only the snowball aims from the eye; others unchanged.
+
+**Tests that cover it**
+- `relay` (19 checks), `relay_kb`, `relay_views` (6 plates + the snow,
+  screenshots), `bino_zoom` (zoom, rest, crouch, pad), `snowball`,
+  `puzzle_resets`, `binoculars` (gym), `maze_views`, `save`, smoke.
+
+**Found later**
+- (nothing yet)
+
