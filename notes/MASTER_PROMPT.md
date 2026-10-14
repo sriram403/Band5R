@@ -15,10 +15,12 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-10-05 (late), Milestone G started: the puzzle talk.
-Puzzle #1 (the water works) reworked in two rounds with the user, approved
-from its recorded video ("great, push it") and pushed. Next: puzzle #2,
-the windmill, in a new thread (the user starts it by sending this file).
+Last updated: 2026-10-14. Milestone G, the puzzle talk: #1-#3 done and
+pushed; the full run after #3 read and its 6 failures fixed (branch `g7`,
+merged into main locally, **pushed only on the user's OK**); the spare
+tyre is now used up. **Next: puzzle #4, the lookout boards, in a new
+thread** (the user starts it by sending this file, then plays F1 →
+Puzzles → 4 and says what to change).
 Milestones A-F are done, approved by the user and pushed. One part at a
 time, their check before each push (rule 2), by a recorded walkthrough
 first (rule 22); every change proposed first (rule 23).
@@ -50,6 +52,16 @@ they/them.
 
 ## 2. Status right now (2026-09-29; latest at the top, 2026-10-07)
 
+- **2026-10-14: the full run after #3 read and fixed; the spare used up.**
+  The run (`appdata/full_after_push3.log`, resumed twice; 108 scenarios)
+  had 6 failures and one script error, all fixed in `../MPG_dev` branch
+  `g7` (`notes/CHANGE_LEDGER.md` #2 / #3 "Found later"): an empty rack slot
+  caught the aim of a can behind it (game); the maze's snow curtain hid for
+  both players if one was near (game, now per player); the weather and
+  crash tests (a player left at the maze; a van flipped at speed); and
+  `puzzle_resets` stopped by the old windmill's names (its 16 checks had
+  not run). The user's answer: the spare is used up (no "Take the spare"
+  without one; the mount says so). Frame rate alone: 143-144 fps.
 - **2026-10-13: puzzle #3, the barn maze, approved ("all good") and pushed**
   (main `0f2f077`) after three rounds: a 63 m hedge maze behind the barn,
   the silo as the guide's tower, flags (two; hidden gaps snag one; marker
@@ -638,6 +650,14 @@ filled"): still to look at. **Next: #4, the lookout boards** (the user
 plays F1 → Puzzles → 4); the snowball (agreed for #4: old snow on the high
 ridge). Open question for the user: the van has never run out of spares
 (the "Take the spare" prompt ignores `spare_available`).
+
+**Update (2026-10-14):** the full run after #3 read; its failures fixed
+in `g7` (section 2), the spare used up (the user's yes). `g7` merged into
+main; push it when the user says so (or with #4). **This is the hand-over
+to a new thread for #4, the lookout boards:** the user plays F1 → Puzzles
+→ 4 and says what to change; then propose (rule 23, with the snowball:
+old snow on the high ridge), build in `../MPG_dev` (a new branch from
+main, `g8`), record, push after their OK, full run in the background.
 
 **Before (2026-10-05):** Milestones A-F approved and pushed (main
 `c1235d8`). F was approved from recorded walkthroughs: I played every part

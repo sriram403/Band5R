@@ -2650,6 +2650,15 @@ func t_tyre() -> void:
 	check(not c.tyre_flat and not c.spare_available and c.tyre_stage == 0,
 		"lowering the jack restores grip and consumes the spare")
 	await shot("tyre_repaired")
+	# a second flat with the spare used up: nothing to take (the user, 2026-10-14)
+	c.puncture()
+	await face_point(p1(), rear, 2.0, c.global_transform.basis.z)
+	var no_spare := p1().prompt_text
+	await tap(KEY_E)
+	check(no_spare.contains("No spare") and p1().held == null and c.tyre_stage == 0,
+		"a second flat with the spare used: the mount says there's none, E gives nothing ('%s')" % no_spare)
+	c.tyre_flat = false
+	c.refresh_tyre_visuals()
 	boot.dev_menu.van_to(boot.builder.poi["slope_20"], 0.0)
 	await wait(2.5)
 	var slope_start := c.global_position

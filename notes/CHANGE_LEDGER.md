@@ -206,3 +206,15 @@ Per entry: the puzzle, its branch and merge, then three lists.
   `crash`: the van flipped while still moving and landed on its wheels
   (test; fixed). maze_views + weather, crash, maze, maze_van, maze_r3,
   maze_frights: 0 failures (frame rate rerun alone still to do).
+
+---
+
+## Small: the spare is used up (branch `g7`, 2026-10-14, the user's yes)
+
+**What changed** - `Camper`: "Take the spare wheel" only with a spare on
+the mount; without one the mount says "No spare on the back: the flat
+stays until you find another wheel" (the barn maze's chest has one).
+**Could break** - anything that punctures twice without `reset_camper`
+(Naresh's tyre fix, the creature puncture, roadworks after a jump).
+**Tests** - tyre (new check), roadworks, maze, puzzle_resets,
+opening_full, van: 0 failures.

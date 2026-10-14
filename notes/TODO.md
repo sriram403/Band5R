@@ -143,11 +143,15 @@ being built and tested), so this always shows where the work is right now.
                   running at once
             - [~] the full run in the background (`appdata/full_after_push3.log`);
                   findings under #2 / #3 in `notes/CHANGE_LEDGER.md`
-- [ ] **Next: puzzle #4, the lookout boards** (optional, Ridge Track): you
-      play it (F1 → Puzzles → 4) and say what to change. Agreed already: the
-      snowball goes there (old snow lying on the high ridge)
-            Still open: frame rate alone, the full run's resume (not
-            started: you asked first)
+- [x] **2026-10-14: the full run after #3** (resumed twice, 108 scenarios):
+      6 failures + 1 script error, all fixed in `../MPG_dev` branch `g7`
+      (rack slot aim, the maze's curtain per player, weather / crash /
+      puzzle_resets tests); frame rate alone 143-144 fps. Your yes: the
+      spare is used up (no spare = no "Take the spare"; tyre test checks).
+      `g7` merged into main, **not pushed** (waiting for your OK)
+- [ ] **Next (new thread): puzzle #4, the lookout boards** (optional,
+      Ridge Track): you play it (F1 → Puzzles → 4) and say what to change.
+      Agreed already: the snowball goes there (old snow on the high ridge)
     - [ ] the walkway bigger, the chest and note easy to see and reach,
           a few lived-in props
     - [ ] head-butt visuals (wind-up, lunge, stars, BONK, dust; being
