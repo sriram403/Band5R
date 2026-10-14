@@ -218,3 +218,13 @@ stays until you find another wheel" (the barn maze's chest has one).
 (Naresh's tyre fix, the creature puncture, roadworks after a jump).
 **Tests** - tyre (new check), roadworks, maze, puzzle_resets,
 opening_full, van: 0 failures.
+
+---
+
+## Full run after the g7 push (`appdata/full_after_push_g7.log`, 2026-10-14)
+
+**Found** - 1 failure: decoy "they leave the shed for him (clear after
+60 s)": one creature frozen ~45 s (open, logging added, see ROUGH_NOTES).
+The last segment broke off again: over the 3600 s limit (fixed: `routes`
+and `way_out` in their own segment, branch `g8`).
+
