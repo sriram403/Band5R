@@ -1,0 +1,905 @@
+{
+ "name": "puzzle4",
+ "setup": [
+  {
+   "do": "eval",
+   "expr": "boot._on_joy_changed(0, true)"
+  }
+ ],
+ "steps": [
+  {
+   "name": "4.0 F1 Puzzles: the lookout boards",
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Puzzles",
+     "row": "The lookout boards"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "fresh: the box shut, the old snow on the sign, both on foot",
+     "expr": "not relay().opened and relay().snow_left == 4 and p1().seat == null and p2().seat == null",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "4.1 P1 walks up the ramp and takes the binoculars off the bench",
+   "max": 60,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.builder.poi['lookout_ramp_foot']",
+     "arrive": 0.6,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:lk_at(0, 6.3, 2.0)",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:boot.builder.poi['lookout_binoculars']"
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "P1 has the binoculars",
+     "expr": "p1().has_binoculars",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "4.2 P1 reads the windmill (8x, crouched: steady) and the switch house",
+   "max": 60,
+   "do": [
+    {
+     "do": "mouse",
+     "btn": "right",
+     "down": false
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:relay_deck_edge('windmill')",
+     "arrive": 0.35,
+     "max": 10
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:relay_plate('windmill')"
+    },
+    {
+     "do": "mouse",
+     "btn": "right",
+     "down": true
+    },
+    {
+     "do": "wait",
+     "s": 0.8
+    },
+    {
+     "do": "call",
+     "fn": "bino_zoom_to",
+     "args": [
+      "p1",
+      8
+     ]
+    },
+    {
+     "do": "down",
+     "key": "Ctrl"
+    },
+    {
+     "do": "wait",
+     "s": 1.2
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:relay_plate('windmill')"
+    },
+    {
+     "do": "wait",
+     "s": 4.0
+    },
+    {
+     "do": "up",
+     "key": "Ctrl"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:relay_plate('switch_house')"
+    },
+    {
+     "do": "wait",
+     "s": 4.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "zoomed to 8x",
+     "expr": "p1().zoom_level == 8.0 and p1().zoom > 7.5",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "4.3 the barn and the silo in the snow shower: wait for it to thin",
+   "max": 60,
+   "do": [
+    {
+     "do": "mouse",
+     "btn": "right",
+     "down": false
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:relay_deck_edge('silo')",
+     "arrive": 0.35,
+     "max": 10
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:relay_plate('silo')"
+    },
+    {
+     "do": "mouse",
+     "btn": "right",
+     "down": true
+    },
+    {
+     "do": "wait",
+     "s": 0.8
+    },
+    {
+     "do": "call",
+     "fn": "bino_zoom_to",
+     "args": [
+      "p1",
+      8
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "call",
+     "fn": "relay_wait_thin",
+     "args": [
+      25
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:relay_plate('barn')"
+    },
+    {
+     "do": "wait",
+     "s": 4.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "still at the deck, zoomed",
+     "expr": "p1().zoom > 7.5",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "4.4 Last Fuel, and the far water tower (1.1 km)",
+   "max": 60,
+   "do": [
+    {
+     "do": "mouse",
+     "btn": "right",
+     "down": false
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:relay_deck_edge('last_fuel')",
+     "arrive": 0.35,
+     "max": 10
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:relay_plate('last_fuel')"
+    },
+    {
+     "do": "mouse",
+     "btn": "right",
+     "down": true
+    },
+    {
+     "do": "wait",
+     "s": 0.8
+    },
+    {
+     "do": "call",
+     "fn": "bino_zoom_to",
+     "args": [
+      "p1",
+      8
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    },
+    {
+     "do": "mouse",
+     "btn": "right",
+     "down": false
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:relay_deck_edge('water_tower')",
+     "arrive": 0.35,
+     "max": 10
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:relay_plate('water_tower')"
+    },
+    {
+     "do": "mouse",
+     "btn": "right",
+     "down": true
+    },
+    {
+     "do": "wait",
+     "s": 0.8
+    },
+    {
+     "do": "call",
+     "fn": "bino_zoom_to",
+     "args": [
+      "p1",
+      8
+     ]
+    },
+    {
+     "do": "down",
+     "key": "Ctrl"
+    },
+    {
+     "do": "wait",
+     "s": 1.2
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:relay_plate('water_tower')"
+    },
+    {
+     "do": "wait",
+     "s": 6.0
+    },
+    {
+     "do": "up",
+     "key": "Ctrl"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "mouse",
+     "btn": "right",
+     "down": false
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "binoculars lowered",
+     "expr": "p1().zoom < 1.1",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "4.5 P2 reads the patrol's sheet and Naresh's note on the box",
+   "max": 60,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:box_at(1.7, 0.2, 0)",
+     "arrive": 0.4,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay().find_child('SheetArea', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 8.0
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:box_at(0.2, 0.2, 1.5)",
+     "arrive": 0.4,
+     "max": 10
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:box_at(0.2, 0.45, 0.41)"
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 6.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "his note read",
+     "expr": "boot.story.notes.size() > 0 and String(boot.story.notes[boot.story.notes.size() - 1]['text']).contains('Easy with two')",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "4.6 a wrong try: P2 pulls the handle, the dials spin round",
+   "max": 40,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:box_at(-1.7, 0.2, 0)",
+     "arrive": 0.4,
+     "max": 10
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay().find_child('HandleArea', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:box_at(0, 0.4, -0.3)"
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "still shut, the dials stopped",
+     "expr": "not relay().opened and not relay()._spinning",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "4.7 the patrol sign: old snow frozen on, out of reach",
+   "max": 40,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:relay_throw_spot().lerp(relay().sign_at, 0.8)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay().sign_at"
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "it says out of reach",
+     "expr": "p2().prompt_text.contains('out of reach') or relay().snow_left == 4",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "4.8 snowballs from the old snow under the ramp knock the snow off",
+   "max": 150,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:lk_at(-2.6, 0.2, 4.2)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay_patch(2) + Vector3(0, 0.2, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:relay_throw_spot()",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay_crust(0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "pad_tap",
+     "btn": "RB"
+    },
+    {
+     "do": "wait",
+     "s": 1.6
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:lk_at(-2.6, 0.2, 4.2)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay_patch(2) + Vector3(0, 0.2, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:relay_throw_spot()",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay_crust(1)"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "pad_tap",
+     "btn": "RB"
+    },
+    {
+     "do": "wait",
+     "s": 1.6
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:lk_at(-2.6, 0.2, 4.2)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay_patch(2) + Vector3(0, 0.2, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:relay_throw_spot()",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay_crust(2)"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "pad_tap",
+     "btn": "RB"
+    },
+    {
+     "do": "wait",
+     "s": 1.6
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:lk_at(-2.6, 0.2, 4.2)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay_patch(2) + Vector3(0, 0.2, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:relay_throw_spot()",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay_crust(3)"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "pad_tap",
+     "btn": "RB"
+    },
+    {
+     "do": "wait",
+     "s": 1.6
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay().sign_at"
+    },
+    {
+     "do": "wait",
+     "s": 5.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the sign clear: the fourth riddle",
+     "expr": "relay().snow_left == 0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "4.9 P2 turns the dials to the code and pulls the handle",
+   "max": 80,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:box_at(0, 0.2, -1.4)",
+     "arrive": 0.4,
+     "max": 30
+    },
+    {
+     "do": "call",
+     "fn": "relay_dials_to_code",
+     "args": [
+      "p2"
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:box_at(-1.7, 0.2, 0)",
+     "arrive": 0.4,
+     "max": 10
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay().find_child('HandleArea', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:box_at(0, 1.0, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 4.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the box open, a full can inside",
+     "expr": "relay().opened and boot.world.find_child('RelayFuel', true, false) != null",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "4.10 the fun: P1 comes down, P2 gets them with a snowball",
+   "max": 80,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:lk_at(0, 6.3, 2.0)",
+     "arrive": 0.5,
+     "max": 10
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:boot.builder.poi['lookout_ramp_foot'] + Vector3(0, 0, 0)",
+     "arrive": 0.6,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:lk_at(-2.6, 0.2, 4.2)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay_patch(2) + Vector3(0, 0.2, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.builder.poi['lookout_ramp_foot'] + (lk_at(-2.6, 0.2, 4.2) - boot.builder.poi['lookout_ramp_foot']).normalized() * 6.0",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:p1().head.global_position + Vector3(0, -0.3, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "pad_tap",
+     "btn": "RB"
+    },
+    {
+     "do": "wait",
+     "s": 1.6
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "P1: SPLAT",
+     "expr": "boot.huds[0]._note_text.text.contains('SPLAT')",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "4.11 and the van: a white splat that melts away later",
+   "max": 60,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:lk_at(-2.6, 0.2, 4.2)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:relay_patch(2) + Vector3(0, 0.2, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.camper.global_transform * Vector3(-6.0, 0.2, 0.0)",
+     "arrive": 0.5,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:boot.camper.global_transform * Vector3(-1.2, 1.5, 0.0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "pad_tap",
+     "btn": "RB"
+    },
+    {
+     "do": "wait",
+     "s": 1.6
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "a splat on the van",
+     "expr": "boot.camper.find_child('SnowSplat', true, false) != null",
+     "within": 2
+    }
+   ]
+  }
+ ]
+}

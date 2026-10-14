@@ -5186,6 +5186,7 @@ func t_relay() -> void:
 				check(q.held is Snowball, "X at the old snow makes a snowball (prompt '%s')" % q.prompt_text)
 				await shot("relay_snowball")
 			if not q.held is Snowball:
+				log_line('no snowball in hand: held %s, prompt %s, at %s, patch %s' % [str(q.held), q.prompt_text, str(q.global_position), str(patch.global_position)])
 				continue
 			await place_player(q, stand, 0.0)
 			await wait(0.4)
@@ -11408,3 +11409,106 @@ func t_relay_views() -> void:
 	await wait(0.3)
 	await look_at_point(p, relay.patches[0].global_position)
 	await shot("rv_patch")
+
+
+
+# --- #4, the lookout boards: helpers for the walk (tools/live/make_puzzle4.py)
+
+func relay() -> LookoutRelay:
+	return get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
+
+
+## A point in the lookout tower's frame (-Z: the deck's front rail); on the
+## ground when y is near 0, else that high above the tower's foot.
+func lk_at(x: float, y: float, z: float) -> Vector3:
+	var l := boot.world.get_node("Lookout") as Node3D
+	var w := l.global_transform * Vector3(x, 0, z)
+	return Vector3(w.x, (Landscape.ground(w.x, w.z) if y < 1.0 else l.global_position.y) + y, w.z)
+
+
+## A point in the supply box's frame (-Z: the dials' side), on the ground.
+func box_at(x: float, y: float, z: float) -> Vector3:
+	var b := relay().find_child("SupplyBox", true, false) as Node3D
+	var w := b.global_transform * Vector3(x, 0, z)
+	return Vector3(w.x, Landscape.ground(w.x, w.z) + y, w.z)
+
+
+func relay_plate(id: String) -> Vector3:
+	return (relay().plates[id] as Node3D).global_position
+
+
+func relay_crust(k: int) -> Vector3:
+	return (relay().find_child("SnowCrust%d" % k, true, false) as Node3D).global_position
+
+
+func relay_patch(k: int) -> Vector3:
+	return relay().patches[k].global_position
+
+
+## Where you'd stand to throw at the patrol sign: 6 m in front of it.
+func relay_throw_spot() -> Vector3:
+	var sgn := relay().find_child("PatrolSign", true, false) as Node3D
+	var f := sgn.global_transform.basis.z
+	f.y = 0.0
+	var w := relay().sign_at + f.normalized() * 6.0
+	return Vector3(w.x, Landscape.ground(w.x, w.z) + 0.2, w.z)
+
+
+## The edge of the deck nearest a picture, to read it from (by the rail).
+func relay_deck_edge(id: String) -> Vector3:
+	var l := boot.world.get_node("Lookout") as Node3D
+	var d := l.global_transform.affine_inverse() * relay_plate(id)
+	var flat := Vector2(d.x, d.z).normalized()
+	var k := minf(2.6 / maxf(absf(flat.x), 0.01), 2.0 / maxf(absf(flat.y), 0.01))
+	return l.global_transform * Vector3(flat.x * k, 6.3, flat.y * k)
+
+
+## Turns the binoculars' zoom to `level` with the wheel (P1) or RB / LB (P2).
+func bino_zoom_to(p: PlayerRig, level: float) -> bool:
+	var guard := 0
+	while p.zoom_level != level and guard < 10:
+		guard += 1
+		var up := p.zoom_level < level
+		if p == p2():
+			pad_button(JOY_BUTTON_RIGHT_SHOULDER if up else JOY_BUTTON_LEFT_SHOULDER, true)
+			await physics_frames(3)
+			pad_button(JOY_BUTTON_RIGHT_SHOULDER if up else JOY_BUTTON_LEFT_SHOULDER, false)
+		else:
+			mouse_button(MOUSE_BUTTON_WHEEL_UP if up else MOUSE_BUTTON_WHEEL_DOWN, true)
+			await physics_frames(3)
+			mouse_button(MOUSE_BUTTON_WHEEL_UP if up else MOUSE_BUTTON_WHEEL_DOWN, false)
+		await wait(0.25)
+	return p.zoom_level == level
+
+
+## Turns every dial to the code with the real use button (X / E), looking
+## at each in turn, one click at a time.
+func relay_dials_to_code(p: PlayerRig) -> bool:
+	var r := relay()
+	for k in 4:
+		var dial := r.find_child("Dial%d" % k, true, false) as Node3D
+		await look_at_point(p, dial.global_position)
+		await wait(0.3)
+		var guard := 0
+		while r.dials[k] != r.code[k] and guard < 8:
+			guard += 1
+			if p == p2():
+				pad_button(JOY_BUTTON_X, true)
+				await wait(0.08)
+				pad_button(JOY_BUTTON_X, false)
+			else:
+				await tap(KEY_E)
+			await wait(0.35)
+	return r.dials == r.code
+
+
+## The barn's snow thinned (the silo's picture shows), within `max_s`.
+func relay_wait_thin(max_s: float) -> bool:
+	var maze := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < int(max_s * 1000.0):
+		if maze.curtain_thin() > 0.9:
+			return true
+		await physics_frames(3)
+	return false
+
