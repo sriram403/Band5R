@@ -2439,9 +2439,13 @@ func t_puzzle_resets() -> void:
 	# done, as after a play: then each row puts it back
 	sta.solve_quietly()
 	sta.slips = 2
-	wm.snagged = false
-	wm.box_open = true
-	wm.map_taken = true
+	# the windmill done (#2's names: the old brake's snagged / box_open /
+	# map_taken stopped this test with a script error, unseen, 2026-10-14)
+	wm.caught = true
+	wm.power = 1.0
+	wm.ladder_down = true
+	wm.chest_open = true
+	wm.napin_taken = true
 	lift.from_dict({"locked": true})
 	maze.from_dict({"chest_open": true, "dust_done": true})
 	relay.from_dict({"dials": [1, 2, 3, 4], "opened": true})
