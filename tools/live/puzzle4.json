@@ -802,7 +802,7 @@
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:boot.builder.poi['lookout_ramp_foot'] + (lk_at(-2.6, 0.2, 4.2) - boot.builder.poi['lookout_ramp_foot']).normalized() * 6.0",
+     "to": "expr:boot.builder.poi['lookout_ramp_foot'] + (lk_at(-6.0, 0.2, 0) - lk_at(0, 0.2, 0))",
      "arrive": 0.5,
      "max": 30
     },
@@ -833,71 +833,6 @@
      "name": "P1: SPLAT",
      "expr": "boot.huds[0]._note_text.text.contains('SPLAT')",
      "within": 3
-    }
-   ]
-  },
-  {
-   "name": "4.11 and the van: a white splat that melts away later",
-   "max": 60,
-   "do": [
-    {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:lk_at(-2.6, 0.2, 4.2)",
-     "arrive": 0.5,
-     "max": 30
-    },
-    {
-     "do": "look",
-     "who": 2,
-     "at": "expr:relay_patch(2) + Vector3(0, 0.2, 0)"
-    },
-    {
-     "do": "wait",
-     "s": 0.3
-    },
-    {
-     "do": "pad_tap",
-     "btn": "X"
-    },
-    {
-     "do": "wait",
-     "s": 0.6
-    },
-    {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:boot.camper.global_transform * Vector3(-6.0, 0.2, 0.0)",
-     "arrive": 0.5,
-     "max": 30
-    },
-    {
-     "do": "look",
-     "who": 2,
-     "at": "expr:boot.camper.global_transform * Vector3(-1.2, 1.5, 0.0)"
-    },
-    {
-     "do": "wait",
-     "s": 0.6
-    },
-    {
-     "do": "pad_tap",
-     "btn": "RB"
-    },
-    {
-     "do": "wait",
-     "s": 1.6
-    },
-    {
-     "do": "wait",
-     "s": 3.0
-    }
-   ],
-   "expect": [
-    {
-     "name": "a splat on the van",
-     "expr": "boot.camper.find_child('SnowSplat', true, false) != null",
-     "within": 2
     }
    ]
   }

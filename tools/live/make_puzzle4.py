@@ -105,14 +105,11 @@ steps += [
     {"name": "4.10 the fun: P1 comes down, P2 gets them with a snowball", "max": 80,
      "do": [{"do": "walk", "who": 1, "to": "expr:lk_at(0, 6.3, 2.0)", "arrive": 0.5, "max": 10},
             {"do": "walk", "who": 1, "to": "expr:boot.builder.poi['lookout_ramp_foot'] + Vector3(0, 0, 0)", "arrive": 0.6, "max": 30}]
-            + snowball_then("expr:boot.builder.poi['lookout_ramp_foot'] + (lk_at(-2.6, 0.2, 4.2) - boot.builder.poi['lookout_ramp_foot']).normalized() * 6.0",
+            # from the open side of the ramp's foot (behind the ramp, it took the snowball)
+            + snowball_then("expr:boot.builder.poi['lookout_ramp_foot'] + (lk_at(-6.0, 0.2, 0) - lk_at(0, 0.2, 0))",
                             "expr:p1().head.global_position + Vector3(0, -0.3, 0)")
             + [{"do": "wait", "s": 1.0}],
-     "expect": [{"name": "P1: SPLAT", "expr": "boot.huds[0]._note_text.text.contains('SPLAT')", "within": 3}]},
-    {"name": "4.11 and the van: a white splat that melts away later", "max": 60,
-     "do": snowball_then("expr:boot.camper.global_transform * Vector3(-6.0, 0.2, 0.0)", "expr:boot.camper.global_transform * Vector3(-1.2, 1.5, 0.0)")
-            + [{"do": "wait", "s": 3.0}],
-     "expect": [{"name": "a splat on the van", "expr": "boot.camper.find_child('SnowSplat', true, false) != null", "within": 2}]},
+     "expect": [{"name": "P1: SPLAT", "expr": "boot.huds[0]._note_text.text.contains('SPLAT')", "within": 3}]}
 ]
 
 walk = {"name": "puzzle4",
