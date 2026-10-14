@@ -43,14 +43,19 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
 - **Lived in, never programmatic (the user, 2026-10-07).** Built things
   look placed by a person; natural things sit as nature would leave them
   (clumps, half-sunk rocks, no rows). A cramped space gets bigger.
-- **The change ledger; long runs off the critical path (the user,
-  2026-10-08).** Before the user's look: only the change's own tests,
-  smoke and its area set. Each finished puzzle gets an entry in
-  `notes/CHANGE_LEDGER.md` (what changed, what it could break, which tests
-  cover it). On "push": push at once, then start set:driving / full in the
-  background in `MPG` while the next part is built in `../MPG_dev`; write
-  what they find under its ledger entry and fix it next round. One last
-  full run at the end of the puzzle tuning, checked against the ledger.
+- **The change ledger; the full run only at a milestone checkpoint (the
+  user, 2026-10-08, changed 2026-10-14).** A bug fix or a puzzle tuned:
+  test that part alone, thoroughly (its own scenarios, its area set,
+  smoke), never the whole game. **No full run after a push.** The full
+  run is for the end of a whole milestone, e.g. once every puzzle is
+  tuned and looks right to the user: one final full run then. Every change
+  goes into `notes/CHANGE_LEDGER.md` as it lands (what changed, what it
+  could break, which tests cover it), so whoever does that final run can
+  match each failure to its change.
+- **Watch the user's real time (the user, 2026-10-14).** Know what a run
+  costs in minutes before starting it, and notice when work goes in a
+  loop (each run finds something -> fix -> push -> another run): stop and
+  tell the user instead of going round again.
 - **Bug fixes are pushed as they are solved (the user, 2026-10-14).** A
   fix to a bug (from a long run, a test, the user's report) is pushed as
   soon as it is solved and its tests pass: commit, merge into `main`,

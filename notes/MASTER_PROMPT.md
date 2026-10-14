@@ -17,7 +17,7 @@ is established fact unless it says otherwise.
 tested, so a new session (any model) can resume if the previous one ran out.
 Last updated: 2026-10-14. Milestone G, the puzzle talk: #1-#3 done and
 pushed; the full run after #3 read and its 6 failures fixed (branch `g7`,
-merged and pushed); then `g8` (the full run split into 22 segments so none passes the 3600 s limit) and `g9` (Naresh's random acts never interrupt a hold / work job; the save test's rack slot), all pushed (main `e2c2bf0`). A full run in the background, `appdata/full_g9.log`: **read it first in the new thread**, fix and push what it finds (rule 27); the spare
+merged and pushed); then `g8` (the full run split into 22 segments so none passes the 3600 s limit) and `g9` (Naresh's random acts never interrupt a hold / work job; the save test's rack slot), all pushed (main `e2c2bf0`). The full run started after that was stopped by the user (no full run per push any more, rule 26): nothing to read in the new thread; the spare
 tyre is now used up. **Next: puzzle #4, the lookout boards, in a new
 thread** (the user starts it by sending this file, then plays F1 →
 Puzzles → 4 and says what to change).
@@ -410,14 +410,18 @@ they/them.
     a view, the challenge, a new ability). At least three fun mechanics
     like the head-butt. Mistakes have real consequences
     (`design/PUZZLE_CHANGES.md` top).
-26. **The change ledger; long runs after the push (the user, 2026-10-08).**
-    Before the user's look: the change's own tests, smoke, its area set.
-    Each finished puzzle gets an entry in `notes/CHANGE_LEDGER.md` (what
-    changed, what it could break, the tests). On "push": push, then start
-    set:driving / full in the background in `MPG` while the next puzzle is
-    built in `../MPG_dev`; findings go under the ledger entry and are fixed
-    next round. If a thread ends while one runs, the hand-over says so and
-    where its log is. One last full run at the end of the puzzle tuning.
+26. **The change ledger; the full run only at a milestone checkpoint (the
+    user, 2026-10-08; changed 2026-10-14).** A bug fix or a tuned puzzle
+    is tested on its own, thoroughly: its own scenarios, its area set,
+    smoke. Never the whole game for one change, and **no full run after a
+    push** (the old "full run in the background after every push" made a
+    loop on 2026-10-14: four full runs in a day, each finding something,
+    each fix pushed, each push another run). The full run is for the end
+    of a whole milestone: e.g. when every puzzle is tuned and the user
+    says it all looks right, one final full run. Every change gets its
+    entry in `notes/CHANGE_LEDGER.md` as it lands (what changed, what it
+    could break, the tests), so the AI doing that final run can match each
+    failure to its change.
 27. **Bug fixes are pushed as they are solved (the user, 2026-10-14).**
     A fix to a bug (found by a long run, a test or the user) is pushed as
     soon as it is solved and its tests pass: commit, merge into `main`,
@@ -425,6 +429,10 @@ they/them.
     next feature. This is the exception to rule 2, which still holds for
     new features and puzzle changes. When a new session starts, the game
     up to that point is clean as far as we know.
+28. **Watch the user's real time (the user, 2026-10-14).** Before a run,
+    know its cost in minutes; say it when it is long. Notice loops (a run
+    finds something -> fix -> push -> another run) and stop to tell the
+    user rather than going round again.
 
 ---
 

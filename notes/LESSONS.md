@@ -439,3 +439,10 @@ The engine-level details (exact Godot calls, numbers) are also in
   the Actions page; say so rather than guessing.
 - Game logs (the user's own sessions too) are in `appdata/FindingNaresh/logs`:
   read them when a report can't be reproduced.
+
+- **Rules can combine into a loop (2026-10-14).** "Full run after every
+  push" plus "push every fix at once" = run, fix, push, run, without end.
+  Trace a cycle through any two rules that feed each other, and check
+  time spent against the user's real clock. Full runs only at milestone
+  checkpoints; a fix is tested on its own.
+

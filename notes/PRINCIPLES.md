@@ -142,10 +142,14 @@ v5).
   time. Before their look: the change's own tests, smoke and its area set.
 - Every finished part gets an entry in `notes/CHANGE_LEDGER.md`: what
   changed, what it could break (our honest guess), which tests cover it.
-- On "push": push at once (GitHub is the backup, not a release), then run
-  the long sets in the background in the second copy while the next part
-  is built in the first. What they find goes under its entry; fix it next
-  round. One last full run at the end, checked against the whole ledger.
+- On "push": push at once (GitHub is the backup, not a release). **No
+  full run after a push** (changed 2026-10-14): a fix or a tuned puzzle
+  is tested on its own, thoroughly. The full run is for a milestone
+  checkpoint (e.g. all puzzles tuned and right for the user), checked
+  against the whole ledger.
+- Watch the user's real time: know what a run costs before starting it;
+  if each run finds something and each fix starts another run, that is a
+  loop: stop and say so (2026-10-14: four full runs in one day).
 - When a long run fails, read the ledger first: it usually names the
   cause (a gate across the road, undergrowth in the woods).
 

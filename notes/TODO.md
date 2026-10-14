@@ -152,8 +152,9 @@ being built and tested), so this always shows where the work is right now.
 - [x] **2026-10-14: two more full runs read, fixes pushed at once** (your
       rule 27): g8 the run split (it always broke off at 3600 s), g9 no
       random act while Naresh holds what he was told to (he let go of the
-      mast's dish), the save test's slot. main `e2c2bf0`. Full run in the
-      background: `appdata/full_g9.log`
+      mast's dish), the save test's slot. main `e2c2bf0`. The next full run
+      stopped by you: from now on a full run only at a milestone checkpoint
+      (all puzzles tuned), each fix tested on its own (rule 26)
 - [ ] **Next (new thread): puzzle #4, the lookout boards** (optional,
       Ridge Track): you play it (F1 → Puzzles → 4) and say what to change.
       Agreed already: the snowball goes there (old snow on the high ridge)
