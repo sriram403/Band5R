@@ -149,6 +149,11 @@ being built and tested), so this always shows where the work is right now.
       puzzle_resets tests); frame rate alone 143-144 fps. Your yes: the
       spare is used up (no spare = no "Take the spare"; tyre test checks).
       `g7` merged, **pushed** on your OK (main `a64379e`); full run in the background (`appdata/full_after_push_g7.log`)
+- [x] **2026-10-14: two more full runs read, fixes pushed at once** (your
+      rule 27): g8 the run split (it always broke off at 3600 s), g9 no
+      random act while Naresh holds what he was told to (he let go of the
+      mast's dish), the save test's slot. main `e2c2bf0`. Full run in the
+      background: `appdata/full_g9.log`
 - [ ] **Next (new thread): puzzle #4, the lookout boards** (optional,
       Ridge Track): you play it (F1 → Puzzles → 4) and say what to change.
       Agreed already: the snowball goes there (old snow on the high ridge)
