@@ -85,7 +85,14 @@ Per entry: the puzzle, its branch and merge, then three lists.
   gate first), **full**.
 
 **Found later** (by the long runs)
-- (none yet)
+- Full run after the push (`appdata/full_after_push2.log`): 4 failures.
+  Two frame-rate checks (two games at once; alone 144 fps). Two in the
+  fishing village (decoy): "P1 takes the full can off the rack" and the
+  refuel after it. Not from #2: an empty rack slot's zone caught the aim
+  of a can in the right-hand slot. Fixed in `g7` (2026-10-14, empty slots
+  are see-through for empty hands); decoy, saltpans, carry, story,
+  opening_p2, smoke: 0 failures (smoke's dusk frame rate with the full
+  run alongside: to rerun alone).
 
 ---
 
