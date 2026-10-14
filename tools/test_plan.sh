@@ -74,6 +74,7 @@ test_plan() {
 		echo "|decoy_save"
 		echo "|bessi_run"
 		echo "|return_run"
+		echo "|routes,way_out"
 		echo "|full" ;;
 	*)
 		echo "|$1" ;;

@@ -389,12 +389,13 @@ func _run() -> void:
 		if boot.gym != "":
 			all = GYM_SCENARIOS.get(boot.gym, QUICK_GYM).duplicate()
 		else:
-			all.insert(all.find("save"), "routes")
+			# routes (~980 s) and way_out (~460 s) have their own segment
+			# (test_plan.sh full): with them this one passed the 3600 s
+			# limit and broke off every time (2026-10-14)
 			# the world checks that were only in the old Quick list
 			for extra in ["roadworks", "house_world", "traffic_world", "mood", "driveway"]:
 				if not extra in all:
 					all.insert(all.find("save"), extra)
-			all.insert(all.find("save"), "way_out")
 			all.insert(all.find("save"), "teleports")
 			all.insert(all.find("save"), "puzzle_resets")
 		selection = ""
@@ -8225,6 +8226,10 @@ func t_decoy() -> void:
 				log_line("  %.0f s: creature at %s (%.0f m from the shed), %s, drawn %s, noticed %.1f s ago, goal %.0f m off" % [(Time.get_ticks_msec() - t0) / 1000.0,
 					cr.global_position, cr.global_position.distance_to(shed), Creature.State.keys()[cr.state], cr.naresh_drawn, cr._noticed_t,
 					Vector2(cr.goal_now.x - cr.global_position.x, cr.goal_now.z - cr.global_position.z).length()])
+				# one stood frozen 40 s with its goal 43 m off (full run, 2026-10-14):
+				# why, next time
+				log_line("      scared %.0f s, dormant %s, passive %s, post %s, vel %s, on floor %s, physics %s, stuck %.1f s, detours %d" % [cr.scared_t,
+					cr.dormant, cr.passive, cr.keeps_post, cr.velocity, cr.is_on_floor(), cr.is_physics_processing(), cr._stuck_t, cr._detours])
 		for cr in fv.creatures:
 			if cr.global_position.distance_to(shed) < 25.0:
 				return false
