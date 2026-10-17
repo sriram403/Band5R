@@ -15,7 +15,15 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-10-14. Milestone G, the puzzle talk: #1-#3 done and
+Last updated: 2026-10-17. **#4, the lookout boards, reworked, approved
+("continue") and pushed** (branch `g10`, main `f2026b2`): pictures on six
+landmarks, the patrol's riddles, the handle that scrambles the dials,
+snowballs and the snowy sign, binoculars 2x-8x with sway, view lanes, the
+barn's snow shower made realistic, hints (hold H) that get clearer. Also
+pushed: test windows can't take the user's mouse / keyboard. **Next: #5,
+the lift bridge** (the user plays F1 → Puzzles → 5 and says what to
+change; remember it must not be powered by the water works any more).
+Before that: Milestone G, the puzzle talk: #1-#3 done and
 pushed; the full run after #3 read and its 6 failures fixed (branch `g7`,
 merged and pushed); then `g8` (the full run split into 22 segments so none passes the 3600 s limit) and `g9` (Naresh's random acts never interrupt a hold / work job; the save test's rack slot), all pushed (main `e2c2bf0`). The full run started after that was stopped by the user (no full run per push any more, rule 26): nothing to read in the new thread; the spare
 tyre is now used up. **Next: puzzle #4, the lookout boards, in a new
@@ -51,6 +59,16 @@ they/them.
 ---
 
 ## 2. Status right now (2026-09-29; latest at the top, 2026-10-07)
+
+- **2026-10-17: puzzle #4, the lookout boards, done and pushed** (main
+  `f2026b2`, `design/PUZZLE_CHANGES.md` #4, `notes/CHANGE_LEDGER.md` #4).
+  The user's asks: codes on the landmarks, scroll zoom (realistic, 8x
+  max), hardness 7-8. Built: `puzzles/LookoutRelay.gd` rewritten,
+  `items/Snowball.gd` (fun mechanic 4), PlayerRig zoom / sway / rest,
+  `LevelLayout.in_view_lane`, the barn's curtain (`BarnMaze`), place
+  hints (`Story.hint_text` asks group `place_hint`). Walk `puzzle4`
+  recorded and sent. New rules: realistic, simple to read (PRINCIPLES 13).
+  Open: the `mouse` gym test fails only in `MPG_dev` (passes in `MPG`).
 
 - **2026-10-14: the full run after #3 read and fixed; the spare used up.**
   The run (`appdata/full_after_push3.log`, resumed twice; 108 scenarios)

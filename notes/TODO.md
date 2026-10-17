@@ -155,7 +155,13 @@ being built and tested), so this always shows where the work is right now.
       mast's dish), the save test's slot. main `e2c2bf0`. The next full run
       stopped by you: from now on a full run only at a milestone checkpoint
       (all puzzles tuned), each fix tested on its own (rule 26)
-- [~] **2026-10-14, new thread: puzzle #4, the lookout boards** (optional,
+- [ ] **Next: puzzle #5, the lift bridge**: you play it (F1 → Puzzles → 5)
+      and say what to change. Remember: no power from the water works any
+      more (the windmill already powers a way open).
+- [x] **2026-10-17: #4 approved ("continue"), merged and pushed** (main
+      `f2026b2`; on main: relay, relay_kb, snowball, bino_zoom and smoke,
+      0 failures)
+- [x] **2026-10-14, new thread: puzzle #4, the lookout boards** (optional,
       Ridge Track; `puzzles/LookoutRelay.gd`): **waiting for your play**
       (F1 → Puzzles → 4) and what to change. **Played; your asks: codes on
       the landmarks, scroll zoom, hardness 7-8/10. Proposal written
