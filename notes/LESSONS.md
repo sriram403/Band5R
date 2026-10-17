@@ -54,10 +54,9 @@ The engine-level details (exact Godot calls, numbers) are also in
   ("do / expect / tell me") worked well.
 - **Things agreed "for later" go in `notes/POLISH.md`**, not built now, and
   the user is reminded at the end.
-- **At the end of each milestone, stop and ask:** continue in this thread, or
-  prepare the hand-over notes for a new one (MASTER_PROMPT rule 17). In the
-  polishing stage, before starting a task, say whether it fits this thread's
-  remaining context or a new thread would be cheaper.
+- **At the end of each milestone, suggest a new thread, don't stop:** update
+  the notes, suggest it, wait 3 min, then carry on here (MASTER_PROMPT rule
+  17, changed 2026-10-15; the `project-memory` skill §4).
 - **Report failures honestly.** If a test failed, say so; if something wasn't
   tested, say that. The user trusts the report only if it is exact.
 - **Shape a loose ask to fit, propose, then build (2026-10-05).** "A room",

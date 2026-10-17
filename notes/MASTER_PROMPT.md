@@ -360,12 +360,12 @@ they/them.
     Break a problem down, test the assumption with the smallest experiment,
     then decide; never assume a limit (speed, cost) you haven't measured.
     Build in `../MPG_dev` (a git worktree) while long tests run in `MPG`.
-17. **At the end of each milestone, stop and ask (user, 2026-09-27):**
-    "continue in this thread, or shall I prepare the hand-over notes for a
-    new one?" Don't start the next milestone unasked. In the polishing stage,
-    when the user gives a task, first give a quick recommendation (from how
-    much of this thread's context is used and how big the task is) on
-    whether to do it here or in a new thread, to save their tokens.
+17. **At the end of each milestone (user, changed 2026-10-15):** follow the
+    `project-memory` skill §4 (`D:\mine\Agentics\Skills`): update the notes,
+    suggest a new thread in a short message, wait 3 min; no answer → carry
+    on here. Second milestone: same; still no answer → stop suggesting and
+    just work. If the user asks for a new thread after X, finish X and stop.
+    (Was: stop and ask before every milestone.)
 19. **Remember mistakes (user, 2026-10-02):** every time an assumption meets
     a different reality, write *assumed -> reality -> fix -> habit* in the
     mistake log in `notes/ROUGH_NOTES.md` at once; read it before starting

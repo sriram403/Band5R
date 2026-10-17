@@ -84,8 +84,8 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
 
 Nothing on C: · one part at a time, the user's test before each push · "let's
 discuss" means discuss · notes current at every step · tests stay behind the
-user's windows · lessons written at once · at the end of a milestone, ask:
-this thread or a new one.
+user's windows · lessons written at once · at the end of a milestone,
+suggest a new thread, wait 3 min, then carry on (`project-memory` skill §4).
 
 ## Remember mistakes; "update the md files" (the user, 2026-10-02)
 
@@ -105,10 +105,9 @@ this thread or a new one.
     `notes/TEST_MILESTONE_*.md` sheet, design pages when a decision changes
   - `CLAUDE.md` and `AGENTS.md` (instructions for Claude and for GPT / other
     models: keep the two in step)
-  - the user's skills: `D:\mine\Agentics\Skills\skills\first-principles-solving\SKILL.md`
-    and its copy `C:\Users\srira\.claude\skills\first-principles-solving\SKILL.md`
-    (general, not game-specific, lessons only)
-  - the project guide `D:\mine\Agentics\Skills\project-guides\finding-naresh\`
-    (copies of CLAUDE.md, AGENTS.md, notes/PRINCIPLES.md, LESSONS.md,
-    TESTING_METHOD.md, MASTER_PROMPT.md): copy them over after updating
+  - the user's skills library `D:\mine\Agentics\Skills` (general lessons
+    only, e.g. `game-dev`, `testing-and-verification`,
+    `first-principles-solving`): ask the user first, then follow that
+    folder's `AGENTS.md`. It is linked into `~/.claude/skills` and
+    `~/.agents/skills`, so there are no copies to update.
   - Claude's memory (`memory/`), for rules about how to work
