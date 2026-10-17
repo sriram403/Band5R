@@ -5,8 +5,11 @@ extends Node3D
 ## because "power's been off since the turbine stopped". When the blue tank
 ## at the water works fills (CoolingStation solved), the old turbine by the
 ## intake starts turning and lamps come on one after another along the poles
-## beside Pump House Road, north to the bridge's control hut. The hut is then
-## powered, which the lift bridge (D9) needs.
+## beside Pump House Road, north towards the bridge. #5 (2026-10-17): the
+## last pole before the bridge's control hut is snapped (an old storm, like
+## the windmill's lamp line), its wire down in the grass, so the wave stops
+## there and the hut stays dead: the lift bridge is worked by hand (weight),
+## not by the water works. `hut_powered` stays false.
 
 const POLE_H := 7.0
 const WAVE := 0.6                ## s between one lamp and the next lighting
@@ -30,6 +33,8 @@ var _spin := 0.0
 var _hum: NoiseLoop
 var _mat_off: StandardMaterial3D
 var _mat_on: StandardMaterial3D
+var fallen_top := Vector3.ZERO   ## the snapped pole's top, local to its foot (the wire ends there)
+var snapped_pole: Node3D
 
 
 ## `turbine` is the turbine house (its -Z faces the river), `feet` the pole
@@ -51,6 +56,10 @@ func setup(station: CoolingStation, turbine: Transform3D, feet: Array[Vector3], 
 		pole.position = foot
 		pole.basis = Basis.looking_at(side, Vector3.UP)     # -Z towards the road
 		add_child(pole)
+		if k == feet.size() - 1:
+			_build_snapped(pole, wood)
+			tops.append(pole.transform * fallen_top)
+			continue
 		pole.add_child(Build.cyl(0.13, POLE_H, wood, Vector3(0, POLE_H * 0.5, 0), Vector3.ZERO, 6, "Post"))
 		pole.add_child(Build.box(Vector3(1.6, 0.12, 0.12), wood, Vector3(0, POLE_H - 0.4, 0), Vector3.ZERO, "CrossArm"))
 		pole.add_child(Build.box(Vector3(0.08, 0.08, 1.3), wood, Vector3(0, POLE_H - 1.3, -0.6), Vector3.ZERO, "LampArm"))
@@ -90,6 +99,30 @@ func setup(station: CoolingStation, turbine: Transform3D, feet: Array[Vector3], 
 	station.solved_changed.connect(func():
 		if station.solved:
 			power_on())
+
+
+## The last pole before the hut: snapped 0.9 m up, the rest lying in the
+## grass away from the road, the lamp's glass broken (no lamp to light).
+func _build_snapped(pole: Node3D, wood: Material) -> void:
+	snapped_pole = pole
+	const STUMP := 0.9
+	pole.add_child(Build.cyl(0.13, STUMP, wood, Vector3(0, STUMP * 0.5, 0), Vector3.ZERO, 6, "Stump"))
+	pole.add_child(Build.box(Vector3(0.3, 0.12, 0.3), ToonMat.make(Color(0.66, 0.52, 0.36), 0.01), Vector3(0, STUMP, 0), Vector3(8, 20, -12), "Splinters"))
+	var fallen := Node3D.new()
+	fallen.name = "Fallen"
+	# toppled away from the road (+Z), not quite flat: its top end rests on
+	# the cross-arm in the grass
+	fallen.position = Vector3(0.15, 0.25, 0.5)
+	fallen.rotation = Vector3(deg_to_rad(84.0), deg_to_rad(6.0), 0)
+	pole.add_child(fallen)
+	var rest := POLE_H - STUMP
+	fallen.add_child(Build.cyl(0.13, rest, wood, Vector3(0, rest * 0.5, 0), Vector3.ZERO, 6, "Post"))
+	fallen.add_child(Build.box(Vector3(1.6, 0.12, 0.12), wood, Vector3(0, rest - 0.4, 0), Vector3.ZERO, "CrossArm"))
+	fallen.add_child(Build.cyl(0.36, 0.08, wood, Vector3(0, rest - 1.38, -0.6), Vector3(90, 0, 0), 8, "LampShade"))
+	fallen_top = fallen.transform * Vector3(0, rest - 0.3, 0)
+	# the lamp's glass in pieces by the shade
+	for g in 4:
+		pole.add_child(Build.box(Vector3(0.12, 0.02, 0.09), _mat_off, fallen.transform * Vector3(0.3 + g * 0.12, rest - 1.5, -0.4 - g * 0.1) + Vector3(0, 0.02, 0), Vector3(0, g * 40.0, 0), "Glass"))
 
 
 func _wire(a: Vector3, b: Vector3, mat: Material) -> void:
@@ -135,7 +168,7 @@ func _process(delta: float) -> void:
 		_spin = move_toward(_spin, TURBINE_SPIN if powered else 0.0, delta * 1.5)
 		if _spin > 0.0:
 			wheel.rotate_z(-_spin * delta)
-	if not powered or hut_powered or cut:
+	if not powered or cut or _lit >= lamps.size():
 		return
 	_t += delta
 	while _lit < lamps.size() and _t >= WAVE * (_lit + 1):
@@ -143,8 +176,9 @@ func _process(delta: float) -> void:
 		halos[_lit].visible = true
 		Sfx.play3d("click", lamps[_lit].global_position, -10.0)
 		_lit += 1
-	if _lit >= lamps.size() and _t >= WAVE * (_lit + 2):
-		_power_hut()
+	if _lit >= lamps.size() and snapped_pole != null:
+		# the wave reaches the snapped pole: a fizz where the wire lies in the grass
+		Sfx.play3d("crack", snapped_pole.global_position + Vector3.UP * 0.5, -8.0)
 
 
 ## The blue tank has filled: the turbine starts and the wave of lamps runs north.
@@ -160,14 +194,6 @@ func power_on() -> void:
 			q.say("Down by the river the old turbine shudders and starts to turn. One by one, lamps flicker on along the poles beside the road, north towards the bridge.", 8.0)
 
 
-func _power_hut() -> void:
-	hut_powered = true
-	hut_lamp.material_override = _mat_on
-	hut_light.visible = true
-	_hum.target = 1.0
-	Sfx.play3d("latch", hut_lamp.global_position, -4.0)
-
-
 ## F2: the storm brings the line down: every lamp dark, the hut dead.
 ## `on` false puts it back (a story jump to before the storm).
 func storm_cut(on: bool) -> void:
@@ -180,7 +206,7 @@ func sync() -> void:
 	if _station == null:
 		return
 	powered = _station.solved and not cut
-	hut_powered = powered
+	hut_powered = false              # the snapped pole: never (#5)
 	_lit = lamps.size() if powered else 0
 	_t = 0.0
 	_spin = TURBINE_SPIN if powered else 0.0
@@ -188,6 +214,6 @@ func sync() -> void:
 		l.material_override = _mat_on if powered else null
 	for h in halos:
 		h.visible = powered
-	hut_lamp.material_override = _mat_on if powered else null
-	hut_light.visible = powered
-	_hum.target = 1.0 if powered else 0.0
+	hut_lamp.material_override = null
+	hut_light.visible = false
+	_hum.target = 0.0

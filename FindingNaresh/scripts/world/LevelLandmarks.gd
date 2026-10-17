@@ -989,8 +989,8 @@ func _bridge_hut_and_power() -> void:
 	world.add_child(line)
 	line.setup(cooling_station, turbine_xf, feet, sides, hut.transform * Vector3(0, H - 0.35, 0))
 
-	# D9: the lift leaf over the gap, its lever panel in the hut window and the
-	# safety mirror just outside it
+	# D9 / #5: the lift leaf over the gap (the seesaw), the dead lever panel
+	# in the hut window
 	var pa := road.point(bridge_mid - 2)
 	var pb := road.point(bridge_mid + 3)
 	var fwd := (pb - pa).normalized()
@@ -1001,20 +1001,53 @@ func _bridge_hut_and_power() -> void:
 	var win := hut.transform.basis.x * toward_bridge   # from the hut out through its window
 	var panel_xf := Transform3D(Basis.looking_at(win, Vector3.UP), hut.transform * Vector3(bx - toward_bridge * 0.55, 0, -0.5))
 	panel_xf.basis = Basis.looking_at(win, Vector3.UP)     # -Z at the window: the operator faces it
-	var mirror_xf := Transform3D(Basis.looking_at(win, Vector3.UP), hut.transform * Vector3(bx + toward_bridge * 0.9, 1.75, 0.95))
+	# the near bank on the hut's side, under the old deck: river stones on
+	# the dry, fairly flat strip above the water, and where a swimmer climbs out
+	var water_y := Landscape.river_water_level(int(Landscape.river.nearest(pa.x, pa.z)["index"]))
+	var spots: Array[Vector3] = []
+	var bank := Vector3.INF
+	for si in range(bridge_span.x - 6, bridge_mid - 1):
+		for off in [Landscape.ROAD_HALF + 1.5, Landscape.ROAD_HALF + 3.5, Landscape.ROAD_HALF + 5.5]:
+			var q: Vector3 = road.point(si) + out * float(off)
+			var g := _h(q.x, q.z)
+			var rd := Landscape.river_distance(q.x, q.z)
+			if g < water_y + 0.25 or rd < Landscape.RIVER_HALF - 1.0:
+				continue
+			var slope := maxf(absf(_h(q.x + 1.0, q.z) - _h(q.x - 1.0, q.z)), absf(_h(q.x, q.z + 1.0) - _h(q.x, q.z - 1.0))) * 0.5
+			if slope > 0.45:
+				continue
+			q.y = g + 0.16
+			if bank == Vector3.INF and rd < Landscape.RIVER_HALF + 3.0:
+				bank = Vector3(q.x, g + 0.05, q.z)
+				continue
+			var spaced := true
+			for sp in spots:
+				if sp.distance_to(q) < 1.4:
+					spaced = false
+			if spaced and spots.size() < 6:
+				spots.append(q)
+	if bank == Vector3.INF:
+		var bi := bridge_span.x - 8
+		bank = road.point(bi) + out * (Landscape.ROAD_HALF + 2.0)
+		bank.y = _h(bank.x, bank.z) + 0.05
 	var lift := LiftBridge.new()
 	lift.name = "LiftBridge"
 	world.add_child(lift)
-	lift.setup(bxf, pa.distance_to(pb) + 0.1, Landscape.ROAD_HALF * 2.0 + 0.6, m, panel_xf, mirror_xf, line, bridge_barriers)
+	lift.setup(bxf, pa.distance_to(pb) + 0.1, Landscape.ROAD_HALF * 2.0 + 0.6, m, panel_xf, line, bridge_barriers, spots, bank)
 	poi["lift_pivot"] = bxf.origin
 	poi["bridge_panel"] = panel_xf.origin
-	poi["bridge_mirror"] = mirror_xf.origin
 	poi["bridge_far"] = road.point(bridge_mid + 6)
+	poi["bridge_bank"] = bank
+	poi["leaf_tip"] = bxf * Vector3(0, 0.1, -lift.leaf_len + 0.8)        # (with the leaf down)
+	poi["stone_heap"] = bxf * Vector3(-m * 2.6, 0.1, 1.6)
 	var inner := lift.deck_w * 0.5 + 0.3
 	poi["machinery_door"] = bxf * Vector3(m * (inner - 1.0), 0.1, 0.6)
 	poi["machinery_in"] = bxf * Vector3(m * (inner + 0.8), 0.1, 0.6)
-	poi["wedge"] = bxf * lift.wedge.position
-	poi["counterweight_edge"] = bxf * Vector3(m * (inner + 1.0), 0.1, 1.3)
+	poi["machinery_hatch"] = bxf * Vector3(m * (lift.deck_w * 0.5 - 0.45), 0.1, (LiftBridge.HATCH_Z.x + LiftBridge.HATCH_Z.y) * 0.5)
+	poi["lock_lever"] = bxf * Vector3(m * (inner + 2.6), 0.1, 4.0)
+	poi["machinery_mid"] = bxf * Vector3(m * (inner + 2.7), 0.1, 1.0)     # beside the pit, on the way to the lock
+	if spots.size() < 4:
+		push_warning("lift bridge: only %d bank stones placed" % spots.size())
 	poi["turbine"] = turbine_xf.origin
 	poi["power_line_first"] = feet[2]
 	poi["power_line_last"] = feet[feet.size() - 1]

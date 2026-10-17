@@ -147,6 +147,18 @@ const BUTT_WINDUP := 0.14
 var _butt_wind := 0.0                  ## > 0 while rearing back
 var _shake_t := 0.0                    ## > 0: the view shakes (a butt landed)
 var dazed_t := 0.0                     ## > 0: stars circling your view
+## #5: in the river (off the lift bridge): you swim to `_swim_to` on the near
+## bank and climb out soaked (`wet_t`: drips and shivers for a while)
+var swimming := false
+var wet_t := 0.0
+var _swim_to := Vector3.ZERO
+var _swim_y := 0.0
+var _swim_t := 0.0
+var _wet_drip := 0.0
+var _shiver_t := 0.0
+const LEGUP_VELOCITY := 8.8           ## off a crouched partner's back: feet ~1.75 m up (a plain jump: 0.5 m)
+const SWIM := 1.5                     ## m/s
+const WET_S := 40.0
 var _shove := Vector3.ZERO             ## a stagger from being butted, dying away
 var _push_hold := 0.0
 
@@ -318,6 +330,9 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 		_plan_vel = Vector2.ZERO
 		return
+	if swimming:
+		_swim(delta)
+		return
 	if _knock_van != null and is_instance_valid(_knock_van) and _knock_van.global_position.distance_to(global_position) > 5.0:
 		remove_collision_exception_with(_knock_van)
 		_knock_van = null
@@ -482,7 +497,12 @@ func _walk(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= GRAVITY * f * f * delta
 	elif dev.just_pressed("jump") and not map_open and not plan_open and not in_box:
-		velocity.y = JUMP_VELOCITY * f
+		var lp := _legup_partner()
+		if lp != null:
+			velocity.y = LEGUP_VELOCITY * f
+			lp.boosted(self)
+		else:
+			velocity.y = JUMP_VELOCITY * f
 
 	var mv := dev.move()
 	if map_open:
@@ -546,6 +566,8 @@ func _walk(delta: float) -> void:
 		if _drip_t <= 0.0:
 			_drip_t = 0.35 if planar > 0.4 else 1.2
 			_drip()
+	if wet_t > 0.0:
+		_wet(delta, planar)
 
 	# head bob keyed to actual ground speed
 	if is_on_floor() and planar > 0.4:
@@ -738,6 +760,10 @@ func _scan() -> void:
 		text = "[%s]  Take the map off P%d" % [dev.glyph("interact"), snatch.index + 1]
 	if text == "" and _near_upset_van() != null:
 		text = "[%s]  Right the van" % dev.glyph("recover")
+	if text == "":
+		var lp := _legup_partner()
+		if lp != null:
+			text = "[%s]  Leg-up off P%d's back" % [dev.glyph("jump"), lp.index + 1]
 	if seat != null and text == "":
 		text = _seated_prompt()
 
@@ -1495,6 +1521,13 @@ func hold_point(item: Carryable) -> Vector3:
 	# pouring: bring it down to just above the filler you are using
 	if item.pouring and is_instance_valid(_using):
 		return (_using as Node3D).global_position + Vector3.UP * 0.25 + right * 0.1
+	# really heavy things (a 25 kg stone) are hugged at the belly, level,
+	# wherever you look: held out where you looked, a stone carried up the
+	# lift bridge's sloping deck with eyes down was pushed into the deck,
+	# lagged and was let go (#5, 2026-10-17)
+	if item.mass >= 24.0:
+		var flat := Vector3(fwd.x, 0.0, fwd.z).normalized()
+		return xf.origin + flat * 0.75 + right * 0.2 + Vector3.DOWN * 0.8
 	var sag := lerpf(0.42, 0.72, item.heaviness())
 	return xf.origin + fwd * 1.0 + right * 0.42 + Vector3.DOWN * sag
 
@@ -1543,7 +1576,133 @@ func _step_sound() -> String:
 
 
 ## A drip of sludge on the ground where you stand, fading away.
-func _drip() -> void:
+## Into the river (#5): splash, drop whatever you held (it sinks), and swim
+## for `bank` with your head just above the water `water_y`.
+func fall_in_water(water_y: float, bank: Vector3) -> void:
+	if swimming or seat != null:
+		return
+	leave_box(false)
+	ladder = null
+	drop_held()
+	set_map_open(false)
+	journal_open = false
+	knocked_t = 0.0
+	cam_roll = 0.0
+	_mesh_root.rotation = Vector3.ZERO
+	swimming = true
+	_swim_to = bank
+	_swim_y = water_y - 1.3
+	_swim_t = 0.0
+	velocity = Vector3.ZERO
+	_plan_vel = Vector2.ZERO
+	Sfx.play3d("splat", global_position + Vector3.UP, 6.0, 0.1, 0.5)
+	Sfx.play3d("gurgle", global_position + Vector3.UP, 2.0)
+	_splash(Vector3(global_position.x, water_y, global_position.z))
+	Hearing.emit(global_position, Hearing.LANDING, "splash")
+	say("SPLASH! Into the river. It's freezing - swim for the bank!", 4.0)
+
+
+func _swim(delta: float) -> void:
+	_swim_t += delta
+	rotation.y = yaw
+	head.rotation = Vector3(pitch, 0, 0)
+	eye_height = lerpf(eye_height, STAND_HEIGHT - 0.16, 0.2)
+	head.position = Vector3(0, eye_height, 0)
+	var to := _swim_to - global_position
+	to.y = 0.0
+	if to.length() < 0.7:
+		swimming = false
+		global_position = _swim_to + Vector3.UP * 0.1
+		velocity = Vector3.ZERO
+		reset_physics_interpolation()
+		wet_t = WET_S
+		_shiver_t = 2.0
+		say("You drag yourself out onto the bank, soaked through and shivering.", 4.0)
+		return
+	var p := global_position + to.normalized() * minf(SWIM * delta, to.length())
+	var g := Landscape.ground(p.x, p.z)
+	p.y = maxf(_swim_y + sin(_swim_t * 2.6) * 0.06, g)
+	global_position = p
+	bob_offset = Vector3(0, sin(_swim_t * 2.6) * 0.05, 0)
+	cam_roll = sin(_swim_t * 1.3) * 0.03
+	if fmod(_swim_t, 1.1) < delta:
+		Sfx.play3d("gurgle", global_position + Vector3.UP * 1.3, -8.0, 0.15)
+
+
+## Soaked: you drip where you walk and shiver now and then.
+func _wet(delta: float, planar: float) -> void:
+	wet_t -= delta
+	_wet_drip -= delta
+	if _wet_drip <= 0.0 and is_on_floor():
+		_wet_drip = 0.4 if planar > 0.4 else 1.0
+		_drip(Color(0.32, 0.40, 0.48, 0.55))
+	_shiver_t -= delta
+	if _shiver_t <= 0.0:
+		_shiver_t = randf_range(5.0, 8.0)
+		_shake_t = 0.18
+	if wet_t <= 0.0:
+		say("You've stopped dripping. Still cold, though.", 3.0)
+
+
+static func _splash(at: Vector3) -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var root := tree.get_first_node_in_group("world_root") if tree else null
+	if root == null:
+		return
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.emitting = true
+	p.amount = 40
+	p.lifetime = 1.2
+	p.explosiveness = 0.95
+	p.direction = Vector3.UP
+	p.spread = 35.0
+	p.initial_velocity_min = 2.5
+	p.initial_velocity_max = 5.5
+	p.gravity = Vector3(0, -9.8, 0)
+	p.scale_amount_min = 0.4
+	p.scale_amount_max = 1.0
+	var sm := SphereMesh.new()
+	sm.radius = 0.08
+	sm.height = 0.16
+	sm.radial_segments = 6
+	sm.rings = 3
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.85, 0.92, 0.98, 0.8)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	sm.material = mat
+	p.mesh = sm
+	root.add_child(p)
+	p.global_position = at
+	p.finished.connect(p.queue_free)
+
+
+## The leg-up (#5, fun mechanic 5): your partner crouched right in front of
+## you, both on your feet, your hands free: your jump goes off their back.
+## Works anywhere from then on.
+func _legup_partner() -> PlayerRig:
+	if crouching or held != null or seat != null or in_box or swimming:
+		return null
+	for n in get_tree().get_nodes_in_group("player"):
+		var q := n as PlayerRig
+		if q == self or q.seat != null or not q.crouching or q.swimming or q.knocked_t > 0.0 or not q.is_on_floor():
+			continue
+		var d := q.global_position - global_position
+		if absf(d.y) < 0.4 and Vector2(d.x, d.z).length() < 1.1:
+			return q
+	return null
+
+
+## Your partner just jumped up off your back.
+func boosted(by: PlayerRig) -> void:
+	_shake_t = 0.18
+	pitch = clampf(pitch - 0.08, -PITCH_LIMIT, PITCH_LIMIT)
+	Sfx.play3d("hit_soft", global_position + Vector3.UP * 0.8, -2.0)
+	say("Oof! P%d jumps up off your back." % (by.index + 1), 2.0)
+
+
+func _drip(col := Color(0.30, 0.25, 0.18, 0.9)) -> void:
 	var root := get_tree().get_first_node_in_group("world_root")
 	if root == null:
 		return
@@ -1555,7 +1714,7 @@ func _drip() -> void:
 	disc.height = 0.01
 	disc.radial_segments = 8
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.30, 0.25, 0.18, 0.9)
+	mat.albedo_color = col
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	disc.material = mat
 	m.mesh = disc

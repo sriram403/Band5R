@@ -1225,3 +1225,186 @@ dials reset whenever a wrong one is turned (Q3).
   **Naresh's note** ends "The sign up the slope is iced over again, too
   high to reach. You always threw better than me."
 
+---
+
+## 5. The lift bridge: *proposed* (2026-10-17), nothing built
+
+Written before the user's play (they asked: "how would you improve it,
+with everything from #1-#4?"). Their play may change it.
+
+### What has to change (from #1-#4)
+
+- **Power:** not from the water works any more (agreed at #2: the
+  windmill already powers a way open). The road lamps from the turbine
+  stop short; the hut is dead.
+- **Repeat:** the hut player seeing only through the mirror and calling
+  out = the silo guide (#3) and the lookout spotter (#4). Drop it.
+- **Repeat:** a long hold of E = the windmill lever (#2).
+- **Keep:** riding the counterweight (fresh, fun).
+- **Delete:** the wedge (just "hold two things at once").
+
+### My proposal: balance it, then wind it down by hand
+
+Real small lift bridges have a **hand crank** for when the power fails.
+It only turns if the **counterweight balances the leaf**. Ours is short
+of weight (the leaf is stuck up).
+
+- **P1 at the crank** (machinery house, under the road): feels the
+  balance. Too light: the crank won't move. About right: it turns.
+  Too heavy: it runs away.
+- **P2 at the counterweight box** (in the pit, other side of the road):
+  loads stones from the riverbank and old sandbags by the hut. ~20-25 kg
+  each, carried one at a time. P2 can't see the crank; P1 can't see the
+  box. They talk: "two more", "too much, take one out".
+- **About 6 loads, then P2 steps on** as the last weight (~80 kg) and
+  rides the box up as P1 winds the leaf down. It locks; barriers go.
+- **Mistakes:** too heavy or too light, the crank **kicks back** (real
+  hazard): it spins, knocks P1 onto their back, the leaf jumps back up.
+  Fix the weight, try again.
+
+**Getting in:** the machinery house door is padlocked; its high window
+is open. **Fun mechanic 5: the leg-up** (noted at #2 S5): one crouches,
+the other climbs on their back. Usable from now on (partner, Naresh,
+walls, the van's roof).
+
+### My extra ideas (yes / no each)
+
+- **S1. Naresh's note** on the crank: "Needs weight in the box. My friend
+  stood on it while I wound." (Nobody was there: the twist.)
+- **S2. The bridge creaks.** A low groan = too light, a sharp crack = too
+  heavy. Both players hear it, so P2 can judge too.
+- **S3. Drop it, lose it.** A stone or can dropped off the deck splashes
+  into the river and is gone.
+- **S4. The dark lamps** along the road end at a pole the storm knocked
+  down: you see why there's no power.
+
+### Questions
+
+1. **Power:** A) hand crank, no power (my pick); B) a petrol generator
+   fed with the van's fuel (costs fuel).
+2. **Weights:** A) stones and sandbags only (my pick); B) the van's cans
+   work too, but stay there.
+3. **The mirror:** A) gone (my pick); B) keep it.
+4. **The leg-up here:** A) yes (my pick); B) later.
+5. **How hard:** A) 6 / 10 (my pick: it's a gate, not optional);
+   B) 7-8 like #4.
+6. S1-S4: yes / no each.
+
+### Round 1b: physics, much cleverer (the user, 2026-10-17)
+
+The user: "physics involved, much cleverer; research clever puzzle
+mechanics; top 3 plans for our world and the bridge; don't copy, make it
+your own; absorb how humans think up puzzles." (The hand-crank plan above
+is superseded.)
+
+#### What the research says (how people design clever puzzles)
+
+1. **The "aha" is seeing an everyday thing for a new job** (a coin as a
+   screwdriver), not doing more work. Too much busy-work feels like a
+   time sink. ([The Codex](https://thecodex.ca/puzzles-aha-vs-process/))
+2. **Few pieces, the answer in plain view.** Limbo's puzzles were cut to
+   as few elements as possible; in Inside "the solution is staring you in
+   the face". ([Game Developer, Carlsen GDC Europe](https://www.gamedeveloper.com/game-platforms/gdc-europe-i-limbo-i-s-carlsen-on-making-players-your-worst-enemy-and-your-best-friend), [Stevivor](https://stevivor.com/reviews/inside-review-limbo-evolved/))
+3. **Misdirection, fairly.** Put an obvious lure in view; wrong ideas
+   must *look* wrong; the right one must be easy to do once seen.
+   Failing is funny and teaches, never punishing. Sound tells you what
+   happened. (Carlsen, same)
+4. **One idea per place, born from the story** (Hazelight: a level's
+   mechanic is never reused). ([godisageek interview](https://godisageek.com/2021/03/in-games-you-have-to-create-everything-interview-with-josef-fares-founder-of-hazelight-studios/), [Unreal interview](https://www.unrealengine.com/developer-interviews/it-takes-two-lovingly-marries-story-and-gameplay-together))
+5. **Co-op: one player's idea is useless without the other's hands**
+   (Portal 2, It Takes Two); split information forces talk (Keep Talking,
+   [GDC Vault](https://gdcvault.com/play/1023113/Designing-Asymmetric-Gameplay-For-Keep)).
+   We've used "one sees, one does" three times already: this one should
+   be shared hands and bodies, not a guide.
+6. **Physics lets players find their own way** (Tears of the Kingdom:
+   "solve it the way we meant, or any way you devise").
+   ([Zelda Universe](https://zeldauniverse.net/2024/04/02/zelda-team-explains-the-developmental-complexity-of-tears-of-the-kingdom/))
+7. **Real machines:** a bascule ("seesaw" in French) is nearly balanced
+   on its pivot, so small forces move it
+   ([Multnomah County](https://www.multco.us/bridges/bascule-bridges), [EngineerFix](https://engineerfix.com/how-does-a-bascule-bridge-work/)).
+   Water-balance lifts move by water weight alone, brakes keep the speed
+   ([Wikipedia](https://en.wikipedia.org/wiki/Water_balance_railway), [Lynton](https://www.cliffrailwaylynton.co.uk/about/how-it-works/)).
+   Not found: a source on small hand-cranked bascules (uncertain).
+
+#### Plan 1: The seesaw (my pick)
+
+**The idea:** the power's off, the brake is released, and the leaf is a
+giant seesaw, tipped up at 30° and rocking in the wind. Get it flat and
+lock it.
+
+- **The aha:** *where* weight sits matters more than *how much* (lever
+  arm). One stone at the far tip outweighs three near the pivot; a
+  player at the tip counts for four.
+- **Both on the leaf:** walking out tips it down; the other must move
+  back to the heel or it slams. They move like a dance, calling steps.
+- **The lock:** the locking bolt is at the heel, off the leaf. Someone
+  has to step off, and the leaf rises without them. **So they replace
+  their own body with stones placed at the right distance**, then step
+  off and throw the bolt.
+- **The lure:** the stones are heaped by the pivot (easy to drop there),
+  where they do almost nothing.
+- **Mistakes:** too far out too fast and the leaf tips; the icy deck
+  slides you off into the shallow river (splash, wade ashore, freezing,
+  dripping). Stones slide off too and are gone.
+- **Physics:** real torque from every body on the leaf (players, stones,
+  snow), a slow realistic tilt with creaks that rise near the tipping
+  point.
+- **Fun mechanic:** the leg-up, to climb onto the leaf's raised heel.
+
+#### Plan 2: Tow it down
+
+**The idea:** the leaf is stuck up; its tip chain hangs 6 m up. The van
+is the only engine you have.
+
+- **The aha:** the van becomes the motor. Hook the hut's tow rope to the
+  tip chain and reverse slowly.
+- **Jobs:** the driver can't see the leaf (only the mirrors); the other
+  works the old **band brake** in the machinery house. Past halfway the
+  leaf wants to fall on its own, so the brake has to take over from the
+  van.
+- **The lure:** the dead lever panel in the hut (no power).
+- **Mistakes:** reverse too hard and the rope snaps (whip-crack, the
+  leaf bounces back up); no brake past halfway and it slams down, shakes
+  the snow off the trees, and jumps back up on its buffers.
+- **Physics:** rope tension, the leaf's swing and momentum, the van's
+  wheels slipping on snow.
+- **Fun mechanic:** the leg-up (or a snowball) to bring the tip chain
+  down.
+- **Flag:** the driver sees only through mirrors, a bit like the guide
+  in #3 and the spotter in #4.
+
+#### Plan 3: The snowball counterweight
+
+**The idea:** the counterweight bucket is short. Without enough weight
+in it, the leaf falls too fast and slams; with too much, it won't come
+down at all.
+
+- **The aha:** snow rolled downhill grows. A snowball rolled from the
+  slope above the pit gets bigger and heavier the farther it goes.
+- **Jobs:** once it's big, it takes two to push. You have to pick where
+  to start it and when to stop it. One stays on the brake while the other
+  sets it rolling.
+- **The lure:** throwing small snowballs into the bucket (from #4) does
+  nothing; they're far too light.
+- **Mistakes:** too big and it jams the bucket (break it up and start
+  again); too small and the leaf slams and bounces back up.
+- **Physics:** mass grows with distance rolled, momentum on the slope,
+  the bucket's swing.
+- **Flag:** it builds on #4's snowballs. That's allowed (the fun
+  mechanics carry on), but it's snow again.
+
+#### Questions
+
+1. **Which plan?** 1 (seesaw, my pick), 2 or 3, or a mix (for example
+   1 + 3's rolled snowball as a weight).
+2. **Falling in the river:** A) splash, wade ashore, walk back (my pick);
+   B) carried downstream to the bank 50 m away.
+3. **How hard:** A) 6 / 10 (my pick: everyone must cross this bridge);
+   B) 7-8.
+
+#### Your answers (2026-10-17): **agreed**
+
+- Plan 1, the seesaw, alone (no snowball mix).
+- The river: A) splash, wade ashore, walk back.
+- 6 / 10.
+

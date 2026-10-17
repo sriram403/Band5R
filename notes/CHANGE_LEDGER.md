@@ -306,3 +306,53 @@ works something he was told to; `naresh` checks it.
 **Found later**
 - (nothing yet)
 
+
+## #5 The lift bridge: the seesaw (branch `g11`, 2026-10-17; not merged yet)
+
+**What changed**
+- `puzzles/LiftBridge.gd` rewritten: no power, no levers, no wedge, no
+  safety mirror. The leaf sits on its axle like a seesaw (`TAIL` 1260 kg m
+  heavier at the back, `FRICTION` 160, `INERTIA`, `DAMP`): weight x
+  distance of players (80 kg) and stones (25 kg) on the leaf (`_pull`)
+  moves it; resting up at `UP_DEG` 30; a fast landing slams (`_slam`:
+  players on it knocked, stones jump). The lock lever in the machinery
+  house (only flat and still). The house barred from inside (`door_open`),
+  a hatch high in its road-side wall, the keeper's broken ladder; a rail
+  round the counterweight pit. Chalk marks every 2 m on the deck, a repair
+  notice. The hut's panel dead ("NO POWER"). Naresh's notes `lb_hut`,
+  `lb_door`, `lb_lock`. Place hints (`hint_for`, `HINTS`, group
+  `place_hint`). The river: players in it swim to `bank_at`
+  (`PlayerRig.fall_in_water`), stones sink (`BridgeStone.sink`).
+  `setup()` lost the mirror / power arguments, gained `stone_spots`, `bank`.
+- `items/BridgeStone.gd` (new): 25 kg flat stone (box collider, rough).
+- `PowerLine.gd`: the last pole before the hut is snapped (`_build_snapped`,
+  `snapped_pole`); the wave stops there; `hut_powered` always false.
+- `PlayerRig.gd`: **the leg-up** (fun mechanic 5): jump next to a crouched
+  partner (hands free) = `LEGUP_VELOCITY` (feet ~1.75 m up), prompt
+  "[Space] Leg-up off P2's back", `boosted()`. **Swimming** (`swimming`,
+  `_swim`, `_swim_to`) and **wet** (`wet_t`, drips, shivers). `_drip()` takes
+  a colour.
+- `LevelLandmarks._bridge_hut_and_power`: river stones on the near bank's
+  dry strip, the swimmers' bank point; pois `bridge_bank`, `leaf_tip`,
+  `stone_heap`, `machinery_hatch`, `lock_lever` (gone: `bridge_mirror`,
+  `wedge`, `counterweight_edge`).
+- Story "bridge" text / hint; DevMenu row 5 (starts in the van 25 m short
+  of the barrier).
+- PlayTest: `bridge` rewritten, new `bridge_mistakes`; `power` (the hut
+  stays dead), `save`, `puzzle_resets`, `way_out` updated.
+
+**What it could break (our guess)**
+- Anything that used the hut's power (`hut_powered`): `power`, `save`,
+  `storm` (F2: the panel says NO POWER anyway), `puzzle_resets`.
+- The leg-up: any jump next to a crouched partner anywhere (fun, but a
+  test that crouches P2 by P1 and jumps would jump higher).
+- The F2 storm (`storm_blow`), `way_out` (locks by script), the van
+  crossing (stones left on the leaf).
+- Swimming only triggers within 40 m of the bridge.
+
+**Tests that cover it**
+- `bridge`, `bridge_mistakes`, `power`, `puzzle_resets`, `save`, `storm`
+  (the storm-road scenario), smoke.
+
+**Found later**
+- (nothing yet)

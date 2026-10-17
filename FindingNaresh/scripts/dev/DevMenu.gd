@@ -26,7 +26,7 @@ const PUZZLES := [
 	["The windmill", "windmill", "", "Hold the starter lever; head-butt the legs back as they slide; the ladder, the napin. You start in the van at the gate."],
 	["The barn maze", "choose_road", "maze_gate", "Optional (Valley Road): the guide up the silo, the walker in the hedges; snow from the middle."],
 	["The lookout boards", "choose_road", "lookout", "Optional (Ridge Track): pictures on the landmarks, the patrol's riddles, snowballs, the dials."],
-	["The lift bridge", "bridge", "bridge_hut", "Levers, the safety mirror, the wedge, the counterweight. The water works counts as done (the power is on)."],
+	["The lift bridge", "bridge", "bridge_barrier_near", "The seesaw: no power, weight out on the leaf brings it down; the lock in the machinery house (in by the hatch, a leg-up). You start in the van at the barrier."],
 	["The ghat pace notes", "ghat", "", "Fog on the hairpins, the notes on the swung nav, the glimpse, the first attack. You start in the van at J3."],
 	["The coast watchtower", "tower", "coast_tower", "Sneak past the creature, climb the ramp, stamp the beach."],
 	["The photo", "photo", "", "Only P2 has the photo: find where it was taken."],
@@ -910,6 +910,14 @@ func play_puzzle(k: int) -> String:
 		while vi > 0 and lane.point(vi).distance_to(g) < 30.0:
 			vi -= 1
 		van_to(lane.point(vi), atan2(-lane.forward(vi).x, -lane.forward(vi).z))
+		boot.camper.repair_all()
+		teleport(boot.camper.global_transform * Vector3(-3.2, 0, -1.0))
+		run("van_seat")
+	if e[1] == "bridge":
+		# in the van on the road, 25 m short of the barrier, facing the bridge
+		var pr: Route = boot.builder.network.road("pump_house_road")
+		var bi: int = boot.builder.bridge_span.x - 14 - 12
+		van_to(pr.point(bi), atan2(-pr.forward(bi).x, -pr.forward(bi).z))
 		boot.camper.repair_all()
 		teleport(boot.camper.global_transform * Vector3(-3.2, 0, -1.0))
 		run("van_seat")

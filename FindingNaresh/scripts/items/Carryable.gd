@@ -127,6 +127,8 @@ func _physics_process(delta: float) -> void:
 	var to := target - global_position
 	if to.length() > SNAG_DISTANCE:
 		# snagged on something, or the holder walked off: let go
+		print("[carry] %s snagged %.1f m from the hold point %s at %s (holder at %s); touching %s" % [item_name, to.length(), target, global_position,
+			(holders[0] as Node3D).global_position, str(get_colliding_bodies().map(func(b): return b.name))])
 		for p in holders.duplicate():
 			p.drop_held()
 		return

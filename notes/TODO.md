@@ -155,9 +155,34 @@ being built and tested), so this always shows where the work is right now.
       mast's dish), the save test's slot. main `e2c2bf0`. The next full run
       stopped by you: from now on a full run only at a milestone checkpoint
       (all puzzles tuned), each fix tested on its own (rule 26)
-- [ ] **Next: puzzle #5, the lift bridge**: you play it (F1 → Puzzles → 5)
-      and say what to change. Remember: no power from the water works any
-      more (the windmill already powers a way open).
+- [~] **2026-10-17, new thread: puzzle #5, the lift bridge**: waiting for
+      your play (F1 → Puzzles → 5) and what to change. Remember: no power
+      from the water works any more (the windmill already powers a way
+      open). Today: the hut runs on `PowerLine` (water works turbine);
+      wedge (RAISE + pull), the 30° cut-out, ride the counterweight.
+      **Your ask: my improvement first. Proposal written**
+      (`design/PUZZLE_CHANGES.md` #5: hand crank + loading the
+      counterweight, kick-back, leg-up, S1-S4, 6 questions). Waiting for
+      your answers (and your play); nothing built.
+      **Then your ask: physics, much cleverer, researched.** Research done
+      (sources in PUZZLE_CHANGES #5 "Round 1b"); three plans written
+      (1 the seesaw, my pick; 2 tow it down with the van; 3 the snowball
+      counterweight). Waiting for your pick; nothing built.
+      **Agreed (2026-10-17): plan 1 alone, river A (wade out), 6/10.**
+      Building in `../MPG_dev` branch `g11` (ledger #5):
+      - [x] the seesaw leaf, stones, lock, barred door + hatch, dead hut,
+            snapped pole, notes, hints; the leg-up; swimming / wet
+      - [x] tests `bridge` (leg-up, door, lure, one at the tip, down
+            gently, two stones hold it, lock, van across), `bridge_mistakes`
+            (slam, rides back up, the river, a stone sinks, axle lure)
+      - [x] found and fixed: tuning from where people really stand (8.7 m),
+            players and stones carried by the turning leaf, heavy things
+            hugged at the belly, a carried stone wedging on another
+      - [~] repeat runs of `bridge`; then the walk `puzzle5` recorded
+- [ ] **Bug (your report, 2026-10-17), fix before the next thread's
+      hand-over:** the quiet test window shows nothing when you bring it
+      up (dark strip + white; screenshots inside are fine). Likely the
+      no-focus / mouse-passthrough flags from `e52d8fd`. Fix, test, push.
 - [x] **2026-10-17: #4 approved ("continue"), merged and pushed** (main
       `f2026b2`; on main: relay, relay_kb, snowball, bino_zoom and smoke,
       0 failures)
