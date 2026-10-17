@@ -5131,7 +5131,18 @@ func t_relay() -> void:
 	pad_button(JOY_BUTTON_X, false)
 	await wait(0.3)
 	var note: String = boot.huds[1]._note_text.text
-	check(note.contains("RIDGE PATROL") and note.contains("never leaves home") and note.contains("two places"), "P2 reads the patrol's sheet: the riddles")
+	check(note.contains("RIDGE PATROL") and note.contains("never leaves home") and note.contains("only shape you'll find in two places"), "P2 reads the patrol's sheet: the riddles")
+	# hold H here: a hint that gets clearer the longer you're at it
+	var st: Story = boot.story
+	relay.near_t = 0.0
+	check(st.hint_text(1).contains("out loud"), "the first hint here: read the sheet out loud")
+	relay.near_t = 160.0
+	check(st.hint_text(1).contains("every shape"), "after a while: read every shape")
+	relay.near_t = 310.0
+	check(st.hint_text(1).contains("Snowballs"), "later still: snowballs reach where hands can't")
+	await place_player(p, b.poi["lookout_deck"] + Vector3(0, 0.3, 0), 0.0)
+	check(st.hint_text(0).contains("Snowballs"), "the hint is for both, also up on the deck")
+	relay.near_t = 0.0
 	await shot("relay_sheet")
 	# a wrong try: the handle, on the right-hand end; the dials spin round
 	var handle := relay.find_child("HandleArea", true, false) as Node3D

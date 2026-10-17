@@ -296,6 +296,13 @@ works something he was told to; `naresh` checks it.
   screenshots), `bino_zoom` (zoom, rest, crouch, pad), `snowball`,
   `puzzle_resets`, `binoculars` (gym), `maze_views`, `save`, smoke.
 
+- After the video (2026-10-17): riddle 3 "shape", riddle 4 "the water
+  tower at the coolant works", Naresh's note's last lines; **place hints**:
+  `Story.hint_text` asks every node in group `place_hint` first
+  (`LookoutRelay.hint_for`, `near_t`, `HINTS`). Could break: any hint
+  check elsewhere if a place hint leaked out (it's "" beyond 70 m of the
+  box or once open). Tests: `relay` (4 new hint checks).
+
 **Found later**
 - (nothing yet)
 

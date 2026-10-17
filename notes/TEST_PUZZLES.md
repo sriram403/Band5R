@@ -314,8 +314,10 @@ and turns the dials.
    - **You should see:** "SPLAT!" on your partner; a white splat on the
      van that melts away. A snowball melts in your hands after 4 minutes.
 
-**Stuck? The answer:** 1 the windmill, 2 the silo, 3 the picture found
-twice (on the barn and on Last Fuel), 4 the water tower.
+**Stuck?** Hold H: the hint gets clearer the longer you're there
+(read out loud; read every shape; snowballs). **The answer:** 1 the
+windmill, 2 the silo, 3 the shape found twice (on the barn and on Last
+Fuel), 4 the water tower at the coolant works.
 
 ### 5. The lift bridge
 

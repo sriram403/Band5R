@@ -30,11 +30,11 @@ The code is painted out in the valley, one picture to a place. Read it from the 
 
 1: It works for the wind and never leaves home.
 2: The red barn's tall sister.
-3: The only picture you'll find in two places.
+3: The only shape you'll find in two places.
 4: On the patrol sign, up the slope.
 
 Pull the handle to try. A wrong try spins the dials."
-const SIGN_TEXT := "4: Past the last fuel,\nthe water that\nstands on legs."
+const SIGN_TEXT := "4: Past the last fuel,\nthe water tower at\nthe coolant works."
 
 var code: Array[int] = []        ## four indices into SHAPES: the answer
 var plate_shape := {}            ## plate id -> index into SHAPES
@@ -55,6 +55,15 @@ var _spinning := false
 var _ground: Callable
 var _deck := Vector3.ZERO
 var start_dials: Array[int] = []
+## Hold H near the lookout: three hints, clearer the longer you're here
+## (`hint_for`; Story.hint_text asks every "place_hint" first).
+const HINTS := [
+	[0.0, "Read the patrol's sheet out loud to whoever is up on the deck. They see the shapes, you have the riddles."],
+	[150.0, "Read every shape out there, not only the ones you're sure of. One of the riddles needs them all."],
+	[300.0, "The sign up the slope is out of reach. Snowballs reach where hands can't (old snow lies under the deck)."],
+]
+const HINT_NEAR := 70.0          ## m from the box: you're "at the lookout"
+var near_t := 0.0                ## s spent here (either player) with the box still shut
 
 
 ## `deck`: the lookout's deck (global), `board_xz`: the practice boards
@@ -66,6 +75,7 @@ var start_dials: Array[int] = []
 func setup(deck: Vector3, board_xz: Array[Vector2], box_at: Vector3, ground: Callable) -> void:
 	add_to_group("lookout_relay")
 	add_to_group("snow_target")
+	add_to_group("place_hint")
 	_ground = ground
 	_deck = deck
 	var rng := RandomNumberGenerator.new()
@@ -450,7 +460,32 @@ func _build_box(at: Vector3, deck: Vector3) -> void:
 	_box.add_child(sa)
 	# S1: Naresh's note, pinned on the back
 	NareshNote.make(_box, "relay_box", Vector3(0.2, 0.45, 0.41), 0.0,
-		"The patrol's box. My friend read the far pictures out to me from up on the deck, and I turned the dials down here. Easy with two. Read the sheet first. - N")
+		"The patrol's box. My friend read the far pictures out to me from up on the deck, and I turned the dials down here. Easy with two. Read the sheet first. The sign up the slope is iced over again, too high to reach. You always threw better than me. - N")
+
+
+func _physics_process(delta: float) -> void:
+	if opened:
+		return
+	for n in get_tree().get_nodes_in_group("player"):
+		if (n as Node3D).global_position.distance_to(_box_at) < HINT_NEAR:
+			near_t += delta
+			return
+
+
+## The hint for player `i` (hold H) while at the lookout, "" elsewhere.
+func hint_for(i: int) -> String:
+	if opened or i < 0:
+		return ""
+	var players := get_tree().get_nodes_in_group("player")
+	for n in players:
+		var q := n as PlayerRig
+		if q.index == i and q.global_position.distance_to(_box_at) < HINT_NEAR:
+			var text := ""
+			for h in HINTS:
+				if near_t >= float(h[0]):
+					text = String(h[1])
+			return text
+	return ""
 
 
 func turn(k: int) -> void:
