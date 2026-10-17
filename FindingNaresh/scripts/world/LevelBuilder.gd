@@ -416,6 +416,10 @@ func _landmarks() -> void:
 	_info_board("home_lane", 22, 9.0, "HOMESTEAD\nRoad to Bessi: the lane runs east\nthrough town, then north to the\nwindmill: VALLEY RD or RIDGE TRACK")
 	_info_board("pump_house_road", 12, -9.0, "LAST FUEL - J2\nPump House Rd north to the\nwater works and the old bridge.\nBESSI is across the river.")
 	_info_board("pump_house_road", 150, -10.0, "BESSI WATER CO.\nPump station & cooling works\nAuthorised visitors only")
+	# #4: the patrol's pictures on the landmarks, once they all stand
+	var relay := world.get_node_or_null("LookoutRelay") as LookoutRelay
+	if relay != null:
+		relay.mount_plates(self)
 
 
 ## Loose things to pick up. Fuel: one can by the homestead garage for the

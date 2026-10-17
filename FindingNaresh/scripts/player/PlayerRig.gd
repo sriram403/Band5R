@@ -28,7 +28,15 @@ const PITCH_LIMIT := deg_to_rad(85.0)
 const SEATED_EYE := 0.62
 const SEATED_PITCH := deg_to_rad(-5.0)   ## settle slightly down the road, not at the roof
 const EXIT_MAX_SPEED := 2.5              ## m/s; the doors stay shut above a crawl
-const BINOCULAR_ZOOM := 4.0              ## magnification while zoom is held
+const BINOCULAR_ZOOM := 4.0              ## magnification when first raised
+## The wheel / pad RB-LB steps the binoculars between these, like a real
+## zoom pair (the user, 2026-10-14: realistic, not 12x).
+const ZOOM_MIN := 2.0
+const ZOOM_MAX := 8.0
+## Above this the view sways with your breathing and pulse; crouching or
+## resting on a rail (group "binocular_rest") steadies it.
+const SWAY_FROM := 5.0
+const SWAY_RAD := 0.0045                 ## the sway's size at ZOOM_MAX, standing free
 
 var index := 0
 var dev: InputDevice
@@ -80,7 +88,11 @@ var _tumble_spin := 0.0
 var _knock_van: PhysicsBody3D = null   ## no collision with it until we are clear of it
 var _pose_stand := {}                  ## avatar part name -> standing transform
 var has_binoculars := false
-var zoom := 1.0                        ## current magnification (eases to BINOCULAR_ZOOM)
+var zoom := 1.0                        ## current magnification (eases to zoom_level)
+var zoom_level := BINOCULAR_ZOOM       ## where the binoculars are set (kept between raises)
+var sway := Vector2.ZERO               ## the binocular sway now (yaw, pitch rad), on the camera only
+var _sway_t := 0.0
+var _sway_amp := 1.0                   ## eased steadiness: 1 free, ~0.2 crouched / resting
 var base_fov := 78.0                   ## the layout's field of view, set by Boot
 var taken_grace := 0.0                 ## s left in which no creature can take you
 var taken_hold := 0.0                  ## s left frozen while being taken (Taken.gd)
@@ -346,7 +358,16 @@ func _physics_process(delta: float) -> void:
 		_scan()
 		if dev.just_pressed("tag") and can_tag():
 			tag_look()
-		if seat == null and ladder == null and held == null and not was_holding and not in_box and dev.just_pressed("throw"):
+		var looking := can_zoom() and dev.held("zoom")
+		if looking:
+			# the wheel (pad RB / LB) turns the zoom, like the ring on real binoculars
+			if dev.just_pressed("zoom_in"):
+				zoom_level = minf(zoom_level + 1.0, ZOOM_MAX)
+			elif dev.just_pressed("zoom_out"):
+				zoom_level = maxf(zoom_level - 1.0, ZOOM_MIN)
+		# no head-butt with the binoculars at your eyes (on the pad RB is the zoom then)
+		if seat == null and ladder == null and held == null and not was_holding and not in_box and not looking \
+				and zoom < 1.2 and dev.just_pressed("throw"):
 			headbutt()
 	_command_controls(delta)
 	if seat != null and not map_open and dev.just_pressed("journal") and _van_parked():
@@ -358,10 +379,11 @@ func _physics_process(delta: float) -> void:
 ## interpolated transforms, so movement and driving are smooth too.
 func _process(delta: float) -> void:
 	if dev != null and not get_tree().paused:
-		var want := BINOCULAR_ZOOM if can_zoom() and dev.held("zoom") else 1.0
+		var want := zoom_level if can_zoom() and dev.held("zoom") else 1.0
 		zoom = lerpf(zoom, want, 1.0 - exp(-delta * 14.0))
 		if absf(zoom - want) < 0.01:
 			zoom = want
+		_update_sway(delta)
 		if plan_open and maze_plan != null:
 			maze_plan.move_cursor(dev.cursor_delta(delta))
 		elif map_open and paper_map != null:
@@ -387,7 +409,49 @@ func _process(delta: float) -> void:
 			av_head.position = (_pose_stand["Head"] as Transform3D).origin + Vector3(0, -lunge * 0.3, -lunge * 1.4 + rear * 1.2)
 		xf = Transform3D(Basis.from_euler(Vector3(pitch, yaw, 0)), origin)
 	var b := xf.basis.rotated(xf.basis.z.normalized(), cam_roll)
+	if sway != Vector2.ZERO:
+		b = b * Basis.from_euler(Vector3(sway.y, sway.x, 0.0))
 	cam.global_transform = Transform3D(b, xf.origin)
+
+
+## Binoculars above SWAY_FROM shake with your breathing (slow, up and down)
+## and your pulse and hands (small, quick). Crouching or resting against a
+## rail (a "binocular_rest" node within its radius, standing still) steadies
+## them; walking makes it worse. On the camera only: aim and tags stay put.
+func _update_sway(delta: float) -> void:
+	if zoom <= SWAY_FROM:
+		sway = Vector2.ZERO
+		return
+	_sway_t += delta
+	var want := 1.0
+	var still := Vector2(velocity.x, velocity.z).length() < 0.3
+	if not still:
+		want = 1.6
+	elif resting():
+		want = 0.18 if crouching else 0.22
+	elif crouching:
+		want = 0.35
+	_sway_amp = lerpf(_sway_amp, want, 1.0 - exp(-delta * 2.0))
+	var t := _sway_t
+	var breath := Vector2(sin(t * 1.55) * 0.35, sin(t * 1.55 + 0.6) * 1.0)      # ~4 s a breath
+	var hands := Vector2(sin(t * 7.3) * 0.45 + sin(t * 11.9) * 0.25, sin(t * 8.7 + 1.0) * 0.35 + sin(t * 13.1) * 0.2)
+	var k := clampf((zoom - SWAY_FROM) / (ZOOM_MAX - SWAY_FROM), 0.0, 1.0)
+	sway = (breath + hands * 0.6) * SWAY_RAD * k * _sway_amp
+
+
+## Leaning on something solid: standing at a rail. A "binocular_rest" node
+## marks the strip of floor in front of one (its `half` meta: a box's half
+## size round the node, e.g. along the lookout deck's front rail).
+func resting() -> bool:
+	if seat != null:
+		return true          # elbows on the van's door
+	for n in get_tree().get_nodes_in_group("binocular_rest"):
+		var r := n as Node3D
+		var half: Vector3 = r.get_meta("half", Vector3.ONE)
+		var l := r.global_transform.affine_inverse() * global_position
+		if absf(l.x) < half.x and absf(l.y) < half.y and absf(l.z) < half.z:
+			return true
+	return false
 
 
 func _look(delta: float) -> void:

@@ -1211,3 +1211,17 @@ dials reset whenever a wrong one is turned (Q3).
 - 4. The snowball: yes (old snow on the ridge, crouch + E, G throws; the
   last riddle on a snow-covered sign near the box).
 - **New rule: realistic** in most places (weather, machines, tools).
+
+### After the video (2026-10-17): the user's changes, built
+
+- Riddle 3 says **shape**, not picture: "The only shape you'll find in two
+  places."
+- Riddle 4 names the place: "Past the last fuel, the water tower at the
+  coolant works." (On the ridge road the coolant works is still ahead when
+  you read it; the name points the right way all the same.)
+- From "what I'd add" (the user liked it): **hold H at the lookout** gives
+  a hint that gets clearer the longer you're there (read the sheet out loud;
+  read every shape; snowballs reach where hands can't), for both players;
+  **Naresh's note** ends "The sign up the slope is iced over again, too
+  high to reach. You always threw better than me."
+

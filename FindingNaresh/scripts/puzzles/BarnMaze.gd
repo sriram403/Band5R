@@ -115,14 +115,47 @@ float noise(vec2 p) {
 	vec2 u = f * f * (3.0 - 2.0 * f);
 	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
 }
+// A snow shower seen from afar (the user, 2026-10-14: realistic, it looked
+// like a glass tube): no hard sides (it fades out where you look along its
+// edge), grey, thickest in the middle, streaked and drifting with the wind,
+// rising into its cloud at the top and thinning now and then (`thin`).
+uniform float thin = 0.0;
 void fragment() {
-	float streak = noise(vec2(UV.x * 90.0, UV.y * 6.0 + TIME * 0.9)) * 0.6 + noise(vec2(UV.x * 23.0, UV.y * 2.0 + TIME * 0.4)) * 0.4;
-	float fade = smoothstep(0.0, 0.25, UV.y) * smoothstep(1.0, 0.7, UV.y);
-	ALBEDO = vec3(0.82, 0.84, 0.88);
-	ALPHA = clamp((0.32 + streak * 0.4) * fade * amount, 0.0, 1.0);
+	float face = abs(dot(normalize(NORMAL), normalize(VIEW)));
+	float edge = smoothstep(0.0, 0.55, face);
+	vec2 drift = vec2(UV.x * 40.0 + TIME * 0.03, UV.y * 3.0 + TIME * 0.5);
+	float streak = noise(vec2(UV.x * 70.0, UV.y * 5.0 + TIME * 0.8)) * 0.45 + noise(drift) * 0.35 + noise(vec2(UV.x * 9.0 - TIME * 0.02, UV.y * 1.5)) * 0.2;
+	// UV.y runs from the top (0) down to the ground (1)
+	float fade = smoothstep(0.0, 0.35, UV.y) * smoothstep(1.0, 0.85, UV.y);
+	ALBEDO = mix(vec3(0.60, 0.62, 0.67), vec3(0.80, 0.82, 0.86), streak);
+	ALPHA = clamp((0.48 + streak * 0.40) * fade * edge * amount * (1.0 - thin * 0.85), 0.0, 0.9);
+}
+"""
+## The shower's cloud: a low grey cloud sitting on the curtain, soft-edged.
+const SHOWER_CLOUD_SHADER := """
+shader_type spatial;
+render_mode unshaded, cull_back, depth_draw_never, shadows_disabled;
+uniform float amount = 1.0;
+float hash(vec2 p) {
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
+}
+float noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+void fragment() {
+	float face = abs(dot(normalize(NORMAL), normalize(VIEW)));
+	float puff = noise(UV * vec2(14.0, 6.0) + vec2(TIME * 0.01, 0.0)) * 0.6 + noise(UV * vec2(40.0, 15.0)) * 0.4;
+	ALBEDO = mix(vec3(0.50, 0.52, 0.57), vec3(0.70, 0.72, 0.76), puff * smoothstep(0.3, 0.0, UV.y));
+	ALPHA = clamp(smoothstep(0.1, 0.6, face) * (0.55 + puff * 0.45) * amount, 0.0, 0.95);
 }
 """
 const CURTAIN_NEAR := 160.0      ## m: closer than this, the real snow
+const CURTAIN_CYCLE := 20.0      ## s: the shower thins once in this long (#4)
 
 
 ## `xf`: the maze's middle on the ground, in the barn's frame.
@@ -591,8 +624,10 @@ func _track() -> void:
 
 func _build_curtain() -> void:
 	var cyl := CylinderMesh.new()
-	cyl.top_radius = 75.0
-	cyl.bottom_radius = 60.0
+	# over the whole farm, the barn and silo too (#4: the silo's picture
+	# shows through only when it thins)
+	cyl.top_radius = 105.0
+	cyl.bottom_radius = 88.0
 	cyl.height = 140.0
 	cyl.radial_segments = 24
 	cyl.cap_top = false
@@ -608,6 +643,24 @@ func _build_curtain() -> void:
 	_curtain.position = Vector3(0, 60.0, 0)
 	_curtain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_curtain)
+	# its cloud, low and dark, on top (a flattened ball, wider than the shower)
+	var ball := SphereMesh.new()
+	ball.radius = 1.0
+	ball.height = 2.0
+	ball.radial_segments = 24
+	ball.rings = 12
+	var csh := Shader.new()
+	csh.code = SHOWER_CLOUD_SHADER
+	var cm := ShaderMaterial.new()
+	cm.shader = csh
+	var cloud := MeshInstance3D.new()
+	cloud.name = "ShowerCloud"
+	cloud.mesh = ball
+	cloud.material_override = cm
+	cloud.scale = Vector3(135.0, 30.0, 125.0)
+	cloud.position = Vector3(0, 70.0, 0)      # local to the curtain: its top
+	cloud.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_curtain.add_child(cloud)
 
 
 func _show_curtain() -> void:
@@ -620,6 +673,18 @@ func _show_curtain() -> void:
 			near.append((n as PlayerRig).index)
 	_curtain.visible = near.size() < 2 and not snow_done
 	_curtain.layers = 1 << (1 + near[0]) if near.size() == 1 else 1
+	var cloud := _curtain.get_node("ShowerCloud") as VisualInstance3D
+	cloud.layers = _curtain.layers
+	# the shower comes and goes: about 4 s in every 20 it thins enough to
+	# see the silo's plate through it (#4, the lookout)
+	(_curtain.material_override as ShaderMaterial).set_shader_parameter("thin", curtain_thin())
+
+
+## 0 = the shower at its thickest, 1 = thinned (a gap in it), on a 20 s
+## cycle with ~4 s thin, eased in and out.
+func curtain_thin() -> float:
+	var t := fmod(Time.get_ticks_msec() / 1000.0, CURTAIN_CYCLE)
+	return smoothstep(0.0, 1.2, t - (CURTAIN_CYCLE - 5.2)) * (1.0 - smoothstep(0.0, 1.0, t - (CURTAIN_CYCLE - 1.0)))
 
 
 ## The hedges as one mesh: every wall two slightly ragged blocks (height,

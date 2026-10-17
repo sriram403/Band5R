@@ -54,7 +54,9 @@ const KEYS := {
 ## Mouse buttons that also trigger an action (checked alongside KEYS).
 const MOUSE := {"throw": MOUSE_BUTTON_LEFT, "map_place": MOUSE_BUTTON_LEFT, "map_remove": MOUSE_BUTTON_RIGHT,
 	"map_zoom_in": MOUSE_BUTTON_WHEEL_UP, "map_zoom_out": MOUSE_BUTTON_WHEEL_DOWN,
-	"tag": MOUSE_BUTTON_MIDDLE, "zoom": MOUSE_BUTTON_RIGHT}
+	"tag": MOUSE_BUTTON_MIDDLE, "zoom": MOUSE_BUTTON_RIGHT,
+	# with the binoculars up: the wheel turns the zoom
+	"zoom_in": MOUSE_BUTTON_WHEEL_UP, "zoom_out": MOUSE_BUTTON_WHEEL_DOWN}
 
 # --- Controller bindings (Xbox layout) -----------------------------------------
 const BUTTONS := {
@@ -74,6 +76,8 @@ const BUTTONS := {
 	"nav_swing": JOY_BUTTON_A,
 	# D-Up is the ignition only for the driver, who can't give Naresh jobs
 	"command": JOY_BUTTON_DPAD_UP,
+	# with the binoculars up (LT held): RB / LB turn the zoom
+	"zoom_in": JOY_BUTTON_RIGHT_SHOULDER, "zoom_out": JOY_BUTTON_LEFT_SHOULDER,
 }
 ## Triggers read as buttons (pressed past halfway). On foot RT and LT have no
 ## other job; in the driver's seat they are throttle and brake, so the actions
@@ -132,6 +136,8 @@ func glyph(action: String) -> String:
 			"menu_back": return "B"
 			"tag": return "RT"
 			"zoom": return "LT"
+			"zoom_in": return "RB"
+			"zoom_out": return "LB"
 			"horn": return "L3"
 			"command": return "D-Up"
 			"fwd": return "Stick up"
@@ -158,6 +164,8 @@ func glyph(action: String) -> String:
 		"menu_ok": return "Enter"
 		"menu_back": return "J"
 		"throw": return "LMB"
+		"zoom_in": return "Wheel up"
+		"zoom_out": return "Wheel down"
 		"tag": return "T"
 		"zoom": return "RMB"
 		"horn": return "Q"

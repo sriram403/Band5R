@@ -25,7 +25,7 @@ const PUZZLES := [
 	["The water works", "coolant", "facility", "Pump and valves; valve B slips twice. Reward: coolant."],
 	["The windmill", "windmill", "", "Hold the starter lever; head-butt the legs back as they slide; the ladder, the napin. You start in the van at the gate."],
 	["The barn maze", "choose_road", "maze_gate", "Optional (Valley Road): the guide up the silo, the walker in the hedges; snow from the middle."],
-	["The lookout boards", "choose_road", "lookout", "Optional (Ridge Track): binocular pictures, the dials on the box."],
+	["The lookout boards", "choose_road", "lookout", "Optional (Ridge Track): pictures on the landmarks, the patrol's riddles, snowballs, the dials."],
 	["The lift bridge", "bridge", "bridge_hut", "Levers, the safety mirror, the wedge, the counterweight. The water works counts as done (the power is on)."],
 	["The ghat pace notes", "ghat", "", "Fog on the hairpins, the notes on the swung nav, the glimpse, the first attack. You start in the van at J3."],
 	["The coast watchtower", "tower", "coast_tower", "Sneak past the creature, climb the ramp, stamp the beach."],

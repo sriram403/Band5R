@@ -160,7 +160,18 @@ being built and tested), so this always shows where the work is right now.
       (F1 → Puzzles → 4) and what to change. **Played; your asks: codes on
       the landmarks, scroll zoom, hardness 7-8/10. Proposal written
       (`design/PUZZLE_CHANGES.md` #4, S1-S4, 5 questions); waiting for your
-      answers, nothing built.** Agreed already: the snowball
+      answers, nothing built.** Agreed (2026-10-14: one picture a place,
+      sway, a wrong code resets the box itself, the snowball, S1-S4, the
+      barn's snow made realistic). **Built in `../MPG_dev` branch `g10`:**
+      pictures on six landmarks, the riddle sheet, the handle, the snowy
+      sign and snowballs, zoom 2x-8x with sway, view lanes, the snow
+      shower. Tests relay, relay_kb, relay_views, bino_zoom, snowball,
+      puzzle_resets, maze_views, save, binoculars: 0 failures. smoke: the
+      `mouse` check fails only in `MPG_dev` (main's code too; open, see
+      ROUGH_NOTES). Walk `puzzle4` recorded (3 min 14 s), sent. **Next:
+      your look at the video.** Also pushed at once (your report): test
+      windows can't take your mouse / keyboard (main `e52d8fd`).
+      Agreed already: the snowball
       goes there (old snow lying on the high ridge). Then: proposal (S1, ...)
       in `design/PUZZLE_CHANGES.md` #4, your answers, build in `../MPG_dev`
       (new branch `g10` from main), tests, walk `puzzle4` recorded, your OK,

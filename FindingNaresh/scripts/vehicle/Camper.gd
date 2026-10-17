@@ -1000,7 +1000,8 @@ func _physics_process(delta: float) -> void:
 			set_headlights(not headlights_on)
 		if pdev.just_pressed("nav_swing") and not passenger.map_open:
 			swing_nav()
-		if pdev.just_pressed("swap_seat"):
+		# LB turns the binoculars' zoom while they are up
+		if pdev.just_pressed("swap_seat") and passenger.zoom < 1.2:
 			swap_roles()
 			return
 

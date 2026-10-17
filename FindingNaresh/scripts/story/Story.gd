@@ -213,6 +213,12 @@ func hint_text(player_index := -1) -> String:
 		var who := maxi(player_index, 0)
 		var s: Array = P1_OPENING if who == 0 else P2_OPENING
 		return s[mini(opening_steps[who], s.size() - 1)][1]
+	# a place's own hint wins while you're there (#4, the lookout)
+	if is_inside_tree():
+		for n in get_tree().get_nodes_in_group("place_hint"):
+			var ph := String(n.call("hint_for", player_index))
+			if ph != "":
+				return ph
 	return current()["hint"]
 
 

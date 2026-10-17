@@ -87,6 +87,11 @@ func _scatter() -> void:
 				reeds.append(_xf(Vector3(x, _h(x, z) + 0.5 * ys, z), rng.randf_range(0, TAU), Vector3(1, ys, 1)))
 			continue
 		if _in_clearing(x, z):
+			# a view lane's trees were felled: where one would stand, a stump
+			if kind < 0.80 and in_view_lane(x, z) and keep <= _forest(x, z):
+				var sy := rng.randf_range(0.0, TAU)
+				var ss := rng.randf_range(0.9, 1.4)
+				trunks.append(_xf(Vector3(x, _h(x, z) + 0.15, z), sy, Vector3(ss, 0.12, ss)))
 			continue
 		# thin the woods right beside the road so sightlines stay open, and
 		# along the river so the water reads from a distance

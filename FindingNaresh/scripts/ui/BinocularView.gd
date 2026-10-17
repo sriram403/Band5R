@@ -42,3 +42,23 @@ func _init() -> void:
 	color = Color.WHITE
 	visible = false
 	resized.connect(func(): m.set_shader_parameter("size", size))
+	# the zoom, small at the bottom, like the scale on the ring
+	_level = Label.new()
+	_level.name = "Level"
+	_level.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_level.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_level.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_level.position.y -= 18.0
+	_level.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_level.add_theme_font_size_override("font_size", 18)
+	_level.add_theme_color_override("font_color", Color(0.85, 0.85, 0.8, 0.85))
+	_level.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_level)
+
+
+var _level: Label
+
+
+## "6x   Wheel up / down: zoom" under the eyepieces.
+func show_level(z: float, zoom_in: String, zoom_out: String) -> void:
+	_level.text = "%dx      [%s / %s]  zoom" % [roundi(z), zoom_in, zoom_out]

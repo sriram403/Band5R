@@ -379,7 +379,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "relay_views", "bino_zoom", "snowball", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -2463,7 +2463,7 @@ func t_puzzle_resets() -> void:
 	wm.napin_taken = true
 	lift.from_dict({"locked": true})
 	maze.from_dict({"chest_open": true, "dust_done": true})
-	relay.from_dict({"dials": [1, 2, 3, 4], "opened": true})
+	relay.from_dict({"dials": [1, 2, 3, 4], "opened": true, "snow_left": 0})
 	st.flags["ghat_glimpse"] = true
 	st.flags["first_attack"] = true
 	var rows := {}
@@ -2485,7 +2485,7 @@ func t_puzzle_resets() -> void:
 	check(not maze.chest_open, "Puzzles → the barn maze: the chest shut again")
 	dm.run("puzzle", rows["The lookout boards"])
 	await wait(0.5)
-	check(not relay.opened and relay.dials.max() == 0, "Puzzles → the lookout boards: the box locked, the dials back")
+	check(not relay.opened and relay.dials == relay.start_dials and relay.snow_left == LookoutRelay.SNOW_CHUNKS, "Puzzles → the lookout boards: the box locked, the dials back, the old snow back on the sign")
 	sta.solve_quietly()
 	lift.from_dict({"locked": true})
 	dm.run("puzzle", rows["The lift bridge"])
@@ -5081,16 +5081,27 @@ func t_maze_views() -> void:
 	maze.reset()
 
 
-## W4, the binocular relay at the Pine Ridge lookout: two boards out across
-## the valley show the code in pictures (binoculars from the deck); P2 at the
-## supply box turns the dials to match (pad X); it opens, a full can inside.
+## #4, the lookout boards (2026-10-14): the pictures on the landmarks are
+## the riddles' answer; P2 at the box reads the patrol's sheet, a wrong try
+## spins the dials, snowballs knock the old snow off the patrol sign (the
+## last riddle), the right code opens the box on a full can. P2 on the pad.
 func t_relay() -> void:
 	var b: LevelBuilder = boot.builder
 	var relay := get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
-	check(relay != null and relay.boards.size() == 2 and relay.code.size() == 4, "the lookout has a picture-lock supply box and two code boards")
+	check(relay != null and relay.code.size() == 4 and relay.plates.size() == 6, "the lookout's supply box, and six pictures out on the landmarks")
 	if relay == null:
 		return
-	relay.from_dict({"dials": [(relay.code[0] + 3) % 6, (relay.code[1] + 2) % 6, (relay.code[2] + 4) % 6, (relay.code[3] + 1) % 6], "opened": false})
+	relay.reset()
+	var ps: Dictionary = relay.plate_shape
+	var counts := {}
+	for id in ps:
+		counts[ps[id]] = int(counts.get(ps[id], 0)) + 1
+	var twice := []
+	for k in counts:
+		if counts[k] == 2:
+			twice.append(k)
+	check(relay.code == [ps["windmill"], ps["silo"], ps["barn"], ps["water_tower"]] and twice == [ps["barn"]] and ps["last_fuel"] == ps["barn"],
+		"the answer is the riddles': the windmill, the silo, the one picture found twice (barn, Last Fuel), the water tower")
 	boot._on_joy_changed(0, true)      # P2 on a pad
 	await wait(0.3)
 	var p := p1()
@@ -5104,44 +5115,120 @@ func t_relay() -> void:
 	var t_wait := Time.get_ticks_msec()
 	while p.prompt_text == "" and Time.get_ticks_msec() - t_wait < 2000:
 		await physics_frames(2)
-	log_line("at the bench: '%s'" % p.prompt_text)
-	await shot("relay_bench")
 	await tap(KEY_E)
 	await physics_frames(3)
 	check(p.has_binoculars and boot.world.find_child("LookoutBinoculars", true, false) == null, "the binoculars are on the lookout deck's bench: E takes them")
-	await place_player(p, b.poi["lookout_deck"] + Vector3(0, 0.3, 0), 0.0)
-	var names := []
-	for k in 2:
-		var board: Vector3 = b.poi["relay_board_%d" % (k + 1)]
-		log_line("board %d: %.0f m from the deck" % [k + 1, board.distance_to(b.poi["lookout_deck"])])
-		await look_at_point(p, board)
-		await wait(0.3)
-		await shot("relay_board%d_eye" % (k + 1))
-		await mouse_button(MOUSE_BUTTON_RIGHT, true)
-		await wait(0.6)
-		await shot("relay_board%d_zoom" % (k + 1))
-		await mouse_button(MOUSE_BUTTON_RIGHT, false)
-		await wait(0.3)
-		# can the deck see the board? a ray from the eye to the board's middle
-		var eye := p.global_position + Vector3.UP * 1.56
-		var hit: Dictionary = p.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(eye, board, 1 | 8))   # ground, and trees and buildings
-		log_line("board %d in sight: %s" % [k + 1, str(hit.is_empty())])
-		check(hit.is_empty(), "board %d can be seen from the deck (nothing in the way)" % (k + 1))
-	for c in relay.code:
-		names.append(LookoutRelay.SHAPES[c])
-	log_line("the code: %s" % str(names))
-	# P2 at the box turns each dial until it shows what was called down
-	await place_player(q, b.poi["relay_box"] + Vector3(0, 0.4, 0), 0.0)
+	# P2 at the box: the patrol's sheet (the riddles), on the box's left end
 	var boxn := relay.find_child("SupplyBox", true, false) as Node3D
-	var front := boxn.global_transform * Vector3(0, 0, -1.4)
-	await place_player(q, front + Vector3(0, 0.4, 0), 0.0)
-	await wait(0.5)          # land first, then aim
+	var sheet := relay.find_child("SheetArea", true, false) as Node3D
+	await place_player(q, boxn.global_transform * Vector3(1.6, 0, 0) + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.5)
+	await look_at_point(q, sheet.global_position)
+	await wait(0.2)
+	log_line("at the sheet: '%s'" % q.prompt_text)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.3)
+	var note: String = boot.huds[1]._note_text.text
+	check(note.contains("RIDGE PATROL") and note.contains("never leaves home") and note.contains("only shape you'll find in two places"), "P2 reads the patrol's sheet: the riddles")
+	# hold H here: a hint that gets clearer the longer you're at it
+	var st: Story = boot.story
+	relay.near_t = 0.0
+	check(st.hint_text(1).contains("out loud"), "the first hint here: read the sheet out loud")
+	relay.near_t = 160.0
+	check(st.hint_text(1).contains("every shape"), "after a while: read every shape")
+	relay.near_t = 310.0
+	check(st.hint_text(1).contains("Snowballs"), "later still: snowballs reach where hands can't")
+	await place_player(p, b.poi["lookout_deck"] + Vector3(0, 0.3, 0), 0.0)
+	check(st.hint_text(0).contains("Snowballs"), "the hint is for both, also up on the deck")
+	relay.near_t = 0.0
+	await shot("relay_sheet")
+	# a wrong try: the handle, on the right-hand end; the dials spin round
+	var handle := relay.find_child("HandleArea", true, false) as Node3D
+	await place_player(q, boxn.global_transform * Vector3(-1.6, 0, 0) + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.4)
+	await look_at_point(q, handle.global_position)
+	await wait(0.2)
+	log_line("at the handle: '%s'" % q.prompt_text)
+	var before := relay.dials.duplicate()
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.4)
+	check(relay.get("_spinning") == true and boot.huds[1]._note_text.text.contains("whirr"), "a wrong try: clunk, the lid holds, the dials spin on their own")
+	await shot("relay_spin")
+	await until(func() -> bool: return relay.get("_spinning") == false, 4.0)
+	var moved := 0
+	var none_right := true
+	for k in 4:
+		if relay.dials[k] != before[k]:
+			moved += 1
+		if relay.dials[k] == relay.code[k]:
+			none_right = false
+	log_line("dials %s -> %s (code %s)" % [str(before), str(relay.dials), str(relay.code)])
+	check(not relay.opened and moved == 4 and none_right, "... and stop somewhere new, none of them right")
+	# the patrol sign: old snow frozen on, out of reach
+	var sgn := relay.find_child("PatrolSign", true, false) as Node3D
+	var front := sgn.global_transform.basis.z
+	front.y = 0.0
+	front = front.normalized()
+	var stand := relay.sign_at + front * 6.0
+	stand.y = b._h(stand.x, stand.z) + 0.4
+	await place_player(q, relay.sign_at + front * 1.0 + Vector3(0, -3.0, 0), 0.0)
+	await wait(0.4)
+	await look_at_point(q, relay.sign_at + Vector3(0, -2.4, 0))
+	await wait(0.2)
+	log_line("under the sign: '%s'" % q.prompt_text)
+	check(q.prompt_text.contains("out of reach"), "under the sign: old snow frozen on it, out of reach")
+	await shot("relay_sign_snowy")
+	var crusts: Array[Node3D] = []
+	for k in LookoutRelay.SNOW_CHUNKS:
+		crusts.append(relay.find_child("SnowCrust%d" % k, true, false) as Node3D)
+	var throws := 0
+	for c in crusts:
+		var guard := 0
+		while c.visible and guard < 4:
+			guard += 1
+			# a snowball from the old snow under the deck
+			var patch: Node3D = relay.patches[0]
+			await place_player(q, patch.global_position + Vector3(1.6, 0.4, 0), 0.0)
+			await wait(0.3)
+			await look_at_point(q, patch.global_position + Vector3(0, 0.2, 0))
+			await wait(0.2)
+			pad_button(JOY_BUTTON_X, true)
+			await wait(0.1)
+			pad_button(JOY_BUTTON_X, false)
+			await wait(0.3)
+			if throws == 0:
+				check(q.held is Snowball, "X at the old snow makes a snowball (prompt '%s')" % q.prompt_text)
+				await shot("relay_snowball")
+			if not q.held is Snowball:
+				log_line('no snowball in hand: held %s, prompt %s, at %s, patch %s' % [str(q.held), q.prompt_text, str(q.global_position), str(patch.global_position)])
+				continue
+			await place_player(q, stand, 0.0)
+			await wait(0.4)
+			await look_at_point(q, c.global_position)
+			await wait(0.2)
+			log_line("throw %d: from %s at %s, holding %s" % [throws, str(q.global_position), str(c.global_position), str(q.held)])
+			pad_button(JOY_BUTTON_RIGHT_SHOULDER, true)
+			await wait(0.1)
+			pad_button(JOY_BUTTON_RIGHT_SHOULDER, false)
+			throws += 1
+			await wait(1.0)
+	log_line("%d throws, %d lumps left" % [throws, relay.snow_left])
+	check(relay.snow_left == 0, "snowballs knock the old snow off the sign (%d throws)" % throws)
+	await look_at_point(q, relay.sign_at)
+	await wait(0.3)
+	await shot("relay_sign_clear")
+	# the code, dial by dial, and the handle
+	await place_player(q, boxn.global_transform * Vector3(0, 0, -1.4) + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.5)
 	var presses := 0
 	for k in 4:
 		var dial := relay.find_child("Dial%d" % k, true, false) as Node3D
 		await look_at_point(q, dial.global_position)
 		await wait(0.2)
-		log_line("dial %d: '%s', ray hits %s" % [k, q.prompt_text, q.ray.get_collider().name if q.ray.is_colliding() else "nothing"])
 		var guard := 0
 		while relay.dials[k] != relay.code[k] and guard < 8:
 			pad_button(JOY_BUTTON_X, true)
@@ -5150,21 +5237,29 @@ func t_relay() -> void:
 			await wait(0.12)
 			presses += 1
 			guard += 1
+	check(not relay.opened, "the dials alone don't open it")
+	await place_player(q, boxn.global_transform * Vector3(-1.6, 0, 0) + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.4)
+	await look_at_point(q, handle.global_position)
+	await wait(0.2)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_X, false)
 	await wait(0.8)
 	log_line("dials %s, code %s, %d presses" % [str(relay.dials), str(relay.code), presses])
-	check(relay.opened and boot.world.find_child("RelayFuel", true, false) != null and boot.story.flags.has("relay_done"), "the dials match: the box opens, a full can inside")
+	check(relay.opened and boot.world.find_child("RelayFuel", true, false) != null and boot.story.flags.has("relay_done"), "the right code and the handle: the box opens, a full can inside")
 	await shot("relay_open")
 	var can: Node = boot.world.find_child("RelayFuel", true, false)
 	if can != null:
 		can.queue_free()
+	relay.reset()
 
 
-## W4 as a player does it alone on the keyboard: a fresh box, E on each dial.
+## #4 as a player does it alone on the keyboard: a fresh box, E on each dial,
+## E on the handle.
 func t_relay_kb() -> void:
-	var b: LevelBuilder = boot.builder
 	var relay := get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
-	# as in a new game, whatever ran before
-	relay.from_dict({"dials": [(relay.code[0] + 3) % 6, (relay.code[1] + 2) % 6, (relay.code[2] + 4) % 6, (relay.code[3] + 1) % 6], "opened": false})
+	relay.reset()
 	var old_can: Node = boot.world.find_child("RelayFuel", true, false)
 	if old_can != null:
 		old_can.queue_free()
@@ -5184,13 +5279,188 @@ func t_relay_kb() -> void:
 		await wait(0.2)
 		var guard := 0
 		while relay.dials[k] != relay.code[k] and guard < 8:
-			log_line("dial %d: '%s' target %s" % [k, p.prompt_text, p.current_target.name if p.current_target else "none"])
 			await tap(KEY_E)
 			await wait(0.15)
 			guard += 1
+	var handle := relay.find_child("HandleArea", true, false) as Node3D
+	await place_player(p, boxn.global_transform * Vector3(-1.6, 0, 0) + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.4)
+	await look_at_point(p, handle.global_position)
+	await wait(0.2)
+	log_line("at the handle: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await wait(0.8)
+	log_line("dials %s code %s opened %s" % [str(relay.dials), str(relay.code), relay.opened])
+	check(relay.opened, "turned on the keyboard from fresh, the handle pulled: the box opens")
+	var can: Node = boot.world.find_child("RelayFuel", true, false)
+	if can != null:
+		can.queue_free()
+	relay.reset()
+
+
+## The binoculars' zoom (2026-10-14): the wheel steps 2x-8x and it's kept
+## between raises; above 5x the view sways, much less crouched or at the
+## deck's rail; no head-butt with them up. At the lookout deck.
+func t_bino_zoom() -> void:
+	var b: LevelBuilder = boot.builder
+	var p := p1()
+	p.has_binoculars = true
+	p.zoom_level = PlayerRig.BINOCULAR_ZOOM
+	var deck: Vector3 = b.poi["lookout_deck"]
+	await place_player(p, deck + Vector3(0, 0.3, 0), 0.0)
+	await wait(0.4)
+	mouse_button(MOUSE_BUTTON_RIGHT, true)
+	await wait(0.6)
+	check(absf(p.zoom - 4.0) < 0.05, "raised: 4x")
+	for k in 6:
+		mouse_button(MOUSE_BUTTON_WHEEL_UP, true)
+		await physics_frames(2)
+		mouse_button(MOUSE_BUTTON_WHEEL_UP, false)
+		await physics_frames(2)
+	await wait(0.6)
+	log_line("after six notches up: level %.1f, zoom %.2f, fov %.1f" % [p.zoom_level, p.zoom, p.cam.fov])
+	check(p.zoom_level == PlayerRig.ZOOM_MAX and absf(p.zoom - 8.0) < 0.05, "the wheel zooms in, no further than 8x")
+	check((boot.huds[0] as PlayerHUD).binoculars.find_child("Level", true, false).text.begins_with("8x"), "the zoom shows under the eyepieces")
+	# the sway: free-standing in the middle of the deck, then at the rail, then crouched
+	var sway_free := await _sway_size(p, 2.0)
+	var rest := get_tree().get_nodes_in_group("binocular_rest")[0] as Node3D
+	await place_player(p, rest.global_position + Vector3(0, 0.2, 0), p.yaw)
+	await wait(0.3)
+	check(p.resting(), "at the front rail you can lean on it")
+	var sway_rail := await _sway_size(p, 2.0)
+	await place_player(p, deck + Vector3(0, 0.3, 0), p.yaw)
+	key(KEY_CTRL, true)
 	await wait(0.5)
-	log_line("dials %s code %s opened %s equal %s" % [str(relay.dials), str(relay.code), relay.opened, relay.dials == relay.code])
-	check(relay.opened, "turned on the keyboard from fresh, the box opens")
+	var sway_crouch := await _sway_size(p, 2.0)
+	key(KEY_CTRL, false)
+	log_line("sway at 8x (mrad): free %.2f, rail %.2f, crouched %.2f" % [sway_free * 1000.0, sway_rail * 1000.0, sway_crouch * 1000.0])
+	check(sway_free > 0.002, "at 8x, standing free, the view sways (%.1f mrad)" % (sway_free * 1000.0))
+	check(sway_rail < sway_free * 0.4 and sway_crouch < sway_free * 0.55, "leaning on the rail or crouching steadies it")
+	# no head-butt with them up (LMB is throw / butt)
+	var before_butt: float = p.get("_butt_t")
+	mouse_button(MOUSE_BUTTON_LEFT, true)
+	await physics_frames(2)
+	mouse_button(MOUSE_BUTTON_LEFT, false)
+	await physics_frames(4)
+	check(float(p.get("_butt_wind")) <= 0.0 and float(p.get("_butt_t")) <= before_butt, "no head-butt with the binoculars up")
+	for k in 9:
+		mouse_button(MOUSE_BUTTON_WHEEL_DOWN, true)
+		await physics_frames(2)
+		mouse_button(MOUSE_BUTTON_WHEEL_DOWN, false)
+		await physics_frames(2)
+	await wait(0.6)
+	check(p.zoom_level == PlayerRig.ZOOM_MIN and absf(p.zoom - 2.0) < 0.05 and p.sway == Vector2.ZERO, "the wheel zooms out to 2x; no sway that low")
+	mouse_button(MOUSE_BUTTON_RIGHT, false)
+	await wait(0.6)
+	mouse_button(MOUSE_BUTTON_WHEEL_UP, true)
+	await physics_frames(2)
+	mouse_button(MOUSE_BUTTON_WHEEL_UP, false)
+	await wait(0.2)
+	check(p.zoom == 1.0 and p.zoom_level == PlayerRig.ZOOM_MIN, "lowered, the wheel does nothing to them")
+	mouse_button(MOUSE_BUTTON_RIGHT, true)
+	await wait(0.6)
+	check(absf(p.zoom - 2.0) < 0.05, "raised again: still at 2x, as you left them")
+	mouse_button(MOUSE_BUTTON_RIGHT, false)
+	await wait(0.4)
+	# P2 on the pad: LT up, RB / LB zoom
+	boot._on_joy_changed(0, true)
+	await wait(0.3)
+	var q := p2()
+	q.has_binoculars = true
+	q.zoom_level = PlayerRig.BINOCULAR_ZOOM
+	await place_player(q, deck + Vector3(1.0, 0.3, 0.5), 0.0)
+	await wait(0.3)
+	pad_axis(JOY_AXIS_TRIGGER_LEFT, 1.0)
+	await wait(0.5)
+	pad_button(JOY_BUTTON_RIGHT_SHOULDER, true)
+	await physics_frames(2)
+	pad_button(JOY_BUTTON_RIGHT_SHOULDER, false)
+	await physics_frames(2)
+	pad_button(JOY_BUTTON_RIGHT_SHOULDER, true)
+	await physics_frames(2)
+	pad_button(JOY_BUTTON_RIGHT_SHOULDER, false)
+	await wait(0.5)
+	var up := q.zoom_level
+	pad_button(JOY_BUTTON_LEFT_SHOULDER, true)
+	await physics_frames(2)
+	pad_button(JOY_BUTTON_LEFT_SHOULDER, false)
+	await wait(0.3)
+	check(up == 6.0 and q.zoom_level == 5.0 and float(q.get("_butt_wind")) <= 0.0, "on the pad, LT up: RB zooms in, LB out (and RB doesn't head-butt)")
+	pad_axis(JOY_AXIS_TRIGGER_LEFT, 0.0)
+	await wait(0.4)
+	p.zoom_level = PlayerRig.BINOCULAR_ZOOM
+	q.zoom_level = PlayerRig.BINOCULAR_ZOOM
+
+
+## The biggest sway angle seen over `secs` (binoculars up).
+func _sway_size(p: PlayerRig, secs: float) -> float:
+	await wait(1.5)       # let the steadiness settle
+	var most := 0.0
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < int(secs * 1000.0):
+		most = maxf(most, p.sway.length())
+		await physics_frames(1)
+	return most
+
+
+## Snowballs (fun mechanic 4): made at the old snow, thrown at your partner
+## (a jolt, a line), at Naresh (he complains), at the van (a white splat
+## that stays a while); they burst, and creatures hear them land.
+func t_snowball() -> void:
+	var relay := get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
+	var p := p1()
+	var q := p2()
+	var patch: Node3D = relay.patches[1]
+	await place_player(q, patch.global_position + Vector3(0, 0.4, -7.0), 0.0)
+	await place_player(p, patch.global_position + Vector3(1.6, 0.4, 0), 0.0)
+	await wait(0.4)
+	await look_at_point(p, patch.global_position + Vector3(0, 0.2, 0))
+	await wait(0.2)
+	log_line("at the snow: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await wait(0.3)
+	check(p.held is Snowball, "E at the old snow: a snowball in your hands")
+	await shot("snowball_held")
+	# at P2, 7 m off
+	await look_at_point(p, q.global_position + Vector3(0, 1.2, 0))
+	await wait(0.2)
+	await tap(KEY_G)
+	var hit := await until(func() -> bool: return boot.huds[1]._note_text.text.contains("SPLAT"), 2.0)
+	check(hit and p.held == null, "thrown with G, it hits P2: SPLAT")
+	await shot("snowball_hit_p2")
+	# at the van
+	var c := camper()
+	var rd: Route = boot.builder.network.road("ridge_track")
+	var lk: Vector3 = boot.builder.poi["lookout"]
+	await van_to(rd.point(int(rd.nearest(lk.x, lk.z)["index"])))
+	await wait(0.5)
+	var at := c.global_transform * Vector3(0, 1.4, 0)
+	await place_player(p, patch.global_position + Vector3(1.6, 0.4, 0), 0.0)
+	await wait(0.3)
+	await look_at_point(p, patch.global_position + Vector3(0, 0.2, 0))
+	await tap(KEY_E)
+	await wait(0.3)
+	var side := c.global_transform.basis.x
+	await place_player(p, at + side * 6.0 + Vector3(0, -0.6, 0), 0.0)
+	await wait(0.4)
+	await look_at_point(p, at + Vector3(0, 0.2, 0))
+	await tap(KEY_G)
+	var splat := await until(func() -> bool: return c.find_child("SnowSplat", true, false) != null, 2.0)
+	check(splat, "thrown at the van: a white splat stays on it")
+	await shot("snowball_van")
+	# melts in your hands if you keep it too long (sped up)
+	await place_player(p, patch.global_position + Vector3(1.6, 0.4, 0), 0.0)
+	await wait(0.3)
+	await look_at_point(p, patch.global_position + Vector3(0, 0.2, 0))
+	await tap(KEY_E)
+	await wait(0.3)
+	var sb := p.held as Snowball
+	var had := sb != null
+	if had:
+		sb.set("_life", 0.3)
+		await wait(0.8)
+		log_line("melt: valid %s, held %s" % [is_instance_valid(sb), str(p.held)])
+	check(had and not is_instance_valid(sb) and p.held == null, "kept too long, it melts away in your hands")
 
 
 ## The ghat as a person testing alone sets it up: F1, Story -> jump to "up
@@ -11078,3 +11348,185 @@ func round_van_back(p: PlayerRig, pad: bool) -> bool:
 		if not ok:
 			return false
 	return true
+
+
+
+## #4: every picture from the deck, as the spotter sees it: at the front
+## rail, binoculars at 8x (screenshots to look at), and at the box, the
+## sign, the snow and the direction table from where a player stands.
+func t_relay_views() -> void:
+	var b: LevelBuilder = boot.builder
+	var relay := get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
+	relay.reset()
+	var p := p1()
+	p.has_binoculars = true
+	await place_player(p2(), b.poi["relay_box"] + Vector3(4, 0.5, 4), 0.0)
+	var deck: Vector3 = b.poi["lookout_deck"]
+	for id in LookoutRelay.PLATE_IDS:
+		var pl := relay.plates.get(id) as Node3D
+		check(pl != null, "the %s carries a picture" % id)
+		if pl == null:
+			continue
+		var at := pl.global_position
+		# stand at the deck's edge nearest it
+		var flat := at - deck
+		flat.y = 0.0
+		await place_player(p, deck + flat.normalized() * 1.6 + Vector3(0, 0.3, 0), 0.0)
+		await wait(0.3)
+		await look_at_point(p, at)
+		log_line("plate %s: %s, %.0f m from the deck" % [id, LookoutRelay.SHAPES[relay.plate_shape[id]], p.head.global_position.distance_to(at)])
+		p.zoom_level = 8.0
+		await mouse_button(MOUSE_BUTTON_RIGHT, true)
+		await wait(1.0)
+		await shot("rv_" + id)
+		await mouse_button(MOUSE_BUTTON_RIGHT, false)
+		await wait(0.3)
+	p.zoom_level = PlayerRig.BINOCULAR_ZOOM
+	# the barn's snow from the deck, thick and thinned
+	var maze := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+	var silo := relay.plates.get("silo") as Node3D
+	if maze != null and silo != null:
+		await look_at_point(p, silo.global_position)
+		p.zoom_level = 8.0
+		await mouse_button(MOUSE_BUTTON_RIGHT, true)
+		await wait(1.0)
+		var t0 := Time.get_ticks_msec()
+		var seen_thin := false
+		var seen_thick := false
+		while Time.get_ticks_msec() - t0 < 21000 and not (seen_thin and seen_thick):
+			var th := maze.curtain_thin()
+			if th > 0.95 and not seen_thin:
+				seen_thin = true
+				await shot("rv_silo_thin")
+			elif th < 0.01 and not seen_thick:
+				seen_thick = true
+				await shot("rv_silo_thick")
+			await physics_frames(5)
+		await mouse_button(MOUSE_BUTTON_RIGHT, false)
+		p.zoom_level = PlayerRig.BINOCULAR_ZOOM
+		check(seen_thin and seen_thick, "the barn's snow thins now and then (the silo's picture shows through)")
+		await look_at_point(p, maze.global_position + Vector3(0, 40, 0))
+		await wait(0.5)
+		await shot("rv_shower_eye")
+	# the direction table, from beside it, looking down
+	var tab := boot.world.find_child("DirectionTable", true, false) as Node3D
+	if tab != null:
+		await place_player(p, tab.global_position + (deck - tab.global_position) * Vector3(1, 0, 1) * 0.0 + tab.global_transform.basis.z * 0.9 + Vector3(0, 0.1, 0), 0.0)
+		await wait(0.3)
+		await look_at_point(p, tab.global_position + Vector3(0, 1.0, 0))
+		await shot("rv_table")
+	# down at the box: the box, its sheet and handle; the sign; the snow
+	var boxn := relay.find_child("SupplyBox", true, false) as Node3D
+	await place_player(p, boxn.global_transform * Vector3(0, 0, -2.2) + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.5)
+	await look_at_point(p, boxn.global_position + Vector3(0, 0.4, 0))
+	await shot("rv_box")
+	await look_at_point(p, relay.sign_at)
+	await shot("rv_sign")
+	await place_player(p, boxn.global_transform * Vector3(-2.0, 0, 2.0) + Vector3(0, 0.4, 0), 0.0)
+	await wait(0.3)
+	await look_at_point(p, relay.patches[0].global_position)
+	await shot("rv_patch")
+
+
+
+# --- #4, the lookout boards: helpers for the walk (tools/live/make_puzzle4.py)
+
+func relay() -> LookoutRelay:
+	return get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
+
+
+## A point in the lookout tower's frame (-Z: the deck's front rail); on the
+## ground when y is near 0, else that high above the tower's foot.
+func lk_at(x: float, y: float, z: float) -> Vector3:
+	var l := boot.world.get_node("Lookout") as Node3D
+	var w := l.global_transform * Vector3(x, 0, z)
+	return Vector3(w.x, (Landscape.ground(w.x, w.z) if y < 1.0 else l.global_position.y) + y, w.z)
+
+
+## A point in the supply box's frame (-Z: the dials' side), on the ground.
+func box_at(x: float, y: float, z: float) -> Vector3:
+	var b := relay().find_child("SupplyBox", true, false) as Node3D
+	var w := b.global_transform * Vector3(x, 0, z)
+	return Vector3(w.x, Landscape.ground(w.x, w.z) + y, w.z)
+
+
+func relay_plate(id: String) -> Vector3:
+	return (relay().plates[id] as Node3D).global_position
+
+
+func relay_crust(k: int) -> Vector3:
+	return (relay().find_child("SnowCrust%d" % k, true, false) as Node3D).global_position
+
+
+func relay_patch(k: int) -> Vector3:
+	return relay().patches[k].global_position
+
+
+## Where you'd stand to throw at the patrol sign: 6 m in front of it.
+func relay_throw_spot() -> Vector3:
+	var sgn := relay().find_child("PatrolSign", true, false) as Node3D
+	var f := sgn.global_transform.basis.z
+	f.y = 0.0
+	var w := relay().sign_at + f.normalized() * 6.0
+	return Vector3(w.x, Landscape.ground(w.x, w.z) + 0.2, w.z)
+
+
+## The edge of the deck nearest a picture, to read it from (by the rail).
+func relay_deck_edge(id: String) -> Vector3:
+	var l := boot.world.get_node("Lookout") as Node3D
+	var d := l.global_transform.affine_inverse() * relay_plate(id)
+	var flat := Vector2(d.x, d.z).normalized()
+	var k := minf(2.6 / maxf(absf(flat.x), 0.01), 2.0 / maxf(absf(flat.y), 0.01))
+	return l.global_transform * Vector3(flat.x * k, 6.3, flat.y * k)
+
+
+## Turns the binoculars' zoom to `level` with the wheel (P1) or RB / LB (P2).
+func bino_zoom_to(p: PlayerRig, level: float) -> bool:
+	var guard := 0
+	while p.zoom_level != level and guard < 10:
+		guard += 1
+		var up := p.zoom_level < level
+		if p == p2():
+			pad_button(JOY_BUTTON_RIGHT_SHOULDER if up else JOY_BUTTON_LEFT_SHOULDER, true)
+			await physics_frames(3)
+			pad_button(JOY_BUTTON_RIGHT_SHOULDER if up else JOY_BUTTON_LEFT_SHOULDER, false)
+		else:
+			mouse_button(MOUSE_BUTTON_WHEEL_UP if up else MOUSE_BUTTON_WHEEL_DOWN, true)
+			await physics_frames(3)
+			mouse_button(MOUSE_BUTTON_WHEEL_UP if up else MOUSE_BUTTON_WHEEL_DOWN, false)
+		await wait(0.25)
+	return p.zoom_level == level
+
+
+## Turns every dial to the code with the real use button (X / E), looking
+## at each in turn, one click at a time.
+func relay_dials_to_code(p: PlayerRig) -> bool:
+	var r := relay()
+	for k in 4:
+		var dial := r.find_child("Dial%d" % k, true, false) as Node3D
+		await look_at_point(p, dial.global_position)
+		await wait(0.3)
+		var guard := 0
+		while r.dials[k] != r.code[k] and guard < 8:
+			guard += 1
+			if p == p2():
+				pad_button(JOY_BUTTON_X, true)
+				await wait(0.08)
+				pad_button(JOY_BUTTON_X, false)
+			else:
+				await tap(KEY_E)
+			await wait(0.35)
+	return r.dials == r.code
+
+
+## The barn's snow thinned (the silo's picture shows), within `max_s`.
+func relay_wait_thin(max_s: float) -> bool:
+	var maze := get_tree().get_first_node_in_group("barn_maze") as BarnMaze
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < int(max_s * 1000.0):
+		if maze.curtain_thin() > 0.9:
+			return true
+		await physics_frames(3)
+	return false
+
