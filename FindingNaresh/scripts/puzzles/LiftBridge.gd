@@ -216,7 +216,8 @@ func _build_machinery_house() -> void:
 	door.add_child(Build.solid_box(Vector3(0.08, 2.35, leaf_w - 0.04), ToonMat.make(Color(0.40, 0.30, 0.22)), Vector3(0, 1.18, -leaf_w * 0.5), Vector3.ZERO, "Door"))
 	var bar := Build.box(Vector3(0.08, 0.12, leaf_w + 0.3), ToonMat.make(Color(0.35, 0.25, 0.18)), Vector3(m * 0.12, 1.15, -leaf_w * 0.5), Vector3.ZERO, "DoorBar")
 	door.add_child(bar)
-	var da := Build.interact_area(Vector3(1.4, 2.2, leaf_w), Vector3(0, 1.1, -leaf_w * 0.5), "", func(p): _open_door(p), "DoorArea")
+	# thin, so it doesn't catch the aim at the note beside it (2026-10-18)
+	var da := Build.interact_area(Vector3(0.5, 2.2, leaf_w), Vector3(0, 1.1, -leaf_w * 0.5), "", func(p): _open_door(p), "DoorArea")
 	da.set_meta("tag_name", "the machinery house door")
 	da.set_meta("prompt_fn", func(p) -> String:
 		return "Lift the bar and open the door" if not door_open and _inside_house(p) else "")
@@ -225,7 +226,7 @@ func _build_machinery_house() -> void:
 			return ""
 		return "Barred from the inside. There's a hatch higher up the wall.")
 	door.add_child(da)
-	NareshNote.make(house, "lb_door", Vector3(wx - m * 0.13, 1.55, DOOR.y + 0.35), -90.0 * m,
+	NareshNote.make(house, "lb_door", Vector3(wx - m * 0.13, 1.55, DOOR.y + 0.6), -90.0 * m,
 		"Barred from inside, and the keeper's ladder's in bits. My friend crouched by the wall under the hatch and I jumped up off their back. Easy.")
 	# the gear on the axle by the outer wall, turning as the leaf moves
 	gear = Node3D.new()

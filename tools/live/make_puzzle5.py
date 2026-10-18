@@ -53,6 +53,7 @@ steps = [
             walk(2, "expr:lb().global_transform * Vector3(0, 0.1, 4.0)", 0.8, 20),     # the road's middle, clear of the stone heap
             walk(2, "expr:boot.builder.poi['machinery_door']", 0.5, 30)]
             + look(2, "expr:lb_door_look()", 2.5)
+            + [walk(2, "expr:boot.builder.poi['machinery_door'] + lb().global_transform.basis.z * 1.3", 0.4, 8)]
             + look(2, "expr:%s.find_child('NareshNote_lb_door', true, false).global_position" % L)
             + [{"do": "pad_tap", "btn": "X"}, wait(7.0)],
      "expect": [{"name": "his note read: a leg-up", "expr": "lb_note_read('lb_door')", "within": 2}]},
