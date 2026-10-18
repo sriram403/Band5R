@@ -178,7 +178,13 @@ being built and tested), so this always shows where the work is right now.
       - [x] found and fixed: tuning from where people really stand (8.7 m),
             players and stones carried by the turning leaf, heavy things
             hugged at the belly, a carried stone wedging on another
-      - [~] repeat runs of `bridge`; then the walk `puzzle5` recorded
+      - [x] repeat runs of `bridge` (3 of 3 after the fixes);
+            `puzzle_resets` passes; sheet #5 rewritten (TEST_PUZZLES)
+      - [x] walk `puzzle5` recorded (2 min 54 s, every step passing),
+            sent. Found by the walk and fixed: the bridge deck's 0.4 m step
+            (now ramps), a jump to the bridge split the hose, the door's
+            zone caught the aim at the note, the lock's note covered its plate
+      - [ ] **your look at the video**, then merge `g11` and push
 - [ ] **Bug (your report, 2026-10-17), fix before the next thread's
       hand-over:** the quiet test window shows nothing when you bring it
       up (dark strip + white; screenshots inside are fine). Likely the

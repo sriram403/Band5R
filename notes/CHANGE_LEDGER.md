@@ -354,5 +354,19 @@ works something he was told to; `naresh` checks it.
 - `bridge`, `bridge_mistakes`, `power`, `puzzle_resets`, `save`, `storm`
   (the storm-road scenario), smoke.
 
+**Also changed while building (2026-10-17/18)**
+- `PlayerRig.hold_point`: things of 24 kg or more (the stones; the Bessi
+  battery box, 26 kg) are carried level at the belly, wherever you look.
+  Could break: `bessi` box carrying (its hold point moved).
+- `Carryable`: prints `[carry] ... snagged` with the hold point, the holder
+  and what it touches when a held thing is let go.
+- `LevelLandmarks._broken_bridge`: the old bridge's deck starts two planks
+  further out at each end, with a ramp plate up from the road (a 0.4 m
+  step stopped anyone on foot). Could break: drives over the bridge
+  (`journey`, `routes`, `way_out`), the F2 storm road's dead end.
+- `DevMenu.reset_way_out`: a jump past the water works marks the hose as
+  split and fixed (a jump to the bridge split it again). Could break:
+  `story`, `puzzle_resets`, the water works jump (still sets its own).
+
 **Found later**
 - (nothing yet)

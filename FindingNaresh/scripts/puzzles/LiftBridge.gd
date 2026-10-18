@@ -263,7 +263,7 @@ func _build_machinery_house() -> void:
 			return "It's still moving."
 		return "")
 	lever.add_child(la)
-	NareshNote.make(lever, "lb_lock", Vector3(0.28, 0.75, -0.16), 180.0,
+	NareshNote.make(lever, "lb_lock", Vector3(0.0, 0.38, -0.16), 180.0,
 		"The bolts only go in when it's flat and still. And whoever throws them isn't out there holding it down. Took us ages to work that one out.")
 	# the counterweight: concrete in its pit, down on the floor of it now
 	counterweight = AnimatableBody3D.new()

@@ -1408,3 +1408,34 @@ down at all.
 - The river: A) splash, wade ashore, walk back.
 - 6 / 10.
 
+
+#### As built (2026-10-17/18, `../MPG_dev` branch `g11`)
+
+- **No power:** the road lamps from the water works stop at a snapped pole
+  just before the hut; the hut's levers say "No power".
+- **The leaf:** rests tipped up at 30 degrees on its axle. Weight x distance
+  moves it (players 80 kg, stones 25 kg; measured "at the tip" = ~8.7 m
+  out): one player, or one + a stone, does nothing; both players bring it
+  down in about 5-10 s; both + a stone slam it (knocked flat, stones fly).
+  Chalk marks every 2 m on the deck. Old timbers groan when you're nearly
+  there.
+- **Getting in:** the machinery house is barred from inside; the keeper's
+  ladder lies broken; a hatch 1.5 m up the road-side wall. **The leg-up**
+  (fun mechanic 5): crouch by the wall, your partner jumps off your back.
+  Works anywhere from now on.
+- **The lock:** the LEAF LOCK lever inside; only when the leaf is flat and
+  still. Whoever goes loses their weight: P1 + two stones at the tip hold
+  it down.
+- **The lure:** the crew's heap of 8 stones by the axle; stones there do
+  almost nothing. More stones on the near bank under the deck.
+- **Mistakes:** the slam; the leaf rising under the one left alone; over
+  the kerb into the river: swim to the near bank, soaked (drips, shivers);
+  a stone in the river sinks.
+- **Naresh's notes:** the hut (a seesaw), the door (the leg-up, "my friend
+  crouched by the wall"), the lock ("whoever throws them isn't out there").
+- **Hints** (hold H), clearer the longer you're at the bridge.
+- **Found while building:** the deck now starts on solid ground (a 0.4 m
+  step stopped anyone on foot); a jump to the bridge no longer splits the
+  van's hose.
+- **Walk `puzzle5`** recorded (11 steps, every step passing):
+  `../MPG_dev/appdata/videos/puzzle5.mp4` (2 min 54 s).

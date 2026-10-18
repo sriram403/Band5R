@@ -347,7 +347,7 @@
      "do": "walk",
      "who": 1,
      "to": "expr:lb_stone(boot.builder.poi['stone_heap'])",
-     "arrive": 1.1,
+     "arrive": 1.7,
      "max": 15
     },
     {
@@ -410,7 +410,7 @@
      "do": "walk",
      "who": 1,
      "to": "expr:lb_stone(boot.builder.poi['stone_heap'])",
-     "arrive": 1.1,
+     "arrive": 1.7,
      "max": 15
     },
     {
@@ -471,7 +471,7 @@
      "do": "walk",
      "who": 2,
      "to": "expr:lb_stone(boot.builder.poi['stone_heap'])",
-     "arrive": 1.1,
+     "arrive": 1.7,
      "max": 15
     },
     {
