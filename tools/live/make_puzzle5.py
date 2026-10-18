@@ -49,7 +49,8 @@ steps = [
             + [{"do": "tap", "key": "E"}, wait(8.0)],
      "expect": [{"name": "his note read: a seesaw", "expr": "lb_note_read('lb_hut')", "within": 2}]},
     {"name": "5.2 P2 at the machinery house: barred; Naresh's note by the door", "max": 60,
-     "do": [walk(2, "expr:boot.builder.poi['machinery_door']", 0.5, 40)]
+     "do": [walk(2, "expr:boot.builder.poi['bridge_hut_door']", 0.8, 40),     # round the barrier, past the hut
+            walk(2, "expr:boot.builder.poi['machinery_door']", 0.5, 30)]
             + look(2, "expr:lb_door_look()", 2.5)
             + look(2, "expr:%s.find_child('NareshNote_lb_door', true, false).global_position" % L)
             + [{"do": "pad_tap", "btn": "X"}, wait(7.0)],
