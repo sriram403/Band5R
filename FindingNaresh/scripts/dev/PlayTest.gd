@@ -4339,6 +4339,12 @@ func stones_out(lift: LiftBridge) -> String:
 	return ", ".join(out)
 
 
+## Which stone a person would pick: near, and off the top of a heap (the
+## bottom ones are hidden under the others).
+func stone_score(st: BridgeStone, from: Vector3) -> float:
+	return st.global_position.distance_to(from) - st.global_position.y * 3.0
+
+
 ## A point on the leaf `d` m out from the axle, `x` m across (as it lies now).
 func leaf_at(lift: LiftBridge, d: float, x: float) -> Vector3:
 	return lift.leaf.global_transform * Vector3(x, 0.1, -d)
@@ -4348,7 +4354,7 @@ func leaf_at(lift: LiftBridge, d: float, x: float) -> Vector3:
 func take_stone(p: PlayerRig, pile: Array[BridgeStone]) -> BridgeStone:
 	var best: BridgeStone = null
 	for s in pile:
-		if not s.lost and s.holders.is_empty() and (best == null or s.global_position.distance_to(p.global_position) < best.global_position.distance_to(p.global_position)):
+		if not s.lost and not s.riding and s.holders.is_empty() and (best == null or stone_score(s, p.global_position) < stone_score(best, p.global_position)):
 			best = s
 	if best == null:
 		return null
@@ -4365,7 +4371,7 @@ func take_stone(p: PlayerRig, pile: Array[BridgeStone]) -> BridgeStone:
 func pad_take_stone(q: PlayerRig, pile: Array[BridgeStone]) -> BridgeStone:
 	var best: BridgeStone = null
 	for s in pile:
-		if not s.lost and s.holders.is_empty() and (best == null or s.global_position.distance_to(q.global_position) < best.global_position.distance_to(q.global_position)):
+		if not s.lost and not s.riding and s.holders.is_empty() and (best == null or stone_score(s, q.global_position) < stone_score(best, q.global_position)):
 			best = s
 	if best == null:
 		return null
@@ -11713,3 +11719,57 @@ func relay_wait_thin(max_s: float) -> bool:
 		await physics_frames(3)
 	return false
 
+
+# --- #5, the lift bridge: helpers for the walk (tools/live/make_puzzle5.py)
+
+func lb() -> LiftBridge:
+	return get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+
+
+## Where to stand at the hut's dead lever panel.
+func lb_panel_stand() -> Vector3:
+	var panel: Vector3 = boot.builder.poi["bridge_panel"]
+	var back: Vector3 = boot.builder.poi["bridge_hut"] - panel
+	back.y = 0.0
+	return panel + back.normalized() * 0.9
+
+
+## The middle of the machinery house door, at eye height.
+func lb_door_look() -> Vector3:
+	return lb().door.global_position + Vector3(0, 1.1, 0) - lb().global_transform.basis.z * 0.8
+
+
+## Under the hatch, `off` m towards the house (negative: back towards the road).
+func lb_hatch(off: float) -> Vector3:
+	var l := lb()
+	var out_x := (l.global_transform.basis.x * l.m).normalized()
+	return boot.builder.poi["machinery_hatch"] + out_x * off
+
+
+## The nearest stone free to pick up near `near` (lying, not held, not on the leaf).
+func lb_stone(near: Vector3) -> Vector3:
+	var best: BridgeStone = null
+	for s in lb().stones:
+		if s.lost or s.riding or not s.holders.is_empty():
+			continue
+		if best == null or stone_score(s, near) < stone_score(best, near):
+			best = s
+	return best.global_position if best != null else near
+
+
+## How many stones lie on the leaf.
+func lb_stones_out() -> int:
+	var l := lb()
+	var inv := l.leaf.global_transform.affine_inverse()
+	var n := 0
+	for s in l.stones:
+		if not s.lost and l._on_leaf(inv * s.global_position, 0.8) >= 0.0:
+			n += 1
+	return n
+
+
+func lb_note_read(id: String) -> bool:
+	for n in boot.story.notes:
+		if n["id"] == id:
+			return true
+	return false
