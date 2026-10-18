@@ -111,6 +111,13 @@
     {
      "do": "walk",
      "who": 2,
+     "to": "expr:lb().global_transform * Vector3(0, 0.1, 4.0)",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "walk",
+     "who": 2,
      "to": "expr:boot.builder.poi['machinery_door']",
      "arrive": 0.5,
      "max": 30

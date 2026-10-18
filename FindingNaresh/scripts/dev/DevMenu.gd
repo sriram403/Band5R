@@ -824,6 +824,14 @@ func reset_way_out(i: int) -> void:
 	var sta := get_tree().get_first_node_in_group("cooling_station") as CoolingStation
 	if sta != null and i > st.index_of("coolant") and (photo < 0 or i < photo):
 		sta.solve_quietly()
+	# past the water works the hose has split and been fixed: a jump to the
+	# bridge (150 m from the works) split it again, with steam and the
+	# "coolant hose has split" text (found 2026-10-18)
+	if i > st.index_of("pour_coolant"):
+		st.flags["leak_started"] = true
+		st.flags["leak_fixed"] = true
+		if boot.camper != null:
+			boot.camper.coolant_leak = false
 	# the one map: P2 has it after the pick-up; the napin once you're past
 	# the windmill's chest, none at the windmill or before (it's in the chest)
 	var ms: MapState = boot.map_state

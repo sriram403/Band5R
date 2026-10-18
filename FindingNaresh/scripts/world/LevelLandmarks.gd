@@ -843,7 +843,24 @@ func _broken_bridge() -> void:
 	var first := span_idx[0]
 	var last := span_idx[span_idx.size() - 1]
 	var mid := (first + last) / 2
-	for i in range(first - 1, last + 1):
+	# the deck starts two planks out on solid ground at each end (it used to
+	# start over the bank's dip: a 0.4 m step nobody on foot could climb,
+	# found walking onto it, 2026-10-18), with a ramp plate up from the road
+	const EXTRA := 2
+	for e in [[first - 1 - EXTRA, 1.0], [last + 1 + EXTRA, -1.0]]:
+		var ei: int = e[0]
+		var dir: float = e[1]
+		var top := road.point(ei) + Vector3.UP * 0.17      # the deck's top at its end
+		var fw := road.forward(ei) * dir
+		var foot := top - fw * 1.6
+		foot.y = _h(foot.x, foot.z) + 0.02
+		var rxf := Transform3D(Basis.looking_at(top - foot, Vector3.UP), (top + foot) * 0.5 + Vector3.DOWN * 0.05)
+		var rsize := Vector3(Landscape.ROAD_HALF * 2.0 + 0.6, 0.1, top.distance_to(foot) + 0.1)
+		var ramp := Build.box(rsize, ToonMat.make(Color(0.36, 0.36, 0.38), 0.012))
+		ramp.transform = rxf
+		root.add_child(ramp)
+		body.add_child(_box_shape(rsize, rxf))
+	for i in range(first - 1 - EXTRA, last + 1 + EXTRA):
 		if absi(i - mid) <= 2:
 			continue               # the missing middle span
 		var a := road.point(i)

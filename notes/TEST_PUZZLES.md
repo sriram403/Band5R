@@ -321,29 +321,64 @@ Fuel), 4 the water tower at the coolant works.
 
 ### 5. The lift bridge
 
-**Getting there:** F1 → Puzzles → **5. The lift bridge**. The water works counts as done, so the power is on.
+**Getting there:** F1 → Puzzles → **5. The lift bridge**. You start in the
+van, 25 m short of the barrier. The road lamps are lit, but the hut is dead.
 
-**The idea:** the operator in the hut can only see the machinery through a
-safety mirror. The partner across the road clears the jammed gear, then
-rides the counterweight down.
+**The idea (reworked 2026-10-17):** no power. The middle of the bridge (the
+"leaf") sits on its axle like a seesaw, tipped up. Weight far out on it
+brings it down; near the axle, weight does almost nothing. One of you alone
+isn't heavy enough. The lock is thrown from the machinery house, off the
+leaf, so whoever goes to lock it must leave stones at the tip in their place.
 
-1. **Operator:** walk up the little ramp into the hut. Hold E on LOWER.
-   - **You should see:** the motor strains and the leaf shudders. A message
-     says it's jammed. The mirror outside the window shows the machinery
-     house.
-2. **Partner:** walk out on the deck and into the machinery house across
-   the road. Hold X on the wedge in the gear.
-   - **You should see:** "Wedged tight... back it off (RAISE)".
-3. **Operator:** hold RAISE while the partner holds X on the wedge.
-   - **You should see:** after about 2.5 s the wedge drops into the river.
-4. **Operator:** hold LOWER.
-   - **You should see:** below about 30°, the cut-out trips and the leaf
-     goes back up to 45°.
-5. **Operator:** watch the mirror and let go of LOWER when the
-   counterweight in the pit comes up level with the floor. **Partner:**
-   step onto it. **Operator:** LOWER again.
-   - **You should see:** the partner rides up, the leaf comes down and
-     locks, and the barriers go. You can drive across.
+1. **Both:** get out (E / X). **P1:** go into the hut and try the levers,
+   then read Naresh's note on the desk.
+   - **You should see:** "No power: the line's down at the last pole." His
+     note says the leaf is like a seesaw. (On the way, the last pole by the
+     road lies snapped in the grass.)
+2. **P2:** walk to the machinery house across the bridge's near end. Try
+   the door; read his note beside it.
+   - **You should see:** "Barred from the inside. There's a hatch higher up
+     the wall." His note: a leg-up through the hatch.
+3. **The leg-up:** P2 stands under the hatch, facing the wall, and holds
+   crouch (B). P1 stands right behind P2 and jumps (Space) while walking
+   forward.
+   - *Exactly how:* P1's screen says "[Space] Leg-up off P2's back" when
+     close enough. A plain jump doesn't reach the sill.
+   - **You should see:** P1 goes up and in through the hatch; P2 hears "Oof!".
+4. **P1 (inside):** lift the bar on the door (E). Walk round the pit to the
+   LEAF LOCK lever by the back wall and try it; read his note there.
+   - **You should see:** the door swings open. The lock says "The leaf isn't
+     down. The bolts won't reach."
+5. **Try the lure (optional):** take a stone from the crew's heap beside
+   the leaf's near end (E) and drop it on the leaf near the axle.
+   - **You should see:** nothing moves.
+6. **P1:** carry a stone up the leaf to the far end (by the yellow stripe)
+   and drop it there. Stay there.
+   - **You should see:** still nothing. One of you plus a stone isn't enough.
+7. **P2:** carry a second stone out along the leaf, slowly. Stop about
+   halfway.
+   - **You should see:** the old timbers groan, then the leaf tips and comes
+     down gently onto the far bank (about 5-10 s).
+8. **P2:** take your stone on to the far end and drop it next to P1's.
+   Then walk off the leaf and back into the machinery house.
+   - **You should see:** the leaf stays down: P1 and the two stones hold it.
+9. **P2:** throw the LEAF LOCK (X).
+   - **You should see:** CLANK, the bolts shoot home, the barriers go. You
+     can drive across.
+
+**What mistakes do:**
+- Too much weight too fast (both of you and a stone at the far end): the
+  leaf **slams** down and throws you flat; stones out at the end can bounce
+  off into the river.
+- The one left alone at the far end (the other stepped off too soon): the
+  leaf rises again with you on it.
+- Off the side of the leaf (jump over the low kerb) or into the river
+  anywhere near the bridge: SPLASH, you swim to the near bank and climb out
+  soaked (drips and shivers for a while). Whatever you held sinks.
+- A stone dropped right at the end can land on the far deck, where it
+  doesn't count.
+
+**Hints:** hold H at the bridge; they get clearer the longer you're there.
 
 ### 6. The ghat pace notes
 
