@@ -132,6 +132,13 @@
      "s": 2.5
     },
     {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:boot.builder.poi['machinery_door'] + lb().global_transform.basis.z * 1.3",
+     "arrive": 0.4,
+     "max": 8
+    },
+    {
      "do": "look",
      "who": 2,
      "at": "expr:lb().find_child('NareshNote_lb_door', true, false).global_position"

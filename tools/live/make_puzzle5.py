@@ -27,11 +27,11 @@ def walk(who, to, arrive=0.5, mx=30):
 
 
 def p1_take_stone(near):
-    return [walk(1, "expr:lb_stone(%s)" % near, 1.1, 15)] + look(1, "expr:lb_stone(%s)" % near) + [{"do": "tap", "key": "E"}, wait(0.8)]
+    return [walk(1, "expr:lb_stone(%s)" % near, 1.7, 15)] + look(1, "expr:lb_stone(%s)" % near) + [{"do": "tap", "key": "E"}, wait(0.8)]
 
 
 def p2_take_stone(near):
-    return [walk(2, "expr:lb_stone(%s)" % near, 1.1, 15)] + look(2, "expr:lb_stone(%s)" % near) + [{"do": "pad_tap", "btn": "X"}, wait(0.8)]
+    return [walk(2, "expr:lb_stone(%s)" % near, 1.7, 15)] + look(2, "expr:lb_stone(%s)" % near) + [{"do": "pad_tap", "btn": "X"}, wait(0.8)]
 
 
 HEAP = "boot.builder.poi['stone_heap']"
