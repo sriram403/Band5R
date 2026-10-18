@@ -104,9 +104,9 @@
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:boot.builder.poi['bridge_hut_door']",
+     "to": "expr:boot.builder.poi['bridge_barrier_near'] - lb().global_transform.basis.x * lb().m * 7.0",
      "arrive": 0.8,
-     "max": 40
+     "max": 30
     },
     {
      "do": "walk",
