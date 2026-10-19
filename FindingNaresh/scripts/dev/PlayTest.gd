@@ -4130,7 +4130,7 @@ func t_bridge() -> void:
 	p.force_exit = true
 	await physics_frames(3)
 	var moved := []
-	for k in [0, 2]:
+	for k in [1, 2]:
 		var cart: Dictionary = lift.carts[k]
 		var node := cart["node"] as Node3D
 		await place_player(q, node.global_position + lift.global_transform.basis.z * 1.3 + Vector3(0, 0.4, 0), 0.0)
@@ -4145,12 +4145,16 @@ func t_bridge() -> void:
 		pad_axis(JOY_AXIS_LEFT_Y, 0.0)
 		pad_button(JOY_BUTTON_X, false)
 		moved.append(z0 - float(cart["z"]))
-	log_line("2 s of pushing: the %.0f kg cart %.2f m, the %.0f kg cart %.2f m" % [lift.carts[0]["kg"], moved[0], lift.carts[2]["kg"], moved[1]])
-	check(moved[0] > 0.5 and moved[1] > moved[0] * 1.4, "pushed, the carts roll along the rail; the heavy one slower")
-	# the crossing, kept level (the carts placed by the test)
-	await place_player(q, gate_at(-6.0, 0.0, -4.0) + Vector3(0, 0.4, 0), 0.0)
+	log_line("2 s of pushing: the %.0f kg cart %.2f m, the %.0f kg cart %.2f m" % [lift.carts[1]["kg"], moved[0], lift.carts[2]["kg"], moved[1]])
+	check(moved[0] > 0.5 and moved[1] > moved[0] * 1.2, "grabbed and walked, the carts roll along the rail; the heavy one slower")
+	# back where they were (the crossing starts from the siding)
+	for k in [1, 2]:
+		lift.carts[k]["z"] = lift.carts[k]["home"]
+	lift._apply()
+	# the crossing, played for real: P1 drives, P2 works the carts
 	await seat_p1_driver_at(c)
-	var ok := await cross_balanced(lift, road)
+	await bot_van_to(lift, -lift.leaf_len * 0.5 - 4.0)      # up to the flap, waiting
+	var ok := await bot_cross(lift)
 	log_line("crossing: crossed %s, slams %d, failing %s, flat %s" % [lift.crossed, lift.slams, lift.failing, c.tyre_flat])
 	check(ok and lift.crossed and lift.slams == 0 and not c.tyre_flat, "kept level, the van creeps over the seesaw and off onto the far bank")
 	check(boot.story.flags.has("bridge_down"), "... and the objective moves on")
@@ -4245,6 +4249,7 @@ func t_bridge_mistakes() -> void:
 		check(can.global_position.distance_to(lift.van_start.origin) > 8.0, "... and the can lies where it fell (%.0f m from the van)" % can.global_position.distance_to(lift.van_start.origin))
 		can.queue_free()
 	# 3. all blocks at the near end: it never tips; the van drops off the raised far end
+	lift.reset()
 	lift.gate.angle = 80.0
 	lift.gate._apply()
 	# carts 0 and 2 share a rail: 1.4 m apart
@@ -12015,3 +12020,253 @@ func t_seesaw_probe() -> void:
 	p1().force_exit = true
 	await physics_frames(3)
 	root.queue_free()
+
+
+# --- #5 round 2: the crossing played for real (the test and the walk) ----------
+## P1 (keyboard) drives, P2 (pad) works the carts, as a careful team would:
+## the 350 out to the far end and the 450 behind it before the van gets on;
+## the van creeps to just past the middle; P2, holding the 450, eases it out
+## until the leaf starts to tip, waits as it comes near level, then pulls the
+## cart back so it stops level. Then the van creeps 0.4 m at a time and P2
+## brings the carts back past it after each step, keeping the pull a little
+## near-heavy (inside the pivot's friction band nothing moves).
+## Returns true when the van is over.
+func bot_cross(lift: LiftBridge) -> bool:
+	var L := lift.leaf_len
+	# 1. the carts out
+	if not await bot_cart_to(lift, 1, -(4.25 + L * 0.5)):
+		return false
+	if not await bot_cart_to(lift, 0, -(1.6 + L * 0.5)):
+		return false
+	log_line("  bot: carts out, pull %.0f, leaf %.1f" % [lift.pull, lift.angle])
+	# 2. P2 takes hold of the 450 from its near side; the van creeps to the middle
+	await bot_grab(lift, 0, 1.0)
+	await bot_van_to(lift, 0.55)      # just short of tipping it on its own
+	log_line("  bot: van at %.2f, leaf %.2f w %.4f, n %.0f" % [bot_van_x(lift), lift.angle, lift.omega, lift.pull - LiftBridge.TAIL])
+	if lift.failing:
+		return false
+	# 3. the first level
+	if not await bot_level(lift):
+		return false
+	# 4. creep, trim, creep...
+	var xv := bot_van_x(lift)
+	while xv < 3.3:
+		if lift.failing:
+			return false
+		await bot_set_pull(lift, -520.0)
+		xv += 0.3
+		await bot_van_to(lift, xv)
+		await wait(0.3)
+		log_line("  bot: van %.2f, pull %.0f, leaf %.2f" % [bot_van_x(lift), lift.pull, lift.angle])
+		if absf(lift.angle) > 1.2 or absf(lift.omega) > 0.004:
+			if not await bot_level(lift):
+				return false
+	# 5. the front wheels are on the far bank: off it goes
+	await bot_van_to(lift, 9.0)
+	return lift.crossed and not lift.failing
+
+
+## The van's centre along the leaf from the pivot, + towards the far end.
+func bot_van_x(lift: LiftBridge) -> float:
+	return -(lift.leaf.global_transform.affine_inverse() * camper().global_position).z
+
+
+## P1 creeps the van (straight along the bridge) until its centre is `x` past
+## the pivot, then the handbrake.
+func bot_van_to(lift: LiftBridge, x: float) -> void:
+	var c := camper()
+	var t := 0.0
+	while bot_van_x(lift) < x and t < 25.0 and not lift.failing:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		var lv := lift.global_transform.affine_inverse() * c.global_position
+		var head := lift.global_transform.basis.inverse() * (-c.global_transform.basis.z)
+		var steer := lv.x * 0.6 + head.x * 4.0
+		key(KEY_A, steer > 0.15)
+		key(KEY_D, steer < -0.15)
+		# creep; ease off well before the mark (it rolls on)
+		var left := x - bot_van_x(lift)
+		var top := 0.9 if left > 1.0 else (0.35 if left > 0.4 else 0.18)
+		key(KEY_W, c.linear_velocity.length() < top and left > 0.06)
+	for k in [KEY_W, KEY_A, KEY_D]:
+		key(k, false)
+	key(KEY_S, true)
+	await wait(0.3)
+	key(KEY_S, false)
+	if not c.parking_brake:
+		await tap(KEY_SPACE)
+	await wait(0.4)
+
+
+## The carts moved until the pull (everything on the leaf, minus the near
+## half's extra weight) is `net` kg m: the 450 first, then the 350.
+func bot_set_pull(lift: LiftBridge, net: float) -> void:
+	for pass_i in 8:
+		if lift.failing:
+			return
+		var need := (LiftBridge.TAIL + net) - lift.pull       # + wants more towards the far end
+		if absf(need) < 120.0:
+			return
+		var L := lift.leaf_len
+		var c0: Dictionary = lift.carts[0]
+		var c1: Dictionary = lift.carts[1]
+		# small bites, looking again after each (one long move overshot: the
+		# carts and P2's own weight moving at once)
+		need = clampf(need, -300.0, 300.0)
+		var z0 := clampf(float(c0["z"]) - need / float(c0["kg"]), float(c1["z"]) + LiftBridge.CART_GAP + 0.05, -0.05)
+		if absf(z0 - float(c0["z"])) > 0.1:
+			await bot_cart_to(lift, 0, z0)
+			continue
+		var z1 := clampf(float(c1["z"]) - need / float(c1["kg"]), -L + 0.75, float(c0["z"]) - LiftBridge.CART_GAP - 0.05)
+		if absf(z1 - float(c1["z"])) > 0.1:
+			await bot_cart_to(lift, 1, z1)
+		else:
+			return
+
+
+## Cart `k` to `z`: P2 stands on the side it goes away from, grabs it, walks
+## it there, lets go.
+func bot_cart_to(lift: LiftBridge, k: int, z: float) -> bool:
+	var c: Dictionary = lift.carts[k]
+	var dir := signf(z - float(c["z"]))          # + towards the near end
+	if dir == 0.0:
+		return true
+	await bot_grab(lift, k, -dir)
+	var ok := await bot_drive_cart(lift, k, z)
+	bot_release()
+	log_line("  bot: cart %d (%.0f kg) to %.2f: at %.2f" % [k, float(c["kg"]), z, float(c["z"])])
+	return ok
+
+
+var _bot_face := Vector3.ZERO
+
+
+## P2 to cart `k`'s near side (`side` +1, facing the far end) or far side
+## (-1, facing the near end), on its rail; holds X.
+func bot_grab(lift: LiftBridge, k: int, side: float) -> void:
+	var q := p2()
+	var c: Dictionary = lift.carts[k]
+	var rx := float(c["rail"]) * LiftBridge.RAIL_X
+	await bot_walk(lift, Vector3(rx, 0, float(c["z"]) + side * 1.15))
+	_bot_face = -lift.global_transform.basis.z * side
+	q.yaw = atan2(-_bot_face.x, -_bot_face.z)
+	q.rotation.y = q.yaw
+	await look_at_point(q, (c["node"] as Node3D).global_position + Vector3(0, 0.5, 0))
+	await wait(0.2)
+	if not q.prompt_text.contains("cart"):
+		log_line("  bot: P2 can't get the cart %d: '%s'" % [k, q.prompt_text])
+	pad_button(JOY_BUTTON_X, true)
+	await physics_frames(3)
+
+
+func bot_release() -> void:
+	pad_axis(JOY_AXIS_LEFT_Y, 0.0)
+	pad_button(JOY_BUTTON_X, false)
+
+
+## P2, holding cart `k`, walks forward or back until it's at `z`.
+func bot_drive_cart(lift: LiftBridge, k: int, z: float) -> bool:
+	var q := p2()
+	var c: Dictionary = lift.carts[k]
+	var t := 0.0
+	var last := float(c["z"])
+	var still := 0.0
+	while absf(float(c["z"]) - z) > 0.06 and t < 45.0 and not lift.failing:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		q.yaw = atan2(-_bot_face.x, -_bot_face.z)
+		q.rotation.y = q.yaw
+		# keep your eyes on what you're holding (the tilting leaf moved the
+		# aim off the cart and the grip went)
+		var dcart := (c["node"] as Node3D).global_position + Vector3(0, 0.5, 0) - q.head.global_position
+		q.pitch = clampf(atan2(dcart.y, Vector2(dcart.x, dcart.z).length()), -1.2, 1.2)
+		# along the facing: which way is "forward" for the cart?
+		var fwd_z := (lift.global_transform.basis.inverse() * _bot_face).z
+		var want := signf(z - float(c["z"])) * signf(fwd_z)      # +1 walk forward, -1 back
+		var gap := absf((lift.global_transform.affine_inverse() * q.global_position).z - float(c["z"]))
+		var stick := 0.4 if absf(float(c["z"]) - z) > 0.4 else 0.2
+		if want > 0.0 and gap < 0.9:
+			stick = 0.0            # don't walk into the cart; wait for it
+		if want < 0.0 and gap > 1.6:
+			stick = 0.0            # don't leave it behind
+		pad_axis(JOY_AXIS_LEFT_Y, -stick * want)
+		still = still + 1.0 / 60.0 if absf(float(c["z"]) - last) < 0.001 else 0.0
+		last = float(c["z"])
+		if still > 2.5:
+			log_line("  bot: cart %d stuck at %.2f (wanted %.2f)" % [k, float(c["z"]), z])
+			break
+	pad_axis(JOY_AXIS_LEFT_Y, 0.0)
+	return absf(float(c["z"]) - z) < 0.3
+
+
+## P2 walks to a spot given in the bridge's frame (x across, z along; y is
+## ignored): by the lane inside the rails on that side, and round the van's
+## front to change sides, as a person would.
+func bot_walk(lift: LiftBridge, to: Vector3) -> void:
+	var q := p2()
+	var here := lift.global_transform.affine_inverse() * q.global_position
+	var lane := signf(to.x) * (LiftBridge.RAIL_X - 1.4)
+	var wps := []
+	var vl := lift.global_transform.affine_inverse() * camper().global_position
+	if here.x * to.x < 0.0 and absf(vl.x) < 3.0:
+		var cz := vl.z - 3.4
+		wps.append(Vector3(signf(here.x) * (LiftBridge.RAIL_X - 1.4), 0, here.z))
+		wps.append(Vector3(signf(here.x) * (LiftBridge.RAIL_X - 1.4), 0, cz))
+		wps.append(Vector3(lane, 0, cz))
+	else:
+		wps.append(Vector3(lane, 0, here.z))
+	wps.append(Vector3(lane, 0, to.z))
+	wps.append(to)
+	for wp in wps:
+		var g: Vector3 = lift.global_transform * wp
+		if not await pad_walk_to(q, g, 0.3, 15.0):
+			var at := lift.global_transform.affine_inverse() * q.global_position
+			log_line("  bot: P2 stuck at bridge (%.2f, %.2f, %.2f) going to (%.2f, %.2f); van at (%.2f, %.2f); touching %s" % [at.x, at.y, at.z, wp.x, wp.z, vl.x, vl.z,
+				str(range(q.get_slide_collision_count()).map(func(i): return (q.get_slide_collision(i).get_collider() as Node).name))])
+			await shot("bot_stuck")
+			return
+
+
+## P2 settles the leaf level with the 450: ease it out until it tips, pull
+## back as soon as it does (harder near level); bring it up if it's down.
+## True once it has sat level (within 0.8 degrees) and still for a second.
+func bot_level(lift: LiftBridge) -> bool:
+	var c0: Dictionary = lift.carts[0]
+	# hold the 450 from its near side (it moves both ways from there)
+	await bot_grab(lift, 0, 1.0)
+	var t0 := Time.get_ticks_msec()
+	var settled := 0.0
+	while settled < 0.5:
+		if Time.get_ticks_msec() - t0 > 90000 or lift.failing:
+			bot_release()
+			log_line("  bot: couldn't level it (leaf %.2f, omega %.3f)" % [lift.angle, lift.omega])
+			return false
+		var n := lift.pull - LiftBridge.TAIL
+		var want_n := n
+		if lift.omega > 0.002:
+			want_n = -250.0 if lift.angle > 1.2 else -650.0       # coming down: brake it
+		elif lift.omega < -0.002:
+			want_n = 200.0                                         # going back up: ease
+		elif lift.angle > 0.8:
+			want_n = 750.0                                         # resting up: tip it
+		elif lift.angle < -0.8:
+			want_n = -800.0                                        # resting down: bring it up
+		if absf(lift.angle) <= 1.2 and absf(lift.omega) <= 0.004:
+			settled += 1.0 / 60.0
+			await physics_frames(1)
+			continue
+		settled = 0.0
+		var cz := float(c0["z"])
+		var lo := float(lift.carts[1]["z"]) + LiftBridge.CART_GAP + 0.05
+		var dz := clampf(-(want_n - n) / float(c0["kg"]), -0.4, 0.4)
+		var to := clampf(cz + dz, lo, -0.05)
+		if absf(to - cz) > 0.05:
+			await bot_drive_cart(lift, 0, to)
+		elif want_n > n + 100.0 and lift.omega <= 0.002:
+			# the cart can't go further out: the van a hand's width on
+			await bot_van_to(lift, bot_van_x(lift) + 0.1)
+		else:
+			await physics_frames(2)
+	bot_release()
+	log_line("  bot: level at %.2f deg, pull %.0f, van %.2f" % [lift.angle, lift.pull, bot_van_x(lift)])
+	return true

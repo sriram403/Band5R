@@ -45,11 +45,11 @@ const FRICTION := 600.0          ## kg m: the pivot's friction (smaller pulls mo
 const INERTIA := 10000.0         ## how slowly the big leaf gets going
 const DAMP := 0.6                ## 1/s: the bearings' drag
 const SLAM_W := 0.25             ## rad/s: hitting a stop faster than this is a slam
-const VAN_W := 0.06              ## rad/s: the fastest it turns with the van on it
+const VAN_W := 0.025             ## rad/s (1.4 deg/s): the fastest it turns with the van on it; at 3.4 deg/s it went rest-to-pit in under 4 s, too quick for anyone to react
 const PLAYER_KG := 80.0
 const BLOCKS := [450.0, 350.0, 250.0]   ## kg; all look alike
 const SIDING := 9.0              ## m of rail on the near deck
-const APRON := 2.5               ## the near flap's hinge, m back from the gap (about 10 degrees at rest)
+const APRON := 2.0               ## the near flap's hinge, m back from the gap: where the old deck now ends (about 10 degrees at rest)
 const CART_GAP := 1.3            ## m between carts on one rail
 const RAIL_X := 3.8              ## the rails, either side of the middle
 const HINT_NEAR := 50.0
@@ -94,11 +94,11 @@ var bank_at := Vector3.ZERO      ## where a swimmer climbs out (the near bank)
 var van_start := Transform3D()   ## where a restart puts the van (outside the gate)
 var _travel := 0.0
 var _groan_t := 0.0
-var _van_vy := 0.0
 var _left_raised := false
 var _fall_t := 0.0
 var _thrown_t := 0.0
 var _shove_pending := false
+var _front_was_off := false
 var _flicker := 0.0
 
 
@@ -208,7 +208,9 @@ func _build_rails_and_carts() -> void:
 			add_child(Build.box(Vector3(0.07, 0.06, SIDING), steel, Vector3(sx * RAIL_X + off, 0.03, SIDING * 0.5), Vector3.ZERO, "SidingRail"))
 		add_child(Build.box(Vector3(0.9, 0.5, 0.3), ToonMat.make(Color(0.8, 0.2, 0.15), 0.01), Vector3(sx * RAIL_X, 0.25, SIDING + 0.15), Vector3.ZERO, "Buffer"))
 	# where they start: two on the hut's side, one across
-	var starts := [[BLOCKS[0], -m, 3.2], [BLOCKS[1], m, 4.0], [BLOCKS[2], -m, 5.6]]
+	# the 450 and the 350 share the hut side's rail (the 350 in front: it has
+	# to go out first), room to stand between them; the 250 across
+	var starts := [[BLOCKS[0], -m, 5.6], [BLOCKS[1], -m, 2.8], [BLOCKS[2], m, 3.6]]
 	for k in starts.size():
 		var c := {"kg": float(starts[k][0]), "rail": float(starts[k][1]), "z": float(starts[k][2]), "home": float(starts[k][2]), "lost": false}
 		var body := AnimatableBody3D.new()
@@ -229,9 +231,9 @@ func _build_rails_and_carts() -> void:
 		body.add_child(bs)
 		var idx := k
 		body.set_meta("tag_name", "a cart")
-		body.set_meta("prompt", "Hold: push the cart")      # (what marks it usable)
+		body.set_meta("prompt", "Hold: grab the cart, then walk")      # (what marks it usable)
 		body.set_meta("callback", func(_p): pass)
-		body.set_meta("prompt_fn", func(_p) -> String: return "" if carts[idx]["lost"] else "Hold: push the cart")
+		body.set_meta("prompt_fn", func(_p) -> String: return "" if carts[idx]["lost"] else "Hold: grab the cart, then walk")
 		body.set_meta("hold_fn", func(p, dt: float): _push(idx, p, dt))
 		c["node"] = body
 		carts.append(c)
@@ -446,7 +448,25 @@ func _physics_process(delta: float) -> void:
 			_carry_van(van, old_xf)
 	if van != null:
 		_unbury_van(van)
+		_hold_parked_van(van)
 		_check_van(van, delta)
+
+
+## A van parked on the handbrake on the leaf (or the flap) stays put on it:
+## off the leaf the game freezes a parked van (its wheel brakes alone let it
+## creep downhill), but a frozen van can't ride a moving deck, so here it's
+## held still relative to the deck instead (it crept 1.6 m back down the
+## tipped leaf in a minute, 2026-10-19). The deck's own turning still carries it.
+func _hold_parked_van(van: Camper) -> void:
+	if not van.parking_brake or _thrown_t > 0.0:
+		return
+	var on := 0
+	for w in van._wheels:
+		if w.is_in_contact() and (w.get_contact_body() == leaf or w.get_contact_body() == apron):
+			on += 1
+	if on >= 2 and van.linear_velocity.length() < 1.0:
+		van.linear_velocity = Vector3.ZERO
+		van.angular_velocity = Vector3.ZERO
 
 
 ## Never let a wheel's hub end up under the leaf's (or flap's) surface: the
@@ -567,7 +587,21 @@ func _check_van(van: Camper, delta: float) -> void:
 		if absf(cl.x) < 1.6 and absf(cl.z) < 3.1 and absf(cl.y) < 1.6:
 			_shove(k, van)
 			return
-	_van_vy = van.linear_velocity.y
+	# the front wheels coming off the far end while it's raised: a drop, a
+	# hard landing (after that the leaf settling back under the rear wheels
+	# is just a ramp down)
+	var front_off := true
+	var linv := leaf.global_transform.affine_inverse()
+	for w in van._wheels:
+		if String(w.name).begins_with("WheelF") and (linv * w.global_position).z > -leaf_len * 0.5 - 0.1:
+			front_off = false
+	if front_off and not _front_was_off and not crossed:
+		if not locked and angle > 2.5:
+			van.puncture()
+			Sfx.play3d("bang", van.global_position, 4.0)
+			_tell_near("BANG - the van drops off the raised end and lands hard on the far bank.", 5.0)
+			print("[bridge] hard landing (angle %.1f)" % angle)
+	_front_was_off = front_off
 	_check_crossed(van)
 
 
@@ -577,14 +611,6 @@ func _check_crossed(van: Camper) -> void:
 	var l := global_transform.affine_inverse() * van.global_position
 	if l.z < -leaf_len - 3.5 and absf(l.x) < 6.0:
 		crossed = true
-		# over with the far end still up: the van came off the raised end with
-		# a drop, front wheels first (the drop's speed alone was too gentle to
-		# tell, 2026-10-19)
-		if not locked and angle > 2.5:
-			van.puncture()
-			Sfx.play3d("bang", van.global_position, 4.0)
-			_tell_near("BANG - the van drops off the raised end and lands hard on the far bank.", 5.0)
-			print("[bridge] hard landing (angle %.1f)" % angle)
 		_open_road()
 		var st = get_tree().current_scene.get("story")
 		if st != null:
@@ -660,6 +686,7 @@ func _fail(why: String) -> void:
 		return
 	var van: Camper = get_tree().current_scene.get("camper")
 	reset_bridge()
+	crossed = false               # the van is back behind the gate
 	if van != null:
 		for n in players:
 			var p := n as PlayerRig
@@ -687,22 +714,30 @@ func _fail(why: String) -> void:
 	failing = false
 
 
-## Push a cart along its rail, away from you. Heavy blocks roll slowly, and
-## slower uphill on the tilted leaf.
+## Hold E on a cart: you've got its handle, and it goes where you walk
+## along its rail, forward or back (a trolley; with "push it away from you"
+## you had to squeeze between carts to pull one back). The heavier the block,
+## the slower it follows, and slower still uphill on the tilted leaf.
 func _push(k: int, p, dt: float) -> void:
 	var c: Dictionary = carts[k]
 	if c["lost"] or failing:
 		return
 	var pl := global_transform.affine_inverse() * (p as Node3D).global_position
-	var dir := signf(float(c["z"]) - pl.z)
-	if dir == 0.0:
+	var now := Time.get_ticks_msec()
+	if now - int(c.get("held_ms", 0)) > 250 or c.get("holder") != p:
+		c["grip"] = float(c["z"]) - pl.z          # a new grab: where the handle is from you
+		c["holder"] = p
+	c["held_ms"] = now
+	var want := pl.z + float(c["grip"])
+	var dir := signf(want - float(c["z"]))
+	if absf(want - float(c["z"])) < 0.02:
 		return
 	var speed := clampf(1.3 * 250.0 / float(c["kg"]), 0.45, 1.4)
 	if float(c["z"]) < 0.0:
-		# uphill (towards the raised end) is hard work, downhill a little easier
+		# towards the raised end is uphill: hard work; downhill a little easier
 		var grade := sin(deg_to_rad(angle)) * (-dir)
 		speed *= clampf(1.0 - grade * 3.0, 0.35, 1.3)
-	var z := float(c["z"]) + dir * speed * dt
+	var z := move_toward(float(c["z"]), want, speed * dt)
 	z = clampf(z, -leaf_len + 0.7, SIDING - 0.7)
 	# not through another cart on the same rail
 	for o in carts:
@@ -710,9 +745,10 @@ func _push(k: int, p, dt: float) -> void:
 			var oz := float(o["z"])
 			if absf(oz - z) < CART_GAP and signf(oz - float(c["z"])) == dir:
 				return
+	var was := float(c["z"])
 	c["z"] = z
 	_place_cart(c)
-	if fmod(z, 0.6) < speed * dt:
+	if int(was / 0.6) != int(z / 0.6):
 		Sfx.play3d("click", (c["node"] as Node3D).global_position, -10.0, 0.1, 0.6)
 
 
