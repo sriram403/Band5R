@@ -1064,7 +1064,7 @@ func _bridge_hut_and_power() -> void:
 	poi["bridge_far"] = road.point(bridge_mid + 6)
 	poi["bridge_bank"] = bank
 	poi["bridge_gate"] = gate_xf.origin
-	poi["gate_winch"] = gate_xf * Vector3(-bgate.half - 0.6, 0.1, -1.2)
+	poi["bridge_winch"] = gate_xf * Vector3(-bgate.half - 0.6, 0.1, -2.3)     # where you stand to wind it
 	poi["van_start"] = van_start.origin
 	poi["far_hut"] = hp2
 	poi["turbine"] = turbine_xf.origin

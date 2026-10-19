@@ -4107,10 +4107,10 @@ func t_bridge() -> void:
 	check(gate_local(q).z < -0.3, "the leg-up: P2 is over the fence")
 	await shot("bridge_legup")
 	# the winch: up while held, it slips back when let go
-	await pad_walk_to(q, b.poi["gate_winch"], 0.5, 15.0)
+	await pad_walk_to(q, b.poi["bridge_winch"], 0.5, 15.0)
 	await look_at_point(q, lift.gate.find_child("WinchArea", true, false).global_position)
 	await wait(0.3)
-	log_line("P2 at the winch: '%s'" % q.prompt_text)
+	log_line("P2 at the winch: '%s' (%.2f m from it, aim on %s)" % [q.prompt_text, q.global_position.distance_to(lift.gate.find_child("WinchArea", true, false).global_position), q.ray.get_collider().name if q.ray.is_colliding() else "nothing"])
 	pad_button(JOY_BUTTON_X, true)
 	await wait(3.4)
 	check(lift.gate.is_open(), "P2 winds the barrier up (%.0f deg)" % lift.gate.angle)
@@ -4122,7 +4122,7 @@ func t_bridge() -> void:
 	await wait(3.4)
 	await seat_p1_driver_at(c)
 	var road := b.network.road("pump_house_road")
-	var through := await creep_van(road, gate_at(0, 0, -7.0), 12.0)
+	var through := await creep_van(road, gate_at(0, 0, -7.0), 30.0)
 	pad_button(JOY_BUTTON_X, false)
 	check(through and gate_local_v(c.global_position).z < -5.0, "with the barrier held up the van drives through the gate")
 	await wait(1.5)
@@ -4138,8 +4138,11 @@ func t_bridge() -> void:
 		await wait(0.3)
 		log_line("P2 at cart %d: '%s'" % [k, q.prompt_text])
 		var z0 := float(cart["z"])
+		# push and walk along behind it, as a person does
 		pad_button(JOY_BUTTON_X, true)
+		pad_axis(JOY_AXIS_LEFT_Y, -0.6)
 		await wait(2.0)
+		pad_axis(JOY_AXIS_LEFT_Y, 0.0)
 		pad_button(JOY_BUTTON_X, false)
 		moved.append(z0 - float(cart["z"]))
 	log_line("2 s of pushing: the %.0f kg cart %.2f m, the %.0f kg cart %.2f m" % [lift.carts[0]["kg"], moved[0], lift.carts[2]["kg"], moved[1]])
@@ -4390,8 +4393,21 @@ func van_at_start() -> void:
 	c.parking_brake = true
 	c.global_transform = lb().van_start
 	c.reset_physics_interpolation()
-	c.fuel = 40.0
+	van_fresh(c)
 	await physics_frames(30)
+
+
+## Fuel, a cool engine, no leak: past the water works the hose has been
+## split and fixed (a story set straight to the bridge would split it here:
+## the van 150 m from the works, 2026-10-19).
+func van_fresh(c: Camper) -> void:
+	c.fuel = 40.0
+	boot.story.flags["leak_started"] = true
+	boot.story.flags["leak_fixed"] = true
+	c.coolant_leak = false
+	c.heat_lockout = false
+	c.temp = Camper.TEMP_NORMAL
+	c.coolant = 1.0
 
 
 ## The van parked on the road at `at`, facing the bridge.
@@ -4406,7 +4422,7 @@ func van_at(at: Vector3) -> void:
 	c.parking_brake = true
 	c.global_transform = Transform3D(lb().gate.global_transform.basis, at + Vector3.UP * 0.9)
 	c.reset_physics_interpolation()
-	c.fuel = 40.0
+	van_fresh(c)
 	await physics_frames(30)
 
 
@@ -4456,6 +4472,9 @@ func cross_balanced(lift: LiftBridge, road: Route) -> bool:
 	var fwd := -lift.global_transform.basis.z
 	var far_end := lift.global_transform * Vector3(0, 0, -lift.leaf_len - 6.0)
 	var worst := 0.0
+	var stall := 0.0
+	var stall_shot := false
+	var last_pos := Vector3.ZERO
 	while t < 90.0:
 		await get_tree().physics_frame
 		t += 1.0 / 60.0
@@ -4483,16 +4502,65 @@ func cross_balanced(lift: LiftBridge, road: Route) -> bool:
 		lift._apply()
 		worst = minf(worst, lift.angle)
 		# creep only while it's near level (or before the van is on it)
-		if absf(lift.angle) < 1.5 or not lift._van_on_leaf(c):
+		# creep unless the far end is going down (climbing the tipped leaf is
+		# fine), steering straight along the bridge, as a driver would (the
+		# road's line curves a little over the river: the van drifted into a cart)
+		var lv := lift.global_transform.affine_inverse() * c.global_position
+		var on_bridge := lv.z < 6.0
+		if lift.angle > -1.0 or not lift._van_on_leaf(c):
 			key(KEY_S, false)
-			ad.step(5.0)
+			if on_bridge:
+				ad.release()
+				var head := lift.global_transform.basis.inverse() * (-c.global_transform.basis.z)
+				var steer := lv.x * 0.6 + head.x * 4.0
+				key(KEY_A, steer > 0.15)
+				key(KEY_D, steer < -0.15)
+				key(KEY_W, c.linear_velocity.length() < 1.3)
+			else:
+				ad.step(5.0)
 		else:
 			ad.release()
+			key(KEY_A, false)
+			key(KEY_D, false)
 			key(KEY_S, true)
+		stall += 1.0 / 60.0
+		if stall > 5.0 and c.global_position.distance_to(last_pos) > 0.5:
+			stall = 0.0
+			last_pos = c.global_position
+		if true:
+			if stall > 5.0 and not stall_shot:
+				stall_shot = true
+				var wl := []
+				for w in c._wheels:
+					wl.append("%s:%s" % [w.name, (w.get_contact_body() as Node).name if w.is_in_contact() and w.get_contact_body() != null else "-"])
+				log_line("  STALL: wheels %s, van up %.2f, brake %s, engine force %.1f, kmh %.1f, leaf %.1f deg, leaf slope in the world %.1f deg" % [" ".join(wl), c.global_transform.basis.y.y, c.parking_brake, c.engine_force, c.linear_velocity.length() * 3.6, lift.angle, rad_to_deg(asin(clampf(-lift.leaf.global_transform.basis.z.y, -1.0, 1.0)))])
+				for w in c._wheels:
+					log_line("    %s skid %.2f, rpm %.1f, steer %.2f" % [w.name, w.get_skidinfo(), w.get_rpm(), w.steering])
+				var linv := lift.leaf.global_transform.affine_inverse()
+				for w in c._wheels:
+					var wp: Vector3 = w.global_position
+					log_line("    %s leaf-local %s; below: %s" % [w.name, linv * wp, ray_hit(wp + Vector3.UP * 0.2, wp + Vector3.DOWN * 2.0)])
+				log_line("    van body below centre: %s; van leaf-local %s" % [ray_hit(c.global_position + Vector3.UP * 0.2, c.global_position + Vector3.DOWN * 2.5), linv * c.global_position])
+				var side := lift.global_transform.basis.x
+				var q2 := p2()
+				q2.global_position = c.global_position + side * 5.0 + Vector3.UP * 1.5
+				q2.reset_physics_interpolation()
+				await physics_frames(2)
+				await look_at_point(q2, c.global_position + lift.global_transform.basis.z * 1.8)
+				await wait(0.3)
+				await shot("bridge_stall_side")
+				log_line("    van rest: sleeping %s, freeze %s, lin %.2f, ang %.2f, mass %.0f" % [c.sleeping, c.freeze, c.linear_velocity.length(), c.angular_velocity.length(), c.mass])
+				await shot("bridge_stall")
 		if Engine.get_physics_frames() % 60 == 0:
+			var wl2 := []
+			for w in c._wheels:
+				var cb = w.get_contact_body() if w.is_in_contact() else null
+				wl2.append("%s=%s" % [w.name.substr(5), (cb as Node).name if cb != null else "-"])
+			log_line("  wheels %s; pull %.0f (van part %.0f)" % [" ".join(wl2), lift.pull, van_pull])
 			log_line("  cross: van %.1f m on, angle %.2f, omega %.3f, arm %.2f" % [-(lift.global_transform.affine_inverse() * c.global_position).z, lift.angle, lift.omega, arm])
 	ad.release()
-	key(KEY_S, false)
+	for k in [KEY_S, KEY_W, KEY_A, KEY_D]:
+		key(k, false)
 	return not lift.failing
 
 

@@ -30,7 +30,9 @@ extends Node3D
 ## the lock (bolts the leaf level, only when level and still, only from
 ## inside) and a crate: fuel, coolant, a spare tyre.
 
-const REST_DEG := 8.0            ## near end down on its support, far end up
+## near end down on its support, far end up (8 degrees put the near end 0.7 m
+## down: with a short flap the van beached its rear on it, 2026-10-19)
+const REST_DEG := 5.0
 const PIT_DEG := -14.0           ## far end on the pit's floor
 const FALL_DEG := -5.0           ## the van on the far half past this: it's going in
 const LOCK_DEG := 1.0
@@ -43,10 +45,11 @@ const FRICTION := 600.0          ## kg m: the pivot's friction (smaller pulls mo
 const INERTIA := 10000.0         ## how slowly the big leaf gets going
 const DAMP := 0.6                ## 1/s: the bearings' drag
 const SLAM_W := 0.25             ## rad/s: hitting a stop faster than this is a slam
+const VAN_W := 0.06              ## rad/s: the fastest it turns with the van on it
 const PLAYER_KG := 80.0
 const BLOCKS := [450.0, 350.0, 250.0]   ## kg; all look alike
 const SIDING := 9.0              ## m of rail on the near deck
-const APRON := 0.6               ## the near flap's hinge, m back from the gap
+const APRON := 2.5               ## the near flap's hinge, m back from the gap (about 10 degrees at rest)
 const CART_GAP := 1.3            ## m between carts on one rail
 const RAIL_X := 3.8              ## the rails, either side of the middle
 const HINT_NEAR := 50.0
@@ -224,6 +227,8 @@ func _build_rails_and_carts() -> void:
 		body.add_child(bs)
 		var idx := k
 		body.set_meta("tag_name", "a cart")
+		body.set_meta("prompt", "Hold: push the cart")      # (what marks it usable)
+		body.set_meta("callback", func(_p): pass)
 		body.set_meta("prompt_fn", func(_p) -> String: return "" if carts[idx]["lost"] else "Hold: push the cart")
 		body.set_meta("hold_fn", func(p, dt: float): _push(idx, p, dt))
 		c["node"] = body
@@ -386,7 +391,11 @@ func _physics_process(delta: float) -> void:
 		_apply()
 		return
 	_near_time(delta)
-	if van != null and _van_on_leaf(van):
+	if van != null and van.global_position.distance_to(global_transform * Vector3(0, 0, -leaf_len * 0.5)) < leaf_len:
+		# never asleep near the seesaw: a sleeping van ignores both its engine
+		# and the deck moving under it (it slept as the leaf levelled, then sat
+		# stuck with the engine pushing, 2026-10-19)
+		van.sleeping = false
 		van.on_moving_deck = 0.3
 	if locked or failing:
 		if van != null:
@@ -406,6 +415,10 @@ func _physics_process(delta: float) -> void:
 		var fr := FRICTION * signf(omega if absf(omega) >= 0.002 else net)
 		omega += (net - fr) / INERTIA * delta
 		omega *= exp(-DAMP * delta)
+		# loaded with the van it can't swing fast (and the van's springs can't
+		# follow a deck that comes up quicker than this)
+		if van != null and _van_on_leaf(van):
+			omega = clampf(omega, -VAN_W, VAN_W)
 		a -= omega * delta
 		if a >= a_up:
 			a = a_up
@@ -426,8 +439,45 @@ func _physics_process(delta: float) -> void:
 		var old_xf := leaf.global_transform
 		_apply()
 		_carry_players(old_xf)
+		if van != null:
+			_carry_van(van, old_xf)
 	if van != null:
+		_unbury_van(van)
 		_check_van(van, delta)
+
+
+## Never let a wheel's hub end up under the leaf's (or flap's) surface: the
+## van's wheels feel down for the ground from their hubs, so a deck that comes
+## up past them is lost and the van sits stuck on its belly (2026-10-19: the
+## near end rose 0.7 m through the rear wheels as the leaf levelled). Lift
+## the van along the deck's normal until every hub is a wheel's radius up.
+func _unbury_van(van: Camper) -> void:
+	if van.global_position.distance_to(global_transform * Vector3(0, 0, -leaf_len * 0.5)) > leaf_len:
+		return
+	var worst := 0.0
+	var normal := Vector3.UP
+	for body in [leaf, apron]:
+		var b := body as Node3D
+		var inv := b.global_transform.affine_inverse()
+		var half_len := leaf_len * 0.5 if b == leaf else apron_shape.size.z
+		for w in van._wheels:
+			var l: Vector3 = inv * w.global_position
+			var along := l.z if b == leaf else -l.z
+			var inside := absf(l.x) < deck_w * 0.5 - 0.2 and ((b == leaf and absf(along) < half_len) or (b == apron and along > 0.0 and along < half_len))
+			if not inside:
+				continue
+			# only a hub that has truly sunk (a resting hub sits ~0.3 m up; lifting
+			# at a wheel's radius floated the van, its wheels off the deck)
+			var need: float = 0.15 - l.y
+			if need > worst:
+				worst = need
+				normal = b.global_transform.basis.y.normalized()
+	if worst > 0.01:
+		van.global_position += normal * worst
+		var v := van.linear_velocity
+		var into := v.dot(normal)
+		if into < 0.0:
+			van.linear_velocity = v - normal * into
 
 
 ## Weight x distance from the pivot (+ toward the far end) of everything on
@@ -686,6 +736,24 @@ func _carry_players(old_xf: Transform3D) -> void:
 			p.global_position = new_xf * l
 
 
+## The van on the turning leaf moves with it. Its wheels are springs that
+## feel down for the ground from their hubs; the near end rising 0.7 m as
+## the leaf levelled came up past the rear hubs, the wheels lost the deck
+## and the van sat on its belly, stuck (the first crossing, 2026-10-19). With
+## three or four wheels on the leaf it rides along; driving still moves it.
+func _carry_van(van: Camper, old_xf: Transform3D) -> void:
+	# (the flap counts: the rear wheels were on it when the near end came up)
+	var on := 0
+	for w in van._wheels:
+		if w.is_in_contact() and (w.get_contact_body() == leaf or w.get_contact_body() == apron):
+			on += 1
+	if on < 3:
+		return
+	var move := leaf.global_transform * old_xf.affine_inverse()
+	van.global_transform = move * van.global_transform
+	van.linear_velocity = move.basis * van.linear_velocity
+
+
 func _try_lock(p) -> void:
 	if locked or storm_blown or not _in_hut(p) or absf(angle) > LOCK_DEG or absf(omega) > 0.03:
 		return
@@ -781,7 +849,10 @@ func hint_for(i: int) -> String:
 
 
 func _apply() -> void:
-	pivot.rotation = Vector3(deg_to_rad(angle), 0, 0)
+	# the leaf itself turns (it sits on the pivot's origin): a moving body
+	# follows its own transform, not its parent's - turning the pivot moved
+	# the picture while the deck you drive on stayed at rest (2026-10-19)
+	leaf.rotation = Vector3(deg_to_rad(angle), 0, 0)
 	# the flap from its hinge on the near deck down (or up) onto the leaf's near end
 	var t := pivot.transform * leaf.transform * Vector3(0, 0, leaf_len * 0.5 - 0.5)
 	var h := Vector3(0, 0, APRON)
