@@ -4205,28 +4205,32 @@ func t_bridge_mistakes() -> void:
 	can.name = "ShoveTestCan"
 	boot.world.add_child(can)
 	can.stow(c.storage_slots[0])
-	await van_at(gate_at(-2.2, 0, -4.0))
-	await seat_p1_driver_at(c)
+	# the van lined up with a cart on its rail, 7 m behind it (a driver who
+	# didn't steer straight)
 	var cart: Dictionary = lift.carts[0]
 	cart["z"] = 1.0
 	lift._apply()
+	var cp := (cart["node"] as Node3D).global_position
+	await van_at(cp + lift.global_transform.basis.z * 7.0)
+	await seat_p1_driver_at(c)
 	t0 = Time.get_ticks_msec()
 	var back_speed := 0.0
-	key(KEY_W, true)
 	var fwd := -lift.global_transform.basis.z
-	while not bool(cart["lost"]) and Time.get_ticks_msec() - t0 < 10000:
+	key(KEY_W, true)
+	var hit := -1
+	while hit < 0 and Time.get_ticks_msec() - t0 < 10000:
 		await physics_frames(1)
-		# steer at the cart
-		var to := (cart["node"] as Node3D).global_position - c.global_position
-		var side := lift.global_transform.basis.x.dot(to)
-		key(KEY_A, side < -0.3)
-		key(KEY_D, side > 0.3)
+		for k in lift.carts.size():
+			if bool(lift.carts[k]["lost"]):
+				hit = k
 	key(KEY_W, false)
-	key(KEY_A, false)
-	key(KEY_D, false)
-	for i in 30:
-		await physics_frames(1)
+	# how hard it's thrown back, the moment it happens
+	for i in 20:
 		back_speed = maxf(back_speed, -c.linear_velocity.dot(fwd))
+		await physics_frames(1)
+	log_line("the van ran at the carts: hit cart %d after %.1f s" % [hit, (Time.get_ticks_msec() - t0) / 1000.0])
+	if hit >= 0:
+		cart = lift.carts[hit]
 	log_line("the shove: cart lost %s, van thrown back at %.1f m/s, can stowed %s" % [cart["lost"], back_speed, can.stowed_in != null])
 	check(bool(cart["lost"]) and back_speed > 4.0 and can.stowed_in == null, "the van hits a cart: it goes over the side, the van is thrown back, the rack's can flies off")
 	await shot("bridge_shove")
@@ -4324,8 +4328,11 @@ func t_bridge_mistakes() -> void:
 	await shot("bridge_hut_in")
 	# inside: the crate's reward, the door, the lock refused while not level
 	var chest := hut.find_child("ChestArea", true, false) as Node3D
+	# (in through the window you land by the far wall: walk to the crate first)
+	await pad_walk_to(q, hut.global_transform * Vector3(0, 0.1, 0.3), 0.3, 6.0)
 	await look_at_point(q, chest.global_position)
 	await wait(0.3)
+	log_line("P2 inside at the crate: '%s' (aim on %s)" % [q.prompt_text, q.ray.get_collider().name if q.ray.is_colliding() else "nothing"])
 	pad_button(JOY_BUTTON_X, true)
 	await wait(0.1)
 	pad_button(JOY_BUTTON_X, false)
@@ -4336,6 +4343,7 @@ func t_bridge_mistakes() -> void:
 			rewards += 1
 	check(lift.chest_open and rewards == 3, "the crate: a fuel can, a coolant jug and a spare tyre")
 	var lock_area := hut.find_child("LockArea", true, false) as Node3D
+	await pad_walk_to(q, lock_area.global_position + (hut.global_transform.basis.x * ws) * 0.9, 0.3, 6.0)
 	await look_at_point(q, lock_area.global_position)
 	await wait(0.3)
 	log_line("at the lock, not level: '%s'" % q.prompt_text)

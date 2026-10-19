@@ -97,6 +97,8 @@ var _groan_t := 0.0
 var _van_vy := 0.0
 var _left_raised := false
 var _fall_t := 0.0
+var _thrown_t := 0.0
+var _shove_pending := false
 var _flicker := 0.0
 
 
@@ -278,11 +280,12 @@ func _build_hut(hx: Transform3D) -> void:
 	hut.transform = hx
 	add_child(hut)
 	# a bridge-keeper's tower hut: the window is a tall shutter high up (a
-	# plain leg-up's feet reach 1.9 m: you need the crate too, 2.37 m)
+	# plain leg-up's feet reach 1.92 m: you need the crate too, ~2.3 m;
+	# 2.2 m was a hair's breadth with the crate, 2026-10-19)
 	const W := 3.6
 	const H := 4.6
 	const T := 0.3
-	var sill := 2.2
+	var sill := 2.1
 	var win := Vector2(1.0, 1.9)
 	# which local x side faces the bridge (the window's wall)
 	var to_bridge := hx.affine_inverse() * Vector3(0, 0, -leaf_len * 0.5)
@@ -452,6 +455,9 @@ func _physics_process(delta: float) -> void:
 ## near end rose 0.7 m through the rear wheels as the leaf levelled). Lift
 ## the van along the deck's normal until every hub is a wheel's radius up.
 func _unbury_van(van: Camper) -> void:
+	if _thrown_t > 0.0:
+		_thrown_t -= get_physics_process_delta_time()
+		return
 	if van.global_position.distance_to(global_transform * Vector3(0, 0, -leaf_len * 0.5)) > leaf_len:
 		return
 	var worst := 0.0
@@ -561,13 +567,6 @@ func _check_van(van: Camper, delta: float) -> void:
 		if absf(cl.x) < 1.6 and absf(cl.z) < 3.1 and absf(cl.y) < 1.6:
 			_shove(k, van)
 			return
-	# off the raised far end: a hard landing on the far deck
-	if l.z < -leaf_len - 0.3 and not crossed:
-		if _van_vy < -2.4 and van.linear_velocity.y > -0.6:
-			van.puncture()
-			Sfx.play3d("bang", van.global_position, 4.0)
-			_tell_near("BANG - the van drops off the raised end and lands hard on the far bank.", 5.0)
-			print("[bridge] hard landing")
 	_van_vy = van.linear_velocity.y
 	_check_crossed(van)
 
@@ -578,6 +577,14 @@ func _check_crossed(van: Camper) -> void:
 	var l := global_transform.affine_inverse() * van.global_position
 	if l.z < -leaf_len - 3.5 and absf(l.x) < 6.0:
 		crossed = true
+		# over with the far end still up: the van came off the raised end with
+		# a drop, front wheels first (the drop's speed alone was too gentle to
+		# tell, 2026-10-19)
+		if not locked and angle > 2.5:
+			van.puncture()
+			Sfx.play3d("bang", van.global_position, 4.0)
+			_tell_near("BANG - the van drops off the raised end and lands hard on the far bank.", 5.0)
+			print("[bridge] hard landing (angle %.1f)" % angle)
 		_open_road()
 		var st = get_tree().current_scene.get("story")
 		if st != null:
@@ -588,6 +595,8 @@ func _check_crossed(van: Camper) -> void:
 ## The van ran into a cart: the cart goes over the side, the leaf lurches,
 ## the van is thrown back and everything on its rack flies.
 func _shove(k: int, van: Camper) -> void:
+	if _shove_pending:
+		return
 	var c: Dictionary = carts[k]
 	c["lost"] = true
 	var node := c["node"] as Node3D
@@ -601,14 +610,21 @@ func _shove(k: int, van: Camper) -> void:
 	var back := global_transform.basis.z.normalized()
 	van.parking_brake = false
 	van.freeze = false
-	van.apply_central_impulse((back * 9.0 + Vector3.UP * 3.5) * Camper.MASS)
-	van.apply_torque_impulse(global_transform.basis.x * Camper.MASS * 4.0)
+	van.linear_velocity = back * 9.0 + Vector3.UP * 3.5
+	van.angular_velocity = global_transform.basis.x * 0.8
+	_thrown_t = 1.2               # the deck doesn't carry it while it's flying
 	omega = -0.6
 	_fling_cargo(van)
 	_tell_near("The van hits a cart - it goes over the side, the bridge bucks and throws the van back. Everything on the rack goes flying.", 7.0)
 	print("[bridge] the van shoved cart %d" % k)
-	var t := get_tree().create_timer(4.5)
-	t.timeout.connect(func(): _fail("shove"))
+	# one shove, one restart (two carts hit = two restarts, the second cutting
+	# into whatever came next, 2026-10-19)
+	if not _shove_pending:
+		_shove_pending = true
+		var t := get_tree().create_timer(4.5)
+		t.timeout.connect(func():
+			_shove_pending = false
+			_fail("shove"))
 
 
 ## Everything stowed on the van comes off and flies.
@@ -742,6 +758,8 @@ func _carry_players(old_xf: Transform3D) -> void:
 ## and the van sat on its belly, stuck (the first crossing, 2026-10-19). With
 ## three or four wheels on the leaf it rides along; driving still moves it.
 func _carry_van(van: Camper, old_xf: Transform3D) -> void:
+	if _thrown_t > 0.0:
+		return
 	# (the flap counts: the rear wheels were on it when the near end came up)
 	var on := 0
 	for w in van._wheels:

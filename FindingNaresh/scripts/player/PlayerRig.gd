@@ -499,8 +499,9 @@ func _walk(delta: float) -> void:
 	elif dev.just_pressed("jump") and not map_open and not plan_open and not in_box:
 		var lp := _legup_partner()
 		if lp != null:
-			# off their back: higher still if they're crouched on something (a crate)
-			var up := maxf(0.0, lp.global_position.y - global_position.y)
+			# off their back: higher still if they're crouched on something (a
+			# crate): you step up on it first, then on them
+			var up := maxf(0.0, lp.global_position.y - global_position.y) * 1.5
 			velocity.y = sqrt(LEGUP_VELOCITY * LEGUP_VELOCITY + 2.0 * GRAVITY * up) * f
 			lp.boosted(self)
 		else:
