@@ -441,12 +441,11 @@
      "s": 0.5
     },
     {
-     "do": "drive",
-     "road": "pump_house_road",
-     "to": "expr:lb().global_transform * Vector3(0, 0.0, -14.0)",
-     "until": "lb().failing",
-     "max": 90,
-     "kmh": 6
+     "do": "call",
+     "fn": "creep_careful",
+     "args": [
+      90.0
+     ]
     },
     {
      "do": "until",

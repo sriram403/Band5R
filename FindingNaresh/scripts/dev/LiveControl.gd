@@ -522,16 +522,20 @@ func _watcher(ctx: Dictionary) -> void:
 	_events.clear()
 	var mark := Vector3.INF
 	var still := 0.0
+	var van_mark := Vector3.INF
+	var van_still := 0.0
 	while bool(ctx["running"]) and _fail == "":
 		await pt.wait(0.1)
 		if FileAccess.file_exists(dir + "/abort"):
 			_failed("the client saw in the log: " + FileAccess.get_file_as_string(dir + "/abort").strip_edges())
 			break
 		# read fresh each tick: there's no Naresh before a jump, and a jump
-		# makes a new one (the first watcher read him once and died on it)
+		# makes a new one (the first watcher read him once and died on it).
+		# No Naresh (the bridge, #5) must not switch the rest off: it skipped
+		# the step limits and the watches too, and a stuck van sat 90 s
+		# unwatched (the user, 2026-10-20)
 		var n: Naresh = pt.boot.naresh
-		if n == null or not is_instance_valid(n):
-			continue
+		var has_n := n != null and is_instance_valid(n)
 		var allow: Array = ctx["allow"]
 		var watches: Array = ctx["watches"]
 		if ctx.has("step_until") and Time.get_ticks_msec() > int(ctx["step_until"]):
@@ -544,6 +548,20 @@ func _watcher(ctx: Dictionary) -> void:
 				_say("PASS %s (%.1f s, watched)" % [w["name"], (Time.get_ticks_msec() - w["from"]) / 1000.0])
 			elif Time.get_ticks_msec() > w["until"]:
 				_failed("%s: expected '%s' (%s) in time (watched)" % [w["step"], w["name"], w["expr"]])
+		# the van: someone driving with the throttle down, and it doesn't move
+		# for 5 s = stuck (the skill's "nothing that should move stands still")
+		var c: Camper = pt.camper()
+		var pushing := c != null and c.engine_on and pt.p1().seat != null and Input.is_physical_key_pressed(KEY_W)
+		if pushing and van_mark != Vector3.INF and c.global_position.distance_to(van_mark) < 0.3:
+			van_still += 0.1
+			if van_still > 5.0 and not "van_still" in allow:
+				_failed("the van stuck for 5 s, throttle down: " + await pt.van_stuck_report())
+				break
+		elif c != null:
+			van_still = 0.0
+			van_mark = c.global_position
+		if not has_n:
+			continue
 		for ev in _events:
 			var t := String(ev[2])
 			if ev[1] == "hears" and t in GIVE_UP and not t in allow:

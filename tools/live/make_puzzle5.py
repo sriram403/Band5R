@@ -80,8 +80,8 @@ steps = [
             walk(2, at(3.2, 16.0), 0.6, 30), {"do": "look", "who": 2, "at": MID}, wait(0.3),
             {"do": "call", "fn": "seat_p1_driver"}, wait(1.0),
             {"do": "tap", "key": "X"}, wait(1.5), {"do": "tap", "key": "SPACE"}, wait(0.5),
-            # creeping at 6 km/h, as a careful driver would, nobody moving blocks
-            {"do": "drive", "road": "pump_house_road", "to": at(0, -14.0), "until": "%s.failing" % L, "max": 90, "kmh": 6},
+            # creeping, braking down the flap, as a careful driver would; nobody moving blocks
+            {"do": "call", "fn": "creep_careful", "args": [90.0]},
             {"do": "until", "expr": "%s.failing" % L, "max": 15}, wait(5.0)],
      "expect": [{"name": "into the pit, back at the gate", "expr": "camper().global_position.distance_to(%s.van_start.origin) < 3.0" % L, "within": 6}]},
 ]

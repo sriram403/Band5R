@@ -91,6 +91,12 @@ var apron_shape: BoxShape3D
 var apron_mesh: MeshInstance3D
 var apron_rails: Node3D
 var apron_kerbs: Array[CollisionShape3D] = []
+## where the flap is hinged: the old deck's real end (`setup`'s `hinge`). The
+## road's points are 2.09 m apart here, not 2: a flap hinged at APRON left a
+## 0.67 m hole before the last plank and the van's back wheel dropped in
+## (the user's screenshot, 2026-10-19)
+var hinge_z := APRON
+var hinge_y := 0.0
 var panel_label: Label3D
 var carts: Array = []            ## {kg, rail, z, home, node, lost}
 var bolts: Array[Node3D] = []
@@ -117,7 +123,9 @@ var _flicker := 0.0
 ## facing the road). `gate_node`: the gate, already set up. `start`: the
 ## van's restart spot.
 func setup(xf: Transform3D, length: float, width: float, panel_xf: Transform3D, power: PowerLine, barrier_root: Node3D,
-		hut_xf: Transform3D, gate_node: BridgeGate, bank: Vector3, start: Transform3D) -> void:
+		hut_xf: Transform3D, gate_node: BridgeGate, bank: Vector3, start: Transform3D, hinge := Vector2(APRON, 0.0)) -> void:
+	hinge_z = hinge.x
+	hinge_y = hinge.y
 	add_to_group("lift_bridge")
 	add_to_group("place_hint")
 	transform = xf
@@ -196,7 +204,7 @@ func _build_apron() -> void:
 	apron = AnimatableBody3D.new()
 	apron.name = "Apron"
 	apron.sync_to_physics = true
-	apron.position = Vector3(0, 0, APRON)
+	apron.position = Vector3(0, hinge_y, hinge_z)
 	add_child(apron)
 	# the full deck's width, low kerbs along both edges (narrower, with no
 	# kerb, P2 walked off its side into the river, 2026-10-19)
@@ -230,14 +238,14 @@ func _build_rails_and_carts() -> void:
 	for sx in [-1.0, 1.0]:
 		for off in [-0.35, 0.35]:
 			leaf.add_child(Build.box(Vector3(0.07, 0.06, leaf_len), steel, Vector3(sx * RAIL_X + off, 0.03, 0), Vector3.ZERO, "Rail"))
-			add_child(Build.box(Vector3(0.07, 0.06, SIDING), steel, Vector3(sx * RAIL_X + off, 0.03, APRON + SIDING * 0.5), Vector3.ZERO, "SidingRail"))
+			add_child(Build.box(Vector3(0.07, 0.06, SIDING), steel, Vector3(sx * RAIL_X + off, hinge_y + 0.03, hinge_z + SIDING * 0.5), Vector3.ZERO, "SidingRail"))
 			# on the flap too (a unit length, stretched with the flap in _apply)
 			apron_rails.add_child(Build.box(Vector3(0.07, 0.06, 1.0), steel, Vector3(sx * RAIL_X + off, 0.03, 0), Vector3.ZERO, "FlapRail"))
-		add_child(Build.box(Vector3(0.9, 0.5, 0.3), ToonMat.make(Color(0.8, 0.2, 0.15), 0.01), Vector3(sx * RAIL_X, 0.25, APRON + SIDING + 0.15), Vector3.ZERO, "Buffer"))
+		add_child(Build.box(Vector3(0.9, 0.5, 0.3), ToonMat.make(Color(0.8, 0.2, 0.15), 0.01), Vector3(sx * RAIL_X, hinge_y + 0.25, hinge_z + SIDING + 0.15), Vector3.ZERO, "Buffer"))
 	# where they start, on the siding behind the flap: two on each rail, 2.8 m
 	# apart, room to stand between them (2.2: no room to get behind one); the lighter one in front on each (it goes out
 	# first, the heavy one stays nearer the near end, where it holds most)
-	var starts := [[BLOCKS[0], -m, APRON + 3.6], [BLOCKS[1], m, APRON + 4.2], [BLOCKS[2], -m, APRON + 0.8], [BLOCKS[3], m, APRON + 1.4]]
+	var starts := [[BLOCKS[0], -m, hinge_z + 3.6], [BLOCKS[1], m, hinge_z + 4.2], [BLOCKS[2], -m, hinge_z + 0.8], [BLOCKS[3], m, hinge_z + 1.4]]
 	for k in starts.size():
 		var c := {"kg": float(starts[k][0]), "rail": float(starts[k][1]), "z": float(starts[k][2]), "home": float(starts[k][2]), "lost": false}
 		var body := AnimatableBody3D.new()
@@ -789,7 +797,7 @@ func _push(k: int, p, dt: float) -> void:
 		var grade := sin(deg_to_rad(angle)) * (-dir)
 		speed *= clampf(1.0 - grade * 3.0, 0.35, 1.3)
 	var z := move_toward(float(c["z"]), want, speed * dt)
-	z = clampf(z, -leaf_len + 0.7, APRON + SIDING - 0.7)
+	z = clampf(z, -leaf_len + 0.7, hinge_z + SIDING - 0.7)
 	# not through another cart on the same rail
 	for o in carts:
 		if o != c and not o["lost"] and float(o["rail"]) == float(c["rail"]):
@@ -813,14 +821,14 @@ func _place_cart(c: Dictionary) -> void:
 	var x := float(c["rail"]) * RAIL_X
 	var lxf := pivot.transform * leaf.transform
 	var xf: Transform3D
-	if z >= APRON:
-		xf = Transform3D(Basis(), Vector3(x, 0, z))
+	if z >= hinge_z:
+		xf = Transform3D(Basis(), Vector3(x, hinge_y, z))
 	elif z < 0.0:
 		xf = lxf * Transform3D(Basis(), Vector3(x, 0, z + leaf_len * 0.5))
 	else:
-		var a := Vector3(x, 0, APRON)
+		var a := Vector3(x, hinge_y, hinge_z)
 		var b := lxf * Vector3(x, 0, leaf_len * 0.5)
-		var u := 1.0 - z / APRON
+		var u := 1.0 - z / hinge_z
 		# tilted as the flap is, sitting on it (a slerp from the leaf's basis
 		# hit "Basis must be normalized" once the 8 m flap carried carts, 2026-10-19)
 		xf = Transform3D(Basis(Vector3.RIGHT, apron.rotation.x), a.lerp(b, u))
@@ -962,7 +970,7 @@ func _apply() -> void:
 	leaf.rotation = Vector3(deg_to_rad(angle), 0, 0)
 	# the flap from its hinge on the near deck down (or up) onto the leaf's near end
 	var t := pivot.transform * leaf.transform * Vector3(0, 0, leaf_len * 0.5 - 0.5)
-	var h := Vector3(0, 0, APRON)
+	var h := Vector3(0, hinge_y, hinge_z)
 	var d := t - h
 	var len := d.length()
 	apron.rotation = Vector3(atan2(d.y, -d.z), 0, 0)

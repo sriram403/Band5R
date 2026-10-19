@@ -4559,6 +4559,52 @@ func creep_van(road: Route, to: Vector3, max_s: float, kmh := 6.0) -> bool:
 	return ok
 
 
+## Where the van is and what holds it (LiveControl's watcher calls this when
+## it stands still with the throttle down): its place (bridge frame near the
+## bridge), its pitch, what each wheel touches, what's in front; a picture.
+func van_stuck_report() -> String:
+	var c := camper()
+	var lift := lb()
+	var l := lift.global_transform.affine_inverse() * c.global_position if lift != null else c.global_position
+	var on := []
+	for w in c._wheels:
+		on.append("%s:%s" % [w.name, (w.get_contact_body() as Node).name if w.is_in_contact() and w.get_contact_body() != null else "air"])
+	var fwd := -c.global_transform.basis.z
+	var hits := []
+	for h in [0.3, 0.8, 1.5]:
+		var from := c.global_transform * Vector3(0, h - 0.9, -2.0)
+		var q := PhysicsRayQueryParameters3D.create(from, from + fwd * 3.0)
+		q.exclude = [c.get_rid()]
+		var r := get_tree().root.world_3d.direct_space_state.intersect_ray(q)
+		hits.append("%.1f m up: %s" % [h, ("%s at %.2f m" % [(r["collider"] as Node).name, from.distance_to(r["position"])]) if r else "clear"])
+	await shot("van_stuck")
+	return "at %s (bridge frame), pitch %.0f deg, leaf %.1f deg; wheels %s; ahead %s" % [l, rad_to_deg(c.global_transform.basis.get_euler().x), lift.angle if lift != null else 0.0, on, hits]
+
+
+## The van creeps on to the seesaw as a careful player does: the game's own
+## steering, throttle under 5 km/h, the brake above 7 (the plain creep never
+## braked: down the flap it ran at 14). Until the bridge fails, the van is
+## over, or `max_s`. For the walkthrough (`tools/live/make_puzzle5.py` 5.8).
+func creep_careful(max_s: float) -> bool:
+	var c := camper()
+	var lift := lb()
+	var ad := AutoDriver.new(self, boot.builder.network.road("pump_house_road"), c)
+	var t := 0.0
+	while t < max_s and not lift.failing and not lift.crossed:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		# it steers; the pedals are ours, never both at once (W + S together
+		# overheated the engine and it cut out on the flap, 2026-10-19)
+		ad.steer_only()
+		var kmh := c.linear_velocity.length() * 3.6
+		key(KEY_S, kmh > 7.0)
+		key(KEY_W, kmh < 5.0)
+	ad.release()
+	key(KEY_W, false)
+	key(KEY_S, false)
+	return lift.failing or lift.crossed
+
+
 ## The van creeps over the seesaw while the carts are put where they keep it
 ## level (the test's arranged balance): before the leaf leaves its rest,
 ## enough pull to tip it down; near level, enough to stop it. Returns true
@@ -12075,6 +12121,22 @@ func t_seesaw_live() -> void:
 		low = minf(low, lift.angle)
 	log_line("empty: swung on to %.1f deg, back at %.1f after %.1f s" % [low, lift.angle, t])
 	check(absf(lift.angle - LiftBridge.REST_DEG) < 0.5, "empty again, it settles back to rest (%.1f deg)" % lift.angle)
+	# the seam where the flap starts, close up from where you'd stand: flush,
+	# no hole (the user's screenshot: the back wheel dropped in a 0.67 m gap)
+	var seam := lift.global_transform * Vector3(-1.0, lift.hinge_y, lift.hinge_z)
+	await place_player(q, lift.global_transform * Vector3(-1.0, lift.hinge_y + 0.4, lift.hinge_z + 2.2), 0.0)
+	await look_at_point(q, seam)
+	await wait(0.4)
+	await shot("seesaw_seam_closeup")
+	var ray := PhysicsRayQueryParameters3D.create(seam + Vector3(0, 1.0, 0) + lift.global_transform.basis.z * 0.3, seam + Vector3(0, -1.0, 0) + lift.global_transform.basis.z * 0.3)
+	var hit_d := get_tree().root.world_3d.direct_space_state.intersect_ray(ray)
+	var ray2 := PhysicsRayQueryParameters3D.create(seam + Vector3(0, 1.0, 0) - lift.global_transform.basis.z * 0.3, seam + Vector3(0, -1.0, 0) - lift.global_transform.basis.z * 0.3)
+	var hit_f := get_tree().root.world_3d.direct_space_state.intersect_ray(ray2)
+	var dy := 9.0
+	if hit_d and hit_f:
+		dy = (hit_d["position"] as Vector3).y - (hit_f["position"] as Vector3).y
+	log_line("the seam: hinge at %.2f m back; ground 0.3 m either side: deck %s, flap %s, step %.3f m" % [lift.hinge_z, hit_d.get("collider", "nothing"), hit_f.get("collider", "nothing"), dy])
+	check(hit_d and hit_f and absf(dy) < 0.05, "the flap meets the old deck flush: solid both sides, no step")
 	var c := camper()
 	await van_at(at.call(0.0, 15.0))
 	await seat_p1_driver()

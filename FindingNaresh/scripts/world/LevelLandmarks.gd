@@ -1060,7 +1060,11 @@ func _bridge_hut_and_power() -> void:
 	var lift := LiftBridge.new()
 	lift.name = "LiftBridge"
 	world.add_child(lift)
-	lift.setup(bxf, pa.distance_to(pb) + 0.1, Landscape.ROAD_HALF * 2.0 + 0.6, panel_xf, line, bridge_barriers, far_hut_xf, bgate, bank, van_start)
+	# the flap is hinged where the last plank before it really ends (its top,
+	# in the bridge's frame): the road's points aren't exactly 2 m apart
+	var flap_hinge: Vector3 = bxf.affine_inverse() * (road.point(bridge_mid - 2 - int(round(LiftBridge.APRON / Route.SAMPLE_SPACING))) + Vector3.UP * 0.17)
+	lift.setup(bxf, pa.distance_to(pb) + 0.1, Landscape.ROAD_HALF * 2.0 + 0.6, panel_xf, line, bridge_barriers, far_hut_xf, bgate, bank, van_start, Vector2(flap_hinge.z, flap_hinge.y))
+	print("[bridge] the flap hinged at %.2f m back, %.3f m up (the last plank's end)" % [flap_hinge.z, flap_hinge.y])
 	poi["lift_pivot"] = bxf.origin
 	poi["lift_mid"] = bxf * Vector3(0, 0.1, -lift.leaf_len * 0.5)
 	poi["bridge_panel"] = panel_xf.origin
