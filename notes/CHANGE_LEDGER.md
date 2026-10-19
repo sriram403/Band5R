@@ -419,3 +419,25 @@ works something he was told to; `naresh` checks it.
 
 **Found later**
 - (nothing yet)
+
+## 2026-10-19: the test window (bug fix, pushed to main)
+
+**What changed**
+- `PlayTest.gd`: no Godot NO_FOCUS / MOUSE_PASSTHROUGH flags (NO_FOCUS hid
+  the window). `send_window_behind()` (static, called by `Boot._ready`
+  before the world build) sets no-activate + click-through styles, shows
+  the window, centred, behind, and pumps window messages until it has
+  moved. `_hand_focus_back()`: when the quiet window gets focus it gives it
+  back to the window below (on top after the user's taskbar click, behind
+  at the start).
+
+**What it could break**
+- Every quiet test run's window (position, focus, sound: it stays muted
+  now since it never keeps focus). `--show` and recording runs untouched.
+
+**Tests that cover it**
+- smoke (23 scenarios, 0 failures, twice), `story`; the user's watched
+  check with a real taskbar click.
+
+**Found later**
+- (nothing yet)

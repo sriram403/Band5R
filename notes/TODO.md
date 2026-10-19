@@ -6,16 +6,13 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- [ ] **NEXT THREAD, first: the test window (the user, 2026-10-19).** Since
-      `e52d8fd` quiet test runs set `WINDOW_FLAG_NO_FOCUS` +
-      `WINDOW_FLAG_MOUSE_PASSTHROUGH` (`PlayTest.gd` ~line 61). Now when the
-      user brings the test window up it shows nothing (a dark strip + white;
-      the game still renders: screenshots are fine). The user wants to
-      **watch me work in that window** (to say "stop" when I loop), and it
-      must still **never take their mouse / keyboard**. Find why it draws
-      blank (the flags? behind other windows? minimised?), fix, test with
-      the user watching, push at once (a bug fix).
-- [ ] **Then: #5 round 2, the seesaw.** The user: "it didn't even seesaw".
+- [x] **The test window (the user, 2026-10-19): fixed, the user watched
+      it ("I can see the game, and my mouse and keyboard stay with my own
+      window"), pushed to main.** Cause: Godot's no-focus flag hid the
+      window. Now: visible, click-through, can't take focus (the taskbar
+      button shows it on top and hands focus back), placed before the world
+      loads. ROUGH_NOTES 2026-10-19, ledger "test window".
+- [~] **Now: #5 round 2, the seesaw.** The user: "it didn't even seesaw".
       State on branch `g11` (`../MPG_dev`, last commit `a2859ec`, NOT
       merged, NOT pushed): see `design/PUZZLE_CHANGES.md` #5 "Round 2" and
       ledger #5 round 2. `bridge_mistakes` passes (pit + restart, shove
