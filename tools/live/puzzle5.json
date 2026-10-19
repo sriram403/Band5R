@@ -306,11 +306,17 @@
      "max": 30
     },
     {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:lb().global_transform * Vector3(lb().carts[3]['rail'] * 3.8, 0, lb().carts[3]['z'] + 1.3)",
-     "arrive": 0.3,
-     "max": 15
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p2",
+      "expr:lb().carts[3]['node'].global_position + lb().global_transform.basis.z * 1.3 + Vector3(0, 0.4, 0)",
+      0.0
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 0.3
     },
     {
      "do": "look",
@@ -395,6 +401,22 @@
      "s": 1.0
     },
     {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:lb().global_transform * Vector3(3.2, 0.0, 16.0)",
+     "arrive": 0.6,
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:lb().global_transform * Vector3(0, 0.5, -5.0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
      "do": "call",
      "fn": "seat_p1_driver"
     },
@@ -403,17 +425,28 @@
      "s": 1.0
     },
     {
-     "do": "down",
-     "key": "W"
+     "do": "tap",
+     "key": "X"
     },
     {
-     "do": "until",
-     "expr": "lb().failing or (lb().global_transform.affine_inverse() * camper().global_position).z < -6.5",
-     "max": 60
+     "do": "wait",
+     "s": 1.5
     },
     {
-     "do": "up",
-     "key": "W"
+     "do": "tap",
+     "key": "SPACE"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "drive",
+     "road": "pump_house_road",
+     "to": "expr:lb().global_transform * Vector3(0, 0.0, -14.0)",
+     "until": "lb().failing",
+     "max": 90,
+     "kmh": 6
     },
     {
      "do": "until",

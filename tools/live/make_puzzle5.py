@@ -36,7 +36,7 @@ MID = at(0, -5.0, 0.5)
 # the 300 kg cart (carts[3]), the front one on its rail
 # (as the bridge test does: stand 1.3 m behind it, hold X, push the stick)
 CART3_IN = "expr:%s.global_transform * Vector3(%s.carts[3]['rail'] * 2.4, 0, %s.carts[3]['z'] + 1.3)" % (L, L, L)
-CART3_BEHIND = "expr:%s.global_transform * Vector3(%s.carts[3]['rail'] * 3.8, 0, %s.carts[3]['z'] + 1.3)" % (L, L, L)          # the pivot (leaf 10 m, local -Z over the river)
+CART3_PLACE = "expr:%s.carts[3]['node'].global_position + %s.global_transform.basis.z * 1.3 + Vector3(0, 0.4, 0)" % (L, L)          # the pivot (leaf 10 m, local -Z over the river)
 
 steps = [
     {"name": "5.0 F1 Puzzles: the lift bridge", "max": 20,
@@ -65,7 +65,9 @@ steps = [
             + [{"do": "until", "expr": "%s.angle > 11.9" % L, "max": 20}],
      "expect": [{"name": "empty: back at rest", "expr": "%s.angle > 11.5" % L, "within": 3}]},
     {"name": "5.7 P2 pushes the 300 kg block out on the far half: it tips on its own", "max": 60,
-     "do": [walk(2, CART3_IN, 0.4, 30), walk(2, CART3_BEHIND, 0.3, 15)]
+     # P2 put straight behind it, as the bridge test does (walking there
+     # ended up beside it, river side, 2026-10-19): a cut in the video
+     "do": [walk(2, CART3_IN, 0.4, 30), {"do": "call", "fn": "place_player", "args": ["p2", CART3_PLACE, 0.0]}, wait(0.3)]
             + look(2, "expr:%s.carts[3]['node'].global_position + Vector3(0, 0.6, 0)" % L)
             + [{"do": "pad_down", "btn": "X"}, {"do": "pad_axis", "axis": "LY", "v": -0.6},
                {"do": "until", "expr": "float(%s.carts[3]['z']) < -6.8 or %s.angle < 0.0" % (L, L), "max": 45},
@@ -75,10 +77,11 @@ steps = [
      "expect": [{"name": "the block out on the far half tips it down", "expr": "%s.angle < 0.0" % L, "within": 3}]},
     {"name": "5.8 the block back, the van creeps on with nothing behind it: past the middle into the pit", "max": 120,
      "do": [{"do": "eval", "expr": "%s.reset_bridge()" % L}, {"do": "eval", "expr": "%s.gate.set('_wind_t', 99999.0)" % L}, wait(1.0),
+            walk(2, at(3.2, 16.0), 0.6, 30), {"do": "look", "who": 2, "at": MID}, wait(0.3),
             {"do": "call", "fn": "seat_p1_driver"}, wait(1.0),
-            {"do": "down", "key": "W"},
-            {"do": "until", "expr": "%s.failing or (%s.global_transform.affine_inverse() * camper().global_position).z < -6.5" % (L, L), "max": 60},
-            {"do": "up", "key": "W"},
+            {"do": "tap", "key": "X"}, wait(1.5), {"do": "tap", "key": "SPACE"}, wait(0.5),
+            # creeping at 6 km/h, as a careful driver would, nobody moving blocks
+            {"do": "drive", "road": "pump_house_road", "to": at(0, -14.0), "until": "%s.failing" % L, "max": 90, "kmh": 6},
             {"do": "until", "expr": "%s.failing" % L, "max": 15}, wait(5.0)],
      "expect": [{"name": "into the pit, back at the gate", "expr": "camper().global_position.distance_to(%s.van_start.origin) < 3.0" % L, "within": 6}]},
 ]

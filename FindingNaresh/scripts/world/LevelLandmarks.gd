@@ -877,8 +877,9 @@ func _broken_bridge() -> void:
 			for s in [-1.0, 1.0]:
 				var post := Build.cyl(0.12, 1.2, wood, c + road.right(i) * s * (Landscape.ROAD_HALF + 0.2) + Vector3.UP * 0.6, Vector3.ZERO, 6, "RailPost")
 				root.add_child(post)
-	# piers under the ends of the gap
-	for gi in [mid - 3, mid + 3]:
+	# piers under the ends of the gap; on the near side under the flap's
+	# hinge (at mid - 3 its top stuck up through the flap's hole, round 2b)
+	for gi in [mid - 3 - int(round(LiftBridge.APRON / Route.SAMPLE_SPACING)), mid + 3]:
 		var gp := road.point(gi)
 		root.add_child(Build.cyl(0.5, 7.0, wood, gp + Vector3.DOWN * 3.5, Vector3.ZERO, 8, "Pier"))
 	# barrier and warning signs on both approaches
