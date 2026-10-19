@@ -1439,3 +1439,81 @@ down at all.
   van's hose.
 - **Walk `puzzle5`** recorded (11 steps, every step passing):
   `../MPG_dev/appdata/videos/puzzle5.mp4` (2 min 54 s).
+
+### Round 2: what the user asked for (2026-10-19, after the video)
+
+1. The van can push stones. Drive across unlocked with stones holding it
+   and the van shoves them aside: the bridge flips up fast, throws the van
+   back, everything on it flies off. The punishment for not locking it.
+2. Bug: you can reach the lock through the hatch from outside (jump, look
+   in, press). You must be inside to use it.
+3. A real seesaw: pivot in the middle, near end down by the van, far end
+   up. Balance it level with stones. The van drives across slowly; as it
+   passes the middle it would tip the far end down into the well (restart
+   at the gate). The partner brings stones one by one and puts them on the
+   back as the van moves. Stones of different weights: find the right ones
+   by trial and error.
+4. The lock only reachable from the far side, through a window. A visual
+   cue (no text) that you can climb in. Inside: the lock, plus fuel,
+   coolant and a tyre.
+5. The entrance blocked like the windmill's: crank a pole up by hand. One
+   crouches, the other climbs over them into the fence (teach the leg-up
+   here, use it again at the window).
+
+### Round 2: what I have to point out
+
+- **The van weighs 2,150 kg.** On a seesaw with 7 m arms, keeping it level
+  while it crosses needs up to ~15 tonne-metres on the back: about 75
+  hand-carried stones. Not realistic, and no fun. (Way round: Q1.)
+- **Repeat (#2):** a gate across the road and a fence round it is the
+  windmill's. The way round: no power here, so it's a hand winch; and the
+  leg-up over the fence is new.
+- **Repeat (#3):** "restart from the gate" after a fall is like the maze's
+  pits. Fine, I think: here it's the van, and it's quick.
+
+### Round 2: my proposal
+
+- **The gate:** a boom across the road, its hand winch inside a 2 m
+  chain-link fence. Leg-up over the fence (learned here), wind the boom up.
+- **The bridge:** a seesaw on a pivot in the middle of the river, near end
+  resting down on the near bank, far end up. A plumb bob hangs from its
+  rail: straight down = level (no text).
+- **The weights (Q1):** concrete counterweight blocks on little rail carts
+  (150-450 kg; they look alike), pushed one at a time from a siding onto
+  the rails on the near arm, and slid out as far as you dare. The heavier
+  the block, the slower it rolls. Trial and error: push one on, watch the
+  plumb bob.
+- **Crossing:** the driver creeps forward; the partner adds and slides
+  blocks behind the van to keep it level. Too far forward, the far end
+  dips: past ~10 degrees the van slides into the well in front of the far
+  bank (fade, restart at the gate, the bridge reset). A block left in the
+  van's path or backed into: the van shoves it off, the near end
+  slams up, the van is thrown back, the rack's cargo flies.
+- **The room:** a stone hut on the far bank, door rusted shut, a window
+  2 m up. The cue: a lamp flickering inside and boot scuffs up the wall
+  under the window. Leg-up in. Inside: the lock (bolts the leaf level,
+  only when level and only from inside) and a crate: fuel, coolant, a
+  spare tyre.
+
+### Round 2: my extra ideas (yes / no each)
+
+- **S1. The clever shortcut:** walk across on foot (people barely tip it),
+  climb into the room, lock it level first: the van then drives over
+  without any balancing.
+- **S2. The timbers groan** as it nears the tipping point, louder and
+  louder: the driver hears it before it goes.
+- **S3. What flies off the van stays where it lands:** you pick it up (a
+  can that landed hard leaks).
+- **S4. Naresh's note at the gate:** "It's a big seesaw. Whatever goes on
+  the front, something has to go on the back."
+
+### Round 2: questions
+
+1. **The weights:** A) counterweight blocks on carts, 150-450 kg (my
+   pick); B) hand-carried stones that weigh whatever the puzzle needs (not
+   realistic).
+2. **"The well":** A) a deep, dry lock pit in front of the far bank (my
+   pick: the van can't drown); B) the river itself.
+3. **How hard:** A) 7 / 10 (my pick; S1 is the easy way for the clever);
+   B) keep 6.
+4. S1-S4: yes / no each.

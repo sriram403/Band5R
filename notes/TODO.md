@@ -184,7 +184,13 @@ being built and tested), so this always shows where the work is right now.
             sent. Found by the walk and fixed: the bridge deck's 0.4 m step
             (now ramps), a jump to the bridge split the hose, the door's
             zone caught the aim at the note, the lock's note covered its plate
-      - [ ] **your look at the video**, then merge `g11` and push
+      - [x] **your look at the video** (2026-10-19): round 2 wanted (a real
+            seesaw the van balances across, blocks of different weights,
+            the van shoving them = thrown back, the lock room on the far
+            side with fuel / coolant / tyre, a hand-wound gate with the
+            leg-up over the fence; bug: the lock reachable through the hatch)
+      - [ ] round 2 proposal written (PUZZLE_CHANGES #5 "Round 2", S1-S4,
+            4 questions); **waiting for your answers**, nothing built
 - [ ] **Bug (your report, 2026-10-17), fix before the next thread's
       hand-over:** the quiet test window shows nothing when you bring it
       up (dark strip + white; screenshots inside are fine). Likely the
