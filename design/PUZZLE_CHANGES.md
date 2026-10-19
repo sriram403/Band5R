@@ -1526,3 +1526,10 @@ down at all.
 - New rule (the user): proposals **short and plain**, no technical words
   ("boom", "plumb bob"): say what it is ("a barrier pole", "a weight on a
   string").
+- **Final (2026-10-19): 10 / 10, minus one.** The user took every 10 / 10
+  idea except "no hints in the blocks": heavier blocks roll slower. So: no
+  level string (judge by eye), fewer blocks than you need (move them from
+  the front to the back as the van goes), the creaking only at the last
+  second, the hut's window higher (a crate plus a leg-up), the gate's
+  handle slips back if let go. New rule: always lead with the hardest idea
+  (PRINCIPLES 14).

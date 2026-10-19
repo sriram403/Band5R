@@ -169,6 +169,16 @@ box resets and scrambles its own dials), tools have real limits
 (binoculars about 8x). Nothing pops out of nowhere. And every message to
 the user is short and plain: few lines per idea, questions as A / B.
 
+## 14. Hardest idea first, then tone down (the user, 2026-10-19)
+
+For anything discussed and agreed before it's built (a puzzle, a
+mechanic, a place): give the hardest, craziest version first, the 10 / 10,
+with what it costs in time; the user picks what to drop. Easier to tone a
+bold idea down than to push a safe one up. (At #5 the user took every
+10 / 10 idea but one.) Proposals stay short and in plain words: what a
+thing is, not its engineering name. An answer goes in the message itself,
+never only behind a question box.
+
 ## Sources
 
 - Walter Isaacson, *Elon Musk* (2023): "the algorithm"; summaries at

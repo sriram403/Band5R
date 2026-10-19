@@ -45,6 +45,12 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   sun), machines (a wrong code makes the box itself reset), tools
   (binoculars about 8x, not 12x). Nothing appears out of nowhere. Every
   message and proposal short and plain; questions as A / B.
+- **Hardest idea first, then tone down (the user, 2026-10-19).** When a
+  design is discussed before building, lead with the hardest, craziest
+  version you can think of (the 10 / 10); the user tones it down. Proposals
+  in plain words, no technical terms ("a barrier pole", not "a boom"; "a
+  weight on a string", not "a plumb bob"); never hide an answer behind a
+  question box.
 - **Lived in, never programmatic (the user, 2026-10-07).** Built things
   look placed by a person; natural things sit as nature would leave them
   (clumps, half-sunk rocks, no rows). A cramped space gets bigger.

@@ -451,6 +451,10 @@ they/them.
     know its cost in minutes; say it when it is long. Notice loops (a run
     finds something -> fix -> push -> another run) and stop to tell the
     user rather than going round again.
+29. **Hardest idea first, then tone down (the user, 2026-10-19).** In a
+    proposal, give the hardest, craziest version first (10 / 10) and what
+    it costs in time; the user tones it down. Plain words, no technical
+    terms (`notes/PRINCIPLES.md` 14).
 
 ---
 
