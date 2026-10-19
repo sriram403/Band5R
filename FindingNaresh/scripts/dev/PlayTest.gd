@@ -45,8 +45,8 @@ func _ready() -> void:
 			progress_path = a.substr(11)
 	# Stay out of the way of whatever the user is doing. tools/run_test.sh opens the
 	# window off screen; here it moves on screen but BEHIND every other window,
-	# without taking focus. The user can click it (or its taskbar button) to watch
-	# and hear it; clicking elsewhere sends it back. Muted unless it has focus.
+	# without taking focus. The user brings it up with its taskbar button to watch;
+	# clicks go through it to whatever is behind. Muted unless it has focus.
 	# Pass --show (after the --) for a plain window in front.
 	# Recording (--write-movie) plays no sound through the speakers (the movie
 	# writer's own audio driver), so it isn't muted: the video keeps its sound.
@@ -55,20 +55,68 @@ func _ready() -> void:
 			AudioServer.set_bus_mute(0, true)
 		# The user's real mouse and keyboard never reach a test (the user,
 		# 2026-10-14: alt-tab landed in the test window and the mouse got
-		# stuck there). It can't take focus (no keys, out of alt-tab) and the
-		# mouse passes through it to whatever is behind. The tests' own input
-		# (Input.parse_input_event) doesn't need either. --show for a normal one.
-		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
-		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_MOUSE_PASSTHROUGH, true)
-		_send_window_behind()
+		# stuck there): send_window_behind makes it unable to take focus and
+		# lets clicks pass through to whatever is behind. Not Godot's
+		# WINDOW_FLAG_NO_FOCUS: on Windows it rewrites the window style without
+		# WS_VISIBLE, so the window was never drawn (the user saw a blank
+		# window, 2026-10-19). --show for a normal one. Boot calls
+		# send_window_behind() before it builds the world (not here, ~10 s later:
+		# the window sat mostly off screen until then, 2026-10-19).
+		if not _recording() and DisplayServer.window_is_focused():
+			_hand_focus_back(false)
+	_ready_ms = Time.get_ticks_msec()
 	_run.call_deferred()
 
 
+var _ready_ms := 0
+
+
 func _notification(what: int) -> void:
+	var quiet := not OS.get_cmdline_user_args().has("--show") and not _recording()
 	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
-		AudioServer.set_bus_mute(0, false)
-	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT and not OS.get_cmdline_user_args().has("--show") and not _recording():
+		if quiet:
+			# Godot's own activation at the start: behind; later = the user's click
+			_hand_focus_back(Time.get_ticks_msec() - _ready_ms > 3000)
+		else:
+			AudioServer.set_bus_mute(0, false)
+	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT and quiet:
 		AudioServer.set_bus_mute(0, true)
+
+
+## The taskbar button still gives a quiet test window focus (WS_EX_NOACTIVATE
+## only stops clicks), and then it took the user's input (2026-10-19). Hand
+## focus straight back to the window the user was in (the first real window
+## below this one) and keep this one on top without focus, so they can watch.
+## Clicking their own window sends it behind again. At the start (on_top false)
+## it goes back behind: Godot can activate the window after send_window_behind.
+func _hand_focus_back(on_top: bool) -> void:
+	if OS.get_name() != "Windows":
+		return
+	var hwnd := DisplayServer.window_get_native_handle(DisplayServer.WINDOW_HANDLE)
+	var sig := "[DllImport(\"user32.dll\")] public static extern IntPtr GetWindow(IntPtr h, uint c);"
+	sig += " [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h);"
+	sig += " [DllImport(\"user32.dll\")] public static extern bool IsIconic(IntPtr h);"
+	sig += " [DllImport(\"user32.dll\")] public static extern int GetWindowTextLength(IntPtr h);"
+	sig += " [DllImport(\"user32.dll\")] public static extern int GetWindowLong(IntPtr h, int i);"
+	sig += " [DllImport(\"dwmapi.dll\")] public static extern int DwmGetWindowAttribute(IntPtr h, int a, out int v, int s);"
+	sig += " [DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr h);"
+	sig += " [DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);"
+	var ps := "Add-Type -Name W -Namespace U -MemberDefinition '%s'; " % sig
+	ps += "$me = [IntPtr]%d; $w = [U.W]::GetWindow($me, 2); " % hwnd
+	# skip hidden, minimised, untitled, tool and cloaked (hidden store app) windows
+	ps += "while ($w -ne [IntPtr]::Zero) { $c = 0; [void][U.W]::DwmGetWindowAttribute($w, 14, [ref]$c, 4); "
+	ps += "if ([U.W]::IsWindowVisible($w) -and -not [U.W]::IsIconic($w) -and [U.W]::GetWindowTextLength($w) -gt 0 -and -not ([U.W]::GetWindowLong($w, -20) -band 0x80) -and $c -eq 0) { break }; "
+	ps += "$w = [U.W]::GetWindow($w, 2) }; "
+	ps += "if ($w -ne [IntPtr]::Zero) { [void][U.W]::SetForegroundWindow($w) }; "
+	# let that window come up first, then lift this one above it without focus
+	# (topmost and back: a plain HWND_TOP didn't stay above it) or send it behind
+	ps += "Start-Sleep -Milliseconds 150; "
+	if on_top:
+		ps += "[void][U.W]::SetWindowPos($me, [IntPtr](-1), 0, 0, 0, 0, 0x13); [void][U.W]::SetWindowPos($me, [IntPtr](-2), 0, 0, 0, 0, 0x13)"
+	else:
+		ps += "[void][U.W]::SetWindowPos($me, [IntPtr]1, 0, 0, 0, 0, 0x13)"
+	OS.create_process("powershell.exe", ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
+		"-EncodedCommand", Marshalls.raw_to_base64(ps.to_utf16_buffer())])
 
 
 func _recording() -> bool:
@@ -78,8 +126,8 @@ func _recording() -> bool:
 ## Windows only, via a hidden PowerShell: give focus back to the window the user
 ## had before the launch (tools/run_test.sh passes it as --refocus=<hwnd>), then
 ## SetWindowPos(HWND_BOTTOM, NOACTIVATE), centred on the primary screen.
-func _send_window_behind() -> void:
-	if OS.get_name() != "Windows":
+static func send_window_behind() -> void:
+	if OS.get_name() != "Windows" or OS.get_cmdline_user_args().has("--show"):
 		return
 	var hwnd := DisplayServer.window_get_native_handle(DisplayServer.WINDOW_HANDLE)
 	var screen := DisplayServer.screen_get_usable_rect(0)
@@ -87,6 +135,12 @@ func _send_window_behind() -> void:
 	var pos := screen.position + (screen.size - size) / 2
 	var sig := "[DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f);"
 	sig += " [DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr h);"
+	sig += " [DllImport(\"user32.dll\")] public static extern int GetWindowLong(IntPtr h, int i);"
+	sig += " [DllImport(\"user32.dll\")] public static extern int SetWindowLong(IntPtr h, int i, int v);"
+	sig += " [DllImport(\"user32.dll\")] public static extern bool SetLayeredWindowAttributes(IntPtr h, uint k, byte a, uint f);"
+	# WS_EX_NOACTIVATE (no focus from a click) | WS_EX_LAYERED + WS_EX_TRANSPARENT
+	# (clicks pass through), drawn fully opaque.
+	var ex := 0x08080020
 	var prev := 0
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--refocus="):
@@ -94,10 +148,24 @@ func _send_window_behind() -> void:
 	var ps := "Add-Type -Name W -Namespace U -MemberDefinition '%s'; " % sig
 	if prev != 0:
 		ps += "[void][U.W]::SetForegroundWindow([IntPtr]%d); " % prev
-	ps += "[void][U.W]::SetWindowPos([IntPtr]%d, [IntPtr]1, %d, %d, 0, 0, 0x11)" % [hwnd, maxi(pos.x, 0), maxi(pos.y, 0)]
+	ps += "$h = [IntPtr]%d; [void][U.W]::SetWindowLong($h, -20, ([U.W]::GetWindowLong($h, -20) -bor %d)); " % [hwnd, ex]
+	ps += "[void][U.W]::SetLayeredWindowAttributes($h, 0, 255, 2); "
+	# HWND_BOTTOM, NOSIZE | NOACTIVATE | FRAMECHANGED | SHOWWINDOW
+	ps += "[void][U.W]::SetWindowPos($h, [IntPtr]1, %d, %d, 0, 0, 0x71)" % [maxi(pos.x, 0), maxi(pos.y, 0)]
 	# -EncodedCommand (UTF-16LE base64) so the quotes survive the command line.
 	OS.create_process("powershell.exe", ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
 		"-EncodedCommand", Marshalls.raw_to_base64(ps.to_utf16_buffer())])
+	# Those calls wait for this window's thread to answer. Answer them here
+	# until the window has moved (max 3 s), before the world build keeps this
+	# thread busy for ~8 s: the window sat mostly off screen until then (the
+	# user, 2026-10-19). OS.execute (waiting for PowerShell) deadlocked.
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 3000:
+		DisplayServer.process_events()
+		if DisplayServer.window_get_position_with_decorations().distance_to(pos) < 4:
+			break
+		OS.delay_msec(10)
+	print("[PlayTest] window behind in %d ms" % (Time.get_ticks_msec() - t0))
 
 
 func _process(delta: float) -> void:

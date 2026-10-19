@@ -84,6 +84,8 @@ func _ready() -> void:
 			has_playtest = true
 			opening_run = a.begins_with("--playtest=opening")
 	opening_run = gym == "" and (opening_run or not has_playtest)
+	if has_playtest:
+		PlayTest.send_window_behind()  # in place before the world build, not after
 	builder = GymBuilder.new(gym) if gym != "" else LevelBuilder.new()
 	world = builder.build()
 	# Main runs as PROCESS_MODE_ALWAYS so the pause menu keeps working; the
