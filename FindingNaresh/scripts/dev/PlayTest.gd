@@ -4280,10 +4280,16 @@ func t_bridge_mistakes() -> void:
 	# the van lined up with a cart on its rail, 7 m behind it (a driver who
 	# didn't steer straight)
 	var cart: Dictionary = lift.carts[0]
-	cart["z"] = 1.0
+	cart["z"] = 0.5
 	lift._apply()
-	var cp := (cart["node"] as Node3D).global_position
-	await van_at(cp + lift.global_transform.basis.z * 7.0)
+	# the van 7 m behind it on the 12 m flap's slope, its wheels in from the
+	# flap's kerb (round 2b: on the rail's line it straddled the kerb)
+	await van_at(lift.apron.global_transform * Vector3(float(cart["rail"]) * 2.8, 0.0, -(LiftBridge.APRON - 0.5 - 7.0)))
+	# facing along the bridge, not the road at the gate (it bends: the van
+	# drove at an angle into the flap's kerb and hung on it)
+	c.global_transform.basis = lift.global_transform.basis
+	c.reset_physics_interpolation()
+	await physics_frames(20)
 	await seat_p1_driver_at(c)
 	t0 = Time.get_ticks_msec()
 	var back_speed := 0.0
@@ -4301,6 +4307,7 @@ func t_bridge_mistakes() -> void:
 		back_speed = maxf(back_speed, -c.linear_velocity.dot(fwd))
 		await physics_frames(1)
 	log_line("the van ran at the carts: hit cart %d after %.1f s" % [hit, (Time.get_ticks_msec() - t0) / 1000.0])
+
 	if hit >= 0:
 		cart = lift.carts[hit]
 	log_line("the shove: cart lost %s, van thrown back at %.1f m/s, can stowed %s" % [cart["lost"], back_speed, can.stowed_in != null])
@@ -12074,27 +12081,34 @@ func t_seesaw_live() -> void:
 	if not c.engine_on:
 		c.toggle_engine()
 	c.parking_brake = false
+	# creeping on at 6 km/h, as the hints tell players (driving on/off it got
+	# up to 32 km/h and passed while a creeping van stalled, 2026-10-19)
+	# a careful driver: throttle under 5 km/h, brake over 7 (the auto
+	# driver never braked: it rolled down the flap into the dip at 14)
+	var top := 0.0
+	var at_dip := 0.0
 	var lz := 99.0
 	t = 0.0
-	var mark := 99.0
-	var mark_t := 0.0
-	while t < 25.0:
-		key(KEY_W, int(t * 3.0) % 3 != 2)     # creeping: on, on, off
+	while t < 40.0:
 		await get_tree().physics_frame
 		t += 1.0 / 60.0
+		var kmh := c.linear_velocity.length() * 3.6
+		key(KEY_W, kmh < 5.0)
+		key(KEY_S, kmh > 7.0)
+		top = maxf(top, kmh)
 		lz = (lift.global_transform.affine_inverse() * c.global_position).z
+		if absf(lz - 0.5) < 1.5:      # the dip: where the flap meets the leaf
+			at_dip = maxf(at_dip, c.linear_velocity.length() * 3.6)
 		if lz < -2.5:
 			break
-		if t - mark_t > 3.0:
-			if absf(lz - mark) < 0.2:
-				break
-			mark = lz
-			mark_t = t
 	key(KEY_W, false)
+	key(KEY_S, true)
+	await wait(0.6)
+	key(KEY_S, false)
 	c.parking_brake = true
-	log_line("van: %.2f m past the near end of the leaf after %.1f s (leaf %.1f deg)" % [-lz, t, lift.angle])
+	log_line("van creeping: %.2f m past the near end of the leaf after %.1f s, top %.1f km/h, through the dip at %.1f km/h (leaf %.1f deg)" % [-lz, t, top, at_dip, lift.angle])
 	await shot("seesaw_van_on")
-	check(lz < -2.5, "the van drives over the long flap and up onto the leaf without catching")
+	check(lz < -2.5 and at_dip < 9.0, "creeping at 6 km/h the van gets over the flap and up onto the leaf without catching")
 
 
 ## A probe (#5 round 2, 2026-10-19), not in any set: can the 2-tonne van sit

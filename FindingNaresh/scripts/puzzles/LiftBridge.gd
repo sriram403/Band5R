@@ -55,7 +55,7 @@ const VAN_W := 0.025             ## rad/s (1.4 deg/s): the fastest it turns with
 const PLAYER_KG := 80.0
 const BLOCKS := [700.0, 550.0, 400.0, 300.0]   ## kg; all look alike
 const SIDING := 6.0              ## m of rail on the near deck, from the flap's hinge back
-const APRON := 8.0               ## the near flap's hinge, m back from the gap: where the old deck now ends (four planks; about 8 degrees at rest)
+const APRON := 12.0              ## the near flap's hinge, m back from the gap: where the old deck now ends (six planks; about 5 degrees at rest: at 8 m the van stalled creeping on, 2026-10-19)
 const CART_GAP := 1.3            ## m between carts on one rail
 const RAIL_X := 3.8              ## the rails, either side of the middle
 const HINT_NEAR := 50.0
@@ -90,6 +90,7 @@ var apron: AnimatableBody3D
 var apron_shape: BoxShape3D
 var apron_mesh: MeshInstance3D
 var apron_rails: Node3D
+var apron_kerbs: Array[CollisionShape3D] = []
 var panel_label: Label3D
 var carts: Array = []            ## {kg, rail, z, home, node, lost}
 var bolts: Array[Node3D] = []
@@ -197,11 +198,13 @@ func _build_apron() -> void:
 	apron.sync_to_physics = true
 	apron.position = Vector3(0, 0, APRON)
 	add_child(apron)
-	apron_mesh = Build.box(Vector3(deck_w - 0.4, 0.08, 1.0), ToonMat.make(Color(0.36, 0.37, 0.4), 0.012), Vector3(0, -0.04, -0.5), Vector3.ZERO, "Plate")
+	# the full deck's width, low kerbs along both edges (narrower, with no
+	# kerb, P2 walked off its side into the river, 2026-10-19)
+	apron_mesh = Build.box(Vector3(deck_w, 0.08, 1.0), ToonMat.make(Color(0.36, 0.37, 0.4), 0.012), Vector3(0, -0.04, -0.5), Vector3.ZERO, "Plate")
 	apron.add_child(apron_mesh)
 	var cs := CollisionShape3D.new()
 	apron_shape = BoxShape3D.new()
-	apron_shape.size = Vector3(deck_w - 0.4, 0.08, 1.0)
+	apron_shape.size = Vector3(deck_w, 0.08, 1.0)
 	cs.shape = apron_shape
 	cs.position = Vector3(0, -0.04, -0.5)
 	cs.name = "PlateShape"
@@ -209,6 +212,16 @@ func _build_apron() -> void:
 	apron_rails = Node3D.new()
 	apron_rails.name = "FlapRails"
 	apron.add_child(apron_rails)
+	var steel := ToonMat.make(Color(0.30, 0.32, 0.34), 0.012)
+	for sx in [-1.0, 1.0]:
+		apron_rails.add_child(Build.box(Vector3(0.2, 0.25, 1.0), steel, Vector3(sx * (deck_w * 0.5 - 0.1), 0.12, 0), Vector3.ZERO, "FlapKerb"))
+		var ks := CollisionShape3D.new()
+		var kb := BoxShape3D.new()
+		kb.size = Vector3(0.2, 0.25, 1.0)
+		ks.shape = kb
+		ks.position = Vector3(sx * (deck_w * 0.5 - 0.1), 0.12, -0.5)
+		apron.add_child(ks)
+		apron_kerbs.append(ks)
 
 
 func _build_rails_and_carts() -> void:
@@ -959,6 +972,9 @@ func _apply() -> void:
 	apron_mesh.position.z = -len * 0.5
 	apron_rails.scale.z = len
 	apron_rails.position.z = -len * 0.5
+	for ks in apron_kerbs:
+		(ks.shape as BoxShape3D).size.z = len
+		ks.position.z = -len * 0.5
 	for c in carts:
 		if not c["lost"]:
 			_place_cart(c)
