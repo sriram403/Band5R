@@ -441,3 +441,27 @@ works something he was told to; `naresh` checks it.
 
 **Found later**
 - (nothing yet)
+
+## 2026-10-19: #5 round 2b, a lively seesaw (feature, g11, waits for the user)
+
+**What changed**
+- `LiftBridge.gd`: REST 12 deg, TAIL 150, FRICTION 50, INERTIA 2,500,
+  DAMP 0.5; four blocks 700 / 550 / 400 / 300 kg, two per rail; the flap
+  8 m (APRON), its rails stretched with it; the siding behind it; the
+  van's belly weight on the far end while its front wheels hang; hanging
+  off the raised end = a burst tyre and back to the gate ("hung"); hints.
+- `LevelLandmarks.gd`: four planks left out under the flap (was one).
+- `DevMenu.gd`: the bridge jump's text (it still described round 1).
+- `PlayTest.gd`: new `seesaw_live`; `bridge_mistakes` for four carts, the
+  hang, and the level arrangement for the lock.
+- `tools/live/make_puzzle5.py`: rewritten for round 2b.
+
+**What it could break**
+- `bridge` (the crossing bot was tuned to round 2's numbers), `save`
+  (four carts), `puzzle_resets`, `storm_road` (the storm sets the leaf).
+
+**Tests that cover it**
+- `seesaw_live` (passes), `bridge_mistakes` (passes), `bridge` (see TODO).
+
+**Found later**
+- (nothing yet)

@@ -9,6 +9,7 @@
  "steps": [
   {
    "name": "5.0 F1 Puzzles: the lift bridge",
+   "max": 20,
    "do": [
     {
      "do": "menu",
@@ -18,19 +19,27 @@
     {
      "do": "wait",
      "s": 2.0
+    },
+    {
+     "do": "eval",
+     "expr": "lb().gate.set('_wind_t', 99999.0)"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
     }
    ],
    "expect": [
     {
-     "name": "fresh: the leaf up, the house barred",
-     "expr": "lb().angle > 29.9 and not lb().door_open and not lb().locked",
+     "name": "at rest: far end up 12 degrees, four blocks",
+     "expr": "absf(lb().angle - 12.0) < 0.1 and lb().carts.size() == 4",
      "within": 3
     }
    ]
   },
   {
-   "name": "5.1 both out of the van; P1 tries the hut's levers and reads Naresh's note",
-   "max": 70,
+   "name": "5.1 both out; from the road the far end is up",
+   "max": 60,
    "do": [
     {
      "do": "tap",
@@ -51,134 +60,262 @@
     {
      "do": "walk",
      "who": 1,
-     "to": "expr:boot.builder.poi['bridge_hut_door']",
+     "to": "expr:lb().global_transform * Vector3(-1.5, 0.0, 13.0)",
      "arrive": 0.6,
-     "max": 30
+     "max": 40
     },
     {
      "do": "walk",
-     "who": 1,
-     "to": "expr:lb_panel_stand()",
-     "arrive": 0.4,
-     "max": 10
+     "who": 2,
+     "to": "expr:lb().global_transform * Vector3(1.8, 0.0, 13.0)",
+     "arrive": 0.6,
+     "max": 40
     },
     {
      "do": "look",
      "who": 1,
-     "at": "expr:lb().find_child('LOWERLever', true, false).global_position"
-    },
-    {
-     "do": "wait",
-     "s": 2.5
-    },
-    {
-     "do": "look",
-     "who": 1,
-     "at": "expr:lb().find_child('NareshNote_lb_hut', true, false).global_position"
+     "at": "expr:lb().global_transform * Vector3(0, 0.5, -5.0)"
     },
     {
      "do": "wait",
      "s": 0.4
     },
     {
-     "do": "tap",
-     "key": "E"
+     "do": "look",
+     "who": 2,
+     "at": "expr:lb().global_transform * Vector3(0, 0.5, -5.0)"
     },
     {
      "do": "wait",
-     "s": 8.0
+     "s": 3.0
     }
    ],
    "expect": [
     {
-     "name": "his note read: a seesaw",
-     "expr": "lb_note_read('lb_hut')",
+     "name": "both on the road by the bridge",
+     "expr": "(lb().global_transform.affine_inverse() * p1().global_position).z > 9.0",
      "within": 2
     }
    ]
   },
   {
-   "name": "5.2 P2 at the machinery house: barred; Naresh's note by the door",
+   "name": "5.2 P1 walks out past the middle: it tips down",
+   "max": 40,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:lb().global_transform * Vector3(-1.5, 0.0, -8.6)",
+     "arrive": 0.4,
+     "max": 30
+    },
+    {
+     "do": "until",
+     "expr": "lb().angle < -2.0",
+     "max": 12
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:lb().global_transform * Vector3(0, 0.0, -14.0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:lb().global_transform * Vector3(0, 0.5, -5.0)"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the far end went down",
+     "expr": "lb().angle < 0.0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "5.3 P1 walks back past the middle: it tips up",
+   "max": 40,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:lb().global_transform * Vector3(-1.5, 0.0, -1.5)",
+     "arrive": 0.4,
+     "max": 30
+    },
+    {
+     "do": "until",
+     "expr": "lb().angle > 10.0",
+     "max": 12
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:lb().global_transform * Vector3(0, 0.5, -5.0)"
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "the far end is back up",
+     "expr": "lb().angle > 8.0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "5.4 P2 stays on the near half as weight; P1 walks to the far end: it holds",
    "max": 60,
    "do": [
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:boot.builder.poi['bridge_barrier_near'] - lb().global_transform.basis.x * lb().m * 7.0",
-     "arrive": 0.8,
+     "to": "expr:lb().global_transform * Vector3(1.5, 0.0, -1.5)",
+     "arrive": 0.4,
      "max": 30
     },
     {
      "do": "walk",
-     "who": 2,
-     "to": "expr:lb().global_transform * Vector3(0, 0.1, 4.0)",
-     "arrive": 0.8,
-     "max": 20
-    },
-    {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:boot.builder.poi['machinery_door']",
-     "arrive": 0.5,
+     "who": 1,
+     "to": "expr:lb().global_transform * Vector3(-1.5, 0.0, -9.4)",
+     "arrive": 0.4,
      "max": 30
-    },
-    {
-     "do": "look",
-     "who": 2,
-     "at": "expr:lb_door_look()"
     },
     {
      "do": "wait",
-     "s": 2.5
+     "s": 3.0
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:lb().hut.global_position"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "still up with one on each half",
+     "expr": "lb().angle > 4.0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "5.5 P2 walks out to the far half too: down it goes",
+   "max": 40,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:lb().global_transform * Vector3(1.5, 0.0, -8.0)",
+     "arrive": 0.4,
+     "max": 30
+    },
+    {
+     "do": "until",
+     "expr": "lb().angle < -2.0",
+     "max": 12
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "both on the far half: down",
+     "expr": "lb().angle < 0.0",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "5.6 both walk back off: it swings and settles up",
+   "max": 60,
+   "do": [
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:lb().global_transform * Vector3(-1.8, 0.0, 12.0)",
+     "arrive": 0.6,
+     "max": 30
     },
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:boot.builder.poi['machinery_door'] + lb().global_transform.basis.z * 1.3",
-     "arrive": 0.4,
-     "max": 8
+     "to": "expr:lb().global_transform * Vector3(1.8, 0.0, 12.0)",
+     "arrive": 0.6,
+     "max": 30
     },
     {
      "do": "look",
-     "who": 2,
-     "at": "expr:lb().find_child('NareshNote_lb_door', true, false).global_position"
+     "who": 1,
+     "at": "expr:lb().global_transform * Vector3(0, 0.5, -5.0)"
     },
     {
      "do": "wait",
      "s": 0.4
     },
     {
-     "do": "pad_tap",
-     "btn": "X"
+     "do": "look",
+     "who": 2,
+     "at": "expr:lb().global_transform * Vector3(0, 0.5, -5.0)"
     },
     {
      "do": "wait",
-     "s": 7.0
+     "s": 0.4
+    },
+    {
+     "do": "until",
+     "expr": "lb().angle > 11.9",
+     "max": 20
     }
    ],
    "expect": [
     {
-     "name": "his note read: a leg-up",
-     "expr": "lb_note_read('lb_door')",
-     "within": 2
+     "name": "empty: back at rest",
+     "expr": "lb().angle > 11.5",
+     "within": 3
     }
    ]
   },
   {
-   "name": "5.3 the leg-up: P2 crouches under the hatch, P1 jumps up off their back",
-   "max": 70,
+   "name": "5.7 P2 pushes the 300 kg block out on the far half: it tips on its own",
+   "max": 60,
    "do": [
     {
      "do": "walk",
      "who": 2,
-     "to": "expr:lb_hatch(0.0)",
+     "to": "expr:lb().global_transform * Vector3(lb().carts[3]['rail'] * 2.4, 0, lb().carts[3]['z'] + 1.3)",
+     "arrive": 0.4,
+     "max": 30
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:lb().global_transform * Vector3(lb().carts[3]['rail'] * 3.8, 0, lb().carts[3]['z'] + 1.3)",
      "arrive": 0.3,
      "max": 15
     },
     {
      "do": "look",
      "who": 2,
-     "at": "expr:lb_hatch(2.0) + Vector3(0, 1.0, 0)"
+     "at": "expr:lb().carts[3]['node'].global_position + Vector3(0, 0.6, 0)"
     },
     {
      "do": "wait",
@@ -186,461 +323,93 @@
     },
     {
      "do": "pad_down",
-     "btn": "B"
+     "btn": "X"
     },
     {
-     "do": "wait",
-     "s": 1.0
+     "do": "pad_axis",
+     "axis": "LY",
+     "v": -0.6
     },
     {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:lb_hatch(-1.6)",
-     "arrive": 0.5,
-     "max": 40
+     "do": "until",
+     "expr": "float(lb().carts[3]['z']) < -6.8 or lb().angle < 0.0",
+     "max": 45
     },
     {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:lb_hatch(-0.85)",
-     "arrive": 0.25,
-     "max": 6
-    },
-    {
-     "do": "look",
-     "who": 1,
-     "at": "expr:lb_hatch(2.0) + Vector3(0, 2.2, 0)"
-    },
-    {
-     "do": "wait",
-     "s": 1.5
-    },
-    {
-     "do": "down",
-     "key": "W"
-    },
-    {
-     "do": "tap",
-     "key": "Space"
-    },
-    {
-     "do": "wait",
-     "s": 1.4
-    },
-    {
-     "do": "up",
-     "key": "W"
+     "do": "pad_axis",
+     "axis": "LY",
+     "v": 0.0
     },
     {
      "do": "pad_up",
-     "btn": "B"
+     "btn": "X"
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:lb().global_transform * Vector3(1.8, 0.0, -4.0)",
+     "arrive": 0.5,
+     "max": 20
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:lb().global_transform * Vector3(0, 0.5, -5.0)"
     },
     {
      "do": "wait",
-     "s": 1.0
+     "s": 0.4
+    },
+    {
+     "do": "until",
+     "expr": "lb().angle < 0.0",
+     "max": 15
+    },
+    {
+     "do": "wait",
+     "s": 2.0
     }
    ],
    "expect": [
     {
-     "name": "P1 in through the hatch",
-     "expr": "lb()._inside_house(p1())",
+     "name": "the block out on the far half tips it down",
+     "expr": "lb().angle < 0.0",
      "within": 3
     }
    ]
   },
   {
-   "name": "5.4 P1 lifts the bar and opens the door; the lock won't go with the leaf up",
-   "max": 60,
+   "name": "5.8 the block back, the van creeps on with nothing behind it: past the middle into the pit",
+   "max": 120,
    "do": [
     {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:boot.builder.poi['machinery_in']",
-     "arrive": 0.5,
-     "max": 10
+     "do": "eval",
+     "expr": "lb().reset_bridge()"
     },
     {
-     "do": "look",
-     "who": 1,
-     "at": "expr:lb_door_look()"
-    },
-    {
-     "do": "wait",
-     "s": 0.4
-    },
-    {
-     "do": "tap",
-     "key": "E"
-    },
-    {
-     "do": "wait",
-     "s": 1.5
-    },
-    {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:boot.builder.poi['machinery_mid']",
-     "arrive": 0.5,
-     "max": 10
-    },
-    {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:boot.builder.poi['lock_lever']",
-     "arrive": 0.5,
-     "max": 10
-    },
-    {
-     "do": "look",
-     "who": 1,
-     "at": "expr:lb().find_child('LockArea', true, false).global_position"
-    },
-    {
-     "do": "wait",
-     "s": 3.0
-    },
-    {
-     "do": "look",
-     "who": 1,
-     "at": "expr:lb().find_child('NareshNote_lb_lock', true, false).global_position"
-    },
-    {
-     "do": "wait",
-     "s": 0.4
-    },
-    {
-     "do": "tap",
-     "key": "E"
-    },
-    {
-     "do": "wait",
-     "s": 8.0
-    }
-   ],
-   "expect": [
-    {
-     "name": "the door open; still up",
-     "expr": "lb().door_open and lb().angle > 29.9",
-     "within": 2
-    }
-   ]
-  },
-  {
-   "name": "5.5 a stone from the crew's heap, dropped by the axle: nothing",
-   "max": 70,
-   "do": [
-    {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:boot.builder.poi['machinery_mid']",
-     "arrive": 0.5,
-     "max": 10
-    },
-    {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:boot.builder.poi['machinery_door']",
-     "arrive": 0.5,
-     "max": 15
-    },
-    {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:lb_stone(boot.builder.poi['stone_heap'])",
-     "arrive": 1.7,
-     "max": 15
-    },
-    {
-     "do": "look",
-     "who": 1,
-     "at": "expr:lb_stone(boot.builder.poi['stone_heap'])"
-    },
-    {
-     "do": "wait",
-     "s": 0.4
-    },
-    {
-     "do": "tap",
-     "key": "E"
-    },
-    {
-     "do": "wait",
-     "s": 0.8
-    },
-    {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:leaf_at(lb(), 1.2, 0.0)",
-     "arrive": 0.4,
-     "max": 15
-    },
-    {
-     "do": "tap",
-     "key": "E"
-    },
-    {
-     "do": "wait",
-     "s": 1.5
-    },
-    {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:boot.builder.poi['stone_heap']",
-     "arrive": 1.6,
-     "max": 15
-    },
-    {
-     "do": "wait",
-     "s": 2.0
-    }
-   ],
-   "expect": [
-    {
-     "name": "still up",
-     "expr": "lb().angle > 29.9",
-     "within": 2
-    }
-   ]
-  },
-  {
-   "name": "5.6 P1 carries a stone up to the tip: still nothing",
-   "max": 70,
-   "do": [
-    {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:lb_stone(boot.builder.poi['stone_heap'])",
-     "arrive": 1.7,
-     "max": 15
-    },
-    {
-     "do": "look",
-     "who": 1,
-     "at": "expr:lb_stone(boot.builder.poi['stone_heap'])"
-    },
-    {
-     "do": "wait",
-     "s": 0.4
-    },
-    {
-     "do": "tap",
-     "key": "E"
-    },
-    {
-     "do": "wait",
-     "s": 0.8
-    },
-    {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:leaf_at(lb(), 8.6, -1.0)",
-     "arrive": 0.4,
-     "max": 25
-    },
-    {
-     "do": "tap",
-     "key": "E"
+     "do": "eval",
+     "expr": "lb().gate.set('_wind_t', 99999.0)"
     },
     {
      "do": "wait",
      "s": 1.0
     },
     {
-     "do": "look",
-     "who": 1,
-     "at": "expr:boot.builder.poi['stone_heap']"
-    },
-    {
-     "do": "wait",
-     "s": 3.0
-    }
-   ],
-   "expect": [
-    {
-     "name": "still up with P1 and a stone at the tip",
-     "expr": "lb().angle > 29.9 and lb_stones_out() >= 1",
-     "within": 2
-    }
-   ]
-  },
-  {
-   "name": "5.7 P2 brings a second stone out, slowly: down it comes, gently",
-   "max": 80,
-   "do": [
-    {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:lb_stone(boot.builder.poi['stone_heap'])",
-     "arrive": 1.7,
-     "max": 15
-    },
-    {
-     "do": "look",
-     "who": 2,
-     "at": "expr:lb_stone(boot.builder.poi['stone_heap'])"
-    },
-    {
-     "do": "wait",
-     "s": 0.4
-    },
-    {
-     "do": "pad_tap",
-     "btn": "X"
-    },
-    {
-     "do": "wait",
-     "s": 0.8
-    },
-    {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:leaf_at(lb(), 5.0, 1.0)",
-     "arrive": 0.4,
-     "max": 25
-    },
-    {
-     "do": "until",
-     "expr": "lb().angle < 0.1",
-     "max": 25
-    },
-    {
-     "do": "wait",
-     "s": 1.5
-    }
-   ],
-   "expect": [
-    {
-     "name": "down on the far bank, no slam",
-     "expr": "lb().angle < 0.1 and lb().slams == 0",
-     "within": 2
-    }
-   ]
-  },
-  {
-   "name": "5.8 P2's stone to the tip; P2 walks off: P1 and two stones hold it",
-   "max": 70,
-   "do": [
-    {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:leaf_at(lb(), 8.3, 1.0)",
-     "arrive": 0.4,
-     "max": 15
-    },
-    {
-     "do": "pad_tap",
-     "btn": "X"
+     "do": "call",
+     "fn": "seat_p1_driver"
     },
     {
      "do": "wait",
      "s": 1.0
-    },
-    {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:boot.builder.poi['machinery_door']",
-     "arrive": 0.6,
-     "max": 30
-    },
-    {
-     "do": "wait",
-     "s": 2.0
-    }
-   ],
-   "expect": [
-    {
-     "name": "still down",
-     "expr": "lb().angle < 0.1",
-     "within": 2
-    }
-   ]
-  },
-  {
-   "name": "5.9 P2 throws the lock: CLANK",
-   "max": 50,
-   "do": [
-    {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:boot.builder.poi['machinery_in']",
-     "arrive": 0.5,
-     "max": 10
-    },
-    {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:boot.builder.poi['machinery_mid']",
-     "arrive": 0.5,
-     "max": 10
-    },
-    {
-     "do": "walk",
-     "who": 2,
-     "to": "expr:boot.builder.poi['lock_lever']",
-     "arrive": 0.5,
-     "max": 10
-    },
-    {
-     "do": "look",
-     "who": 2,
-     "at": "expr:lb().find_child('LockArea', true, false).global_position"
-    },
-    {
-     "do": "wait",
-     "s": 0.4
-    },
-    {
-     "do": "pad_tap",
-     "btn": "X"
-    },
-    {
-     "do": "wait",
-     "s": 4.0
-    }
-   ],
-   "expect": [
-    {
-     "name": "locked; the barriers gone",
-     "expr": "lb().locked and not boot.builder.bridge_barriers.visible",
-     "within": 2
-    }
-   ]
-  },
-  {
-   "name": "5.10 the fun: P1 jumps over the kerb into the river and swims out",
-   "max": 80,
-   "do": [
-    {
-     "do": "walk",
-     "who": 1,
-     "to": "expr:leaf_at(lb(), 5.0, -lb().deck_w * 0.5 + 1.0)",
-     "arrive": 0.4,
-     "max": 15
-    },
-    {
-     "do": "look",
-     "who": 1,
-     "at": "expr:lb().leaf.global_transform * Vector3(-8.0, 0.0, -5.0)"
-    },
-    {
-     "do": "wait",
-     "s": 0.4
     },
     {
      "do": "down",
      "key": "W"
     },
     {
-     "do": "wait",
-     "s": 0.25
-    },
-    {
-     "do": "tap",
-     "key": "Space"
-    },
-    {
-     "do": "wait",
-     "s": 1.5
+     "do": "until",
+     "expr": "lb().failing or (lb().global_transform.affine_inverse() * camper().global_position).z < -6.5",
+     "max": 60
     },
     {
      "do": "up",
@@ -648,19 +417,19 @@
     },
     {
      "do": "until",
-     "expr": "not p1().swimming and p1().wet_t > 0.0",
-     "max": 50
+     "expr": "lb().failing",
+     "max": 15
     },
     {
      "do": "wait",
-     "s": 3.0
+     "s": 5.0
     }
    ],
    "expect": [
     {
-     "name": "out on the bank, soaked",
-     "expr": "p1().wet_t > 0.0 and not p1().swimming",
-     "within": 3
+     "name": "into the pit, back at the gate",
+     "expr": "camper().global_position.distance_to(lb().van_start.origin) < 3.0",
+     "within": 6
     }
    ]
   }

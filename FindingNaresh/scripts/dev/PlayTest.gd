@@ -447,7 +447,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "bridge_mistakes", "seesaw_probe", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "relay_views", "bino_zoom", "snowball", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "bridge_mistakes", "seesaw_live", "seesaw_probe", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "relay_views", "bino_zoom", "snowball", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -4135,7 +4135,7 @@ func t_bridge() -> void:
 	boot._on_joy_changed(0, true)      # P2 on a pad
 	var c := camper()
 	await van_at_start()
-	check(absf(lift.angle - LiftBridge.REST_DEG) < 0.1 and not lift.gate.is_open() and lift.carts.size() == 3, "the seesaw rests near end down, the barrier is down, three carts on the siding")
+	check(absf(lift.angle - LiftBridge.REST_DEG) < 0.1 and not lift.gate.is_open() and lift.carts.size() == 4, "the seesaw rests near end down, the barrier is down, four carts on the siding")
 	var p := p1()
 	var q := p2()
 	await place_player(p, gate_at(1.5, 0.0, 6.0) + Vector3(0, 0.4, 0), 0.0)
@@ -4316,22 +4316,34 @@ func t_bridge_mistakes() -> void:
 	if is_instance_valid(can):
 		check(can.global_position.distance_to(lift.van_start.origin) > 8.0, "... and the can lies where it fell (%.0f m from the van)" % can.global_position.distance_to(lift.van_start.origin))
 		can.queue_free()
-	# 3. all blocks at the near end: it never tips; the van drops off the raised far end
+	# 3. all blocks at the near end: it never tips far enough; the van's nose
+	# drops off the raised far end and it hangs there (round 2b: 1 m up)
 	lift.reset()
 	lift.gate.angle = 80.0
 	lift.gate._apply()
-	# carts 0 and 2 share a rail: 1.4 m apart
+	# carts 0 + 2 share a rail, 1 + 3 the other: 1.4 m apart
 	lift.carts[0]["z"] = -0.8
 	lift.carts[1]["z"] = -0.8
 	lift.carts[2]["z"] = -2.2
+	lift.carts[3]["z"] = -2.2
 	lift._apply()
 	c.repair_all()
 	await van_at(gate_at(0, 0, -8.0))
 	await seat_p1_driver_at(c)
 	await creep_van(road, lift.global_transform * Vector3(0, 0, -lift.leaf_len - 8.0), 40.0, 9.0)
 	await wait(1.5)
-	log_line("near-heavy crossing: angle %.1f, crossed %s, flat %s" % [lift.angle, lift.crossed, c.tyre_flat])
-	check(lift.crossed and c.tyre_flat, "all blocks on the near half: it stays up, the van drops off the raised end and a tyre bursts")
+	log_line("near-heavy crossing: angle %.1f, crossed %s, flat %s, failing %s" % [lift.angle, lift.crossed, c.tyre_flat, lift.failing])
+	await shot("bridge_near_heavy_end")
+	var flat := c.tyre_flat
+	t0 = Time.get_ticks_msec()
+	while (not lift.failing) and Time.get_ticks_msec() - t0 < 6000:
+		await physics_frames(1)
+	var hung := lift.failing
+	while lift.failing and Time.get_ticks_msec() - t0 < 12000:
+		await physics_frames(1)
+	await wait(1.0)
+	check(not lift.crossed and flat and hung and c.global_position.distance_to(lift.van_start.origin) < 3.0,
+		"all blocks on the near half: the van's nose drops off the raised end, a tyre bursts, it hangs there: back at the gate")
 	c.repair_all()
 	p.force_exit = true
 	await physics_frames(3)
@@ -4424,8 +4436,9 @@ func t_bridge_mistakes() -> void:
 	# made level and still (arranged): the lock goes
 	lift.angle = 0.0
 	lift.omega = 0.0
-	lift.carts[0]["z"] = -9.0
-	lift.carts[1]["z"] = -7.5
+	# one 300 kg block half a metre past the pivot just about balances the
+	# near half's extra weight (TAIL 150 kg m)
+	lift.carts[3]["z"] = -lift.leaf_len * 0.5 - 0.5
 	lift._apply()
 	await wait(0.5)
 	log_line("level: pull %.0f, angle %.2f" % [lift.pull, lift.angle])
@@ -11977,6 +11990,111 @@ func relay_wait_thin(max_s: float) -> bool:
 			return true
 		await physics_frames(3)
 	return false
+
+
+## #5 round 2b (2026-10-19, the user: "it didn't even seesaw"): it really
+## tips. Walking with the real controls: one person past the middle tips it
+## down, back past it tips it up; one on each half holds it (the walk over
+## to the hut); the van gets over the long flap onto the leaf without
+## catching its belly. `tools/run_test.sh seesaw_live`
+func t_seesaw_live() -> void:
+	var lift := lb()
+	check(lift != null, "the bridge has its seesaw")
+	if lift == null:
+		return
+	var stn := station()
+	stn.solved = true
+	(get_tree().get_first_node_in_group("power_line") as PowerLine).sync()
+	lift.reset()
+	boot.story.index = boot.story.index_of("bridge")
+	boot._on_joy_changed(0, true)      # P2 on a pad
+	await van_at_start()
+	var at := func(x: float, z: float) -> Vector3: return lift.global_transform * Vector3(x, 0.0, z)
+	var half := lift.leaf_len * 0.5
+	log_line("at rest: %.1f deg (far end %.2f m up), %d carts" % [lift.angle, sin(deg_to_rad(lift.angle)) * half, lift.carts.size()])
+	check(absf(lift.angle - 12.0) < 0.1 and lift.carts.size() == 4, "at rest the far end is up 12 degrees; four carts on the siding")
+	var p := p1()
+	var q := p2()
+	await place_player(p, at.call(-1.5, 12.0) + Vector3(0, 0.5, 0), 0.0)
+	await place_player(q, at.call(1.5, 12.5) + Vector3(0, 0.5, 0), 0.0)
+	await look_at_point(p, at.call(0.0, -half) + Vector3(0, 1.0, 0))
+	await wait(0.5)
+	await shot("seesaw_rest_from_road")
+	# 1. one person walks out past the middle: it tips down
+	var ok := await walk_to(p, at.call(-1.5, -half - 3.6), "the far half", 0.4, 30.0)
+	var t := 0.0
+	var top_w := 0.0
+	while t < 12.0 and lift.angle > -2.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		top_w = maxf(top_w, absf(rad_to_deg(lift.omega)))
+	log_line("P1 3.6 m past the middle: %.1f deg after %.1f s, fastest %.1f deg/s" % [lift.angle, t, top_w])
+	check(ok and lift.angle < 0.0, "one person walking past the middle tips the far end down")
+	check(top_w > 2.0 and top_w < 9.0, "it swings at a real pace (%.1f deg/s), not a snap, not a crawl" % top_w)
+	await look_at_point(p, at.call(0.0, -half - 5.0))
+	await shot("seesaw_tipped_down")
+	# back past the middle: it tips up again
+	ok = await walk_to(p, at.call(-1.5, -half + 3.5), "the near half", 0.4, 30.0)
+	t = 0.0
+	while t < 12.0 and lift.angle < 10.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+	log_line("P1 back 3.5 m on the near half: %.1f deg after %.1f s" % [lift.angle, t])
+	check(ok and lift.angle > 10.0, "walking back past the middle tips it up again")
+	# 2. one stays on the near half as weight, the other walks over
+	await pad_walk_to(q, at.call(1.5, -half + 3.5), 0.4, 30.0)
+	ok = await walk_to(p, at.call(-1.5, -lift.leaf_len + 0.6), "the far end", 0.4, 30.0)
+	await wait(4.0)
+	log_line("P2 3.5 m on the near half, P1 at the far end: %.1f deg" % lift.angle)
+	check(ok and lift.angle > 4.0, "with one standing on the near half as weight, the other walks to the far end and it stays up")
+	# both on the far half: down it goes
+	await pad_walk_to(q, at.call(1.5, -half - 3.0), 0.4, 30.0)
+	t = 0.0
+	while t < 12.0 and lift.angle > -2.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+	log_line("both on the far half: %.1f deg after %.1f s" % [lift.angle, t])
+	check(lift.angle < 0.0, "both walking out on the far half: the far end goes down")
+	# 3. off it, and the van drives over the flap onto the leaf
+	await place_player(q, at.call(5.5, 16.0) + Vector3(0, 0.5, 0), 0.0)
+	await place_player(p, at.call(-5.5, 16.0) + Vector3(0, 0.5, 0), 0.0)
+	# still swinging down when they stepped off: it carries on a little, then
+	# comes back up (it went to -10 and back, 2026-10-19)
+	t = 0.0
+	var low := lift.angle
+	while t < 20.0 and lift.angle < LiftBridge.REST_DEG - 0.1:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		low = minf(low, lift.angle)
+	log_line("empty: swung on to %.1f deg, back at %.1f after %.1f s" % [low, lift.angle, t])
+	check(absf(lift.angle - LiftBridge.REST_DEG) < 0.5, "empty again, it settles back to rest (%.1f deg)" % lift.angle)
+	var c := camper()
+	await van_at(at.call(0.0, 15.0))
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
+	c.parking_brake = false
+	var lz := 99.0
+	t = 0.0
+	var mark := 99.0
+	var mark_t := 0.0
+	while t < 25.0:
+		key(KEY_W, int(t * 3.0) % 3 != 2)     # creeping: on, on, off
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		lz = (lift.global_transform.affine_inverse() * c.global_position).z
+		if lz < -2.5:
+			break
+		if t - mark_t > 3.0:
+			if absf(lz - mark) < 0.2:
+				break
+			mark = lz
+			mark_t = t
+	key(KEY_W, false)
+	c.parking_brake = true
+	log_line("van: %.2f m past the near end of the leaf after %.1f s (leaf %.1f deg)" % [-lz, t, lift.angle])
+	await shot("seesaw_van_on")
+	check(lz < -2.5, "the van drives over the long flap and up onto the leaf without catching")
 
 
 ## A probe (#5 round 2, 2026-10-19), not in any set: can the 2-tonne van sit

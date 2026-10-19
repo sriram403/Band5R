@@ -1533,3 +1533,22 @@ down at all.
   second, the hut's window higher (a crate plus a leg-up), the gate's
   handle slips back if let go. New rule: always lead with the hardest idea
   (PRINCIPLES 14).
+
+### Round 2b: "it didn't even seesaw" (the user, 2026-10-19): **agreed**
+
+The user: nothing moved when things went on it (B). Why, from the numbers:
+the near half was built 2,800 kg m heavy and the pivot held 600 kg m, so a
+person at the far end (400) did nothing, all three blocks only just tipped
+it, the van only from 1.6 m past the middle, and at rest it sat only 5 deg
+out of level.
+
+Agreed (all my picks):
+- **Q1 A, a knife edge:** the near half only a little heavier, an easy
+  pivot. One person walking past the middle tips it down, walking back
+  tips it up; it swings a few degrees a second and creaks.
+- **Clearly tipped at rest:** far end up 12 deg (about 1 m at the far bank).
+- **Q2 A, four blocks, 300-700 kg,** so the van's crossing is still
+  possible: they go from the front to the back as the van creeps over.
+- **Q3 A, S1: walking over is a two-person job.** One stays on the near
+  half as weight while the other walks over; both walking on together
+  tips the far end down.

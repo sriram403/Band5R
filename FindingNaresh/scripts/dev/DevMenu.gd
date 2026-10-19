@@ -26,7 +26,7 @@ const PUZZLES := [
 	["The windmill", "windmill", "", "Hold the starter lever; head-butt the legs back as they slide; the ladder, the napin. You start in the van at the gate."],
 	["The barn maze", "choose_road", "maze_gate", "Optional (Valley Road): the guide up the silo, the walker in the hedges; snow from the middle."],
 	["The lookout boards", "choose_road", "lookout", "Optional (Ridge Track): pictures on the landmarks, the patrol's riddles, snowballs, the dials."],
-	["The lift bridge", "bridge", "bridge_barrier_near", "The seesaw: no power, weight out on the leaf brings it down; the lock in the machinery house (in by the hatch, a leg-up). You start in the van at the barrier."],
+	["The lift bridge", "bridge", "bridge_barrier_near", "The seesaw over the gap: one person past the middle tips it; four blocks on carts; the barrier's winch behind a fence (a leg-up); the lock in the hut on the far bank (in by the window: the crate + a leg-up). You start in the van before the barrier."],
 	["The ghat pace notes", "ghat", "", "Fog on the hairpins, the notes on the swung nav, the glimpse, the first attack. You start in the van at J3."],
 	["The coast watchtower", "tower", "coast_tower", "Sneak past the creature, climb the ramp, stamp the beach."],
 	["The photo", "photo", "", "Only P2 has the photo: find where it was taken."],

@@ -1,13 +1,15 @@
-"""Puzzle 5, the lift bridge: the seesaw (design/PUZZLE_CHANGES.md #5,
-round 1b, agreed 2026-10-17) as a planned walk for the watched run and the
-recorded walkthrough: python tools/live/make_puzzle5.py ->
-tools/live/puzzle5.json. P1 on the keyboard, P2 on the pad. The dead hut,
-Naresh's notes, the leg-up through the machinery house's hatch, the door
-unbarred, the lock refused while the leaf is up, a stone by the axle (does
-nothing), one at the tip with a stone (nothing), P2 out halfway with a
-second stone (it comes down, gently), both stones at the tip, P2 walks off
-(it stays down) and throws the lock. Then the fun: P1 jumps off the side
-into the river and swims out, soaked. Real walking and real keys / pad."""
+"""Puzzle 5, the lift bridge, round 2b: the lively seesaw (design/
+PUZZLE_CHANGES.md #5 "Round 2b", agreed 2026-10-19 after the user's "it
+didn't even seesaw") as a planned walk for the recorded walkthrough:
+python tools/live/make_puzzle5.py -> tools/live/puzzle5.json.
+P1 on the keyboard, P2 on the pad, real walking. For this video the barrier
+is wound up and held by code (the gate isn't what's being judged). Shows:
+the seesaw at rest from the road; P1 walks out past the middle and it tips
+down, walks back and it tips up; P2 stays on the near half as weight while P1
+walks to the far end (it holds); P2 walks out too and it goes down; both off,
+it swings back; a 300 kg block pushed out on the far half tips it alone; the
+van creeps on and over the middle with nothing behind it: down into the pit,
+back at the gate."""
 import json
 import os
 
@@ -18,99 +20,70 @@ def wait(s):
     return {"do": "wait", "s": s}
 
 
-def look(who, at, s=0.4):
-    return [{"do": "look", "who": who, "at": at}, wait(s)]
+def at(x, z, y=0.0):
+    return "expr:%s.global_transform * Vector3(%s, %s, %s)" % (L, x, y, z)
 
 
-def walk(who, to, arrive=0.5, mx=30):
+def look(who, to, s=0.4):
+    return [{"do": "look", "who": who, "at": to}, wait(s)]
+
+
+def walk(who, to, arrive=0.4, mx=30):
     return {"do": "walk", "who": who, "to": to, "arrive": arrive, "max": mx}
 
 
-def p1_take_stone(near):
-    return [walk(1, "expr:lb_stone(%s)" % near, 1.7, 15)] + look(1, "expr:lb_stone(%s)" % near) + [{"do": "tap", "key": "E"}, wait(0.8)]
-
-
-def p2_take_stone(near):
-    return [walk(2, "expr:lb_stone(%s)" % near, 1.7, 15)] + look(2, "expr:lb_stone(%s)" % near) + [{"do": "pad_tap", "btn": "X"}, wait(0.8)]
-
-
-HEAP = "boot.builder.poi['stone_heap']"
+MID = at(0, -5.0, 0.5)
+# the 300 kg cart (carts[3]), the front one on its rail
+# (as the bridge test does: stand 1.3 m behind it, hold X, push the stick)
+CART3_IN = "expr:%s.global_transform * Vector3(%s.carts[3]['rail'] * 2.4, 0, %s.carts[3]['z'] + 1.3)" % (L, L, L)
+CART3_BEHIND = "expr:%s.global_transform * Vector3(%s.carts[3]['rail'] * 3.8, 0, %s.carts[3]['z'] + 1.3)" % (L, L, L)          # the pivot (leaf 10 m, local -Z over the river)
 
 steps = [
-    {"name": "5.0 F1 Puzzles: the lift bridge",
-     "do": [{"do": "menu", "tab": "Puzzles", "row": "The lift bridge"}, wait(2.0)],
-     "expect": [{"name": "fresh: the leaf up, the house barred", "expr": "%s.angle > 29.9 and not %s.door_open and not %s.locked" % (L, L, L), "within": 3}]},
-    {"name": "5.1 both out of the van; P1 tries the hut's levers and reads Naresh's note", "max": 70,
+    {"name": "5.0 F1 Puzzles: the lift bridge", "max": 20,
+     "do": [{"do": "menu", "tab": "Puzzles", "row": "The lift bridge"}, wait(2.0),
+            {"do": "eval", "expr": "%s.gate.set('_wind_t', 99999.0)" % L}, wait(1.0)],
+     "expect": [{"name": "at rest: far end up 12 degrees, four blocks", "expr": "absf(%s.angle - 12.0) < 0.1 and %s.carts.size() == 4" % (L, L), "within": 3}]},
+    {"name": "5.1 both out; from the road the far end is up", "max": 60,
      "do": [{"do": "tap", "key": "E"}, wait(1.0), {"do": "pad_tap", "btn": "X"}, wait(1.5),
-            walk(1, "expr:boot.builder.poi['bridge_hut_door']", 0.6, 30),
-            walk(1, "expr:lb_panel_stand()", 0.4, 10)]
-            + look(1, "expr:%s.find_child('LOWERLever', true, false).global_position" % L, 2.5)
-            + look(1, "expr:%s.find_child('NareshNote_lb_hut', true, false).global_position" % L)
-            + [{"do": "tap", "key": "E"}, wait(8.0)],
-     "expect": [{"name": "his note read: a seesaw", "expr": "lb_note_read('lb_hut')", "within": 2}]},
-    {"name": "5.2 P2 at the machinery house: barred; Naresh's note by the door", "max": 60,
-     "do": [walk(2, "expr:boot.builder.poi['bridge_barrier_near'] - lb().global_transform.basis.x * lb().m * 7.0", 0.8, 30),     # round the barrier's end, past its sign
-            walk(2, "expr:lb().global_transform * Vector3(0, 0.1, 4.0)", 0.8, 20),     # the road's middle, clear of the stone heap
-            walk(2, "expr:boot.builder.poi['machinery_door']", 0.5, 30)]
-            + look(2, "expr:lb_door_look()", 2.5)
-            + [walk(2, "expr:boot.builder.poi['machinery_door'] + lb().global_transform.basis.z * 1.3", 0.4, 8)]
-            + look(2, "expr:%s.find_child('NareshNote_lb_door', true, false).global_position" % L)
-            + [{"do": "pad_tap", "btn": "X"}, wait(7.0)],
-     "expect": [{"name": "his note read: a leg-up", "expr": "lb_note_read('lb_door')", "within": 2}]},
-    {"name": "5.3 the leg-up: P2 crouches under the hatch, P1 jumps up off their back", "max": 70,
-     "do": [walk(2, "expr:lb_hatch(0.0)", 0.3, 15)] + look(2, "expr:lb_hatch(2.0) + Vector3(0, 1.0, 0)")
-            + [{"do": "pad_down", "btn": "B"}, wait(1.0),
-               walk(1, "expr:lb_hatch(-1.6)", 0.5, 40), walk(1, "expr:lb_hatch(-0.85)", 0.25, 6)]
-            + look(1, "expr:lb_hatch(2.0) + Vector3(0, 2.2, 0)", 1.5)
-            + [{"do": "down", "key": "W"}, {"do": "tap", "key": "Space"}, wait(1.4), {"do": "up", "key": "W"},
-               {"do": "pad_up", "btn": "B"}, wait(1.0)],
-     "expect": [{"name": "P1 in through the hatch", "expr": "%s._inside_house(p1())" % L, "within": 3}]},
-    {"name": "5.4 P1 lifts the bar and opens the door; the lock won't go with the leaf up", "max": 60,
-     "do": [walk(1, "expr:boot.builder.poi['machinery_in']", 0.5, 10)] + look(1, "expr:lb_door_look()")
-            + [{"do": "tap", "key": "E"}, wait(1.5),
-               walk(1, "expr:boot.builder.poi['machinery_mid']", 0.5, 10), walk(1, "expr:boot.builder.poi['lock_lever']", 0.5, 10)]
-            + look(1, "expr:%s.find_child('LockArea', true, false).global_position" % L, 3.0)
-            + look(1, "expr:%s.find_child('NareshNote_lb_lock', true, false).global_position" % L)
-            + [{"do": "tap", "key": "E"}, wait(8.0)],
-     "expect": [{"name": "the door open; still up", "expr": "%s.door_open and %s.angle > 29.9" % (L, L), "within": 2}]},
-    {"name": "5.5 a stone from the crew's heap, dropped by the axle: nothing", "max": 70,
-     "do": [walk(1, "expr:boot.builder.poi['machinery_mid']", 0.5, 10), walk(1, "expr:boot.builder.poi['machinery_door']", 0.5, 15)]
-            + p1_take_stone(HEAP)
-            + [walk(1, "expr:leaf_at(lb(), 1.2, 0.0)", 0.4, 15), {"do": "tap", "key": "E"}, wait(1.5),
-               walk(1, "expr:%s" % HEAP, 1.6, 15), wait(2.0)],
-     "expect": [{"name": "still up", "expr": "%s.angle > 29.9" % L, "within": 2}]},
-    {"name": "5.6 P1 carries a stone up to the tip: still nothing", "max": 70,
-     "do": p1_take_stone(HEAP)
-            + [walk(1, "expr:leaf_at(lb(), 8.6, -1.0)", 0.4, 25), {"do": "tap", "key": "E"}, wait(1.0)]
-            + look(1, "expr:%s" % HEAP, 3.0),
-     "expect": [{"name": "still up with P1 and a stone at the tip", "expr": "%s.angle > 29.9 and lb_stones_out() >= 1" % L, "within": 2}]},
-    {"name": "5.7 P2 brings a second stone out, slowly: down it comes, gently", "max": 80,
-     "do": p2_take_stone(HEAP)
-            + [walk(2, "expr:leaf_at(lb(), 5.0, 1.0)", 0.4, 25),
-               {"do": "until", "expr": "lb().angle < 0.1", "max": 25}, wait(1.5)],
-     "expect": [{"name": "down on the far bank, no slam", "expr": "%s.angle < 0.1 and %s.slams == 0" % (L, L), "within": 2}]},
-    {"name": "5.8 P2's stone to the tip; P2 walks off: P1 and two stones hold it", "max": 70,
-     "do": [walk(2, "expr:leaf_at(lb(), 8.3, 1.0)", 0.4, 15), {"do": "pad_tap", "btn": "X"}, wait(1.0),
-            walk(2, "expr:boot.builder.poi['machinery_door']", 0.6, 30), wait(2.0)],
-     "expect": [{"name": "still down", "expr": "%s.angle < 0.1" % L, "within": 2}]},
-    {"name": "5.9 P2 throws the lock: CLANK", "max": 50,
-     "do": [walk(2, "expr:boot.builder.poi['machinery_in']", 0.5, 10), walk(2, "expr:boot.builder.poi['machinery_mid']", 0.5, 10),
-            walk(2, "expr:boot.builder.poi['lock_lever']", 0.5, 10)]
-            + look(2, "expr:%s.find_child('LockArea', true, false).global_position" % L)
-            + [{"do": "pad_tap", "btn": "X"}, wait(4.0)],
-     "expect": [{"name": "locked; the barriers gone", "expr": "%s.locked and not boot.builder.bridge_barriers.visible" % L, "within": 2}]},
-    {"name": "5.10 the fun: P1 jumps over the kerb into the river and swims out", "max": 80,
-     "do": [walk(1, "expr:leaf_at(lb(), 5.0, -lb().deck_w * 0.5 + 1.0)", 0.4, 15)]
-            + look(1, "expr:lb().leaf.global_transform * Vector3(-8.0, 0.0, -5.0)")
-            + [{"do": "down", "key": "W"}, wait(0.25), {"do": "tap", "key": "Space"}, wait(1.5), {"do": "up", "key": "W"},
-               {"do": "until", "expr": "not p1().swimming and p1().wet_t > 0.0", "max": 50}, wait(3.0)],
-     "expect": [{"name": "out on the bank, soaked", "expr": "p1().wet_t > 0.0 and not p1().swimming", "within": 3}]},
+            walk(1, at(-1.5, 13.0), 0.6, 40), walk(2, at(1.8, 13.0), 0.6, 40)]
+            + look(1, MID) + look(2, MID, 3.0),
+     "expect": [{"name": "both on the road by the bridge", "expr": "(%s.global_transform.affine_inverse() * p1().global_position).z > 9.0" % L, "within": 2}]},
+    {"name": "5.2 P1 walks out past the middle: it tips down", "max": 40,
+     "do": [walk(1, at(-1.5, -8.6)), {"do": "until", "expr": "%s.angle < -2.0" % L, "max": 12}] + look(1, at(0, -14.0)) + look(2, MID, 2.0),
+     "expect": [{"name": "the far end went down", "expr": "%s.angle < 0.0" % L, "within": 2}]},
+    {"name": "5.3 P1 walks back past the middle: it tips up", "max": 40,
+     "do": [walk(1, at(-1.5, -1.5)), {"do": "until", "expr": "%s.angle > 10.0" % L, "max": 12}] + look(1, MID, 1.5),
+     "expect": [{"name": "the far end is back up", "expr": "%s.angle > 8.0" % L, "within": 2}]},
+    {"name": "5.4 P2 stays on the near half as weight; P1 walks to the far end: it holds", "max": 60,
+     "do": [walk(2, at(1.5, -1.5)), walk(1, at(-1.5, -9.4)), wait(3.0)] + look(1, "expr:%s.hut.global_position" % L, 2.0),
+     "expect": [{"name": "still up with one on each half", "expr": "%s.angle > 4.0" % L, "within": 2}]},
+    {"name": "5.5 P2 walks out to the far half too: down it goes", "max": 40,
+     "do": [walk(2, at(1.5, -8.0)), {"do": "until", "expr": "%s.angle < -2.0" % L, "max": 12}, wait(1.5)],
+     "expect": [{"name": "both on the far half: down", "expr": "%s.angle < 0.0" % L, "within": 2}]},
+    {"name": "5.6 both walk back off: it swings and settles up", "max": 60,
+     "do": [walk(1, at(-1.8, 12.0), 0.6, 30), walk(2, at(1.8, 12.0), 0.6, 30)] + look(1, MID) + look(2, MID)
+            + [{"do": "until", "expr": "%s.angle > 11.9" % L, "max": 20}],
+     "expect": [{"name": "empty: back at rest", "expr": "%s.angle > 11.5" % L, "within": 3}]},
+    {"name": "5.7 P2 pushes the 300 kg block out on the far half: it tips on its own", "max": 60,
+     "do": [walk(2, CART3_IN, 0.4, 30), walk(2, CART3_BEHIND, 0.3, 15)]
+            + look(2, "expr:%s.carts[3]['node'].global_position + Vector3(0, 0.6, 0)" % L)
+            + [{"do": "pad_down", "btn": "X"}, {"do": "pad_axis", "axis": "LY", "v": -0.6},
+               {"do": "until", "expr": "float(%s.carts[3]['z']) < -6.8 or %s.angle < 0.0" % (L, L), "max": 45},
+               {"do": "pad_axis", "axis": "LY", "v": 0.0}, {"do": "pad_up", "btn": "X"},
+               walk(2, at(1.8, -4.0), 0.5, 20)] + look(2, MID)
+            + [{"do": "until", "expr": "%s.angle < 0.0" % L, "max": 15}, wait(2.0)],
+     "expect": [{"name": "the block out on the far half tips it down", "expr": "%s.angle < 0.0" % L, "within": 3}]},
+    {"name": "5.8 the block back, the van creeps on with nothing behind it: past the middle into the pit", "max": 120,
+     "do": [{"do": "eval", "expr": "%s.reset_bridge()" % L}, {"do": "eval", "expr": "%s.gate.set('_wind_t', 99999.0)" % L}, wait(1.0),
+            {"do": "call", "fn": "seat_p1_driver"}, wait(1.0),
+            {"do": "down", "key": "W"},
+            {"do": "until", "expr": "%s.failing or (%s.global_transform.affine_inverse() * camper().global_position).z < -6.5" % (L, L), "max": 60},
+            {"do": "up", "key": "W"},
+            {"do": "until", "expr": "%s.failing" % L, "max": 15}, wait(5.0)],
+     "expect": [{"name": "into the pit, back at the gate", "expr": "camper().global_position.distance_to(%s.van_start.origin) < 3.0" % L, "within": 6}]},
 ]
 
-walk_plan = {"name": "puzzle5",
-             "setup": [{"do": "eval", "expr": "boot._on_joy_changed(0, true)"}],
-             "steps": steps}
-here = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(here, "puzzle5.json"), "w", encoding="utf-8") as f:
-    json.dump(walk_plan, f, indent=1)
-print("tools/live/puzzle5.json: %d steps" % len(steps))
+out = os.path.join(os.path.dirname(__file__), "puzzle5.json")
+with open(out, "w") as f:
+    json.dump({"name": "puzzle5", "setup": [{"do": "eval", "expr": "boot._on_joy_changed(0, true)"}], "steps": steps}, f, indent=1)
+print(out)

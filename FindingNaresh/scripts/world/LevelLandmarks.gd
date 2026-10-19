@@ -863,8 +863,8 @@ func _broken_bridge() -> void:
 	for i in range(first - 1 - EXTRA, last + 1 + EXTRA):
 		if absi(i - mid) <= 2:
 			continue               # the missing middle span
-		if i == mid - 3:
-			continue               # the seesaw's flap lies here (#5): the plank above it left a step a person couldn't climb back up
+		if i <= mid - 3 and i > mid - 3 - int(round(LiftBridge.APRON / Route.SAMPLE_SPACING)):
+			continue               # the seesaw's flap lies here (#5): the plank above it left a step a person couldn't climb back up; 8 m long since round 2b
 		var a := road.point(i)
 		var b := road.point(i + 1)
 		var c := (a + b) * 0.5

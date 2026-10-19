@@ -30,26 +30,32 @@ extends Node3D
 ## the lock (bolts the leaf level, only when level and still, only from
 ## inside) and a crate: fuel, coolant, a spare tyre.
 
-## near end down on its support, far end up (8 degrees put the near end 0.7 m
-## down: with a short flap the van beached its rear on it, 2026-10-19)
-const REST_DEG := 5.0
+## near end down on its support, far end up, clearly a seesaw from the road
+## (round 2b, 2026-10-19: at 5 it looked flat). The near end sits 1 m down:
+## the long flap (APRON) keeps the van's belly off the dip (a 2 m flap at 8
+## degrees beached it, 2026-10-19).
+const REST_DEG := 12.0
 const PIT_DEG := -14.0           ## far end on the pit's floor
 const FALL_DEG := -5.0           ## the van on the far half past this: it's going in
 const LOCK_DEG := 1.0
-## the numbers (see PUZZLE_CHANGES #5 round 2): with the van's centre at x m
-## past the pivot, level needs the blocks' pull = TAIL - 2150 x, give or take
-## FRICTION; at the last metre before the front wheels reach the far bank
-## (x = 4) all three blocks right at the near end only just hold it.
-const TAIL := 2800.0             ## kg m: the near half's extra weight
-const FRICTION := 600.0          ## kg m: the pivot's friction (smaller pulls move nothing)
-const INERTIA := 10000.0         ## how slowly the big leaf gets going
-const DAMP := 0.6                ## 1/s: the bearings' drag
+## the numbers (PUZZLE_CHANGES #5 round 2b, a knife edge): one person (80 kg)
+## past 2.5 m beyond the pivot tips it down, back inside 1.25 m it tips up;
+## one on each half about as far out holds it. With the van's centre at x m
+## past the pivot, holding it needs the blocks' pull = TAIL - 2150 x, give or
+## take FRICTION; all four blocks at the near end (and a person) hold it to
+## about x = 4.3, just past where the front wheels reach the far bank.
+## (Round 2: TAIL 2800 / FRICTION 600: nothing on foot moved it, the user:
+## "it didn't even seesaw".)
+const TAIL := 150.0              ## kg m: the near half's extra weight
+const FRICTION := 50.0           ## kg m: the pivot's friction (smaller pulls move nothing)
+const INERTIA := 2500.0          ## how slowly the big leaf gets going
+const DAMP := 0.5                ## 1/s: the bearings' drag (one person 3.6 m out: ~4 deg/s; at 6000, 1.4: a crawl)
 const SLAM_W := 0.25             ## rad/s: hitting a stop faster than this is a slam
 const VAN_W := 0.025             ## rad/s (1.4 deg/s): the fastest it turns with the van on it; at 3.4 deg/s it went rest-to-pit in under 4 s, too quick for anyone to react
 const PLAYER_KG := 80.0
-const BLOCKS := [450.0, 350.0, 250.0]   ## kg; all look alike
-const SIDING := 9.0              ## m of rail on the near deck
-const APRON := 2.0               ## the near flap's hinge, m back from the gap: where the old deck now ends (about 10 degrees at rest)
+const BLOCKS := [700.0, 550.0, 400.0, 300.0]   ## kg; all look alike
+const SIDING := 6.0              ## m of rail on the near deck, from the flap's hinge back
+const APRON := 8.0               ## the near flap's hinge, m back from the gap: where the old deck now ends (four planks; about 8 degrees at rest)
 const CART_GAP := 1.3            ## m between carts on one rail
 const RAIL_X := 3.8              ## the rails, either side of the middle
 const HINT_NEAR := 50.0
@@ -57,8 +63,8 @@ const HINTS := [
 	[0.0, "The bridge is a seesaw. Naresh's note is on the sign by the gate."],
 	[45.0, "The fence is too high to climb alone. One crouches by it, the other jumps up off their back."],
 	[150.0, "The van tips it as it crosses. Whatever goes on the front needs something on the back: the blocks on the carts."],
-	[300.0, "Before the van reaches the middle, the blocks want to be out on the far half; past the middle, behind the van. Creep, stop, move a block, creep."],
-	[450.0, "Someone has been climbing into the hut on the far bank. Walk over first: two people barely tip it."],
+	[300.0, "As the van passes the middle, the blocks want to be behind it, on the near half. Creep, stop, move a block, creep."],
+	[450.0, "Someone has been climbing into the hut on the far bank. Walk over one at a time: one stays on the near half as weight while the other crosses."],
 ]
 
 var angle := REST_DEG            ## degrees: + far end up
@@ -83,6 +89,7 @@ var leaf: AnimatableBody3D
 var apron: AnimatableBody3D
 var apron_shape: BoxShape3D
 var apron_mesh: MeshInstance3D
+var apron_rails: Node3D
 var panel_label: Label3D
 var carts: Array = []            ## {kg, rail, z, home, node, lost}
 var bolts: Array[Node3D] = []
@@ -99,6 +106,8 @@ var _fall_t := 0.0
 var _thrown_t := 0.0
 var _shove_pending := false
 var _front_was_off := false
+var _dropped := false            ## the van's nose went off the raised end
+var _hung_t := 0.0
 var _flicker := 0.0
 
 
@@ -197,6 +206,9 @@ func _build_apron() -> void:
 	cs.position = Vector3(0, -0.04, -0.5)
 	cs.name = "PlateShape"
 	apron.add_child(cs)
+	apron_rails = Node3D.new()
+	apron_rails.name = "FlapRails"
+	apron.add_child(apron_rails)
 
 
 func _build_rails_and_carts() -> void:
@@ -205,12 +217,14 @@ func _build_rails_and_carts() -> void:
 	for sx in [-1.0, 1.0]:
 		for off in [-0.35, 0.35]:
 			leaf.add_child(Build.box(Vector3(0.07, 0.06, leaf_len), steel, Vector3(sx * RAIL_X + off, 0.03, 0), Vector3.ZERO, "Rail"))
-			add_child(Build.box(Vector3(0.07, 0.06, SIDING), steel, Vector3(sx * RAIL_X + off, 0.03, SIDING * 0.5), Vector3.ZERO, "SidingRail"))
-		add_child(Build.box(Vector3(0.9, 0.5, 0.3), ToonMat.make(Color(0.8, 0.2, 0.15), 0.01), Vector3(sx * RAIL_X, 0.25, SIDING + 0.15), Vector3.ZERO, "Buffer"))
-	# where they start: two on the hut's side, one across
-	# the 450 and the 350 share the hut side's rail (the 350 in front: it has
-	# to go out first), room to stand between them; the 250 across
-	var starts := [[BLOCKS[0], -m, 5.6], [BLOCKS[1], -m, 2.8], [BLOCKS[2], m, 3.6]]
+			add_child(Build.box(Vector3(0.07, 0.06, SIDING), steel, Vector3(sx * RAIL_X + off, 0.03, APRON + SIDING * 0.5), Vector3.ZERO, "SidingRail"))
+			# on the flap too (a unit length, stretched with the flap in _apply)
+			apron_rails.add_child(Build.box(Vector3(0.07, 0.06, 1.0), steel, Vector3(sx * RAIL_X + off, 0.03, 0), Vector3.ZERO, "FlapRail"))
+		add_child(Build.box(Vector3(0.9, 0.5, 0.3), ToonMat.make(Color(0.8, 0.2, 0.15), 0.01), Vector3(sx * RAIL_X, 0.25, APRON + SIDING + 0.15), Vector3.ZERO, "Buffer"))
+	# where they start, on the siding behind the flap: two on each rail, 2.8 m
+	# apart, room to stand between them (2.2: no room to get behind one); the lighter one in front on each (it goes out
+	# first, the heavy one stays nearer the near end, where it holds most)
+	var starts := [[BLOCKS[0], -m, APRON + 3.6], [BLOCKS[1], m, APRON + 4.2], [BLOCKS[2], -m, APRON + 0.8], [BLOCKS[3], m, APRON + 1.4]]
 	for k in starts.size():
 		var c := {"kg": float(starts[k][0]), "rail": float(starts[k][1]), "z": float(starts[k][2]), "home": float(starts[k][2]), "lost": false}
 		var body := AnimatableBody3D.new()
@@ -513,9 +527,21 @@ func _pull(van: Camper) -> float:
 	var total := 0.0
 	if van != null:
 		var per := Camper.MASS / float(van._wheels.size())
+		var rear_on := false
+		var front_hang := true
 		for w in van._wheels:
-			if w.is_in_contact() and w.get_contact_body() == leaf:
-				total += per * -(inv * w.global_position).z
+			var front := String(w.name).begins_with("WheelF")
+			if w.is_in_contact():
+				if front:
+					front_hang = false
+				if w.get_contact_body() == leaf:
+					total += per * -(inv * w.global_position).z
+					rear_on = rear_on or not front
+		# off the raised far end with the front wheels in the air, the van's
+		# belly rests on the end: half its weight there (counting the wheels
+		# only, it hung on the edge, stuck, 1 m up, round 2b 2026-10-19)
+		if rear_on and front_hang and -(inv * van.global_position).z > leaf_len * 0.25:
+			total += Camper.MASS * 0.5 * leaf_len * 0.5
 	for n in get_tree().get_nodes_in_group("player"):
 		var p := n as PlayerRig
 		if p.seat != null or p.swimming:
@@ -588,8 +614,8 @@ func _check_van(van: Camper, delta: float) -> void:
 			_shove(k, van)
 			return
 	# the front wheels coming off the far end while it's raised: a drop, a
-	# hard landing (after that the leaf settling back under the rear wheels
-	# is just a ramp down)
+	# burst tyre, and (12 degrees up, round 2b) the van hangs on the edge by
+	# its belly, as a real one would off a 1 m step: back to the gate
 	var front_off := true
 	var linv := leaf.global_transform.affine_inverse()
 	for w in van._wheels:
@@ -599,9 +625,16 @@ func _check_van(van: Camper, delta: float) -> void:
 		if not locked and angle > 2.5:
 			van.puncture()
 			Sfx.play3d("bang", van.global_position, 4.0)
-			_tell_near("BANG - the van drops off the raised end and lands hard on the far bank.", 5.0)
+			_tell_near("BANG - the van's nose drops off the raised end. A front tyre's gone.", 5.0)
 			print("[bridge] hard landing (angle %.1f)" % angle)
+			_dropped = true
+			_hung_t = 0.0
 	_front_was_off = front_off
+	if _dropped and not crossed:
+		_hung_t = _hung_t + delta if van.linear_velocity.length() < 0.4 else 0.0
+		if _hung_t > 2.5:
+			_fail("hung")
+			return
 	_check_crossed(van)
 
 
@@ -673,7 +706,12 @@ func _fail(why: String) -> void:
 		return
 	failing = true
 	print("[bridge] fail: %s" % why)
-	var text := "The far end drops into the pit and the van goes with it." if why == "pit" else "That's the bridge's way of saying no."
+	var text := "That's the bridge's way of saying no."
+	if why == "pit":
+		text = "The far end drops into the pit and the van goes with it."
+	elif why == "hung":
+		text = "The van hangs off the end of the bridge by its belly, nose down. Nothing for it: back to the gate."
+
 	_tell_near(text, 4.0)
 	var players := get_tree().get_nodes_in_group("player")
 	for n in players:
@@ -738,7 +776,7 @@ func _push(k: int, p, dt: float) -> void:
 		var grade := sin(deg_to_rad(angle)) * (-dir)
 		speed *= clampf(1.0 - grade * 3.0, 0.35, 1.3)
 	var z := move_toward(float(c["z"]), want, speed * dt)
-	z = clampf(z, -leaf_len + 0.7, SIDING - 0.7)
+	z = clampf(z, -leaf_len + 0.7, APRON + SIDING - 0.7)
 	# not through another cart on the same rail
 	for o in carts:
 		if o != c and not o["lost"] and float(o["rail"]) == float(c["rail"]):
@@ -770,7 +808,9 @@ func _place_cart(c: Dictionary) -> void:
 		var a := Vector3(x, 0, APRON)
 		var b := lxf * Vector3(x, 0, leaf_len * 0.5)
 		var u := 1.0 - z / APRON
-		xf = Transform3D(lxf.basis.slerp(Basis(), 1.0 - u), a.lerp(b, u))
+		# tilted as the flap is, sitting on it (a slerp from the leaf's basis
+		# hit "Basis must be normalized" once the 8 m flap carried carts, 2026-10-19)
+		xf = Transform3D(Basis(Vector3.RIGHT, apron.rotation.x), a.lerp(b, u))
 	node.transform = xf
 
 
@@ -917,6 +957,8 @@ func _apply() -> void:
 	(apron.get_node("PlateShape") as CollisionShape3D).position.z = -len * 0.5
 	apron_mesh.scale.z = len
 	apron_mesh.position.z = -len * 0.5
+	apron_rails.scale.z = len
+	apron_rails.position.z = -len * 0.5
 	for c in carts:
 		if not c["lost"]:
 			_place_cart(c)
@@ -970,6 +1012,8 @@ func reset_bridge() -> void:
 	angle = 0.0 if locked else REST_DEG
 	omega = 0.0
 	_fall_t = 0.0
+	_dropped = false
+	_hung_t = 0.0
 	for c in carts:
 		c["lost"] = false
 		c["z"] = c["home"]

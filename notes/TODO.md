@@ -12,7 +12,7 @@ being built and tested), so this always shows where the work is right now.
       window. Now: visible, click-through, can't take focus (the taskbar
       button shows it on top and hands focus back), placed before the world
       loads. ROUGH_NOTES 2026-10-19, ledger "test window".
-- [~] **Now: #5 round 2, the seesaw.** The user: "it didn't even seesaw".
+- [~] **Now: #5 round 2b, a lively seesaw (agreed 2026-10-19, PUZZLE_CHANGES #5 "Round 2b"):** knife edge (one person tips it), 12 deg at rest, four blocks 300-700 kg, two-person walk over. Built on g11 (not merged, not pushed). `seesaw_live` and `bridge_mistakes` pass; hanging off the raised end (1 m) = burst tyre + back to the gate (new: a change for the user to judge). `bridge`: the crossing bot fails (not worked on, by rule). Video `appdata/videos/puzzle5.mp4` (97 s) shows 5.0-5.6; stopped after 3 recording rounds: 5.7 (a block tips it) hit a real bug, a cart on the flap ("Basis must be normalized"), fixed, not yet re-run; 5.8 (the van into the pit) not recorded. Seen in the video: a wooden pier top sticking up at the far end of the gap. **Waiting for the user's look at the video.** Was: the user: "it didn't even seesaw" (B: nothing moved).
       State on branch `g11` (`../MPG_dev`, last commit `a2859ec`, NOT
       merged, NOT pushed): see `design/PUZZLE_CHANGES.md` #5 "Round 2" and
       ledger #5 round 2. `bridge_mistakes` passes (pit + restart, shove
