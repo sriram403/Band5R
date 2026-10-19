@@ -370,3 +370,52 @@ works something he was told to; `naresh` checks it.
 
 **Found later**
 - (nothing yet)
+
+## #5 round 2: the van's seesaw (branch `g11`, 2026-10-19; not merged)
+
+**What changed**
+- `puzzles/LiftBridge.gd` rewritten again: a 10 m leaf on a pivot in the
+  middle of the river (`leaf` turns itself: a moving body follows its own
+  transform, not its parent's). Near half heavier (`TAIL` 2800 kg m,
+  `FRICTION` 600, rest `REST_DEG` 5 near end down, pit `PIT_DEG` -14).
+  Weight x distance from the van's wheels (2150 kg / 4), players, three
+  carts (450 / 350 / 250 kg) on rails along the edges and a siding on the
+  near deck; grab a cart (hold E) and walk: it follows, heavier slower.
+  A hinged flap (`apron`, 2 m) onto the leaf. The van: kept awake, carried
+  with the turning leaf (`_carry_van`), lifted if a hub sinks
+  (`_unbury_van`), held still when parked on it (`_hold_parked_van`),
+  never frozen (`Camper.on_moving_deck`); with it on, the leaf turns at
+  most `VAN_W` 1.4 deg/s. Mistakes: far-heavy past the middle -> the pit
+  (`_fail`, fade, restart at the gate); the van touching a cart -> the
+  cart over the side, the van thrown back, the rack's cargo flung
+  (`_shove`, `_fling_cargo`), restart; front wheels off a raised far end
+  -> `puncture()`. The far bank's hut (`_build_hut`): door bolted inside,
+  window sill 2.1 m (crate + leg-up), flickering lamp, boot scuffs; the
+  lock (only inside, only level and still) and a crate with fuel,
+  coolant, a spare tyre. Naresh's notes lb_hut (near hut panel), lb_gate.
+- `puzzles/BridgeGate.gd` (new): barrier pole, hand winch inside a 1.6 m
+  chain-link fence (slips back when let go), thickets at the ends.
+- `PlayerRig`: leg-up `LEGUP_VELOCITY` 9.2; off a partner on a crate
+  (higher x 1.5). `items/BridgeStone.gd` deleted (round 1).
+- `LevelLandmarks`: the gate where the old barrier was (poi
+  `bridge_winch`; "gate_winch" clashed with the rail tunnel's), the far
+  hut, `van_start`, `lift_mid`; the old deck's last plank before the gap
+  removed (the flap lies there).
+- `DevMenu.reset_way_out`: jumps past the water works set the hose
+  split + fixed.
+- PlayTest: `bridge`, `bridge_mistakes` rewritten; probe `seesaw_probe`
+  (in `all`, base gym); the bot `bot_cross` and helpers at the end.
+
+**What it could break (our guess)**
+- Anything that drives over the old bridge (`journey`, `routes`,
+  `way_out`: the gate now blocks the road until wound up), the F2 storm
+  road (`storm_blow`), `save` (keys locked / crossed / door / chest).
+- The leg-up height (any test with a crouched partner).
+- Heavy carry hold point (24 kg+: the Bessi battery box).
+
+**Tests that cover it**
+- `bridge_mistakes` (passes), `bridge` (passes but the bot's crossing),
+  `seesaw_probe`, `puzzle_resets`, `power`, `save`.
+
+**Found later**
+- (nothing yet)

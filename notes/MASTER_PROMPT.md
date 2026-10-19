@@ -15,7 +15,11 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-10-17. **#4, the lookout boards, reworked, approved
+Last updated: 2026-10-19. **#5, the lift bridge, round 2 (the van's
+seesaw) built on `../MPG_dev` branch `g11`, not merged, not pushed; the
+user: "it didn't even seesaw".** Next thread: (1) the test window shows
+blank, the user wants to watch it again (TODO "Right now"); (2) then #5:
+ask what "didn't seesaw" means, fix, video. Before that, on 2026-10-17: #4, the lookout boards, reworked, approved
 ("continue") and pushed** (branch `g10`, main `f2026b2`): pictures on six
 landmarks, the patrol's riddles, the handle that scrambles the dials,
 snowballs and the snowy sign, binoculars 2x-8x with sway, view lanes, the
