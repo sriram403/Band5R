@@ -1517,3 +1517,12 @@ down at all.
 3. **How hard:** A) 7 / 10 (my pick; S1 is the easy way for the clever);
    B) keep 6.
 4. S1-S4: yes / no each.
+
+### Round 2: your answers (2026-10-19): **agreed**
+
+- All my picks: blocks on carts, a dry pit, 7 / 10, S1-S4 yes.
+- The user asked what 10 / 10 would mean (answered in plain words: fewer
+  clues, fewer blocks, no shortcut); their choice pending.
+- New rule (the user): proposals **short and plain**, no technical words
+  ("boom", "plumb bob"): say what it is ("a barrier pole", "a weight on a
+  string").
