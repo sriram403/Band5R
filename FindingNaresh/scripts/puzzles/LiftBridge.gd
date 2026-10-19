@@ -1,106 +1,127 @@
 class_name LiftBridge
 extends Node3D
 
-## #5, the lift bridge: the seesaw (design/PUZZLE_CHANGES.md #5, round 1b,
-## agreed 2026-10-17). The middle of the old bridge is a bascule leaf (French
-## for "seesaw"). The power's off (the last pole before the hut is snapped,
-## `PowerLine`) and the brake is off, so the leaf just sits on its axle,
-## heavier at the back: it rests tipped up at UP_DEG, the counterweight down
-## on its pit floor.
+## #5, the lift bridge, round 2: the van's seesaw (design/PUZZLE_CHANGES.md
+## #5 "Round 2", agreed 2026-10-19: 10 / 10 minus one). The middle of the old
+## bridge is a leaf on a pivot in the middle of the river, a real seesaw.
+## Its near half is heavier: with nothing on it the near end rests down on its
+## support by the near bank and the far end is up. No power (the last pole
+## before the hut is snapped, `PowerLine`).
 ##
-## Weight on the leaf pulls it down by weight x distance from the axle
-## (kg m, like a real seesaw). The leaf moves when the pull beats the back
-## end's excess by more than the axle's friction:
-## - one player alone at the tip isn't enough; both out there, slowly, is;
-## - too much too fast (both + stones) and it slams onto the far bank;
-## - stones near the axle do almost nothing (the crew's heap there is the lure);
-## - the lock bolts are thrown from the machinery house, off the leaf: whoever
-##   goes loses their weight, and the leaf rises unless stones at the tip
-##   replace them.
-## The machinery house is barred from inside: in through its hatch with a
-## leg-up (fun mechanic 5, `PlayerRig`). Off the open tip, or off a slamming
-## leaf, into the river: you're soaked and swim back to the near bank.
+## Every weight on the leaf turns it by weight x distance from the pivot (kg
+## m): the van (2,150 kg, through its wheels), the players, and three
+## concrete blocks on little carts that run on rails along both edges of the
+## leaf and back along a siding on the near deck. Push a cart (hold E): the
+## heavier the block, the slower it rolls. Nothing tells you when it's level;
+## the old timbers only creak at the last moment.
+##
+## The van crosses by creeping while the other keeps it level: the blocks go
+## out on the far half as the van nears the middle, and back past it to the
+## near half as it goes on. There are fewer blocks than would make it easy.
+## Too far-heavy with the van past the middle: the far end drops into the dry
+## pit in front of the far bank and the van goes with it (start again at the
+## gate). The van shoving a cart: the leaf lurches, the van is thrown back,
+## the rack's cargo flies off (start again at the gate; the cargo stays where
+## it landed). Too near-heavy all the way: the van drives off the raised far
+## end and lands hard (a tyre bursts).
+##
+## The far bank's hut: door bolted inside, a window 2.3 m up (a crate and a
+## leg-up), a lamp flickering inside, boot scuffs under the window. Inside,
+## the lock (bolts the leaf level, only when level and still, only from
+## inside) and a crate: fuel, coolant, a spare tyre.
 
-const UP_DEG := 30.0             ## resting up: the counterweight on its pit floor
-## Tuned from where people really stand "at the tip" (~8.7 m out, measured
-## in the `bridge` test; players 80 kg, stones 25 kg): one player alone, or
-## one + one stone (914), holds nothing down; one + two stones (~1140)
-## holds it down (T - F = 1050); both players (1390) bring it down in ~5 s
-## (T + F = 1250); both + a stone slam it.
-const TAIL := 1150.0             ## kg m: how much heavier the back end is
-const FRICTION := 100.0          ## kg m: the axle's friction (smaller pulls move nothing)
-const INERTIA := 3000.0          ## kg m s^2 per rad: how slowly the big leaf gets going
-const DAMP := 0.25               ## 1/s: the bearings' drag on a moving leaf
-const SLAM_W := 0.2              ## rad/s: landing faster than this is a slam (both + a stone: ~0.28; both alone: ~0.13)
+const REST_DEG := 8.0            ## near end down on its support, far end up
+const PIT_DEG := -14.0           ## far end on the pit's floor
+const FALL_DEG := -5.0           ## the van on the far half past this: it's going in
+const LOCK_DEG := 1.0
+## the numbers (see PUZZLE_CHANGES #5 round 2): with the van's centre at x m
+## past the pivot, level needs the blocks' pull = TAIL - 2150 x, give or take
+## FRICTION; at the last metre before the front wheels reach the far bank
+## (x = 4) all three blocks right at the near end only just hold it.
+const TAIL := 2800.0             ## kg m: the near half's extra weight
+const FRICTION := 600.0          ## kg m: the pivot's friction (smaller pulls move nothing)
+const INERTIA := 10000.0         ## how slowly the big leaf gets going
+const DAMP := 0.6                ## 1/s: the bearings' drag
+const SLAM_W := 0.25             ## rad/s: hitting a stop faster than this is a slam
 const PLAYER_KG := 80.0
-const LOCK_DEG := 0.6            ## flat enough for the bolts
-const CW_LOW := -2.3             ## counterweight centre height (local) with the leaf up
-const CW_HIGH := -0.55           ## ... and with it down (its top just below the floor)
-const CW_SIZE := Vector3(1.8, 1.0, 2.0)
-const HATCH_Z := Vector2(3.75, 4.85)   ## the hatch in the house's road-side wall (local z)
-const HATCH_Y := Vector2(1.5, 3.4)     ## its sill and head: one jump doesn't reach the sill
-const DOOR := Vector2(-0.2, 1.4)       ## z range of the door from the deck
-const HINT_NEAR := 45.0
-## the hints (hold H) by the bridge, clearer the longer you've been there (s)
+const BLOCKS := [450.0, 350.0, 250.0]   ## kg; all look alike
+const SIDING := 9.0              ## m of rail on the near deck
+const APRON := 0.6               ## the near flap's hinge, m back from the gap
+const CART_GAP := 1.3            ## m between carts on one rail
+const RAIL_X := 3.8              ## the rails, either side of the middle
+const HINT_NEAR := 50.0
 const HINTS := [
-	[0.0, "The power's off here. Read Naresh's notes: in the hut, and on the machinery house across the road."],
-	[60.0, "The leaf sits on its axle like a seesaw. Weight far out on it pulls it down; near the axle, weight does almost nothing."],
-	[150.0, "One of you alone isn't heavy enough. Both walk out to the far end, slowly, and it comes down."],
-	[240.0, "Whoever throws the lock steps off the leaf, and it rises again. First leave stones right at the tip in their place."],
+	[0.0, "The bridge is a seesaw. Naresh's note is on the sign by the gate."],
+	[45.0, "The fence is too high to climb alone. One crouches by it, the other jumps up off their back."],
+	[150.0, "The van tips it as it crosses. Whatever goes on the front needs something on the back: the blocks on the carts."],
+	[300.0, "Before the van reaches the middle, the blocks want to be out on the far half; past the middle, behind the van. Creep, stop, move a block, creep."],
+	[450.0, "Someone has been climbing into the hut on the far bank. Walk over first: two people barely tip it."],
 ]
 
-var angle := UP_DEG              ## degrees, 0 = down on the far bank
-var omega := 0.0                 ## rad/s, positive = coming down
+var angle := REST_DEG            ## degrees: + far end up
+var omega := 0.0                 ## rad/s, + = far end going down
 var locked := false
+var crossed := false             ## the van got over
 var door_open := false
-## F2: the storm and the gale have the leaf up again: a dead end on the old
-## road. Nothing locks; the barriers are back.
+var chest_open := false
+var failing := false
 var storm_blown := false
 var slams := 0
-var pull := 0.0                  ## kg m this tick: everything on the leaf, before the back end
-var near_t := 0.0                ## s someone has been at the bridge (the hints)
-var m := 1.0                     ## local X side of the machinery house (the hut is on -m)
+var pull := 0.0                  ## kg m this tick (+ pulls the far end down), the near half's weight not counted
+var near_t := 0.0
 var leaf_len := 10.0
 var deck_w := 8.6
+var m := 1.0                     ## the hut side across the road (+1 / -1 local x); kept for the walks
 var line: PowerLine
 var barriers: Node3D
+var gate: BridgeGate
+var pivot: Node3D
 var leaf: AnimatableBody3D
-var counterweight: AnimatableBody3D
-var gear: Node3D
-var door: Node3D
+var apron: AnimatableBody3D
+var apron_shape: BoxShape3D
+var apron_mesh: MeshInstance3D
 var panel_label: Label3D
+var carts: Array = []            ## {kg, rail, z, home, node, lost}
 var bolts: Array[Node3D] = []
-var stones: Array[BridgeStone] = []
-var water_y := -1e9              ## the river's surface under the bridge
+var hut: Node3D
+var hut_door: Node3D
+var lamp: OmniLight3D
+var water_y := -1e9
 var bank_at := Vector3.ZERO      ## where a swimmer climbs out (the near bank)
-var _travel := 0.0               ## degrees moved since the last creak
+var van_start := Transform3D()   ## where a restart puts the van (outside the gate)
+var _travel := 0.0
 var _groan_t := 0.0
-var _hut_at := Vector3.ZERO
+var _van_vy := 0.0
+var _left_raised := false
+var _fall_t := 0.0
+var _flicker := 0.0
 
 
-## `xf`: the axle on the road's centre line, deck top; -Z towards the far
-## bank. `machinery_side`: +1 or -1, the local X side away from the hut.
-## `panel_xf` is global: the dead lever panel inside the hut window.
-## `stone_spots`: global spots for the river stones on the near bank (the
-## heap by the axle is placed here). `bank`: where a swimmer climbs out.
-func setup(xf: Transform3D, length: float, width: float, machinery_side: float, panel_xf: Transform3D, power: PowerLine, barrier_root: Node3D, stone_spots: Array[Vector3], bank: Vector3) -> void:
+## `xf`: the near edge of the gap on the road's centre line, deck top; -Z
+## over the river (x across). `hut_xf`: the far bank's hut (its door on -Z,
+## facing the road). `gate_node`: the gate, already set up. `start`: the
+## van's restart spot.
+func setup(xf: Transform3D, length: float, width: float, panel_xf: Transform3D, power: PowerLine, barrier_root: Node3D,
+		hut_xf: Transform3D, gate_node: BridgeGate, bank: Vector3, start: Transform3D) -> void:
 	add_to_group("lift_bridge")
 	add_to_group("place_hint")
 	transform = xf
 	leaf_len = length
 	deck_w = width
-	m = machinery_side
 	line = power
 	barriers = barrier_root
+	gate = gate_node
 	bank_at = bank
-	_hut_at = panel_xf.origin
-	var ri := int(Landscape.river.nearest(xf.origin.x, xf.origin.z)["index"]) if Landscape.river != null else -1
-	if ri >= 0:
-		water_y = Landscape.river_water_level(ri)
+	van_start = start
+	m = -1.0 if (xf.affine_inverse() * panel_xf.origin).x > 0.0 else 1.0
+	if Landscape.river != null:
+		water_y = Landscape.river_water_level(int(Landscape.river.nearest(xf.origin.x, xf.origin.z)["index"]))
 	_build_leaf()
-	_build_machinery_house()
+	_build_apron()
+	_build_rails_and_carts()
+	_build_pit()
 	_build_panel(panel_xf)
-	_build_stones(stone_spots)
+	_build_hut(xf.affine_inverse() * hut_xf)
 	_apply()
 
 
@@ -109,180 +130,118 @@ func setup(xf: Transform3D, length: float, width: float, machinery_side: float, 
 func _build_leaf() -> void:
 	var wood := ToonMat.make(Color(0.46, 0.34, 0.24), 0.012)
 	var steel := ToonMat.make(Color(0.30, 0.32, 0.34), 0.012)
+	var stone := ToonMat.make(Color(0.52, 0.50, 0.47), 0.012)
+	pivot = Node3D.new()
+	pivot.name = "Pivot"
+	pivot.position = Vector3(0, 0, -leaf_len * 0.5)
+	add_child(pivot)
+	# the pier in the middle of the river, the pivot's bearings on top
+	add_child(Build.cyl(0.9, 7.5, stone, Vector3(0, -4.2, -leaf_len * 0.5), Vector3.ZERO, 10, "MidPier"))
+	for sx in [-1.0, 1.0]:
+		add_child(Build.box(Vector3(0.5, 0.5, 0.7), steel, Vector3(sx * (deck_w * 0.5 - 0.4), -0.55, -leaf_len * 0.5), Vector3.ZERO, "Bearing"))
+	add_child(Build.cyl(0.18, deck_w + 0.4, steel, Vector3(0, -0.45, -leaf_len * 0.5), Vector3(0, 0, 90), 10, "Axle"))
+	# the near end's support: a stone block it rests on
+	var near_drop := sin(deg_to_rad(REST_DEG)) * leaf_len * 0.5
+	add_child(Build.solid_box(Vector3(deck_w, 0.4, 0.8), stone, Vector3(0, -near_drop - 0.5, 0.2), Vector3.ZERO, "NearSeat"))
 	leaf = AnimatableBody3D.new()
 	leaf.name = "Leaf"
 	leaf.sync_to_physics = true
-	add_child(leaf)
+	pivot.add_child(leaf)
 	var deck := Vector3(deck_w, 0.3, leaf_len)
-	leaf.add_child(Build.box(deck, wood, Vector3(0, -0.15, -leaf_len * 0.5), Vector3.ZERO, "LeafDeck"))
+	leaf.add_child(Build.box(deck, wood, Vector3(0, -0.15, 0), Vector3.ZERO, "LeafDeck"))
 	var cs := CollisionShape3D.new()
 	var sh := BoxShape3D.new()
 	sh.size = deck
 	cs.shape = sh
-	cs.position = Vector3(0, -0.15, -leaf_len * 0.5)
+	cs.position = Vector3(0, -0.15, 0)
 	leaf.add_child(cs)
-	# low steel kerbs along the edges (a stone can still bounce over them)
+	# low kerbs outside the rails
 	for sx in [-1.0, 1.0]:
-		leaf.add_child(Build.box(Vector3(0.25, 0.3, leaf_len), steel, Vector3(sx * (deck_w * 0.5 - 0.12), 0.15, -leaf_len * 0.5), Vector3.ZERO, "LeafGirder"))
-		var gs := CollisionShape3D.new()
-		var gb := BoxShape3D.new()
-		gb.size = Vector3(0.25, 0.3, leaf_len)
-		gs.shape = gb
-		gs.position = Vector3(sx * (deck_w * 0.5 - 0.12), 0.15, -leaf_len * 0.5)
-		leaf.add_child(gs)
-	leaf.add_child(Build.box(Vector3(deck_w, 0.06, 0.6), ToonMat.make(Color(0.95, 0.75, 0.15)), Vector3(0, 0.03, -leaf_len + 0.3), Vector3.ZERO, "NoseStripe"))
-	# chalk marks the crew left along the deck every 2 m (from the axle), so
-	# "how far out" can be said
-	var chalk := ToonMat.flat(Color(0.92, 0.92, 0.88))
-	for k in range(2, int(leaf_len) + 1, 2):
-		leaf.add_child(Build.box(Vector3(0.7, 0.012, 0.06), chalk, Vector3(-deck_w * 0.5 + 0.7, 0.006, -float(k)), Vector3(0, randf_range(-4, 4), 0), "Chalk"))
-		leaf.add_child(Build.label3d("%d" % k, Vector3(-deck_w * 0.5 + 1.25, 0.02, -float(k) + 0.15), Vector3(-90, 0, 0), 0.22, Color(0.92, 0.92, 0.88)))
-	# the lock bolts at the tip: they shoot forward into the far deck
+		leaf.add_child(Build.box(Vector3(0.2, 0.25, leaf_len), steel, Vector3(sx * (deck_w * 0.5 - 0.1), 0.12, 0), Vector3.ZERO, "Kerb"))
+		var ks := CollisionShape3D.new()
+		var kb := BoxShape3D.new()
+		kb.size = Vector3(0.2, 0.25, leaf_len)
+		ks.shape = kb
+		ks.position = Vector3(sx * (deck_w * 0.5 - 0.1), 0.12, 0)
+		leaf.add_child(ks)
+	leaf.add_child(Build.box(Vector3(deck_w, 0.05, 0.5), ToonMat.make(Color(0.95, 0.75, 0.15)), Vector3(0, 0.02, -leaf_len * 0.5 + 0.25), Vector3.ZERO, "FarStripe"))
+	leaf.add_child(Build.box(Vector3(deck_w - 1.6, 0.05, 0.3), ToonMat.make(Color(0.95, 0.95, 0.9)), Vector3(0, 0.02, 0), Vector3.ZERO, "MidLine"))
+	# the lock's bolts at the far end, shot home from the hut
 	for sx in [-1.0, 1.0]:
 		var bolt := Node3D.new()
-		bolt.name = "Bolt"
-		bolt.position = Vector3(sx * (deck_w * 0.5 - 0.6), -0.2, -leaf_len + 0.25)
+		bolt.position = Vector3(sx * (deck_w * 0.5 - 0.8), -0.2, -leaf_len * 0.5 + 0.3)
 		leaf.add_child(bolt)
 		bolt.add_child(Build.box(Vector3(0.18, 0.14, 0.7), steel, Vector3.ZERO, Vector3.ZERO, "BoltBar"))
 		bolts.append(bolt)
-	# the axle, out to the machinery house
-	add_child(Build.cyl(0.2, deck_w * 0.5 + 3.4, steel, Vector3(m * (deck_w * 0.5 + 3.4) * 0.5, -0.4, 0), Vector3(0, 0, 90), 10, "Axle"))
-	# the repair notice on a post at the near end, where everyone walks past it
-	var notice := Node3D.new()
-	notice.name = "RepairNotice"
-	notice.position = Vector3(-m * (deck_w * 0.5 - 0.4), 0, 3.2)
-	notice.rotation = Vector3(0, deg_to_rad(-15.0 * m), 0)
-	add_child(notice)
-	notice.add_child(Build.cyl(0.05, 1.5, steel, Vector3(0, 0.75, 0), Vector3.ZERO, 6, "Post"))
-	notice.add_child(Build.box(Vector3(0.9, 0.5, 0.03), ToonMat.make(Color(0.95, 0.93, 0.85)), Vector3(0, 1.4, 0), Vector3.ZERO, "Board"))
-	notice.add_child(Build.label3d("LEAF UNDER REPAIR\nNOSE PLATE OFF\nBRAKE RELEASED", Vector3(0, 1.4, 0.02), Vector3.ZERO, 0.07, Color(0.15, 0.12, 0.1)))
 
 
-func _build_machinery_house() -> void:
-	var wall := ToonMat.make(Color(0.56, 0.54, 0.50))
-	var steel := ToonMat.make(Color(0.30, 0.32, 0.34), 0.012)
-	var inner := deck_w * 0.5 + 0.3          # the house's wall on the road side
-	var outer := inner + 3.4
-	var cx := m * (inner + outer) * 0.5
-	const Z0 := -1.2
-	const Z1 := 5.0
-	const H := 4.6
-	var house := Node3D.new()
-	house.name = "MachineryHouse"
-	add_child(house)
-	# floor with the counterweight pit cut out of it
-	var pit_x := Vector2(m * (inner + 0.1), m * (inner + 0.1 + CW_SIZE.x))
-	var px0 := minf(pit_x.x, pit_x.y)
-	var px1 := maxf(pit_x.x, pit_x.y)
-	var pz0 := 1.6
-	var pz1 := pz0 + CW_SIZE.z
-	var fx0 := minf(m * inner, m * outer)
-	var fx1 := maxf(m * inner, m * outer)
-	for r in [Rect2(fx0, Z0, fx1 - fx0, pz0 - Z0), Rect2(fx0, pz1, fx1 - fx0, Z1 - pz1),
-			Rect2(fx0, pz0, px0 - fx0, pz1 - pz0), Rect2(px1, pz0, fx1 - px1, pz1 - pz0)]:
-		if r.size.x > 0.01 and r.size.y > 0.01:
-			house.add_child(Build.solid_box(Vector3(r.size.x, 0.2, r.size.y), ToonMat.make(Color(0.48, 0.47, 0.45)), Vector3(r.position.x + r.size.x * 0.5, -0.1, r.position.y + r.size.y * 0.5), Vector3.ZERO, "HouseFloor"))
-	# a rail round the pit (nobody falls in by accident)
-	var rail := ToonMat.make(Color(0.95, 0.75, 0.15), 0.01)
-	var pcx := (px0 + px1) * 0.5
-	for spec in [[Vector3(px1 - px0 + 0.1, 0.9, 0.06), Vector3(pcx, 0.45, pz0 - 0.05)], [Vector3(px1 - px0 + 0.1, 0.9, 0.06), Vector3(pcx, 0.45, pz1 + 0.05)],
-			[Vector3(0.06, 0.9, pz1 - pz0), Vector3(m * (inner + 0.15 + CW_SIZE.x), 0.45, (pz0 + pz1) * 0.5)]]:
-		house.add_child(Build.solid_box(spec[0], rail, spec[1], Vector3.ZERO, "PitRail"))
-	# walls: back (+Z), outer, and the road side with the barred door and,
-	# further along, the hatch high up; the river end (-Z) is open over the water
-	house.add_child(Build.solid_box(Vector3(fx1 - fx0, H, 0.2), wall, Vector3(cx, H * 0.5, Z1), Vector3.ZERO, "HouseBack"))
-	house.add_child(Build.solid_box(Vector3(0.2, H, Z1 - Z0), wall, Vector3(m * outer, H * 0.5, (Z0 + Z1) * 0.5), Vector3.ZERO, "HouseOuter"))
-	var wx := m * inner
-	house.add_child(Build.solid_box(Vector3(0.2, H, DOOR.x - Z0), wall, Vector3(wx, H * 0.5, (Z0 + DOOR.x) * 0.5), Vector3.ZERO, "HouseInnerA"))
-	house.add_child(Build.solid_box(Vector3(0.2, H - 2.4, DOOR.y - DOOR.x), wall, Vector3(wx, 2.4 + (H - 2.4) * 0.5, (DOOR.x + DOOR.y) * 0.5), Vector3.ZERO, "HouseDoorHead"))
-	house.add_child(Build.solid_box(Vector3(0.2, H, HATCH_Z.x - DOOR.y), wall, Vector3(wx, H * 0.5, (DOOR.y + HATCH_Z.x) * 0.5), Vector3.ZERO, "HouseInnerB"))
-	house.add_child(Build.solid_box(Vector3(0.2, HATCH_Y.x, HATCH_Z.y - HATCH_Z.x), wall, Vector3(wx, HATCH_Y.x * 0.5, (HATCH_Z.x + HATCH_Z.y) * 0.5), Vector3.ZERO, "HatchBelow"))
-	house.add_child(Build.solid_box(Vector3(0.2, H - HATCH_Y.y, HATCH_Z.y - HATCH_Z.x), wall, Vector3(wx, HATCH_Y.y + (H - HATCH_Y.y) * 0.5, (HATCH_Z.x + HATCH_Z.y) * 0.5), Vector3.ZERO, "HatchAbove"))
-	house.add_child(Build.solid_box(Vector3(0.2, H, Z1 - HATCH_Z.y), wall, Vector3(wx, H * 0.5, (HATCH_Z.y + Z1) * 0.5), Vector3.ZERO, "HouseInnerC"))
-	# the hatch's shutter, hooked open against the wall, and a sill
-	house.add_child(Build.box(Vector3(0.32, 0.08, HATCH_Z.y - HATCH_Z.x + 0.1), ToonMat.make(Color(0.42, 0.30, 0.20)), Vector3(wx, HATCH_Y.x + 0.02, (HATCH_Z.x + HATCH_Z.y) * 0.5), Vector3.ZERO, "HatchSill"))
-	house.add_child(Build.box(Vector3(0.05, HATCH_Y.y - HATCH_Y.x, HATCH_Z.y - HATCH_Z.x), ToonMat.make(Color(0.42, 0.30, 0.20)), Vector3(wx - m * 0.55, (HATCH_Y.x + HATCH_Y.y) * 0.5, HATCH_Z.y + 0.55), Vector3(0, 90, 0), "HatchShutter"))
-	# the keeper's ladder lies broken in the grass below it
-	house.add_child(Build.box(Vector3(0.45, 0.06, 2.4), ToonMat.make(Color(0.50, 0.38, 0.26)), Vector3(wx - m * 0.9, 0.05, HATCH_Z.y + 0.6), Vector3(0, 12 * m, 4), "BrokenLadder"))
-	house.add_child(Build.box(Vector3(0.45, 0.06, 1.0), ToonMat.make(Color(0.50, 0.38, 0.26)), Vector3(wx - m * 1.6, 0.05, HATCH_Z.y - 1.4), Vector3(0, -30 * m, 6), "BrokenLadderEnd"))
-	house.add_child(Build.solid_box(Vector3(fx1 - fx0 + 0.4, 0.2, Z1 - Z0 + 0.4), ToonMat.make(Color(0.36, 0.38, 0.42)), Vector3(cx, H + 0.1, (Z0 + Z1) * 0.5), Vector3.ZERO, "HouseRoof"))
-	house.add_child(Build.label3d("MACHINERY", Vector3(m * (inner - 0.12), 2.9, 0.6), Vector3(0, -90 * m, 0), 0.22, Color(0.95, 0.92, 0.8)))
-	# the door: barred from inside, so it only opens from in there
-	door = Node3D.new()
-	door.name = "DoorHinge"
-	door.position = Vector3(wx, 0, DOOR.y)
-	house.add_child(door)
-	var leaf_w := DOOR.y - DOOR.x
-	door.add_child(Build.solid_box(Vector3(0.08, 2.35, leaf_w - 0.04), ToonMat.make(Color(0.40, 0.30, 0.22)), Vector3(0, 1.18, -leaf_w * 0.5), Vector3.ZERO, "Door"))
-	var bar := Build.box(Vector3(0.08, 0.12, leaf_w + 0.3), ToonMat.make(Color(0.35, 0.25, 0.18)), Vector3(m * 0.12, 1.15, -leaf_w * 0.5), Vector3.ZERO, "DoorBar")
-	door.add_child(bar)
-	# thin, so it doesn't catch the aim at the note beside it (2026-10-18)
-	var da := Build.interact_area(Vector3(0.5, 2.2, leaf_w), Vector3(0, 1.1, -leaf_w * 0.5), "", func(p): _open_door(p), "DoorArea")
-	da.set_meta("tag_name", "the machinery house door")
-	da.set_meta("prompt_fn", func(p) -> String:
-		return "Lift the bar and open the door" if not door_open and _inside_house(p) else "")
-	da.set_meta("blocked_fn", func(p) -> String:
-		if door_open or _inside_house(p):
-			return ""
-		return "Barred from the inside. There's a hatch higher up the wall.")
-	door.add_child(da)
-	NareshNote.make(house, "lb_door", Vector3(wx - m * 0.13, 1.55, DOOR.y + 0.6), -90.0 * m,
-		"Barred from inside, and the keeper's ladder's in bits. My friend crouched by the wall under the hatch and I jumped up off their back. Easy.")
-	# the gear on the axle by the outer wall, turning as the leaf moves
-	gear = Node3D.new()
-	gear.name = "Gear"
-	gear.position = Vector3(m * (outer - 0.5), -0.4, 0)
-	house.add_child(gear)
-	gear.add_child(Build.cyl(1.25, 0.25, steel, Vector3.ZERO, Vector3(0, 0, 90), 20, "GearDisc"))
-	for k in 18:
-		var a := TAU * k / 18.0
-		var tooth := Build.box(Vector3(0.25, 0.3, 0.22), steel, Vector3(0, sin(a) * 1.35, cos(a) * 1.35), Vector3.ZERO, "Tooth")
-		tooth.rotation.x = PI * 0.5 - a
-		gear.add_child(tooth)
-	gear.add_child(Build.box(Vector3(0.27, 1.1, 0.14), ToonMat.make(Color(0.75, 0.2, 0.18)), Vector3(0, 0.55, 0), Vector3.ZERO, "Mark"))
-	# the lock lever, by the back wall where you can see out of the door to the leaf
-	var lever := Node3D.new()
-	lever.name = "LockLever"
-	# (by the outer wall: a climber drops in from the hatch by the inner one)
-	lever.position = Vector3(m * (inner + 2.6), 0, Z1 - 0.35)
-	house.add_child(lever)
-	lever.add_child(Build.box(Vector3(0.5, 0.9, 0.3), steel, Vector3(0, 0.45, 0), Vector3.ZERO, "LockBase"))
-	lever.add_child(Build.cyl(0.035, 0.8, ToonMat.make(Color(0.75, 0.2, 0.18)), Vector3(0, 1.2, -0.1), Vector3(-25, 0, 0), 6, "LockHandle"))
-	lever.add_child(Build.label3d("LEAF LOCK", Vector3(0, 0.75, -0.16), Vector3(0, 180, 0), 0.08, Color(0.95, 0.92, 0.8)))
-	var la := Build.interact_area(Vector3(0.7, 1.0, 0.8), Vector3(0, 1.1, -0.2), "", func(_p): _try_lock(), "LockArea")
-	la.set_meta("tag_name", "the leaf lock")
-	la.set_meta("prompt_fn", func(_p) -> String: return "" if locked else "Throw the lock bolts")
-	la.set_meta("blocked_fn", func() -> String:
-		if locked:
-			return "The bolts are home. The leaf's locked down."
-		if storm_blown:
-			return "The leaf's up in the gale. The bolts can't reach."
-		if angle > LOCK_DEG:
-			return "The leaf isn't down. The bolts won't reach the far side."
-		if absf(omega) > 0.03:
-			return "It's still moving."
-		return "")
-	lever.add_child(la)
-	NareshNote.make(lever, "lb_lock", Vector3(0.0, 0.38, -0.16), 180.0,
-		"The bolts only go in when it's flat and still. And whoever throws them isn't out there holding it down. Took us ages to work that one out.")
-	# the counterweight: concrete in its pit, down on the floor of it now
-	counterweight = AnimatableBody3D.new()
-	counterweight.name = "Counterweight"
-	counterweight.sync_to_physics = true
-	counterweight.position = Vector3(pcx, CW_LOW, (pz0 + pz1) * 0.5)
-	house.add_child(counterweight)
-	var cw_size := CW_SIZE - Vector3(0.1, 0, 0.1)
-	counterweight.add_child(Build.box(cw_size, ToonMat.make(Color(0.62, 0.62, 0.60)), Vector3.ZERO, Vector3.ZERO, "Block"))
-	counterweight.add_child(Build.box(Vector3(cw_size.x + 0.02, 0.08, 0.3), ToonMat.make(Color(0.95, 0.75, 0.15)), Vector3(0, CW_SIZE.y * 0.5 - 0.02, -cw_size.z * 0.5 + 0.15), Vector3.ZERO, "Stripe"))
+## A steel flap hinged on the near deck that lies on the leaf's near end, so
+## the van (and the carts) get on whatever the leaf's tilt.
+func _build_apron() -> void:
+	apron = AnimatableBody3D.new()
+	apron.name = "Apron"
+	apron.sync_to_physics = true
+	apron.position = Vector3(0, 0, APRON)
+	add_child(apron)
+	apron_mesh = Build.box(Vector3(deck_w - 0.4, 0.08, 1.0), ToonMat.make(Color(0.36, 0.37, 0.4), 0.012), Vector3(0, -0.04, -0.5), Vector3.ZERO, "Plate")
+	apron.add_child(apron_mesh)
 	var cs := CollisionShape3D.new()
-	var sh := BoxShape3D.new()
-	sh.size = cw_size
-	cs.shape = sh
-	counterweight.add_child(cs)
-	counterweight.set_meta("tag_name", "the counterweight")
+	apron_shape = BoxShape3D.new()
+	apron_shape.size = Vector3(deck_w - 0.4, 0.08, 1.0)
+	cs.shape = apron_shape
+	cs.position = Vector3(0, -0.04, -0.5)
+	cs.name = "PlateShape"
+	apron.add_child(cs)
 
 
-## The dead lever panel in the hut window: the power's off.
+func _build_rails_and_carts() -> void:
+	var steel := ToonMat.make(Color(0.26, 0.27, 0.29), 0.01)
+	var concrete := ToonMat.make(Color(0.63, 0.62, 0.59), 0.01)
+	for sx in [-1.0, 1.0]:
+		for off in [-0.35, 0.35]:
+			leaf.add_child(Build.box(Vector3(0.07, 0.06, leaf_len), steel, Vector3(sx * RAIL_X + off, 0.03, 0), Vector3.ZERO, "Rail"))
+			add_child(Build.box(Vector3(0.07, 0.06, SIDING), steel, Vector3(sx * RAIL_X + off, 0.03, SIDING * 0.5), Vector3.ZERO, "SidingRail"))
+		add_child(Build.box(Vector3(0.9, 0.5, 0.3), ToonMat.make(Color(0.8, 0.2, 0.15), 0.01), Vector3(sx * RAIL_X, 0.25, SIDING + 0.15), Vector3.ZERO, "Buffer"))
+	# where they start: two on the hut's side, one across
+	var starts := [[BLOCKS[0], -m, 3.2], [BLOCKS[1], m, 4.0], [BLOCKS[2], -m, 5.6]]
+	for k in starts.size():
+		var c := {"kg": float(starts[k][0]), "rail": float(starts[k][1]), "z": float(starts[k][2]), "home": float(starts[k][2]), "lost": false}
+		var body := AnimatableBody3D.new()
+		body.name = "Cart%d" % k
+		body.sync_to_physics = false
+		add_child(body)
+		body.add_child(Build.box(Vector3(0.95, 0.18, 1.1), steel, Vector3(0, 0.22, 0), Vector3.ZERO, "Trolley"))
+		for wx in [-0.35, 0.35]:
+			for wz in [-0.4, 0.4]:
+				body.add_child(Build.cyl(0.11, 0.08, steel, Vector3(wx, 0.11, wz), Vector3(0, 0, 90), 8, "Wheel"))
+		# the same block on each (they look alike: you find their weight by pushing)
+		body.add_child(Build.box(Vector3(0.8, 0.75, 0.8), concrete, Vector3(0, 0.69, 0), Vector3(0, k * 7.0 - 7.0, 0), "Block"))
+		var bs := CollisionShape3D.new()
+		var bb := BoxShape3D.new()
+		bb.size = Vector3(0.95, 1.05, 1.1)
+		bs.shape = bb
+		bs.position = Vector3(0, 0.55, 0)
+		body.add_child(bs)
+		var idx := k
+		body.set_meta("tag_name", "a cart")
+		body.set_meta("prompt_fn", func(_p) -> String: return "" if carts[idx]["lost"] else "Hold: push the cart")
+		body.set_meta("hold_fn", func(p, dt: float): _push(idx, p, dt))
+		c["node"] = body
+		carts.append(c)
+
+
+## The dry pit in front of the far bank's wall, where a far-heavy leaf ends up.
+func _build_pit() -> void:
+	var dark := ToonMat.make(Color(0.28, 0.27, 0.26), 0.012)
+	var z0 := -leaf_len - 0.1
+	var depth := 3.0
+	for sx in [-1.0, 1.0]:
+		add_child(Build.solid_box(Vector3(0.6, depth, 2.4), dark, Vector3(sx * (deck_w * 0.5 + 0.3), -depth * 0.5 - 0.2, z0 + 1.2), Vector3.ZERO, "PitWall"))
+	add_child(Build.solid_box(Vector3(deck_w + 1.2, 0.4, 2.4), dark, Vector3(0, -depth - 0.4, z0 + 1.2), Vector3.ZERO, "PitFloor"))
+	add_child(Build.solid_box(Vector3(deck_w + 1.2, depth, 0.5), dark, Vector3(0, -depth * 0.5 - 0.2, z0 - 0.25), Vector3.ZERO, "PitBack"))
+
+
+## The dead lever panel in the near hut's window: the power's off.
 func _build_panel(xf: Transform3D) -> void:
 	var panel := Node3D.new()
 	panel.name = "LeverPanel"
@@ -295,98 +254,426 @@ func _build_panel(xf: Transform3D) -> void:
 	for spec in [["RAISE", -0.3, Color(0.2, 0.5, 0.3)], ["LOWER", 0.3, Color(0.75, 0.2, 0.18)]]:
 		var nm: String = spec[0]
 		var x: float = spec[1]
-		var col: Color = spec[2]
-		panel.add_child(Build.cyl(0.03, 0.5, ToonMat.make(col), Vector3(x, 1.2, 0.0), Vector3(-20, 0, 0), 6, nm + "Handle"))
+		panel.add_child(Build.cyl(0.03, 0.5, ToonMat.make(spec[2]), Vector3(x, 1.2, 0.0), Vector3(-20, 0, 0), 6, nm + "Handle"))
 		panel.add_child(Build.label3d(nm, Vector3(x, 1.02, 0.21), Vector3.ZERO, 0.08, Color(0.95, 0.92, 0.8)))
 		var a := Build.interact_area(Vector3(0.45, 0.7, 0.7), Vector3(x, 1.1, 0.1), "", func(_p): pass, nm + "Lever")
 		a.set_meta("tag_name", "the %s lever" % nm.to_lower())
 		a.set_meta("blocked_fn", func() -> String: return "Nothing. No power: the line's down at the last pole.")
 		panel.add_child(a)
-	NareshNote.make(panel, "lb_hut", Vector3(0.45, 1.02, 0.21), 0.0,
-		"No power - the line's snapped at the last pole. Doesn't matter. The brake's off and the leaf just sits on its axle, heavier at the back end. Like a seesaw.")
 
 
-## The crew's heap of stones by the axle (where they do nothing), and the
-## river stones on the near bank.
-func _build_stones(spots: Array[Vector3]) -> void:
-	var heap: Array[Vector3] = []
-	var hx := -m * 2.6
-	for k in 8:
-		var row := k % 4
-		var layer := k / 4
-		heap.append(transform * Vector3(hx + (row % 2) * 0.62 - 0.3 + layer * 0.2, 0.16 + layer * 0.27, 1.2 + (row / 2) * 0.5 + layer * 0.15))
-	# (built before the world is in the tree: local transforms only)
-	var inv := transform.affine_inverse()
-	for p in heap + spots:
-		var s := BridgeStone.new()
-		s.name = "BridgeStone%d" % stones.size()
-		s.transform = inv * Transform3D(Basis(Vector3.UP, randf() * TAU), p)
-		s.home = s.transform
-		add_child(s)
-		s.sleeping = true
-		stones.append(s)
+## The far bank's hut (`hx`: local to the bridge; its door on -Z, the road
+## side; the window on the side facing the bridge).
+func _build_hut(hx: Transform3D) -> void:
+	var stone := ToonMat.make(Color(0.55, 0.53, 0.49), 0.012)
+	var roof := ToonMat.make(Color(0.30, 0.28, 0.27), 0.012)
+	var wood := ToonMat.make(Color(0.36, 0.27, 0.19), 0.012)
+	hut = Node3D.new()
+	hut.name = "FarHut"
+	hut.transform = hx
+	add_child(hut)
+	# a bridge-keeper's tower hut: the window is a tall shutter high up (a
+	# plain leg-up's feet reach 1.9 m: you need the crate too, 2.37 m)
+	const W := 3.6
+	const H := 4.6
+	const T := 0.3
+	var sill := 2.2
+	var win := Vector2(1.0, 1.9)
+	# which local x side faces the bridge (the window's wall)
+	var to_bridge := hx.affine_inverse() * Vector3(0, 0, -leaf_len * 0.5)
+	var ws := 1.0 if to_bridge.x > 0.0 else -1.0
+	hut.add_child(Build.solid_box(Vector3(W, 0.2, W), stone, Vector3(0, -0.1, 0), Vector3.ZERO, "HutFloor"))
+	hut.add_child(Build.solid_box(Vector3(W + 0.4, 0.25, W + 0.4), roof, Vector3(0, H + 0.12, 0), Vector3.ZERO, "HutRoof"))
+	hut.add_child(Build.solid_box(Vector3(W, H, T), stone, Vector3(0, H * 0.5, W * 0.5), Vector3.ZERO, "WallBack"))
+	hut.add_child(Build.solid_box(Vector3(T, H, W), stone, Vector3(-ws * W * 0.5, H * 0.5, 0), Vector3.ZERO, "WallFar"))
+	# the window's wall: solid below the sill and above the window, piers either side
+	var wx := ws * W * 0.5
+	hut.add_child(Build.solid_box(Vector3(T, sill, W), stone, Vector3(wx, sill * 0.5, 0), Vector3.ZERO, "WinBelow"))
+	hut.add_child(Build.solid_box(Vector3(T, H - sill - win.y, W), stone, Vector3(wx, sill + win.y + (H - sill - win.y) * 0.5, 0), Vector3.ZERO, "WinAbove"))
+	for sz in [-1.0, 1.0]:
+		var pw := (W - win.x) * 0.5
+		hut.add_child(Build.solid_box(Vector3(T, win.y, pw), stone, Vector3(wx, sill + win.y * 0.5, sz * (win.x * 0.5 + pw * 0.5)), Vector3.ZERO, "WinPier"))
+	hut.add_child(Build.box(Vector3(T + 0.15, 0.08, win.x + 0.1), wood, Vector3(wx, sill + 0.02, 0), Vector3.ZERO, "Sill"))
+	# boot scuffs up the wall under the window: someone climbed in
+	var scuff := ToonMat.flat(Color(0.25, 0.22, 0.19))
+	for k in 5:
+		hut.add_child(Build.box(Vector3(0.02, 0.07, 0.22), scuff, Vector3(wx + ws * (T * 0.5 + 0.01), 1.3 + k * 0.2, randf_range(-0.25, 0.25)), Vector3(randf_range(-15, 15), 0, 0), "Scuff"))
+	# the door wall, its door bolted from inside
+	var dw := 1.1
+	for sx in [-1.0, 1.0]:
+		var seg := (W - dw) * 0.5
+		hut.add_child(Build.solid_box(Vector3(seg, H, T), stone, Vector3(sx * (dw * 0.5 + seg * 0.5), H * 0.5, -W * 0.5), Vector3.ZERO, "WallFront"))
+	hut.add_child(Build.solid_box(Vector3(dw, H - 2.2, T), stone, Vector3(0, 2.2 + (H - 2.2) * 0.5, -W * 0.5), Vector3.ZERO, "DoorHead"))
+	hut_door = Node3D.new()
+	hut_door.name = "HutDoor"
+	hut_door.position = Vector3(-dw * 0.5, 0, -W * 0.5)
+	hut.add_child(hut_door)
+	hut_door.add_child(Build.solid_box(Vector3(dw - 0.04, 2.15, 0.1), wood, Vector3(dw * 0.5, 1.08, 0), Vector3.ZERO, "Door"))
+	hut_door.add_child(Build.box(Vector3(0.3, 0.06, 0.08), ToonMat.make(Color(0.45, 0.25, 0.15)), Vector3(dw * 0.5 + 0.2, 1.1, 0.09), Vector3.ZERO, "Bolt"))
+	var da := Build.interact_area(Vector3(dw, 2.1, 0.5), Vector3(dw * 0.5, 1.05, 0), "", func(p): _open_door(p), "HutDoorArea")
+	da.set_meta("tag_name", "the hut's door")
+	da.set_meta("prompt_fn", func(p) -> String: return "Slide the bolt and open the door" if not door_open and _in_hut(p) else "")
+	da.set_meta("blocked_fn", func(p) -> String: return "" if door_open or _in_hut(p) else "It won't move. Bolted on the inside.")
+	hut_door.add_child(da)
+	# a lamp left burning inside, flickering: you see it in the window
+	lamp = OmniLight3D.new()
+	lamp.position = Vector3(ws * 0.6, 2.4, 0.6)
+	lamp.omni_range = 5.0
+	lamp.light_color = Color(1.0, 0.8, 0.5)
+	lamp.light_energy = 1.6
+	hut.add_child(lamp)
+	hut.add_child(Build.sphere(0.1, ToonMat.make(Color(1.0, 0.85, 0.5), 0.0, 0.9, Color(1.0, 0.7, 0.3) * 2.0), lamp.position, Vector3.ONE, "LampGlass"))
+	# inside: the lock lever by the far wall, the crate
+	var lock := Node3D.new()
+	lock.name = "LockLever"
+	lock.position = Vector3(-ws * (W * 0.5 - 0.5), 0, 0.4)
+	lock.rotation = Vector3(0, PI * 0.5 * ws, 0)
+	hut.add_child(lock)
+	var steel := ToonMat.make(Color(0.30, 0.32, 0.34), 0.012)
+	lock.add_child(Build.box(Vector3(0.5, 0.9, 0.3), steel, Vector3(0, 0.45, 0), Vector3.ZERO, "LockBase"))
+	lock.add_child(Build.cyl(0.035, 0.8, ToonMat.make(Color(0.75, 0.2, 0.18)), Vector3(0, 1.2, -0.1), Vector3(-25, 0, 0), 6, "LockHandle"))
+	lock.add_child(Build.label3d("LEAF LOCK", Vector3(0, 0.75, -0.16), Vector3(0, 180, 0), 0.08, Color(0.95, 0.92, 0.8)))
+	var la := Build.interact_area(Vector3(0.7, 1.0, 0.8), Vector3(0, 1.1, -0.2), "", func(p): _try_lock(p), "LockArea")
+	la.set_meta("tag_name", "the leaf lock")
+	la.set_meta("prompt_fn", func(p) -> String: return "Throw the lock bolts" if _in_hut(p) and not locked else "")
+	la.set_meta("blocked_fn", func(p) -> String:
+		if not _in_hut(p):
+			return ""
+		if locked:
+			return "The bolts are home. The bridge is locked level."
+		if storm_blown:
+			return "The bridge is swinging in the gale. The bolts can't reach."
+		if absf(angle) > LOCK_DEG:
+			return "The bridge isn't level. The bolts won't reach."
+		if absf(omega) > 0.03:
+			return "It's still moving."
+		return "")
+	lock.add_child(la)
+	var chest := Node3D.new()
+	chest.name = "HutChest"
+	chest.position = Vector3(0, 0, W * 0.5 - 0.6)
+	hut.add_child(chest)
+	chest.add_child(Build.solid_box(Vector3(1.4, 0.6, 0.7), wood, Vector3(0, 0.3, 0), Vector3.ZERO, "Chest"))
+	var ca := Build.interact_area(Vector3(1.4, 0.8, 0.9), Vector3(0, 0.5, 0), "", func(p): _open_chest(p), "ChestArea")
+	ca.set_meta("tag_name", "the crate")
+	ca.set_meta("prompt_fn", func(p) -> String: return "Open the crate" if not chest_open and _in_hut(p) else "")
+	chest.add_child(ca)
+	# the crate outside, a few steps from the window's wall (to stand on)
+	var crate := Crate.new()
+	crate.name = "HutCrate"
+	crate.position = Vector3(ws * (W * 0.5 + 2.2), 0.05, -1.4)
+	hut.add_child(crate)
 
 
 # --- running -------------------------------------------------------------------
 
+func _process(delta: float) -> void:
+	if lamp != null:
+		_flicker -= delta
+		if _flicker <= 0.0:
+			_flicker = randf_range(0.05, 0.4)
+			lamp.light_energy = randf_range(0.6, 1.8)
+
+
 func _physics_process(delta: float) -> void:
 	_watch_water()
+	var van: Camper = get_tree().current_scene.get("camper") if is_inside_tree() else null
 	if storm_blown:
-		# whatever a load set, it stays up, swaying in the gale
-		locked = false
 		omega = 0.0
-		angle = UP_DEG - 2.0 + sin(Time.get_ticks_msec() * 0.0011) * 2.0
+		angle = REST_DEG - 1.0 + sin(Time.get_ticks_msec() * 0.0011) * 2.0
 		if barriers != null and not barriers.visible:
 			_close_road()
 		_apply()
 		return
 	_near_time(delta)
-	if locked:
+	if van != null and _van_on_leaf(van):
+		van.on_moving_deck = 0.3
+	if locked or failing:
+		if van != null:
+			_check_crossed(van)
 		return
-	_carry_stones()
-	pull = _pull()
-	var net := pull - TAIL           # kg m; positive pulls the nose down
+	pull = _pull(van)
+	var net := pull - TAIL
 	var a := deg_to_rad(angle)
-	var resting_up := angle >= UP_DEG - 0.001 and net <= FRICTION
-	var resting_down := angle <= 0.001 and net >= -FRICTION
-	if absf(omega) < 0.002 and (absf(net) <= FRICTION or resting_up or resting_down):
+	var a_up := deg_to_rad(REST_DEG)
+	var a_pit := deg_to_rad(PIT_DEG)
+	var at_up := a >= a_up - 0.0005 and net <= FRICTION
+	var at_pit := a <= a_pit + 0.0005 and net >= -FRICTION
+	if absf(omega) < 0.002 and (absf(net) <= FRICTION or at_up or at_pit):
 		omega = 0.0
 		_groan(net, delta)
-		return
-	var fr := FRICTION * signf(omega if absf(omega) >= 0.002 else net)
-	omega += (net - fr) / INERTIA * delta
-	omega *= exp(-DAMP * delta)
-	a -= omega * delta
-	var a_up := deg_to_rad(UP_DEG)
-	if a <= 0.0:
-		a = 0.0
-		if omega > SLAM_W:
-			_slam()
-			omega = -omega * 0.25
-		else:
-			if omega > 0.05:
-				Sfx.play3d("hit_wood_heavy", global_transform * Vector3(0, 0, -leaf_len), -2.0)
+	else:
+		var fr := FRICTION * signf(omega if absf(omega) >= 0.002 else net)
+		omega += (net - fr) / INERTIA * delta
+		omega *= exp(-DAMP * delta)
+		a -= omega * delta
+		if a >= a_up:
+			a = a_up
+			if omega < -SLAM_W:
+				_slam(true)
 			omega = 0.0
-	elif a >= a_up:
-		a = a_up
-		if omega < -0.15:
-			Sfx.play3d("hit_metal_heavy", counterweight.global_position, -2.0)
-			_tell_near("THUD - the counterweight hits the bottom of its pit and the leaf jolts up.", 3.0)
-		omega = 0.0
-	var was := angle
-	angle = rad_to_deg(a)
-	_travel += absf(angle - was)
-	if _travel > 2.0:
-		_travel = 0.0
-		Sfx.play3d("creak", global_position + Vector3(m * (deck_w * 0.5 + 1.5), 0.5, 0), -4.0, 0.15, 0.8 + randf() * 0.3)
-	var old_xf := leaf.global_transform
-	_apply()
-	_carry_players(old_xf)
+		elif a <= a_pit:
+			a = a_pit
+			if omega > SLAM_W:
+				_slam(false)
+			omega = 0.0
+		var was := angle
+		angle = rad_to_deg(a)
+		_travel += absf(angle - was)
+		if _travel > 1.5:
+			_travel = 0.0
+			Sfx.play3d("creak", global_transform * Vector3(0, -0.4, -leaf_len * 0.5), -4.0, 0.15, 0.7 + randf() * 0.3)
+		var old_xf := leaf.global_transform
+		_apply()
+		_carry_players(old_xf)
+	if van != null:
+		_check_van(van, delta)
 
 
-## People standing on the turning leaf move with it (the engine left them
-## behind: standing still, P1 slid from 8.2 to 7.9 m out in 3 s as the
-## leaf came down, and the lost weight stalled it, 2026-10-17).
+## Weight x distance from the pivot (+ toward the far end) of everything on
+## the leaf: the van's wheels, the players, the carts.
+func _pull(van: Camper) -> float:
+	var inv := leaf.global_transform.affine_inverse()
+	var total := 0.0
+	if van != null:
+		var per := Camper.MASS / float(van._wheels.size())
+		for w in van._wheels:
+			if w.is_in_contact() and w.get_contact_body() == leaf:
+				total += per * -(inv * w.global_position).z
+	for n in get_tree().get_nodes_in_group("player"):
+		var p := n as PlayerRig
+		if p.seat != null or p.swimming:
+			continue
+		var l := inv * p.global_position
+		if _on_leaf(l, 1.4):
+			total += PLAYER_KG * -l.z
+	for c in carts:
+		if not c["lost"] and float(c["z"]) < 0.0:
+			total += float(c["kg"]) * -(float(c["z"]) + leaf_len * 0.5)
+	return total
+
+
+## A point in the leaf's frame is on its deck.
+func _on_leaf(l: Vector3, above: float) -> bool:
+	return absf(l.x) < deck_w * 0.5 + 0.1 and absf(l.z) < leaf_len * 0.5 + 0.1 and l.y > -0.35 and l.y < above
+
+
+func _van_on_leaf(van: Camper) -> bool:
+	for w in van._wheels:
+		if w.is_in_contact() and (w.get_contact_body() == leaf or w.get_contact_body() == apron):
+			return true
+	return false
+
+
+## The timbers creak only at the very last: nearly tipping.
+func _groan(net: float, delta: float) -> void:
+	_groan_t -= delta
+	if _groan_t > 0.0:
+		return
+	if absf(net) > FRICTION * 0.85 and not (angle >= REST_DEG - 0.01 and net < 0.0) and not (angle <= PIT_DEG + 0.01 and net > 0.0):
+		_groan_t = 1.4
+		Sfx.play3d("groan", global_transform * Vector3(0, -0.3, -leaf_len * 0.5), -2.0, 0.1, 0.6)
+
+
+func _slam(near_end: bool) -> void:
+	slams += 1
+	var at := global_transform * Vector3(0, -0.5, 0.0 if near_end else -leaf_len)
+	Sfx.play3d("bang", at, 4.0)
+	Sfx.play3d("hit_wood_heavy", at, 2.0)
+	var inv := leaf.global_transform.affine_inverse()
+	for n in get_tree().get_nodes_in_group("player"):
+		var p := n as PlayerRig
+		if p.seat == null and _on_leaf(inv * p.global_position, 1.4):
+			p.knock(Vector3.UP * 3.0 + global_transform.basis.z * (2.0 if near_end else -2.0))
+	print("[bridge] slam %d (%s end)" % [slams, "near" if near_end else "far"])
+
+
+## The van this tick: in the pit, shoving a cart, landing hard off a raised
+## far end, or over.
+func _check_van(van: Camper, delta: float) -> void:
+	var l := global_transform.affine_inverse() * van.global_position
+	var on_leaf := _van_on_leaf(van)
+	# into the pit
+	if on_leaf and angle < FALL_DEG and l.z < -leaf_len * 0.5:
+		_fall_t += delta
+		if _fall_t > 0.8:
+			_fail("pit")
+			return
+	else:
+		_fall_t = 0.0
+	# shoving a cart (it's in the van's way)
+	var vinv := van.global_transform.affine_inverse()
+	for k in carts.size():
+		var c: Dictionary = carts[k]
+		if c["lost"]:
+			continue
+		var cl := vinv * (c["node"] as Node3D).global_position
+		if absf(cl.x) < 1.6 and absf(cl.z) < 3.1 and absf(cl.y) < 1.6:
+			_shove(k, van)
+			return
+	# off the raised far end: a hard landing on the far deck
+	if l.z < -leaf_len - 0.3 and not crossed:
+		if _van_vy < -2.4 and van.linear_velocity.y > -0.6:
+			van.puncture()
+			Sfx.play3d("bang", van.global_position, 4.0)
+			_tell_near("BANG - the van drops off the raised end and lands hard on the far bank.", 5.0)
+			print("[bridge] hard landing")
+	_van_vy = van.linear_velocity.y
+	_check_crossed(van)
+
+
+func _check_crossed(van: Camper) -> void:
+	if crossed:
+		return
+	var l := global_transform.affine_inverse() * van.global_position
+	if l.z < -leaf_len - 3.5 and absf(l.x) < 6.0:
+		crossed = true
+		_open_road()
+		var st = get_tree().current_scene.get("story")
+		if st != null:
+			st.flags["bridge_down"] = true
+		print("[bridge] the van is over (locked %s, slams %d)" % [locked, slams])
+
+
+## The van ran into a cart: the cart goes over the side, the leaf lurches,
+## the van is thrown back and everything on its rack flies.
+func _shove(k: int, van: Camper) -> void:
+	var c: Dictionary = carts[k]
+	c["lost"] = true
+	var node := c["node"] as Node3D
+	var side := global_transform.basis.x * float(c["rail"])
+	var tw := create_tween()
+	tw.tween_property(node, "global_position", node.global_position + side * 2.5 + Vector3.DOWN * 6.0, 0.9).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func(): node.visible = false)
+	Sfx.play3d("hit_metal_heavy", node.global_position, 4.0)
+	Sfx.play3d("splat", node.global_position + Vector3.DOWN * 4.0, 2.0, 0.1, 0.5)
+	# the leaf whips: the van goes back the way it came, hard
+	var back := global_transform.basis.z.normalized()
+	van.parking_brake = false
+	van.freeze = false
+	van.apply_central_impulse((back * 9.0 + Vector3.UP * 3.5) * Camper.MASS)
+	van.apply_torque_impulse(global_transform.basis.x * Camper.MASS * 4.0)
+	omega = -0.6
+	_fling_cargo(van)
+	_tell_near("The van hits a cart - it goes over the side, the bridge bucks and throws the van back. Everything on the rack goes flying.", 7.0)
+	print("[bridge] the van shoved cart %d" % k)
+	var t := get_tree().create_timer(4.5)
+	t.timeout.connect(func(): _fail("shove"))
+
+
+## Everything stowed on the van comes off and flies.
+func _fling_cargo(van: Camper) -> void:
+	for slot in van.storage_slots:
+		var it := van.stowed_item(slot)
+		if it == null:
+			continue
+		it.unstow()
+		it.global_position = slot.global_position + Vector3.UP * 0.4
+		it.linear_velocity = global_transform.basis.z * randf_range(5.0, 9.0) + Vector3.UP * randf_range(4.0, 7.0) + global_transform.basis.x * randf_range(-3.0, 3.0)
+		it.angular_velocity = Vector3(randf_range(-5, 5), randf_range(-5, 5), randf_range(-5, 5))
+		it._thrown = true
+
+
+## Start again at the gate: a fade to black, then the bridge as it was, the
+## van and both of you outside the gate. Cargo that flew stays where it fell.
+func _fail(why: String) -> void:
+	if failing:
+		return
+	failing = true
+	print("[bridge] fail: %s" % why)
+	var text := "The far end drops into the pit and the van goes with it." if why == "pit" else "That's the bridge's way of saying no."
+	_tell_near(text, 4.0)
+	var players := get_tree().get_nodes_in_group("player")
+	for n in players:
+		var p := n as PlayerRig
+		p.fade_color = Color.BLACK
+		var tw := p.create_tween()
+		tw.tween_property(p, "whiteout", 1.0, 1.2)
+	await get_tree().create_timer(1.8).timeout
+	if not is_inside_tree():
+		return
+	var van: Camper = get_tree().current_scene.get("camper")
+	reset_bridge()
+	if van != null:
+		for n in players:
+			var p := n as PlayerRig
+			if p.seat != null:
+				p.force_exit = true
+		await get_tree().physics_frame
+		van.linear_velocity = Vector3.ZERO
+		van.angular_velocity = Vector3.ZERO
+		van.global_transform = van_start
+		van.reset_physics_interpolation()
+		van.parking_brake = true
+		var k := 0
+		for n in players:
+			var p := n as PlayerRig
+			p.global_position = van_start * Vector3(-3.2, 0.3, -1.0 + k * 1.6)
+			p.velocity = Vector3.ZERO
+			p.reset_physics_interpolation()
+			k += 1
+	await get_tree().create_timer(0.6).timeout
+	for n in players:
+		var p := n as PlayerRig
+		var tw := p.create_tween()
+		tw.tween_property(p, "whiteout", 0.0, 1.0)
+		p.say("Back at the gate. The bridge has settled back the way it was.", 4.0)
+	failing = false
+
+
+## Push a cart along its rail, away from you. Heavy blocks roll slowly, and
+## slower uphill on the tilted leaf.
+func _push(k: int, p, dt: float) -> void:
+	var c: Dictionary = carts[k]
+	if c["lost"] or failing:
+		return
+	var pl := global_transform.affine_inverse() * (p as Node3D).global_position
+	var dir := signf(float(c["z"]) - pl.z)
+	if dir == 0.0:
+		return
+	var speed := clampf(1.3 * 250.0 / float(c["kg"]), 0.45, 1.4)
+	if float(c["z"]) < 0.0:
+		# uphill (towards the raised end) is hard work, downhill a little easier
+		var grade := sin(deg_to_rad(angle)) * (-dir)
+		speed *= clampf(1.0 - grade * 3.0, 0.35, 1.3)
+	var z := float(c["z"]) + dir * speed * dt
+	z = clampf(z, -leaf_len + 0.7, SIDING - 0.7)
+	# not through another cart on the same rail
+	for o in carts:
+		if o != c and not o["lost"] and float(o["rail"]) == float(c["rail"]):
+			var oz := float(o["z"])
+			if absf(oz - z) < CART_GAP and signf(oz - float(c["z"])) == dir:
+				return
+	c["z"] = z
+	_place_cart(c)
+	if fmod(z, 0.6) < speed * dt:
+		Sfx.play3d("click", (c["node"] as Node3D).global_position, -10.0, 0.1, 0.6)
+
+
+## A cart's place on its rail: on the siding (z > APRON), on the flap, or on
+## the leaf (z < 0), following the leaf's tilt.
+func _place_cart(c: Dictionary) -> void:
+	# in the bridge's own frame (this runs from the builder too, before the
+	# world is in the tree: no global transforms then)
+	var node := c["node"] as Node3D
+	var z := float(c["z"])
+	var x := float(c["rail"]) * RAIL_X
+	var lxf := pivot.transform * leaf.transform
+	var xf: Transform3D
+	if z >= APRON:
+		xf = Transform3D(Basis(), Vector3(x, 0, z))
+	elif z < 0.0:
+		xf = lxf * Transform3D(Basis(), Vector3(x, 0, z + leaf_len * 0.5))
+	else:
+		var a := Vector3(x, 0, APRON)
+		var b := lxf * Vector3(x, 0, leaf_len * 0.5)
+		var u := 1.0 - z / APRON
+		xf = Transform3D(lxf.basis.slerp(Basis(), 1.0 - u), a.lerp(b, u))
+	node.transform = xf
+
+
+## People standing on the turning leaf move with it (the engine leaves them
+## behind; found at round 1).
 func _carry_players(old_xf: Transform3D) -> void:
 	var new_xf := leaf.global_transform
 	var inv := old_xf.affine_inverse()
@@ -395,138 +682,67 @@ func _carry_players(old_xf: Transform3D) -> void:
 		if p.seat != null or p.swimming or not p.is_on_floor():
 			continue
 		var l := inv * p.global_position
-		if _on_leaf(l, 0.6) < 0.0:
-			continue
-		p.global_position = new_xf * l
+		if _on_leaf(l, 0.6):
+			p.global_position = new_xf * l
 
 
-## Weight x distance from the axle of everyone and everything on the leaf.
-func _pull() -> float:
-	var inv := leaf.global_transform.affine_inverse()
-	var total := 0.0
-	for n in get_tree().get_nodes_in_group("player"):
-		var p := n as PlayerRig
-		if p.seat != null or p.swimming:
-			continue
-		var d := _on_leaf(inv * p.global_position, 1.4)
-		if d < 0.0:
-			continue
-		total += PLAYER_KG * d
-		if p.held is BridgeStone:
-			total += BridgeStone.WEIGHT * d
-	for s in stones:
-		if s.lost or not s.holders.is_empty():
-			continue
-		var d := _on_leaf(inv * s.global_position, 0.8)
-		if d >= 0.0:
-			total += BridgeStone.WEIGHT * d
-	return total
-
-
-## Stones lying still on the leaf ride along with it (`BridgeStone.ride`):
-## heavy rough stones don't skate about on timber, and weight that slid
-## away by itself made the leaf stop halfway for no reason you could see
-## (the first `bridge` runs, 2026-10-17).
-func _carry_stones() -> void:
-	var lxf := leaf.global_transform
-	var inv := lxf.affine_inverse()
-	for s in stones:
-		if s.lost or not s.holders.is_empty():
-			continue
-		if s.riding:
-			s.global_transform = lxf * s.ride_xf
-		elif s.linear_velocity.length() < 0.25 and _on_leaf(inv * s.global_position, 0.5) >= 0.0:
-			s.ride(leaf)
-
-
-## Distance from the axle (m) of a point on the leaf (leaf-local), or -1.
-func _on_leaf(l: Vector3, above: float) -> float:
-	if absf(l.x) > deck_w * 0.5 + 0.1 or l.z > 0.15 or l.z < -leaf_len - 0.15 or l.y < -0.35 or l.y > above:
-		return -1.0
-	return clampf(-l.z, 0.0, leaf_len)
-
-
-## Close to moving but held by the friction: the old timbers groan, so you
-## know you're nearly there.
-func _groan(net: float, delta: float) -> void:
-	_groan_t -= delta
-	if _groan_t > 0.0:
+func _try_lock(p) -> void:
+	if locked or storm_blown or not _in_hut(p) or absf(angle) > LOCK_DEG or absf(omega) > 0.03:
 		return
-	var near_down := angle > 1.0 and net > FRICTION * 0.4
-	var near_up := angle < UP_DEG - 1.0 and net < -FRICTION * 0.4
-	if near_down or near_up:
-		_groan_t = 2.2
-		Sfx.play3d("groan", global_transform * Vector3(0, 0, -leaf_len * 0.5), -6.0, 0.1, 0.7)
-
-
-func _slam() -> void:
-	slams += 1
-	var tip := global_transform * Vector3(0, 0, -leaf_len)
-	Sfx.play3d("bang", tip, 4.0)
-	Sfx.play3d("hit_wood_heavy", tip, 2.0)
-	_tell_near("BANG - the leaf slams down onto the far bank and bounces.", 4.0)
-	var down := -leaf.global_transform.basis.z.normalized()      # along the leaf, out to the tip
-	var inv := leaf.global_transform.affine_inverse()
-	for n in get_tree().get_nodes_in_group("player"):
-		var p := n as PlayerRig
-		if p.seat != null or _on_leaf(inv * p.global_position, 1.4) < 0.0:
-			continue
-		p.knock(down * 2.5 + Vector3.UP * 3.0)
-	# loose stones jump; out near the tip they can go over the kerb
-	for s in stones:
-		if s.lost or not s.holders.is_empty():
-			continue
-		var d := _on_leaf(inv * s.global_position, 0.8)
-		if d < 0.0:
-			continue
-		s.unride()
-		var side := leaf.global_transform.basis.x * randf_range(-1.0, 1.0) * (d / leaf_len) * 4.0
-		s.apply_central_impulse((Vector3.UP * 3.5 + down * 1.5 + side) * BridgeStone.WEIGHT * 0.5)
-	print("[bridge] slam %d" % slams)
-
-
-func _try_lock() -> void:
-	if locked or storm_blown or angle > LOCK_DEG or absf(omega) > 0.03:
-		return
-	_lock()
-
-
-func _lock() -> void:
 	locked = true
 	angle = 0.0
 	omega = 0.0
 	_apply()
-	for s in stones:
-		s.unride()
 	for b in bolts:
 		var tw := create_tween()
-		tw.tween_property(b, "position:z", -leaf_len - 0.15, 0.25)
+		tw.tween_property(b, "position:z", -leaf_len * 0.5 - 0.3, 0.25)
 	Sfx.play3d("hit_metal_heavy", global_transform * Vector3(0, 0, -leaf_len), 0.0)
 	Sfx.play3d("latch", global_transform * Vector3(0, 0, -leaf_len), 0.0)
-	_open_road()
-	_tell_near("CLANK - the lock bolts shoot home into the far side. The leaf's locked down; the road's open.", 7.0)
+	_tell_near("CLANK - the bolts shoot home into the far bank. The bridge is locked level.", 6.0)
 	var st = get_tree().current_scene.get("story")
 	if st != null:
-		st.flags["bridge_down"] = true
-	print("[bridge] locked (slams %d)" % slams)
+		st.flags["bridge_locked"] = true
+	print("[bridge] locked (crossed %s)" % crossed)
 
 
 func _open_door(p) -> void:
-	if door_open or not _inside_house(p):
+	if door_open or not _in_hut(p):
 		return
 	door_open = true
-	Sfx.play3d("door_open", door.global_position + Vector3.UP, 0.0)
+	Sfx.play3d("door_open", hut_door.global_position + Vector3.UP, 0.0)
 	var tw := create_tween()
-	tw.tween_property(door, "rotation:y", deg_to_rad(-100.0 * m), 0.8).set_ease(Tween.EASE_OUT)
+	tw.tween_property(hut_door, "rotation:y", deg_to_rad(-100.0), 0.8).set_ease(Tween.EASE_OUT)
 
 
-func _inside_house(p) -> bool:
-	var l := global_transform.affine_inverse() * (p as Node3D).global_position
-	return l.x * m > deck_w * 0.5 + 0.3
+func _open_chest(p) -> void:
+	if chest_open or not _in_hut(p):
+		return
+	chest_open = true
+	Sfx.play3d("door_open", hut.global_position + Vector3.UP, -4.0, 0.1, 1.3)
+	_spawn_reward()
+	p.say("In the crate: a full can of fuel, a jug of coolant, and a spare tyre.", 5.0)
 
 
-## Into the river: a player is soaked and swims back to the near bank; a
-## stone sinks for good.
+func _spawn_reward() -> void:
+	var chest := hut.get_node("HutChest") as Node3D
+	var items: Array[Carryable] = [FuelCan.new(), CoolantJug.new(), SpareWheel.new()]
+	var k := 0
+	for it in items:
+		it.name = "HutReward%d" % k
+		get_tree().current_scene.get("world").add_child(it)
+		it.global_position = chest.global_transform * Vector3(-0.45 + k * 0.45, 0.85, 0)
+		k += 1
+
+
+func _in_hut(p) -> bool:
+	if hut == null:
+		return false
+	var l := hut.global_transform.affine_inverse() * (p as Node3D).global_position
+	return absf(l.x) < 1.6 and absf(l.z) < 1.6 and l.y > -0.5 and l.y < 2.5
+
+
+## Into the river (off the side of the leaf, or the carts' tumble): a player
+## swims to the near bank, soaked.
 func _watch_water() -> void:
 	if water_y < -1e8:
 		return
@@ -538,30 +754,24 @@ func _watch_water() -> void:
 		if at.y < water_y - 0.15 and at.distance_to(global_position) < 40.0 and Landscape.river_distance(at.x, at.z) < Landscape.RIVER_HALF + 1.0:
 			print("[bridge] P%d in the river at %s" % [p.index + 1, at])
 			p.fall_in_water(water_y, bank_at)
-	for s in stones:
-		if s.lost or not s.holders.is_empty():
-			continue
-		var sp := s.global_position
-		if sp.y < water_y - 0.1 and Landscape.river_distance(sp.x, sp.z) < Landscape.RIVER_HALF + 1.0:
-			s.sink()
 
 
 func _near_time(delta: float) -> void:
-	if locked:
+	if crossed:
 		return
 	for n in get_tree().get_nodes_in_group("player"):
-		if (n as Node3D).global_position.distance_to(global_position) < HINT_NEAR:
+		if (n as Node3D).global_position.distance_to(global_transform * Vector3(0, 0, -leaf_len * 0.5)) < HINT_NEAR + 20.0:
 			near_t += delta
 			return
 
 
 ## Hold H by the bridge: what to try, clearer the longer you're stuck.
 func hint_for(i: int) -> String:
-	if locked or storm_blown or i < 0:
+	if crossed or storm_blown or i < 0:
 		return ""
 	for n in get_tree().get_nodes_in_group("player"):
 		var q := n as PlayerRig
-		if q.index == i and q.global_position.distance_to(global_position) < HINT_NEAR:
+		if q.index == i and q.global_position.distance_to(global_transform * Vector3(0, 0, -leaf_len * 0.5)) < HINT_NEAR + 20.0:
 			var text := ""
 			for h in HINTS:
 				if near_t >= float(h[0]):
@@ -571,10 +781,27 @@ func hint_for(i: int) -> String:
 
 
 func _apply() -> void:
-	leaf.rotation = Vector3(deg_to_rad(angle), 0, 0)
-	gear.rotation.x = deg_to_rad(angle * 2.0)
-	var t := 1.0 - clampf(angle / UP_DEG, 0.0, 1.0)
-	counterweight.position.y = lerpf(CW_LOW, CW_HIGH, t)
+	pivot.rotation = Vector3(deg_to_rad(angle), 0, 0)
+	# the flap from its hinge on the near deck down (or up) onto the leaf's near end
+	var t := pivot.transform * leaf.transform * Vector3(0, 0, leaf_len * 0.5 - 0.5)
+	var h := Vector3(0, 0, APRON)
+	var d := t - h
+	var len := d.length()
+	apron.rotation = Vector3(atan2(d.y, -d.z), 0, 0)
+	apron_shape.size.z = len
+	(apron.get_node("PlateShape") as CollisionShape3D).position.z = -len * 0.5
+	apron_mesh.scale.z = len
+	apron_mesh.position.z = -len * 0.5
+	for c in carts:
+		if not c["lost"]:
+			_place_cart(c)
+
+
+func _tell_near(text: String, secs: float) -> void:
+	for n in get_tree().get_nodes_in_group("player"):
+		var q := n as PlayerRig
+		if q.global_position.distance_to(global_position) < 90.0:
+			q.say(text, secs)
 
 
 ## The storm (F2) or its end: up and dead, or back as the story left it.
@@ -583,9 +810,12 @@ func storm_blow(on: bool) -> void:
 	if on:
 		_close_road()
 		return
+	if barriers != null:
+		_open_road()
 	var st = get_tree().current_scene.get("story")
-	if st != null and st.flags.has("bridge_down"):
-		from_dict({"locked": true, "door_open": door_open})
+	if st != null and st.flags.has("bridge_locked"):
+		locked = true
+		angle = 0.0
 	_apply()
 
 
@@ -603,42 +833,52 @@ func _open_road() -> void:
 			(c as CollisionShape3D).set_deferred("disabled", true)
 
 
-func _tell_near(text: String, secs: float) -> void:
-	for n in get_tree().get_nodes_in_group("player"):
-		var q := n as PlayerRig
-		if q.global_position.distance_to(global_position) < 80.0:
-			q.say(text, secs)
-
-
 # --- saving --------------------------------------------------------------------
 
 func to_dict() -> Dictionary:
-	return {"locked": locked, "door_open": door_open, "slams": slams}
+	return {"locked": locked, "crossed": crossed, "door_open": door_open, "chest_open": chest_open, "slams": slams}
 
 
-## F1 (Puzzles, or a story jump to the bridge or before): the leaf up, the
-## door barred, the stones back where the crew left them.
+## The leaf back at rest, the carts home, the gate down (a restart keeps the
+## hut as you left it).
+func reset_bridge() -> void:
+	angle = 0.0 if locked else REST_DEG
+	omega = 0.0
+	_fall_t = 0.0
+	for c in carts:
+		c["lost"] = false
+		c["z"] = c["home"]
+		(c["node"] as Node3D).visible = true
+	if gate != null:
+		gate.reset()
+	_apply()
+
+
+## F1 (Puzzles, or a story jump to the bridge or before): everything fresh.
 func reset() -> void:
 	near_t = 0.0
-	for s in stones:
-		s.put_home()
+	failing = false
+	for n in get_tree().get_nodes_in_group("player"):
+		(n as PlayerRig).whiteout = 0.0
+	for k in 3:
+		var it: Node = get_tree().current_scene.get("world").find_child("HutReward%d" % k, true, false) if is_inside_tree() else null
+		if it != null:
+			it.queue_free()
 	from_dict({})
 
 
-## A load: locked or up (a leaf held halfway by weight isn't saved: the
-## weights aren't).
 func from_dict(d: Dictionary) -> void:
 	locked = bool(d.get("locked", false))
-	door_open = bool(d.get("door_open", false)) or locked
+	crossed = bool(d.get("crossed", false))
+	door_open = bool(d.get("door_open", false))
+	chest_open = bool(d.get("chest_open", false))
 	slams = int(d.get("slams", 0))
-	angle = 0.0 if locked else UP_DEG
-	omega = 0.0
-	if door != null:
-		door.rotation.y = deg_to_rad(-100.0 * m) if door_open else 0.0
+	if hut_door != null:
+		hut_door.rotation.y = deg_to_rad(-100.0) if door_open else 0.0
 	for b in bolts:
-		b.position.z = -leaf_len - 0.15 if locked else -leaf_len + 0.25
+		b.position.z = -leaf_len * 0.5 - 0.3 if locked else -leaf_len * 0.5 + 0.3
+	reset_bridge()
 	if barriers != null:
-		barriers.visible = not locked
+		barriers.visible = false
 		for c in barriers.find_children("*", "CollisionShape3D", true, false):
-			(c as CollisionShape3D).disabled = locked
-	_apply()
+			(c as CollisionShape3D).disabled = true

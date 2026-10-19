@@ -156,7 +156,7 @@ var _swim_y := 0.0
 var _swim_t := 0.0
 var _wet_drip := 0.0
 var _shiver_t := 0.0
-const LEGUP_VELOCITY := 8.8           ## off a crouched partner's back: feet ~1.75 m up (a plain jump: 0.5 m)
+const LEGUP_VELOCITY := 9.2           ## off a crouched partner's back: feet ~1.9 m up (a plain jump: 0.5 m)
 const SWIM := 1.5                     ## m/s
 const WET_S := 40.0
 var _shove := Vector3.ZERO             ## a stagger from being butted, dying away
@@ -499,7 +499,9 @@ func _walk(delta: float) -> void:
 	elif dev.just_pressed("jump") and not map_open and not plan_open and not in_box:
 		var lp := _legup_partner()
 		if lp != null:
-			velocity.y = LEGUP_VELOCITY * f
+			# off their back: higher still if they're crouched on something (a crate)
+			var up := maxf(0.0, lp.global_position.y - global_position.y)
+			velocity.y = sqrt(LEGUP_VELOCITY * LEGUP_VELOCITY + 2.0 * GRAVITY * up) * f
 			lp.boosted(self)
 		else:
 			velocity.y = JUMP_VELOCITY * f
@@ -1689,7 +1691,8 @@ func _legup_partner() -> PlayerRig:
 		if q == self or q.seat != null or not q.crouching or q.swimming or q.knocked_t > 0.0 or not q.is_on_floor():
 			continue
 		var d := q.global_position - global_position
-		if absf(d.y) < 0.4 and Vector2(d.x, d.z).length() < 1.1:
+		# level with you, or up to a crate's height above (crouched on it)
+		if d.y > -0.4 and d.y < 0.75 and Vector2(d.x, d.z).length() < 1.1:
 			return q
 	return null
 

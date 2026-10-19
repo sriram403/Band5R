@@ -1994,7 +1994,6 @@ func t_save_verify() -> void:
 	check(maze != null and maze.chest_open and relay != null and relay.opened and relay.dials == relay.code, "loading restores the opened feed chest and supply box")
 	var line := get_tree().get_first_node_in_group("power_line") as PowerLine
 	check(line != null and not line.hut_powered and line.powered == station().solved, "loading restores the power line to match the water works (powered: %s; the hut never)" % station().solved)
-	check(lift.door_open, "loading keeps the machinery house door open with the leaf locked")
 	for id in ["dock", "lookout", "shed"]:
 		check(boot.world.find_child("Fragment_" + id, true, false) == null, "collected fragment '%s' stays collected" % id)
 	await shot("after_load")
@@ -2489,14 +2488,13 @@ func t_puzzle_resets() -> void:
 	check(not relay.opened and relay.dials == relay.start_dials and relay.snow_left == LookoutRelay.SNOW_CHUNKS, "Puzzles → the lookout boards: the box locked, the dials back, the old snow back on the sign")
 	sta.solve_quietly()
 	lift.from_dict({"locked": true})
-	var moved: BridgeStone = lift.stones[0]
-	moved.global_position = boot.builder.poi["lift_pivot"] + Vector3(0, 0.4, 0)
+	lift.carts[0]["z"] = -5.0
+	lift.gate.angle = 80.0
 	dm.run("puzzle", rows["The lift bridge"])
 	await wait(0.5)
-	check(not lift.locked and absf(lift.angle - LiftBridge.UP_DEG) < 0.1 and not lift.door_open, "Puzzles → the lift bridge: up on its axle, the machinery house barred again")
-	check(moved.global_position.distance_to(moved.get_parent().global_transform * moved.home.origin) < 0.3, "... the stones back where the crew left them")
+	check(not lift.locked and absf(lift.angle - LiftBridge.REST_DEG) < 0.1 and float(lift.carts[0]["z"]) == float(lift.carts[0]["home"]) and not lift.gate.is_open(), "Puzzles → the lift bridge: the seesaw at rest, the carts home, the barrier down")
 	check(sta.solved and line.powered and not line.hut_powered, "... the water works done, the road lamps lit, the hut still dead")
-	check(p1().seat != null and camper().global_position.distance_to(boot.builder.poi["bridge_barrier_near"]) < 40.0, "... both in the van short of the barrier")
+	check(p1().seat != null and camper().global_position.distance_to(boot.builder.poi["van_start"]) < 40.0, "... both in the van short of the gate")
 	dm.run("puzzle", rows["The ghat pace notes"])
 	await wait(1.0)
 	check(not st.flags.has("ghat_glimpse") and not st.flags.has("first_attack"), "Puzzles → the ghat: the glimpse and the first attack to come again")
@@ -4045,18 +4043,17 @@ func t_power() -> void:
 		line.sync()
 
 
-## #5, the lift bridge, the seesaw, with the real controls: P1 (keyboard), P2
-## (pad). No power in the hut; a plain jump doesn't reach the machinery
-## house's hatch, a leg-up off P2 does; P1 unbars the door from inside; the
-## lock won't throw with the leaf up; stones by the axle do nothing; one at
-## the tip with a stone holds nothing; P2 walking out with a second stone
-## brings it down gently; both stones at the tip; P2 walks off (the leaf
-## stays down) and throws the lock; the barriers go and the van drives across.
+## #5 round 2, the van's seesaw: the gate (a plain jump doesn't clear the
+## fence, the leg-up does; the winch slips back when let go; P2 holds it while
+## P1 drives through), the carts (heavier rolls slower), and the crossing kept
+## level step by step. In this test the carts are put where they should be by
+## the test (it proves the numbers and the van on the tipping leaf); the walk
+## `puzzle5` pushes them for real.
 func t_bridge() -> void:
 	var b: LevelBuilder = boot.builder
-	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+	var lift := lb()
 	var line := get_tree().get_first_node_in_group("power_line") as PowerLine
-	check(lift != null and line != null, "the bridge has a lift leaf")
+	check(lift != null and lift.gate != null and line != null, "the bridge has its seesaw and its gate")
 	if lift == null:
 		return
 	var stn := station()
@@ -4065,184 +4062,96 @@ func t_bridge() -> void:
 	line.sync()
 	lift.reset()
 	boot.story.flags.erase("bridge_down")
-	boot.story.index = boot.story.index_of("to_bridge")
-	await van_to(b.poi["bridge_barrier_near"])      # you drive here: "carry on to the old bridge" is done
-	check(absf(lift.angle - LiftBridge.UP_DEG) < 0.1 and not lift.door_open and not lift.locked, "the leaf rests up on its axle, the machinery house barred")
+	boot.story.flags.erase("bridge_locked")
+	boot.story.index = boot.story.index_of("bridge")
 	boot._on_joy_changed(0, true)      # P2 on a pad
-	await wait(0.3)
+	var c := camper()
+	await van_at_start()
+	check(absf(lift.angle - LiftBridge.REST_DEG) < 0.1 and not lift.gate.is_open() and lift.carts.size() == 3, "the seesaw rests near end down, the barrier is down, three carts on the siding")
 	var p := p1()
 	var q := p2()
-	var road := b.network.road("pump_house_road")
-	var view_i := b.bridge_span.x - 16
-	await place_player(p, road.point(view_i) + road.right(view_i) * 2.0 + Vector3(0, 0.5, 0), 0.0)
-	await look_at_point(p, b.poi["lift_pivot"] + Vector3(0, 3.0, 0))
-	await place_player(q, road.point(view_i + 5) - road.right(view_i) * 3.0 + Vector3(0, 0.5, 0), 0.0)
-	await look_at_point(q, b.poi["lift_pivot"] + Vector3(0, 2.0, 0))
-	await wait(0.5)
-	check(boot.story.current()["id"] == "bridge", "at the bridge the objective is: get the lift bridge down")
-	await shot("bridge_up")
-	# the hut: dead
-	var lower_lever := lift.find_child("LOWERLever", true, false) as Node3D
-	var panel: Vector3 = b.poi["bridge_panel"]
-	var hut: Vector3 = b.poi["bridge_hut"]
-	var back := hut - panel
-	back.y = 0.0
-	await place_player(p, panel + back.normalized() * 0.9 + Vector3(0, 0.3, 0), 0.0)
-	await look_at_point(p, lower_lever.global_position)
-	await wait(0.3)
-	log_line("at the panel: '%s'" % p.prompt_text)
-	check(p.prompt_text.contains("No power") and lift.panel_label.text == "NO POWER", "the hut's levers are dead: no power")
-	# the machinery house: barred; a plain jump at the hatch falls short
-	var hatch: Vector3 = b.poi["machinery_hatch"]
-	var out_x := (lift.global_transform.basis.x * lift.m).normalized()      # towards the house
-	await place_player(p, b.poi["machinery_door"] + Vector3(0, 0.4, 0), 0.0)
-	await look_at_point(p, lift.door.global_position + Vector3(0, 1.1, 0) - lift.global_transform.basis.z * 0.8)
-	await wait(0.3)
-	log_line("at the door outside: '%s'" % p.prompt_text)
-	check(p.prompt_text.contains("Barred"), "the machinery house door is barred from the inside")
-	await place_player(p, hatch - out_x * 0.4 + Vector3(0, 0.4, 0), 0.0)
-	await look_at_point(p, hatch + out_x * 2.0 + Vector3(0, 2.0, 0))
+	await place_player(p, gate_at(1.5, 0.0, 6.0) + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(p, b.poi["lift_mid"] + Vector3(0, 1.5, 0))
 	await wait(0.4)
-	key(KEY_W, true)
-	await tap(KEY_SPACE)
+	await shot("bridge_gate")
+	# a plain jump at the fence: back where you started
+	var spot_out := gate_at(7.6, 0.0, 1.5)
+	await place_player(q, spot_out + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(q, gate_at(7.6, 1.0, -3.0))
+	pad_axis(JOY_AXIS_LEFT_Y, -1.0)
+	await wait(0.2)
+	pad_button(JOY_BUTTON_A, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_A, false)
 	await wait(1.2)
-	key(KEY_W, false)
-	await wait(0.3)
-	check(not lift._inside_house(p), "a plain jump doesn't reach the hatch")
-	# the leg-up: P2 crouches under the hatch, P1 jumps off their back
-	await place_player(q, hatch + Vector3(0, 0.4, 0), 0.0)
-	await look_at_point(q, hatch + out_x * 2.0 + Vector3(0, 1.0, 0))
-	pad_button(JOY_BUTTON_B, true)
+	pad_axis(JOY_AXIS_LEFT_Y, 0.0)
+	check(gate_local(q).z > 0.0, "a plain jump doesn't clear the fence (P2 still outside)")
+	# the leg-up: P1 crouches at the fence, P2 jumps up off their back
+	await place_player(p, gate_at(7.6, 0.0, 0.55) + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(p, gate_at(7.6, 1.0, -3.0))
+	key(KEY_CTRL, true)
+	await place_player(q, gate_at(7.6, 0.0, 1.45) + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(q, gate_at(7.6, 2.0, -3.0))
 	await wait(0.5)
-	await place_player(p, hatch - out_x * 0.85 + Vector3(0, 0.4, 0), 0.0)
-	await look_at_point(p, hatch + out_x * 2.0 + Vector3(0, 2.2, 0))
-	await wait(0.4)
-	log_line("behind the crouched P2: '%s'" % p.prompt_text)
-	check(p.prompt_text.contains("Leg-up off P2"), "behind P2 crouched: [Space] Leg-up off P2's back")
-	await shot("bridge_legup_before")
-	key(KEY_W, true)
-	await tap(KEY_SPACE)
-	var t0 := Time.get_ticks_msec()
-	while not lift._inside_house(p) and Time.get_ticks_msec() - t0 < 3000:
-		await physics_frames(1)
-	await wait(0.8)
-	key(KEY_W, false)
-	pad_button(JOY_BUTTON_B, false)
-	log_line("after the leg-up: P1 at %s, inside %s" % [p.global_position, lift._inside_house(p)])
-	check(lift._inside_house(p), "the leg-up: P1 is in through the hatch")
-	await shot("bridge_inside")
-	# unbar the door from inside
-	var walked := await walk_to(p, b.poi["machinery_in"], "to the door inside", 0.5, 10.0)
-	await look_at_point(p, lift.door.global_position + Vector3(0, 1.1, 0) - lift.global_transform.basis.z * 0.8)
+	log_line("P2 behind the crouched P1: '%s'" % q.prompt_text)
+	check(q.prompt_text.contains("Leg-up off P1"), "behind P1 crouched: [A] Leg-up off P1's back")
+	pad_axis(JOY_AXIS_LEFT_Y, -1.0)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_A, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_A, false)
+	await wait(1.4)
+	pad_axis(JOY_AXIS_LEFT_Y, 0.0)
+	key(KEY_CTRL, false)
+	log_line("after the leg-up P2 is %.2f m past the fence line" % -gate_local(q).z)
+	check(gate_local(q).z < -0.3, "the leg-up: P2 is over the fence")
+	await shot("bridge_legup")
+	# the winch: up while held, it slips back when let go
+	await pad_walk_to(q, b.poi["gate_winch"], 0.5, 15.0)
+	await look_at_point(q, lift.gate.find_child("WinchArea", true, false).global_position)
 	await wait(0.3)
-	log_line("at the door inside (walked %s): '%s'" % [walked, p.prompt_text])
-	await tap(KEY_E)
-	await wait(1.0)
-	check(lift.door_open, "from inside, P1 lifts the bar and opens the door")
-	# the lock won't go with the leaf up
-	await walk_to(p, b.poi["machinery_mid"], "round the pit", 0.5, 10.0)
-	await walk_to(p, b.poi["lock_lever"], "to the lock lever", 0.5, 10.0)
-	var lock_area := lift.find_child("LockArea", true, false) as Node3D
-	await look_at_point(p, lock_area.global_position)
-	await wait(0.3)
-	log_line("at the lock: '%s'" % p.prompt_text)
-	check(p.prompt_text.contains("isn't down"), "the lock won't throw with the leaf up")
-	await shot("bridge_lock_up")
-	# the lure: a stone from the crew's heap dropped on the leaf by the axle
-	var heap: Array[BridgeStone] = []
-	for s in lift.stones:
-		if s.global_position.distance_to(b.poi["stone_heap"]) < 2.5:
-			heap.append(s)
-	check(heap.size() >= 6, "the crew's heap of stones by the axle (%d)" % heap.size())
-	await place_player(p, b.poi["stone_heap"] - lift.global_transform.basis.x * lift.m * -1.2 + Vector3(0, 0.4, 0), 0.0)
-	var got := await take_stone(p, heap)
-	check(got != null, "P1 picks up a stone (it's heavy)")
-	await walk_to(p, leaf_at(lift, 1.2, 0.0), "onto the leaf by the axle", 0.4, 10.0)
-	await tap(KEY_E)
-	await wait(1.5)
-	await walk_to(p, b.poi["stone_heap"], "back off the leaf", 0.8, 10.0)
-	await wait(1.0)
-	log_line("a stone at the axle: pull %.0f kg m, leaf %.1f deg" % [lift.pull, lift.angle])
-	check(absf(lift.angle - LiftBridge.UP_DEG) < 0.1, "a stone by the axle does nothing")
-	# one player at the tip with a stone: nothing
-	got = await take_stone(p, heap)
-	await walk_to(p, leaf_at(lift, 8.6, -1.0), "up the leaf to the tip", 0.4, 20.0)
-	await tap(KEY_E)
+	log_line("P2 at the winch: '%s'" % q.prompt_text)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(3.4)
+	check(lift.gate.is_open(), "P2 winds the barrier up (%.0f deg)" % lift.gate.angle)
+	pad_button(JOY_BUTTON_X, false)
 	await wait(2.0)
-	log_line("P1 + a stone at the tip: pull %.0f kg m, leaf %.1f deg" % [lift.pull, lift.angle])
-	check(absf(lift.angle - LiftBridge.UP_DEG) < 0.1, "one of you at the tip, even with a stone, isn't enough")
-	await shot("bridge_one_at_tip")
-	# P2 walks out with a second stone and stops halfway: down it comes, gently
-	await place_player(q, b.poi["stone_heap"] - lift.global_transform.basis.x * lift.m * -1.2 + Vector3(0, 0.4, 0), 0.0)
-	var got2 := await pad_take_stone(q, heap)
-	check(got2 != null, "P2 picks up a stone")
-	await pad_walk_to(q, leaf_at(lift, 5.0, 1.0), 0.4, 20.0)
-	t0 = Time.get_ticks_msec()
-	var tr := 0
-	while lift.angle > 0.05 and Time.get_ticks_msec() - t0 < 20000:
-		await physics_frames(1)
-		tr += 1
-		if tr % 30 == 0:
-			log_line("  leaf %.2f deg, w %.3f, pull %.0f; P1 d %.1f, P2 d %.1f, P2 held %s" % [lift.angle, lift.omega, lift.pull,
-				lift._on_leaf(lift.leaf.global_transform.affine_inverse() * p.global_position, 1.4), lift._on_leaf(lift.leaf.global_transform.affine_inverse() * q.global_position, 1.4), q.held != null])
-	await wait(0.5)
-	log_line("P2 + stone 5 m out: down in %.1f s, slams %d" % [(Time.get_ticks_msec() - t0) / 1000.0, lift.slams])
-	check(lift.angle < 0.1 and lift.slams == 0, "with P2 out on it too, the leaf comes down onto the far bank, gently")
-	await shot("bridge_down_unlocked")
-	# P2's stone to the tip; then P2 walks off: two stones and P1 keep it down
-	await pad_walk_to(q, leaf_at(lift, 8.3, 1.0), 0.4, 15.0)
+	check(lift.gate.angle < 1.0, "let go, the ratchet slips: the barrier comes back down")
+	# P2 holds it up; P1 drives the van through
 	pad_button(JOY_BUTTON_X, true)
-	await wait(0.1)
+	await wait(3.4)
+	await seat_p1_driver_at(c)
+	var road := b.network.road("pump_house_road")
+	var through := await creep_van(road, gate_at(0, 0, -7.0), 12.0)
 	pad_button(JOY_BUTTON_X, false)
-	await wait(1.0)
-	await pad_walk_to(q, b.poi["machinery_door"], 0.6, 25.0)
+	check(through and gate_local_v(c.global_position).z < -5.0, "with the barrier held up the van drives through the gate")
 	await wait(1.5)
-	log_line("P2 off the leaf: pull %.0f kg m, leaf %.1f deg; P1 %.1f m out; stones out: %s" % [lift.pull, lift.angle,
-		lift._on_leaf(lift.leaf.global_transform.affine_inverse() * p.global_position, 1.4), stones_out(lift)])
-	check(lift.angle < 0.1, "P2 walks off: P1 and two stones at the tip keep it down")
-	await pad_walk_to(q, b.poi["machinery_in"], 0.5, 10.0)
-	await pad_walk_to(q, b.poi["machinery_mid"], 0.5, 10.0)
-	await pad_walk_to(q, b.poi["lock_lever"], 0.5, 15.0)
-	await look_at_point(q, lock_area.global_position)
-	await wait(0.3)
-	log_line("P2 at the lock: '%s'" % q.prompt_text)
-	pad_button(JOY_BUTTON_X, true)
-	await wait(0.1)
-	pad_button(JOY_BUTTON_X, false)
-	await wait(1.0)
-	check(lift.locked and boot.story.flags.has("bridge_down"), "P2 throws the lock: the bolts go home")
-	var bar_shapes := b.bridge_barriers.find_children("*", "CollisionShape3D", true, false)
-	check(not b.bridge_barriers.visible and bar_shapes.all(func(c): return c.disabled), "the barriers are gone")
-	await wait(0.6)
-	check(boot.story.current()["id"] == "cross", "the objective moves on to: cross the river")
-	await place_player(q, b.poi["machinery_in"] + Vector3(0, 0.4, 0), 0.0)
-	await place_player(p, road.point(view_i) + road.right(view_i) * 2.0 + Vector3(0, 0.5, 0), 0.0)
-	await look_at_point(p, b.poi["bridge_far"])
-	await wait(0.5)
-	await shot("bridge_down")
-	# the van drives across (over whatever was left on the leaf)
-	await van_to(road.point(b.bridge_span.x - 22))
-	var c := camper()
-	c.fuel = 40.0
-	await seat_p1_driver()
-	if not c.engine_on:
-		c.toggle_engine()
-	var ad := AutoDriver.new(self, road, c)
-	var far: Vector3 = b.poi["bridge_far"]
-	var lowest := INF
-	var tt := 0.0
-	while tt < 30.0 and Vector2(c.global_position.x - far.x, c.global_position.z - far.z).length() > 4.0:
-		await get_tree().physics_frame
-		tt += 1.0 / 60.0
-		ad.step(20.0)
-		lowest = minf(lowest, c.global_position.y)
-	ad.release()
-	key(KEY_S, true)
-	await wait(1.5)
-	key(KEY_S, false)
-	log_line("van reached the far bank in %.1f s (lowest %.2f, deck %.2f)" % [tt, lowest, b.poi["lift_pivot"].y])
-	check(Vector2(c.global_position.x - far.x, c.global_position.z - far.z).length() < 6.0 and lowest > b.poi["lift_pivot"].y - 1.5, "the van drives across the lowered leaf")
-	await tap(KEY_SPACE)
+	# the carts: a heavy one rolls slower
+	p.force_exit = true
+	await physics_frames(3)
+	var moved := []
+	for k in [0, 2]:
+		var cart: Dictionary = lift.carts[k]
+		var node := cart["node"] as Node3D
+		await place_player(q, node.global_position + lift.global_transform.basis.z * 1.3 + Vector3(0, 0.4, 0), 0.0)
+		await look_at_point(q, node.global_position + Vector3(0, 0.6, 0))
+		await wait(0.3)
+		log_line("P2 at cart %d: '%s'" % [k, q.prompt_text])
+		var z0 := float(cart["z"])
+		pad_button(JOY_BUTTON_X, true)
+		await wait(2.0)
+		pad_button(JOY_BUTTON_X, false)
+		moved.append(z0 - float(cart["z"]))
+	log_line("2 s of pushing: the %.0f kg cart %.2f m, the %.0f kg cart %.2f m" % [lift.carts[0]["kg"], moved[0], lift.carts[2]["kg"], moved[1]])
+	check(moved[0] > 0.5 and moved[1] > moved[0] * 1.4, "pushed, the carts roll along the rail; the heavy one slower")
+	# the crossing, kept level (the carts placed by the test)
+	await place_player(q, gate_at(-6.0, 0.0, -4.0) + Vector3(0, 0.4, 0), 0.0)
+	await seat_p1_driver_at(c)
+	var ok := await cross_balanced(lift, road)
+	log_line("crossing: crossed %s, slams %d, failing %s, flat %s" % [lift.crossed, lift.slams, lift.failing, c.tyre_flat])
+	check(ok and lift.crossed and lift.slams == 0 and not c.tyre_flat, "kept level, the van creeps over the seesaw and off onto the far bank")
+	check(boot.story.flags.has("bridge_down"), "... and the objective moves on")
+	await shot("bridge_crossed")
 	p.force_exit = true
 	await physics_frames(3)
 	if not was_solved:
@@ -4250,140 +4159,341 @@ func t_bridge() -> void:
 		line.sync()
 
 
-## #5's mistakes: too much weight slams it (you're knocked flat); the leaf
-## rising under one left alone; off the tip into the river (swim to the near
-## bank, soaked); a stone off the end sinks; the leg-up only off a crouched
-## partner.
+## #5 round 2's mistakes and the hut: no blocks, the van past the middle
+## tips the far end into the pit (start again at the gate); the van shoving
+## a cart is thrown back with its cargo flying; all blocks at the near end,
+## the van drops off the raised end and lands hard (a tyre bursts); on foot
+## over the seesaw to the hut: the lock can't be reached through the window
+## from outside, a leg-up alone doesn't reach the window, crate + leg-up does;
+## inside: the crate (fuel, coolant, tyre), the door, the lock only level.
 func t_bridge_mistakes() -> void:
 	var b: LevelBuilder = boot.builder
-	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+	var lift := lb()
 	if lift == null:
-		check(false, "the bridge has a lift leaf")
+		check(false, "the bridge has its seesaw")
 		return
-	lift.reset()
-	boot.story.flags.erase("bridge_down")
-	boot.story.index = boot.story.index_of("bridge")
+	boot._on_joy_changed(0, true)
+	var c := camper()
+	var road := b.network.road("pump_house_road")
 	var p := p1()
 	var q := p2()
-	await wait(0.3)
-	# both at the tip with a stone: it slams, you're thrown flat
-	var s0: BridgeStone = lift.stones[0]
-	await place_player(p, leaf_at(lift, 9.3, -1.0) + Vector3(0, 0.3, 0), 0.0)
-	await place_player(q, leaf_at(lift, 9.3, 1.0) + Vector3(0, 0.3, 0), 0.0)
-	s0.global_position = leaf_at(lift, 9.0, 0.0) + Vector3(0, 0.3, 0)
-	var t0 := Time.get_ticks_msec()
-	var knocked := false
-	while lift.slams == 0 and Time.get_ticks_msec() - t0 < 15000:
-		await physics_frames(1)
-	await physics_frames(2)
-	knocked = p.knocked_t > 0.0 or q.knocked_t > 0.0
-	log_line("both + a stone: slams %d in %.1f s, knocked %s" % [lift.slams, (Time.get_ticks_msec() - t0) / 1000.0, knocked])
-	check(lift.slams >= 1 and knocked, "both of you and a stone at the tip: the leaf slams down and throws you flat")
-	await wait(3.0)
-	# P2 off it: P1 alone can't hold it; it rises
-	await place_player(q, b.poi["stone_heap"] + Vector3(0, 0.4, 0), 0.0)
-	s0.put_home()
-	t0 = Time.get_ticks_msec()
-	while lift.angle < LiftBridge.UP_DEG - 0.1 and Time.get_ticks_msec() - t0 < 20000:
-		await physics_frames(1)
-	log_line("P1 alone on the leaf: back up in %.1f s" % ((Time.get_ticks_msec() - t0) / 1000.0))
-	check(absf(lift.angle - LiftBridge.UP_DEG) < 0.2, "left alone at the tip, P1 rides the leaf back up")
-	# off the open tip into the river
-	await wait(0.5)
-	# over the kerb off the side of the raised leaf (off the tip you'd land
-	# on the far deck; the kerbs stop you just walking off)
-	await place_player(p, leaf_at(lift, 6.0, -lift.deck_w * 0.5 + 1.2) + Vector3(0, 0.4, 0), 0.0)
-	await look_at_point(p, lift.leaf.global_transform * Vector3(-8.0, 0.0, -6.0))
-	await wait(0.3)
-	key(KEY_W, true)
-	await wait(0.25)
-	await tap(KEY_SPACE)
-	t0 = Time.get_ticks_msec()
-	while not p.swimming and Time.get_ticks_msec() - t0 < 6000:
-		await physics_frames(1)
-	key(KEY_W, false)
-	check(p.swimming, "walking off the raised tip: SPLASH, into the river")
-	await shot("bridge_river")
-	t0 = Time.get_ticks_msec()
-	while p.swimming and Time.get_ticks_msec() - t0 < 45000:
-		await physics_frames(1)
-	log_line("swam out in %.1f s at %s (bank %s), wet %.0f s" % [(Time.get_ticks_msec() - t0) / 1000.0, p.global_position, b.poi["bridge_bank"], p.wet_t])
-	check(not p.swimming and p.global_position.distance_to(b.poi["bridge_bank"]) < 1.5 and p.wet_t > 0.0, "P1 swims to the near bank and climbs out soaked")
-	await shot("bridge_bank")
-	# a stone off the end sinks for good
-	var s1: BridgeStone = lift.stones[1]
-	s1.global_position = lift.leaf.global_transform * Vector3(0, 0.5, -lift.leaf_len - 1.0)
-	s1.sleeping = false
-	t0 = Time.get_ticks_msec()
-	while not s1.lost and Time.get_ticks_msec() - t0 < 6000:
-		await physics_frames(1)
-	check(s1.lost, "a stone that goes off the end sinks in the river")
-	# eight stones heaped by the axle on the leaf: still nothing
-	for k in 8:
-		var s: BridgeStone = lift.stones[2 + k]
-		s.global_position = leaf_at(lift, 0.6 + (k / 4) * 0.6, -2.0 + (k % 4) * 1.2) + Vector3(0, 0.3, 0)
-	await wait(2.0)
-	log_line("8 stones by the axle: pull %.0f kg m, leaf %.1f deg" % [lift.pull, lift.angle])
-	check(absf(lift.angle - LiftBridge.UP_DEG) < 0.1, "eight stones by the axle: the leaf doesn't move")
+	# 1. no blocks: into the pit, start again at the gate
 	lift.reset()
-
-
-## The distances out of every stone lying on the leaf (for the logs).
-func stones_out(lift: LiftBridge) -> String:
-	var inv := lift.leaf.global_transform.affine_inverse()
-	var out := []
-	for st in lift.stones:
-		var d := lift._on_leaf(inv * st.global_position, 0.8)
-		if d >= 0.0:
-			out.append("%.1f%s" % [d, "r" if st.riding else ""])
-	return ", ".join(out)
-
-
-## Which stone a person would pick: near, and off the top of a heap (the
-## bottom ones are hidden under the others).
-func stone_score(st: BridgeStone, from: Vector3) -> float:
-	return st.global_position.distance_to(from) - st.global_position.y * 3.0
-
-
-## A point on the leaf `d` m out from the axle, `x` m across (as it lies now).
-func leaf_at(lift: LiftBridge, d: float, x: float) -> Vector3:
-	return lift.leaf.global_transform * Vector3(x, 0.1, -d)
-
-
-## P1 picks up the nearest stone in `pile` with E (keyboard).
-func take_stone(p: PlayerRig, pile: Array[BridgeStone]) -> BridgeStone:
-	var best: BridgeStone = null
-	for s in pile:
-		if not s.lost and not s.riding and s.holders.is_empty() and (best == null or stone_score(s, p.global_position) < stone_score(best, p.global_position)):
-			best = s
-	if best == null:
-		return null
-	await walk_to(p, best.global_position, "to a stone", 1.1, 8.0)
-	await look_at_point(p, best.global_position)
+	lift.gate.angle = 80.0
+	lift.gate._apply()
+	await van_at(gate_at(0, 0, -8.0))
+	await seat_p1_driver_at(c)
+	var t0 := Time.get_ticks_msec()
+	await creep_van(road, lift.global_transform * Vector3(0, 0, -lift.leaf_len * 0.5 - 2.5), 30.0)
+	while not lift.failing and Time.get_ticks_msec() - t0 < 30000:
+		await physics_frames(1)
+	log_line("no blocks: angle %.1f, failing %s" % [lift.angle, lift.failing])
+	check(lift.failing, "no blocks: past the middle the far end drops and the van goes into the pit")
+	await shot("bridge_pit")
+	while lift.failing and Time.get_ticks_msec() - t0 < 40000:
+		await physics_frames(1)
+	await wait(1.0)
+	log_line("after the pit: van %.1f m from its start, P1 seat %s, leaf %.1f deg" % [c.global_position.distance_to(lift.van_start.origin), p.seat != null, lift.angle])
+	check(c.global_position.distance_to(lift.van_start.origin) < 3.0 and absf(lift.angle - LiftBridge.REST_DEG) < 0.1 and not lift.gate.is_open(), "... and you start again outside the gate, the bridge and the barrier as they were")
+	# 2. the van shoves a cart: thrown back, the cargo flies
+	lift.gate.angle = 80.0
+	lift.gate._apply()
+	var can := FuelCan.new()
+	can.name = "ShoveTestCan"
+	boot.world.add_child(can)
+	can.stow(c.storage_slots[0])
+	await van_at(gate_at(-2.2, 0, -4.0))
+	await seat_p1_driver_at(c)
+	var cart: Dictionary = lift.carts[0]
+	cart["z"] = 1.0
+	lift._apply()
+	t0 = Time.get_ticks_msec()
+	var back_speed := 0.0
+	key(KEY_W, true)
+	var fwd := -lift.global_transform.basis.z
+	while not bool(cart["lost"]) and Time.get_ticks_msec() - t0 < 10000:
+		await physics_frames(1)
+		# steer at the cart
+		var to := (cart["node"] as Node3D).global_position - c.global_position
+		var side := lift.global_transform.basis.x.dot(to)
+		key(KEY_A, side < -0.3)
+		key(KEY_D, side > 0.3)
+	key(KEY_W, false)
+	key(KEY_A, false)
+	key(KEY_D, false)
+	for i in 30:
+		await physics_frames(1)
+		back_speed = maxf(back_speed, -c.linear_velocity.dot(fwd))
+	log_line("the shove: cart lost %s, van thrown back at %.1f m/s, can stowed %s" % [cart["lost"], back_speed, can.stowed_in != null])
+	check(bool(cart["lost"]) and back_speed > 4.0 and can.stowed_in == null, "the van hits a cart: it goes over the side, the van is thrown back, the rack's can flies off")
+	await shot("bridge_shove")
+	t0 = Time.get_ticks_msec()
+	while (not lift.failing) and Time.get_ticks_msec() - t0 < 6000:
+		await physics_frames(1)
+	while lift.failing and Time.get_ticks_msec() - t0 < 12000:
+		await physics_frames(1)
+	await wait(1.0)
+	check(not bool(cart["lost"]) and c.global_position.distance_to(lift.van_start.origin) < 3.0, "... then back at the gate, the cart back on its rail")
+	if is_instance_valid(can):
+		check(can.global_position.distance_to(lift.van_start.origin) > 8.0, "... and the can lies where it fell (%.0f m from the van)" % can.global_position.distance_to(lift.van_start.origin))
+		can.queue_free()
+	# 3. all blocks at the near end: it never tips; the van drops off the raised far end
+	lift.gate.angle = 80.0
+	lift.gate._apply()
+	# carts 0 and 2 share a rail: 1.4 m apart
+	lift.carts[0]["z"] = -0.8
+	lift.carts[1]["z"] = -0.8
+	lift.carts[2]["z"] = -2.2
+	lift._apply()
+	c.repair_all()
+	await van_at(gate_at(0, 0, -8.0))
+	await seat_p1_driver_at(c)
+	await creep_van(road, lift.global_transform * Vector3(0, 0, -lift.leaf_len - 8.0), 40.0, 9.0)
+	await wait(1.5)
+	log_line("near-heavy crossing: angle %.1f, crossed %s, flat %s" % [lift.angle, lift.crossed, c.tyre_flat])
+	check(lift.crossed and c.tyre_flat, "all blocks on the near half: it stays up, the van drops off the raised end and a tyre bursts")
+	c.repair_all()
+	p.force_exit = true
+	await physics_frames(3)
+	# 4. the hut: on foot over the seesaw, the window, the crate, the lock
+	lift.reset()
+	var hut := lift.hut
+	var ws := signf((hut.global_transform.affine_inverse() * lift.global_transform * Vector3(0, 0, -lift.leaf_len * 0.5)).x)
+	var under := hut.global_transform * Vector3(ws * 2.15, 0.1, 0.0)
+	var window_look := hut.global_transform * Vector3(ws * 1.8, 3.0, 0.0)
+	await place_player(q, under + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(q, hut.global_transform * Vector3(-ws * 1.3, 1.0, 0.4))
 	await wait(0.3)
-	log_line("at the stone: '%s'" % p.prompt_text)
+	pad_button(JOY_BUTTON_A, true)
+	await wait(0.15)
+	pad_button(JOY_BUTTON_A, false)
+	var seen_lock := false
+	for i in 40:
+		await physics_frames(1)
+		seen_lock = seen_lock or q.prompt_text.contains("lock")
+	check(not seen_lock, "jumping at the window from outside, the lock inside can't be used")
+	# a leg-up alone falls short of the sill
+	await place_player(p, under + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(p, window_look)
+	key(KEY_CTRL, true)
+	var behind := hut.global_transform * Vector3(ws * 3.05, 0.1, 0.0)
+	await place_player(q, behind + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(q, window_look)
+	await wait(0.4)
+	pad_axis(JOY_AXIS_LEFT_Y, -1.0)
+	pad_button(JOY_BUTTON_A, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_A, false)
+	await wait(1.4)
+	pad_axis(JOY_AXIS_LEFT_Y, 0.0)
+	check(not lift._in_hut(q), "a leg-up alone doesn't reach the high window")
+	key(KEY_CTRL, false)
+	# P1 brings the crate under the window and crouches on it
+	var crate := hut.find_child("HutCrate", true, false) as Crate
+	await place_player(p, crate.global_position + (crate.global_position - under).normalized() * 1.0 + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(p, crate.global_position + Vector3(0, 0.25, 0))
+	await wait(0.3)
 	await tap(KEY_E)
+	await wait(0.5)
+	await walk_to(p, under, "under the window with the crate", 0.5, 10.0)
+	await look_at_point(p, under + Vector3(0, -0.5, 0))
+	await tap(KEY_E)
+	await wait(1.0)
+	await place_player(p, crate.global_position + Vector3(0, 0.9, 0), 0.0)
+	await look_at_point(p, window_look)
 	await wait(0.6)
-	return best if p.held == best else null
-
-
-## P2 picks up the nearest stone in `pile` with X (pad).
-func pad_take_stone(q: PlayerRig, pile: Array[BridgeStone]) -> BridgeStone:
-	var best: BridgeStone = null
-	for s in pile:
-		if not s.lost and not s.riding and s.holders.is_empty() and (best == null or stone_score(s, q.global_position) < stone_score(best, q.global_position)):
-			best = s
-	if best == null:
-		return null
-	await pad_walk_to(q, best.global_position, 1.1, 8.0)
-	await look_at_point(q, best.global_position)
+	key(KEY_CTRL, true)
+	await place_player(q, behind + Vector3(0, 0.4, 0), 0.0)
+	await look_at_point(q, window_look)
+	await wait(0.4)
+	log_line("crate at %.2f m from the wall's foot, P1 %.2f m up; P2: '%s'" % [crate.global_position.distance_to(under), p.global_position.y - under.y, q.prompt_text])
+	pad_axis(JOY_AXIS_LEFT_Y, -1.0)
+	pad_button(JOY_BUTTON_A, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_A, false)
+	t0 = Time.get_ticks_msec()
+	while not lift._in_hut(q) and Time.get_ticks_msec() - t0 < 3000:
+		await physics_frames(1)
+	await wait(0.8)
+	pad_axis(JOY_AXIS_LEFT_Y, 0.0)
+	key(KEY_CTRL, false)
+	check(lift._in_hut(q), "crate + leg-up: P2 is in through the window")
+	await shot("bridge_hut_in")
+	# inside: the crate's reward, the door, the lock refused while not level
+	var chest := hut.find_child("ChestArea", true, false) as Node3D
+	await look_at_point(q, chest.global_position)
 	await wait(0.3)
-	log_line("P2 at the stone: '%s'" % q.prompt_text)
 	pad_button(JOY_BUTTON_X, true)
 	await wait(0.1)
 	pad_button(JOY_BUTTON_X, false)
+	await wait(0.8)
+	var rewards := 0
+	for k in 3:
+		if boot.world.find_child("HutReward%d" % k, true, false) != null:
+			rewards += 1
+	check(lift.chest_open and rewards == 3, "the crate: a fuel can, a coolant jug and a spare tyre")
+	var lock_area := hut.find_child("LockArea", true, false) as Node3D
+	await look_at_point(q, lock_area.global_position)
+	await wait(0.3)
+	log_line("at the lock, not level: '%s'" % q.prompt_text)
+	check(q.prompt_text.contains("isn't level"), "the lock refuses while the bridge isn't level")
+	# made level and still (arranged): the lock goes
+	lift.angle = 0.0
+	lift.omega = 0.0
+	lift.carts[0]["z"] = -9.0
+	lift.carts[1]["z"] = -7.5
+	lift._apply()
+	await wait(0.5)
+	log_line("level: pull %.0f, angle %.2f" % [lift.pull, lift.angle])
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.8)
+	check(lift.locked and boot.story.flags.has("bridge_locked"), "level and still, P2 throws the lock: the bridge is bolted level")
+	for k in 3:
+		var it: Node = boot.world.find_child("HutReward%d" % k, true, false)
+		if it != null:
+			it.queue_free()
+	lift.reset()
+
+
+# --- #5 round 2 helpers --------------------------------------------------------
+
+func lb() -> LiftBridge:
+	return get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+
+
+## A point in the gate's frame (-Z towards the bridge), on the ground.
+func gate_at(x: float, y: float, z: float) -> Vector3:
+	var g := lb().gate
+	var w := g.global_transform * Vector3(x, 0, z)
+	return Vector3(w.x, Landscape.ground(w.x, w.z) + y, w.z)
+
+
+func gate_local(p: Node3D) -> Vector3:
+	return lb().gate.global_transform.affine_inverse() * p.global_position
+
+
+func gate_local_v(v: Vector3) -> Vector3:
+	return lb().gate.global_transform.affine_inverse() * v
+
+
+## The van at its restart spot outside the gate, parked, nobody in.
+func van_at_start() -> void:
+	var c := camper()
+	for n in boot.players:
+		if (n as PlayerRig).seat != null:
+			(n as PlayerRig).force_exit = true
+	await physics_frames(3)
+	c.linear_velocity = Vector3.ZERO
+	c.angular_velocity = Vector3.ZERO
+	c.parking_brake = true
+	c.global_transform = lb().van_start
+	c.reset_physics_interpolation()
+	c.fuel = 40.0
+	await physics_frames(30)
+
+
+## The van parked on the road at `at`, facing the bridge.
+func van_at(at: Vector3) -> void:
+	var c := camper()
+	for n in boot.players:
+		if (n as PlayerRig).seat != null:
+			(n as PlayerRig).force_exit = true
+	await physics_frames(3)
+	c.linear_velocity = Vector3.ZERO
+	c.angular_velocity = Vector3.ZERO
+	c.parking_brake = true
+	c.global_transform = Transform3D(lb().gate.global_transform.basis, at + Vector3.UP * 0.9)
+	c.reset_physics_interpolation()
+	c.fuel = 40.0
+	await physics_frames(30)
+
+
+func seat_p1_driver_at(c: Camper) -> void:
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
+	c.parking_brake = false
+
+
+## P1 drives slowly along the road until the van is past `to` (along the
+## road's direction); stops with the handbrake. False if it got stuck.
+func creep_van(road: Route, to: Vector3, max_s: float, kmh := 6.0) -> bool:
+	var c := camper()
+	var ad := AutoDriver.new(self, road, c)
+	var t := 0.0
+	var fwd := -lb().global_transform.basis.z
+	var ok := false
+	while t < max_s:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		if (c.global_position - to).dot(fwd) > 0.0:
+			ok = true
+			break
+		if lb().failing:
+			break
+		ad.step(kmh)
+	ad.release()
+	key(KEY_S, true)
 	await wait(0.6)
-	return best if q.held == best else null
+	key(KEY_S, false)
+	c.parking_brake = true
+	return ok
+
+
+## The van creeps over the seesaw while the carts are put where they keep it
+## level (the test's arranged balance): before the leaf leaves its rest,
+## enough pull to tip it down; near level, enough to stop it. Returns true
+## when the van is over without a fall.
+func cross_balanced(lift: LiftBridge, road: Route) -> bool:
+	var c := camper()
+	var ad := AutoDriver.new(self, road, c)
+	var t := 0.0
+	var total := 0.0
+	for cart in lift.carts:
+		total += float(cart["kg"])
+	var fwd := -lift.global_transform.basis.z
+	var far_end := lift.global_transform * Vector3(0, 0, -lift.leaf_len - 6.0)
+	var worst := 0.0
+	while t < 90.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		if lift.failing:
+			ad.release()
+			return false
+		if (c.global_position - far_end).dot(fwd) > 0.0:
+			break
+		# the pull the carts should give: the back end's extra weight less the
+		# van's pull, plus a push to bring it to level and hold it there
+		var van_pull := lift._pull(c)
+		for cart in lift.carts:
+			if float(cart["z"]) < 0.0:
+				van_pull -= float(cart["kg"]) * -(float(cart["z"]) + lift.leaf_len * 0.5)
+		var want_net := 0.0
+		if lift.angle > 0.6:
+			want_net = LiftBridge.FRICTION + 350.0
+		elif lift.angle < -0.6:
+			want_net = -LiftBridge.FRICTION - 350.0
+		elif absf(lift.omega) > 0.01:
+			want_net = -signf(lift.omega) * (LiftBridge.FRICTION + 200.0)
+		var arm := clampf((LiftBridge.TAIL + want_net - van_pull) / total, -(lift.leaf_len * 0.5 - 0.7), lift.leaf_len * 0.5 - 0.7)
+		for cart in lift.carts:
+			cart["z"] = -(arm + lift.leaf_len * 0.5)
+		lift._apply()
+		worst = minf(worst, lift.angle)
+		# creep only while it's near level (or before the van is on it)
+		if absf(lift.angle) < 1.5 or not lift._van_on_leaf(c):
+			key(KEY_S, false)
+			ad.step(5.0)
+		else:
+			ad.release()
+			key(KEY_S, true)
+		if Engine.get_physics_frames() % 60 == 0:
+			log_line("  cross: van %.1f m on, angle %.2f, omega %.3f, arm %.2f" % [-(lift.global_transform.affine_inverse() * c.global_position).z, lift.angle, lift.omega, arm])
+	ad.release()
+	key(KEY_S, false)
+	return not lift.failing
 
 
 ## D10, the ghat: pace notes on the swung nav, the fog on the hairpins, a
@@ -11717,61 +11827,6 @@ func relay_wait_thin(max_s: float) -> bool:
 		if maze.curtain_thin() > 0.9:
 			return true
 		await physics_frames(3)
-	return false
-
-
-# --- #5, the lift bridge: helpers for the walk (tools/live/make_puzzle5.py)
-
-func lb() -> LiftBridge:
-	return get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
-
-
-## Where to stand at the hut's dead lever panel.
-func lb_panel_stand() -> Vector3:
-	var panel: Vector3 = boot.builder.poi["bridge_panel"]
-	var back: Vector3 = boot.builder.poi["bridge_hut"] - panel
-	back.y = 0.0
-	return panel + back.normalized() * 0.9
-
-
-## The middle of the machinery house door, at eye height.
-func lb_door_look() -> Vector3:
-	return lb().door.global_position + Vector3(0, 1.1, 0) - lb().global_transform.basis.z * 0.8
-
-
-## Under the hatch, `off` m towards the house (negative: back towards the road).
-func lb_hatch(off: float) -> Vector3:
-	var l := lb()
-	var out_x := (l.global_transform.basis.x * l.m).normalized()
-	return boot.builder.poi["machinery_hatch"] + out_x * off
-
-
-## The nearest stone free to pick up near `near` (lying, not held, not on the leaf).
-func lb_stone(near: Vector3) -> Vector3:
-	var best: BridgeStone = null
-	for s in lb().stones:
-		if s.lost or s.riding or not s.holders.is_empty():
-			continue
-		if best == null or stone_score(s, near) < stone_score(best, near):
-			best = s
-	return best.global_position if best != null else near
-
-
-## How many stones lie on the leaf.
-func lb_stones_out() -> int:
-	var l := lb()
-	var inv := l.leaf.global_transform.affine_inverse()
-	var n := 0
-	for s in l.stones:
-		if not s.lost and l._on_leaf(inv * s.global_position, 0.8) >= 0.0:
-			n += 1
-	return n
-
-
-func lb_note_read(id: String) -> bool:
-	for n in boot.story.notes:
-		if n["id"] == id:
-			return true
 	return false
 
 
