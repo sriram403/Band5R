@@ -379,7 +379,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "bridge_mistakes", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "relay_views", "bino_zoom", "snowball", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "bridge_mistakes", "seesaw_probe", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "relay_views", "bino_zoom", "snowball", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -11773,3 +11773,114 @@ func lb_note_read(id: String) -> bool:
 		if n["id"] == id:
 			return true
 	return false
+
+
+## A probe (#5 round 2, 2026-10-19), not in any set: can the 2-tonne van sit
+## and drive on a deck that tips under it (a seesaw on a middle pivot)? In
+## the base gym: a 10 x 8.6 m deck 1.5 m up, pivot in the middle; the van
+## parked on it, then driven along it, while the deck tips +-12 degrees; then
+## a fast "slam" up. Logs the van's place on the deck, its wheels' contact,
+## its spin. `GYM=base tools/run_test.sh seesaw_probe`.
+func t_seesaw_probe() -> void:
+	var c := camper()
+	var root := Node3D.new()
+	root.name = "SeesawProbe"
+	boot.world.add_child(root)
+	var at := c.global_position + Vector3(0, 0, -25)
+	at.y = Landscape.ground(at.x, at.z) + 1.5
+	root.global_position = at
+	var deck := AnimatableBody3D.new()
+	deck.sync_to_physics = true
+	root.add_child(deck)
+	var cs := CollisionShape3D.new()
+	var sh := BoxShape3D.new()
+	sh.size = Vector3(8.6, 0.3, 10.0)
+	cs.shape = sh
+	cs.position = Vector3(0, -0.15, 0)
+	deck.add_child(cs)
+	deck.add_child(Build.box(sh.size, ToonMat.make(Color(0.46, 0.34, 0.24)), Vector3(0, -0.15, 0)))
+	await physics_frames(5)
+	# the van on the deck, nose along -Z, parked
+	c.linear_velocity = Vector3.ZERO
+	c.angular_velocity = Vector3.ZERO
+	c.parking_brake = true
+	c.global_transform = Transform3D(Basis.IDENTITY, at + Vector3(0, 0.95, 2.0))
+	c.reset_physics_interpolation()
+	var ang := 0.0
+	var t := 0.0
+	var worst_slip := 0.0
+	var max_spin := 0.0
+	var start_local := Vector3.ZERO
+	var contact_lost := 0
+	# 1. parked, the deck tips slowly to +12 and -12 (3 deg/s)
+	for phase in [[12.0, 3.0], [-12.0, 3.0], [0.0, 3.0]]:
+		var target: float = phase[0]
+		var rate: float = phase[1]
+		while absf(ang - target) > 0.01:
+			c.on_moving_deck = 0.2
+			ang = move_toward(ang, target, rate / 60.0)
+			deck.rotation.x = deg_to_rad(ang)
+			await get_tree().physics_frame
+			t += 1.0 / 60.0
+			if start_local == Vector3.ZERO and t > 1.0:
+				start_local = deck.global_transform.affine_inverse() * c.global_position
+			if start_local != Vector3.ZERO:
+				var l := deck.global_transform.affine_inverse() * c.global_position
+				worst_slip = maxf(worst_slip, Vector2(l.x - start_local.x, l.z - start_local.z).length())
+			max_spin = maxf(max_spin, c.angular_velocity.length())
+			for w in c._wheels:
+				if not w.is_in_contact():
+					contact_lost += 1
+	log_line("PROBE parked, deck +-12 deg at 3 deg/s: slid %.2f m along the deck, max spin %.2f rad/s, wheel-ticks off %d, frozen %s" % [worst_slip, max_spin, contact_lost, c.freeze])
+	check(worst_slip < 0.5 and max_spin < 1.0, "parked on the handbrake the van stays put on a slowly tipping deck")
+	# 2. driving slowly along it while it tips
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
+	c.parking_brake = false
+	key(KEY_W, true)
+	var t0 := t
+	var lost := 0
+	while t - t0 < 3.0:
+		c.on_moving_deck = 0.2
+		# creeping, as the driver will: throttle on and off
+		if int((t - t0) * 4.0) % 2 == 0:
+			key(KEY_W, true)
+		else:
+			key(KEY_W, false)
+		var lz := (deck.global_transform.affine_inverse() * c.global_position).z
+		if lz < -1.5:
+			break
+		ang = move_toward(ang, 8.0, 2.0 / 60.0)
+		deck.rotation.x = deg_to_rad(ang)
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		for w in c._wheels:
+			if not w.is_in_contact():
+				lost += 1
+		if c.global_position.distance_to(at) > 6.0:
+			break
+	key(KEY_W, false)
+	key(KEY_S, true)
+	await wait(0.8)
+	key(KEY_S, false)
+	var l2 := deck.global_transform.affine_inverse() * c.global_position
+	log_line("PROBE driving on the tipping deck: now %.2f m along (z), %.2f m across, wheel-ticks off %d, kmh %.1f" % [l2.z, l2.x, lost, c.linear_velocity.length() * 3.6])
+	check(absf(l2.x) < 1.0 and l2.y > 0.3 and l2.y < 1.5, "the van drives along the tipping deck and stays on it")
+	# 3. the slam: the near end flips up fast (30 deg/s for 0.5 s)
+	await tap(KEY_SPACE)
+	await wait(0.5)
+	var before := c.global_position
+	var top_speed := 0.0
+	for i in 30:
+		c.on_moving_deck = 0.2
+		ang = move_toward(ang, -12.0, 30.0 / 60.0)
+		deck.rotation.x = deg_to_rad(ang)
+		await get_tree().physics_frame
+		top_speed = maxf(top_speed, c.linear_velocity.length())
+	await wait(1.5)
+	log_line("PROBE the slam: van top speed %.1f m/s, moved %.1f m, upright %s, up.y %.2f" % [top_speed, c.global_position.distance_to(before), c.global_transform.basis.y.y > 0.5, c.global_transform.basis.y.y])
+	check(top_speed > 2.0, "a fast flip of the deck throws the van")
+	p1().force_exit = true
+	await physics_frames(3)
+	root.queue_free()

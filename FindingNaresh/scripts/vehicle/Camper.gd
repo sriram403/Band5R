@@ -93,6 +93,7 @@ var _steer := 0.0
 var _wheels: Array[VehicleWheel3D] = []
 var _wheel_meshes: Array[Node3D] = []
 var _teleport_hold := 0.0            ## s after a teleport before it may freeze again
+var on_moving_deck := 0.0            ## s: on a deck that moves (#5's seesaw): never freeze while > 0
 var _wheel_spin := 0.0
 var _needles := {}
 var _steering_wheel: Node3D
@@ -1224,6 +1225,14 @@ func _set_lamp(key: String, on: bool) -> void:
 ## it has stopped on the handbrake with its wheels down, freeze it in place;
 ## letting the handbrake off releases it on the same tick.
 func _update_parked(delta: float, speed: float) -> void:
+	# on something that moves (the lift bridge's seesaw sets this every tick):
+	# a frozen van would hang in the air as the deck tips away under it
+	if on_moving_deck > 0.0:
+		on_moving_deck -= delta
+		_parked_t = 0.0
+		if freeze:
+			freeze = false
+		return
 	if _teleport_hold > 0.0:
 		_teleport_hold -= delta
 		if freeze:
