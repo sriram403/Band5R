@@ -51,7 +51,7 @@ const FRICTION := 50.0           ## kg m: the pivot's friction (smaller pulls mo
 const INERTIA := 2500.0          ## how slowly the big leaf gets going
 const DAMP := 0.5                ## 1/s: the bearings' drag (one person 3.6 m out: ~4 deg/s; at 6000, 1.4: a crawl)
 const SLAM_W := 0.25             ## rad/s: hitting a stop faster than this is a slam
-const VAN_W := 0.025             ## rad/s (1.4 deg/s): the fastest it turns with the van on it; at 3.4 deg/s it went rest-to-pit in under 4 s, too quick for anyone to react
+const VAN_W := 0.12              ## rad/s (6.9 deg/s): the fastest it turns with the van on it. At 1.4 and 2.9 a van creeping on outran it and drove off the still-raised far end (2026-10-20): the far half is 5 m, ~3.5 s at a walk. A real one would drop in about a second; balanced near level it moves slowly anyway (small pull)
 const PLAYER_KG := 80.0
 const BLOCKS := [700.0, 550.0, 400.0, 300.0]   ## kg; all look alike
 const SIDING := 6.0              ## m of rail on the near deck, from the flap's hinge back
@@ -479,8 +479,10 @@ func _physics_process(delta: float) -> void:
 		var old_xf := leaf.global_transform
 		_apply()
 		_carry_players(old_xf)
-		if van != null:
-			_carry_van(van, old_xf)
+		# the van isn't carried by hand: re-setting a vehicle's transform each
+		# tick threw its suspension away and it sank 0.25 m into the deck, then
+		# stalled with full throttle (seen side on, 2026-10-20); its wheels on
+		# the moving deck carry it
 	if van != null:
 		_unbury_van(van)
 		_hold_parked_van(van)
@@ -847,26 +849,6 @@ func _carry_players(old_xf: Transform3D) -> void:
 		var l := inv * p.global_position
 		if _on_leaf(l, 0.6):
 			p.global_position = new_xf * l
-
-
-## The van on the turning leaf moves with it. Its wheels are springs that
-## feel down for the ground from their hubs; the near end rising 0.7 m as
-## the leaf levelled came up past the rear hubs, the wheels lost the deck
-## and the van sat on its belly, stuck (the first crossing, 2026-10-19). With
-## three or four wheels on the leaf it rides along; driving still moves it.
-func _carry_van(van: Camper, old_xf: Transform3D) -> void:
-	if _thrown_t > 0.0:
-		return
-	# (the flap counts: the rear wheels were on it when the near end came up)
-	var on := 0
-	for w in van._wheels:
-		if w.is_in_contact() and (w.get_contact_body() == leaf or w.get_contact_body() == apron):
-			on += 1
-	if on < 3:
-		return
-	var move := leaf.global_transform * old_xf.affine_inverse()
-	van.global_transform = move * van.global_transform
-	van.linear_velocity = move.basis * van.linear_velocity
 
 
 func _try_lock(p) -> void:

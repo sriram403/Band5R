@@ -447,7 +447,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "bridge_mistakes", "seesaw_live", "seesaw_probe", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "relay_views", "bino_zoom", "snowball", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "bridge_mistakes", "seesaw_live", "seesaw_dip", "seesaw_probe", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "relay_views", "bino_zoom", "snowball", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -4578,7 +4578,8 @@ func van_stuck_report() -> String:
 		var r := get_tree().root.world_3d.direct_space_state.intersect_ray(q)
 		hits.append("%.1f m up: %s" % [h, ("%s at %.2f m" % [(r["collider"] as Node).name, from.distance_to(r["position"])]) if r else "clear"])
 	await shot("van_stuck")
-	return "at %s (bridge frame), pitch %.0f deg, leaf %.1f deg; wheels %s; ahead %s" % [l, rad_to_deg(c.global_transform.basis.get_euler().x), lift.angle if lift != null else 0.0, on, hits]
+	var state := "engine_force %.0f, brake %.1f, W %s, engine_on %s, freeze %s, sleeping %s, on_moving_deck %.2f, v %s, wheel rpm %s" % [c.engine_force, c.brake, Input.is_physical_key_pressed(KEY_W), c.engine_on, c.freeze, c.sleeping, c.on_moving_deck, c.linear_velocity, c._wheels.map(func(w): return snappedf(w.get_rpm(), 0.1))]
+	return "at %s (bridge frame), pitch %.0f deg, leaf %.1f deg; wheels %s; ahead %s; %s" % [l, rad_to_deg(c.global_transform.basis.get_euler().x), lift.angle if lift != null else 0.0, on, hits, state]
 
 
 ## The van creeps on to the seesaw as a careful player does: the game's own
@@ -12139,6 +12140,11 @@ func t_seesaw_live() -> void:
 	check(hit_d and hit_f and absf(dy) < 0.05, "the flap meets the old deck flush: solid both sides, no step")
 	var c := camper()
 	await van_at(at.call(0.0, 15.0))
+	# facing along the bridge (the road at the gate bends: driving straight,
+	# it ended on the leaf's edge, a front wheel off the side, 2026-10-20)
+	c.global_transform.basis = lift.global_transform.basis
+	c.reset_physics_interpolation()
+	await physics_frames(20)
 	await seat_p1_driver()
 	if not c.engine_on:
 		c.toggle_engine()
@@ -12171,6 +12177,119 @@ func t_seesaw_live() -> void:
 	log_line("van creeping: %.2f m past the near end of the leaf after %.1f s, top %.1f km/h, through the dip at %.1f km/h (leaf %.1f deg)" % [-lz, t, top, at_dip, lift.angle])
 	await shot("seesaw_van_on")
 	check(lz < -2.5 and at_dip < 9.0, "creeping at 6 km/h the van gets over the flap and up onto the leaf without catching")
+	# on past the middle, nobody moving blocks: the leaf tips under the van
+	# (live 2026-10-20: it nearly stopped there, 0.4 km/h with the throttle
+	# down). Logged every 0.5 s; it should carry on and go into the pit.
+	c.parking_brake = false
+	var fw := -lift.global_transform.basis.z
+	t = 0.0
+	var slowest := 99.0
+	while t < 25.0 and not lift.failing:
+		var kmh := c.linear_velocity.length() * 3.6
+		key(KEY_S, kmh > 7.0)
+		key(KEY_W, kmh < 5.0)
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		lz = (lift.global_transform.affine_inverse() * c.global_position).z
+		if lz < -5.5 and lz > -8.0:
+			slowest = minf(slowest, kmh)
+		if int(t * 60.0) % 30 == 0:
+			var on := []
+			for w in c._wheels:
+				on.append("%s:%s" % [String(w.name).substr(5), (w.get_contact_body() as Node).name if w.is_in_contact() and w.get_contact_body() != null else "air"])
+			log_line("  past the middle %.1f s: z %.2f, along %.2f m/s, W %s, leaf %.1f deg, omega %.4f, pull %.0f, wheels %s" % [t, lz, c.linear_velocity.dot(fw), Input.is_physical_key_pressed(KEY_W), lift.angle, lift.omega, lift.pull, on])
+		if (t > 1.0 and t < 1.0 + 1.0 / 60.0) or (t > 2.6 and t < 2.6 + 1.0 / 60.0):
+			var hs := []
+			for w in c._wheels:
+				hs.append("%s %.2f" % [String(w.name).substr(5), (lift.leaf.global_transform.affine_inverse() * w.global_position).y])
+			log_line("  hubs at %.1f s (leaf %.1f deg, omega %.4f): %s" % [t, lift.angle, lift.omega, hs])
+		if t > 3.0 and t < 3.0 + 1.0 / 60.0:
+			# side on, at the van's nose: what is it pushing on?
+			log_line("  stopped: %s" % await van_stuck_report())
+			# P2 on the deck beside it (6 m out was off the bridge, in the river)
+			var side := lift.global_transform.basis.x
+			var hubs := []
+			var linv := lift.leaf.global_transform.affine_inverse()
+			for w in c._wheels:
+				hubs.append("%s %.2f" % [String(w.name).substr(5), (linv * w.global_position).y])
+			log_line("  hubs above the deck (resting ~0.3): %s" % [hubs])
+			await place_player(q, c.global_position + side * 4.0 + Vector3(0, 0.3, 0), 0.0)
+			await look_at_point(q, c.global_position + Vector3(0, -0.6, 0))
+			await wait(0.3)
+			await shot("van_stopped_side")
+	key(KEY_W, false)
+	key(KEY_S, false)
+	log_line("past the middle: failing %s after %.1f s, slowest %.1f km/h" % [lift.failing, t, slowest])
+	check(lift.failing and slowest > 2.0, "on past the middle the van keeps creeping (slowest %.1f km/h) as the far end goes down, into the pit" % slowest)
+
+
+## Test bench (2026-10-20): the walk's van stalls at the dip where the flap
+## meets the 12 deg leaf (all wheels in the air, nose at the leaf); the
+## straight-in van of seesaw_live doesn't. Same approach as the walk: the van
+## on the road before the gate, the careful driver. Side-on pictures at wheel
+## height and the gap under the van's middle as it crosses the dip.
+## `tools/run_test.sh seesaw_dip`
+func t_seesaw_dip() -> void:
+	var lift := lb()
+	lift.reset()
+	lift.gate.set("_wind_t", 99999.0)
+	boot.story.index = boot.story.index_of("bridge")
+	var c := camper()
+	# where the menu jump puts it: on the road 26 points before the bridge
+	var pr: Route = boot.builder.network.road("pump_house_road")
+	var bi: int = boot.builder.bridge_span.x - 14 - 12
+	await van_at(pr.point(bi))
+	c.global_transform.basis = Basis.looking_at(pr.forward(bi), Vector3.UP)
+	c.reset_physics_interpolation()
+	await physics_frames(20)
+	await seat_p1_driver()
+	if not c.engine_on:
+		c.toggle_engine()
+	c.parking_brake = false
+	var q := p2()
+	var inv := lift.global_transform.affine_inverse()
+	var ad := AutoDriver.new(self, pr, c)
+	var t := 0.0
+	var shot_n := 0
+	var stalled := 0.0
+	var space := get_tree().root.world_3d.direct_space_state
+	while t < 90.0 and not lift.failing:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		ad.steer_only()
+		var kmh := c.linear_velocity.length() * 3.6
+		key(KEY_S, kmh > 7.0)
+		key(KEY_W, kmh < 5.0)
+		var l := inv * c.global_position
+		# the gap under the van's middle (its belly) as it nears the dip
+		if l.z < 6.0 and l.z > -4.0 and int(t * 60.0) % 15 == 0:
+			var mid := c.global_transform * Vector3(0, -0.5, 0)
+			var rq := PhysicsRayQueryParameters3D.create(mid, mid + Vector3(0, -3.0, 0))
+			rq.exclude = [c.get_rid()]
+			var r := space.intersect_ray(rq)
+			var on := []
+			for w in c._wheels:
+				on.append("%s:%s" % [String(w.name).substr(5), (w.get_contact_body() as Node).name if w.is_in_contact() and w.get_contact_body() != null else "air"])
+			log_line("  dip: z %.2f x %.2f, %.1f km/h, yaw to bridge %.1f deg, belly gap %s, wheels %s" % [l.z, l.x, kmh,
+				rad_to_deg((-c.global_transform.basis.z).signed_angle_to(-lift.global_transform.basis.z, Vector3.UP)),
+				("%.2f m to %s" % [mid.y - (r["position"] as Vector3).y, (r["collider"] as Node).name]) if r else "none", on])
+		stalled = stalled + 1.0 / 60.0 if kmh < 0.5 else 0.0
+		if stalled > 3.0 or (l.z < 1.0 and shot_n == 0) or (l.z < -2.0 and shot_n == 1):
+			# side on at wheel height, from the deck's edge
+			var side := lift.global_transform.basis.x * (4.0 if l.x < 0.0 else -4.0)
+			await place_player(q, c.global_position + side + Vector3(0, -0.3, 0), 0.0)
+			await look_at_point(q, c.global_position + Vector3(0, -0.6, 0))
+			await wait(0.2)
+			shot_n += 1
+			await shot("dip_side_%d" % shot_n)
+			if stalled > 3.0:
+				log_line("STALLED at the dip: %s" % await van_stuck_report())
+				break
+	ad.release()
+	key(KEY_W, false)
+	key(KEY_S, false)
+	var l2 := inv * c.global_position
+	check(stalled <= 3.0 and l2.z < -2.0, "from the road, creeping, the van rolls through the dip onto the leaf (z %.2f)" % l2.z)
 
 
 ## A probe (#5 round 2, 2026-10-19), not in any set: can the 2-tonne van sit

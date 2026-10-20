@@ -23,6 +23,16 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
 - **Never fire and forget (the user, 2026-10-20), for all testing.** Check
   every run every few seconds while it runs (step, movement, errors); off
   plan -> stop it at once, look, tell the user. Never only read the end.
+- **Fix what you see (the user, 2026-10-20).** An issue found while working
+  is fixed then and there; never offer "record / carry on as is" as an
+  option. Questions are for real choices only.
+- **Debug with pictures (the user, 2026-10-20).** Stuck or wrong: take a
+  shot of that moment from an angle that shows it, solve from what you see;
+  logs only support it.
+- **Test bench after 2-3 failed fixes (the user, 2026-10-20).** Move the
+  issue to a gym / bare scene, try causes from the most obvious (visible)
+  down one by one, then bring the fix back. "Note this" = a general rule.
+  Proactive: use the skills, update them yourself, tell the user in a line.
 - **Record the walkthrough (the user, 2026-10-05).** Keep writing the
   test sheet; once its steps are written, play them as a watched run,
   record it (`tools/record_walk.sh <walk>` -> `appdata/videos/`), watch it,
