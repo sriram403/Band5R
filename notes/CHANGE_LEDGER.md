@@ -465,3 +465,28 @@ works something he was told to; `naresh` checks it.
 
 **Found later**
 - (nothing yet)
+
+## 2026-10-20: #5 round 2b fixes (feature branch g11, waits for the user)
+
+**What changed**
+- `LiftBridge.gd`: the van no longer carried by re-setting its transform
+  (it sank and stalled); turn cap with the van 7 deg/s (was 1.4); the leaf
+  for the flap and carts computed from `angle` (`_leaf_xf`: after a snap the
+  flap pointed up); the shove's reach 3.7 m (3.1 missed on the slope).
+- `PlayTest.gd`: test benches `seesaw_dip`, `shove_bench`; `seesaw_live`
+  drives on past the middle into the pit; `bridge_mistakes` crate step
+  steady; `van_stuck_report` (pictures, what the van touches).
+- `LiveControl.gd`: the watcher runs without Naresh; a van standing still
+  5 s with the throttle down stops the walk.
+- `tools/live/make_puzzle5b.py`, `5c`, `5d` (the rest, the van alone, the shove).
+
+**What it could break**
+- Anything riding the leaf (players carried still), `storm_road` (the storm
+  sets the leaf), `save` (carts), `bridge` (the crossing bot).
+
+**Tests that cover it**
+- `seesaw_live`, `seesaw_dip` (with and without the snap), `shove_bench`,
+  `bridge_mistakes` (0 failures x2); walks puzzle5b, 5c, 5d DONE.
+
+**Found later**
+- (nothing yet)

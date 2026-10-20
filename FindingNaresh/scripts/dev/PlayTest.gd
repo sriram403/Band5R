@@ -447,7 +447,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "bridge_mistakes", "seesaw_live", "seesaw_dip", "seesaw_probe", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "relay_views", "bino_zoom", "snowball", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "bridge", "bridge_mistakes", "seesaw_live", "seesaw_dip", "shove_bench", "seesaw_probe", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "relay_views", "bino_zoom", "snowball", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -4394,8 +4394,12 @@ func t_bridge_mistakes() -> void:
 	await wait(0.3)
 	await tap(KEY_E)
 	await wait(0.5)
-	await walk_to(p, under, "under the window with the crate", 0.5, 10.0)
-	await look_at_point(p, under + Vector3(0, -0.5, 0))
+	# stop 1.1 m out from the wall, square to it, then set it down (walking
+	# into the wall with it, the crate landed 0.85-1.26 m out depending on the
+	# approach, and at 1.26 P1 slid off it: flaky, 2026-10-20)
+	var wall_out := (hut.global_transform.basis.x * ws).normalized()
+	await walk_to(p, under + wall_out * 1.1, "1.1 m out from the window's wall with the crate", 0.3, 10.0)
+	await look_at_point(p, under + Vector3(0, -0.3, 0))
 	await tap(KEY_E)
 	await wait(1.0)
 	await place_player(p, crate.global_position + Vector3(0, 0.9, 0), 0.0)
@@ -12369,6 +12373,70 @@ func t_seesaw_dip() -> void:
 	key(KEY_S, false)
 	var l2 := inv * c.global_position
 	check(stalled <= 3.0 and l2.z < -2.0, "from the road, creeping, the van rolls through the dip onto the leaf (z %.2f)" % l2.z)
+
+
+## For the walkthrough (tools/live/make_puzzle5d.py): a cart left on the flap
+## in the van's line, the van 7 m behind it with a can on the rack, P1 at the
+## wheel, P2 watching from the leaf ahead. (A cut in the video: set up by hand.)
+func shove_setup() -> void:
+	var lift := lb()
+	var c := camper()
+	var cart: Dictionary = lift.carts[0]
+	cart["z"] = 0.5
+	lift._apply()
+	var can := FuelCan.new()
+	can.name = "ShoveWalkCan"
+	boot.world.add_child(can)
+	can.stow(c.storage_slots[0])
+	await van_at(lift.apron.global_transform * Vector3(float(cart["rail"]) * 2.8, 0.0, -(LiftBridge.APRON - 0.5 - 7.0)))
+	c.global_transform.basis = lift.global_transform.basis
+	c.reset_physics_interpolation()
+	await physics_frames(20)
+	await seat_p1_driver_at(c)
+	var q := p2()
+	# P2 on the leaf's near half ahead, facing back at the cart and the van
+	# coming (from beside the flap the van's own body hid the shove)
+	await place_player(q, lift.global_transform * Vector3(-float(cart["rail"]) * 0.8, 0.4, -3.5), 0.0)
+	await look_at_point(q, (cart["node"] as Node3D).global_position + lift.global_transform.basis.z * 3.0 + Vector3(0, 0.6, 0))
+
+
+## Test bench (2026-10-20): bridge_mistakes' shove (the van run at a cart on
+## the flap never reached it, 4 rounds). Same setup, the van logged every
+## second, pictures at the start and the end from P2 beside it.
+## `tools/run_test.sh shove_bench`
+func t_shove_bench() -> void:
+	var lift := lb()
+	boot._on_joy_changed(0, true)
+	lift.reset()
+	lift.gate.set("_wind_t", 99999.0)
+	boot.story.index = boot.story.index_of("bridge")
+	var c := camper()
+	var cart: Dictionary = lift.carts[0]
+	cart["z"] = 0.5
+	lift._apply()
+	await van_at(lift.apron.global_transform * Vector3(float(cart["rail"]) * 2.8, 0.0, -(LiftBridge.APRON - 0.5 - 7.0)))
+	c.global_transform.basis = lift.global_transform.basis
+	c.reset_physics_interpolation()
+	await physics_frames(20)
+	await seat_p1_driver_at(c)
+	var inv := lift.global_transform.affine_inverse()
+	var q := p2()
+	var side := lift.global_transform.basis.x * (-float(cart["rail"]) * 1.0)
+	await place_player(q, c.global_position + side * 2.0 + lift.global_transform.basis.z * 3.0 + Vector3(0, 0.3, 0), 0.0)
+	await look_at_point(q, (cart["node"] as Node3D).global_position)
+	log_line("start: van at %s, engine %s, handbrake %s; cart 0 at %s (rail %.0f)" % [inv * c.global_position, c.engine_on, c.parking_brake, inv * (cart["node"] as Node3D).global_position, cart["rail"]])
+	await shot("shove_start")
+	key(KEY_W, true)
+	var t := 0.0
+	while t < 10.0 and not bool(cart["lost"]):
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		if int(t * 60.0) % 60 == 0:
+			var cl := c.global_transform.affine_inverse() * (cart["node"] as Node3D).global_position
+			log_line("  %.0f s: van at %s, %.1f km/h, engine %s, handbrake %s; cart in the van's frame %s" % [t, inv * c.global_position, c.linear_velocity.length() * 3.6, c.engine_on, c.parking_brake, cl])
+	key(KEY_W, false)
+	await shot("shove_end")
+	check(bool(cart["lost"]), "the van run at a cart on the flap shoves it (after %.1f s)" % t)
 
 
 ## A probe (#5 round 2, 2026-10-19), not in any set: can the 2-tonne van sit

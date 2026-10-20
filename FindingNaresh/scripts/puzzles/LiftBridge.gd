@@ -633,7 +633,11 @@ func _check_van(van: Camper, delta: float) -> void:
 		if c["lost"]:
 			continue
 		var cl := vinv * (c["node"] as Node3D).global_position
-		if absf(cl.x) < 1.6 and absf(cl.z) < 3.1 and absf(cl.y) < 1.6:
+		# the van's bumper (~3 m from its middle) against the cart's side (half
+		# a cart, 0.55): 3.1 met it on flat ground, but on the flap's slope the
+		# van stopped dead against a cart 3.47 m out, never shoving it (test
+		# bench shove_bench, 2026-10-20)
+		if absf(cl.x) < 1.6 and absf(cl.z) < 3.7 and absf(cl.y) < 1.6:
 			_shove(k, van)
 			return
 	# the front wheels coming off the far end while it's raised: a drop, a
