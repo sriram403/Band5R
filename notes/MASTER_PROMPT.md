@@ -15,11 +15,19 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-10-19. **#5, the lift bridge, round 2 (the van's
-seesaw) built on `../MPG_dev` branch `g11`, not merged, not pushed; the
-user: "it didn't even seesaw".** Next thread: (1) the test window shows
-blank, the user wants to watch it again (TODO "Right now"); (2) then #5:
-ask what "didn't seesaw" means, fix, video. Before that, on 2026-10-17: #4, the lookout boards, reworked, approved
+Last updated: 2026-10-20. **#5, the lift bridge, round 2b (a lively
+seesaw: one person tips it, 12 deg at rest, four blocks, a 12 m flap) built
+on `../MPG_dev` branch `g11`, not merged, not pushed; waiting for the
+user's OK on the videos** (`appdata/videos/puzzle5.mp4`, `puzzle5b.mp4`,
+`puzzle5d.mp4`). Fixed this thread: the blank test window (pushed to main
+`d7f503e`), the van stalling on the seesaw (3 causes, ROUGH_NOTES
+2026-10-20), the shove, the flaky hut test. `seesaw_live`, `seesaw_dip`,
+`shove_bench`, `bridge_mistakes` pass; `bridge` fails at its old crossing
+bot (left alone). New rules (CLAUDE.md / AGENTS.md): always record, never
+fire and forget, fix what you see, debug with pictures, test bench after
+2-3 failed fixes, "note this" = general, proactive. Next: the user's OK ->
+merge g11 into main, push (sriram403); or their changes after playing
+F1 -> Puzzles -> 5. Before that, on 2026-10-17: #4, the lookout boards, reworked, approved
 ("continue") and pushed** (branch `g10`, main `f2026b2`): pictures on six
 landmarks, the patrol's riddles, the handle that scrambles the dials,
 snowballs and the snowy sign, binoculars 2x-8x with sway, view lanes, the
