@@ -1227,7 +1227,14 @@ dials reset whenever a wrong one is turned (Q3).
 
 ---
 
-## 5. The lift bridge: *proposed* (2026-10-17), nothing built
+## 5. The lift bridge: **CUT (the user, 2026-10-20)**
+
+The user: remove the bridge puzzle altogether; keep it as a benchmark for
+future models (`D:\mine\Agentics\FutureModelTestTasksridge-puzzle-from-naresh.md`,
+everything below is summed up there); the build stays on branch `g11`, tag
+`bridge-puzzle-reference`. In its place a ramp jump (a fun thing, not a
+puzzle): see "The ramp jump" at the end of this section. History kept
+below.
 
 Written before the user's play (they asked: "how would you improve it,
 with everything from #1-#4?"). Their play may change it.
@@ -1552,3 +1559,10 @@ Agreed (all my picks):
 - **Q3 A, S1: walking over is a two-person job.** One stays on the near
   half as weight while the other walks over; both walking on together
   tips the far end down.
+
+### The ramp jump (the user, 2026-10-20): *proposed*, nothing built
+
+The user: "keep a ramp there where the player has to speed up and cross a
+big jump in the van; when they land one tyre breaks off, and they find that
+tyre in the room at the far end, and other things. Not a puzzle, just a fun
+thing to do." Proposal: in the chat of 2026-10-20 (answers go here).

@@ -6,6 +6,18 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [~] **2026-10-20: #5 the lift bridge CUT (the user).** The whole seesaw
+      puzzle comes out of the game. Its full brief is saved as a model
+      benchmark: `D:\mine\Agentics\FutureModelTestTasksridge-puzzle-from-naresh.md`
+      (+ `.GRADER.md`, the traps; `README.md`). The build is kept on branch
+      `g11`, tag `bridge-puzzle-reference` (local, never merged). In its
+      place: **a ramp jump, a fun thing, not a puzzle** (speed up, jump the
+      gap in the van, a tyre breaks off on landing, found in the hut at the
+      far end with other things). **Next: the ramp proposal is with the
+      user (A / B answers); nothing built yet.** Then: branch `g12` from
+      `g11`, delete the bridge (LiftBridge, BridgeGate, carts, flap, story
+      flag, DevMenu, SaveGame, StormFront, its PlayTest scenarios), build
+      the ramp, test, record.
 - [x] **The test window (the user, 2026-10-19): fixed, the user watched
       it ("I can see the game, and my mouse and keyboard stay with my own
       window"), pushed to main.** Cause: Godot's no-focus flag hid the
@@ -1383,6 +1395,10 @@ test before each push.
   - [ ] Your test (F3 on); push after it
 
 ## Milestone G: Finish
+- [ ] **Fun things to do (the user, 2026-10-20): its own development phase
+      once every puzzle is polished.** Things to do for fun, not puzzles
+      (like the ramp jump at the old bridge): plan a list with the user,
+      propose each, build. The ramp is the first.
 - [ ] The polish list (`notes/POLISH.md`): remind the user, agree the order, build it
 - [ ] Full audio pass, music and ambience
 - [ ] Settings menu (sensitivity, volumes, text speed)

@@ -15,7 +15,15 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-10-20. **#5, the lift bridge, round 2b (a lively
+Last updated: 2026-10-20 (later). **#5 CUT by the user:** the seesaw
+bridge comes out of the game; its full brief is a model benchmark at
+`D:\mine\Agentics\FutureModelTestTasks\bridge-puzzle-from-naresh.md`; the
+build stays on `g11`, tag `bridge-puzzle-reference` (never merged). In its
+place a ramp jump (a fun thing: jump the gap, a tyre breaks off, found in
+the far hut). **Next: the user's answers to the ramp proposal, then branch
+`g12` from `g11`: delete the bridge, build the ramp.** New phase noted:
+"fun things to do" after the puzzle polish (TODO, Milestone G).
+Before that, the same day: **#5, the lift bridge, round 2b (a lively
 seesaw: one person tips it, 12 deg at rest, four blocks, a 12 m flap) built
 on `../MPG_dev` branch `g11`, not merged, not pushed; waiting for the
 user's OK on the videos** (`appdata/videos/puzzle5.mp4`, `puzzle5b.mp4`,
