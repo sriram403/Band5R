@@ -821,7 +821,7 @@ func _place_cart(c: Dictionary) -> void:
 	var node := c["node"] as Node3D
 	var z := float(c["z"])
 	var x := float(c["rail"]) * RAIL_X
-	var lxf := pivot.transform * leaf.transform
+	var lxf := _leaf_xf()
 	var xf: Transform3D
 	if z >= hinge_z:
 		xf = Transform3D(Basis(), Vector3(x, hinge_y, z))
@@ -945,13 +945,22 @@ func hint_for(i: int) -> String:
 	return ""
 
 
+## The leaf in the bridge's frame, from `angle` itself. Not from the leaf's
+## transform: a synced moving body reports its new place only after the next
+## physics step, so after a snap (reset from the pit's -14 to +12) the flap
+## was laid for the old angle, pointing UP 1.1 m into the air, and the van
+## drove off its end and hung on its belly (test bench seesaw_dip, 2026-10-20).
+func _leaf_xf() -> Transform3D:
+	return pivot.transform * Transform3D(Basis(Vector3.RIGHT, deg_to_rad(angle)), Vector3.ZERO)
+
+
 func _apply() -> void:
 	# the leaf itself turns (it sits on the pivot's origin): a moving body
 	# follows its own transform, not its parent's - turning the pivot moved
 	# the picture while the deck you drive on stayed at rest (2026-10-19)
 	leaf.rotation = Vector3(deg_to_rad(angle), 0, 0)
 	# the flap from its hinge on the near deck down (or up) onto the leaf's near end
-	var t := pivot.transform * leaf.transform * Vector3(0, 0, leaf_len * 0.5 - 0.5)
+	var t := _leaf_xf() * Vector3(0, 0, leaf_len * 0.5 - 0.5)
 	var h := Vector3(0, hinge_y, hinge_z)
 	var d := t - h
 	var len := d.length()

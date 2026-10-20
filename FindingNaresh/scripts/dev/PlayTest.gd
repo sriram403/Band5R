@@ -4578,6 +4578,27 @@ func van_stuck_report() -> String:
 		var r := get_tree().root.world_3d.direct_space_state.intersect_ray(q)
 		hits.append("%.1f m up: %s" % [h, ("%s at %.2f m" % [(r["collider"] as Node).name, from.distance_to(r["position"])]) if r else "clear"])
 	await shot("van_stuck")
+	# what the van's own shapes touch (a hair lower than it sits): what holds it up
+	var touching := {}
+	var space := get_tree().root.world_3d.direct_space_state
+	for owner_id in c.get_shape_owners():
+		for k in c.shape_owner_get_shape_count(owner_id):
+			var qp := PhysicsShapeQueryParameters3D.new()
+			qp.shape = c.shape_owner_get_shape(owner_id, k)
+			qp.transform = c.global_transform * c.shape_owner_get_transform(owner_id) * Transform3D(Basis(), Vector3(0, -0.05, 0))
+			qp.exclude = [c.get_rid()]
+			for hit in space.intersect_shape(qp, 8):
+				var col := hit["collider"] as Node
+				touching[str(c.shape_owner_get_owner(owner_id).name) + " -> " + (str(col.get_path()) if col else "?")] = true
+	log_line("  the van's body touches: %s" % [touching.keys()])
+	if lift != null:
+		# side on at wheel height (the user: solve it from a picture)
+		var q := p2()
+		var side := lift.global_transform.basis.x * (4.0 if l.x < 0.0 else -4.0)
+		await place_player(q, c.global_position + side + Vector3(0, -0.3, 0), 0.0)
+		await look_at_point(q, c.global_position + Vector3(0, -0.6, 0))
+		await wait(0.2)
+		await shot("van_stuck_side")
 	var state := "engine_force %.0f, brake %.1f, W %s, engine_on %s, freeze %s, sleeping %s, on_moving_deck %.2f, v %s, wheel rpm %s" % [c.engine_force, c.brake, Input.is_physical_key_pressed(KEY_W), c.engine_on, c.freeze, c.sleeping, c.on_moving_deck, c.linear_velocity, c._wheels.map(func(w): return snappedf(w.get_rpm(), 0.1))]
 	return "at %s (bridge frame), pitch %.0f deg, leaf %.1f deg; wheels %s; ahead %s; %s" % [l, rad_to_deg(c.global_transform.basis.get_euler().x), lift.angle if lift != null else 0.0, on, hits, state]
 
@@ -12231,10 +12252,53 @@ func t_seesaw_live() -> void:
 ## `tools/run_test.sh seesaw_dip`
 func t_seesaw_dip() -> void:
 	var lift := lb()
+	boot._on_joy_changed(0, true)      # P2 on a pad: split screen, P2's side view
 	lift.reset()
 	lift.gate.set("_wind_t", 99999.0)
 	boot.story.index = boot.story.index_of("bridge")
 	var c := camper()
+	# as in the walk (5.7 then 5.8): a block tips it down to the pit floor,
+	# then the bridge is reset (a snap from -14 to +12 deg in one tick)
+	if not OS.get_cmdline_user_args().has("--no-snap"):
+		lift.carts[3]["z"] = -7.0
+		lift._apply()
+		var tw := 0.0
+		while tw < 20.0 and lift.angle > LiftBridge.PIT_DEG + 0.1:
+			await get_tree().physics_frame
+			tw += 1.0 / 60.0
+		log_line("the block tipped it to %.1f deg in %.1f s; now the reset" % [lift.angle, tw])
+		if OS.get_cmdline_user_args().has("--swing-back"):
+			# no snap: the block taken home, the bridge swings back up itself
+			lift.carts[3]["z"] = lift.carts[3]["home"]
+			lift._apply()
+			tw = 0.0
+			while tw < 20.0 and lift.angle < LiftBridge.REST_DEG - 0.05:
+				await get_tree().physics_frame
+				tw += 1.0 / 60.0
+			log_line("swung back up by itself to %.1f deg in %.1f s" % [lift.angle, tw])
+		else:
+			lift.reset_bridge()
+		lift.gate.set("_wind_t", 99999.0)
+		await wait(1.0)
+		# drawn vs solid: the node's tilt and the physics engine's
+		var drawn := rad_to_deg(lift.leaf.rotation.x)
+		var st: Transform3D = PhysicsServer3D.body_get_state(lift.leaf.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM)
+		var solid := rad_to_deg((lift.pivot.global_transform.affine_inverse() * st).basis.get_euler().x)
+		var ast: Transform3D = PhysicsServer3D.body_get_state(lift.apron.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM)
+		var ash: Transform3D = PhysicsServer3D.body_get_shape_transform(lift.apron.get_rid(), 0)
+		var asz: Vector3 = PhysicsServer3D.shape_get_data(PhysicsServer3D.body_get_shape(lift.apron.get_rid(), 0))
+		var lv = PhysicsServer3D.body_get_state(lift.leaf.get_rid(), PhysicsServer3D.BODY_STATE_ANGULAR_VELOCITY)
+		var av = PhysicsServer3D.body_get_state(lift.apron.get_rid(), PhysicsServer3D.BODY_STATE_ANGULAR_VELOCITY)
+		var alv = PhysicsServer3D.body_get_state(lift.apron.get_rid(), PhysicsServer3D.BODY_STATE_LINEAR_VELOCITY)
+		log_line("after the reset, the speed the physics keeps: leaf spin %s (%.1f rad/s), flap spin %s, flap move %s" % [lv, (lv as Vector3).length(), av, alv])
+		log_line("after the reset: leaf drawn %.1f / solid %.1f deg; flap drawn %.1f / solid %.1f deg, flap shape drawn z %.2f long at %.2f, solid %s at %s (angle %.1f)" % [drawn, solid,
+			rad_to_deg(lift.apron.rotation.x), rad_to_deg((lift.global_transform.affine_inverse() * ast).basis.get_euler().x),
+			lift.apron_shape.size.z, (lift.apron.get_node("PlateShape") as Node3D).position.z, asz, ash.origin, lift.angle])
+		var q2 := p2()
+		await place_player(q2, lift.global_transform * Vector3(3.6, 0.5, 6.0), 0.0)
+		await look_at_point(q2, lift.global_transform * Vector3(0, -0.5, -5.0))
+		await wait(0.3)
+		await shot("dip_after_reset")
 	# where the menu jump puts it: on the road 26 points before the bridge
 	var pr: Route = boot.builder.network.road("pump_house_road")
 	var bi: int = boot.builder.bridge_span.x - 14 - 12
@@ -12252,6 +12316,7 @@ func t_seesaw_dip() -> void:
 	var t := 0.0
 	var shot_n := 0
 	var stalled := 0.0
+	var snap_logged := false
 	var space := get_tree().root.world_3d.direct_space_state
 	while t < 90.0 and not lift.failing:
 		await get_tree().physics_frame
@@ -12273,6 +12338,20 @@ func t_seesaw_dip() -> void:
 			log_line("  dip: z %.2f x %.2f, %.1f km/h, yaw to bridge %.1f deg, belly gap %s, wheels %s" % [l.z, l.x, kmh,
 				rad_to_deg((-c.global_transform.basis.z).signed_angle_to(-lift.global_transform.basis.z, Vector3.UP)),
 				("%.2f m to %s" % [mid.y - (r["position"] as Vector3).y, (r["collider"] as Node).name]) if r else "none", on])
+		if l.z < 1.6 and not snap_logged:
+			# the moment the front wheels reach the leaf: what's solid where
+			snap_logged = true
+			var lst: Transform3D = PhysicsServer3D.body_get_state(lift.leaf.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM)
+			var ast: Transform3D = PhysicsServer3D.body_get_state(lift.apron.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM)
+			var li := lift.global_transform.affine_inverse()
+			var hits := []
+			for w in c._wheels:
+				var hub := (w as Node3D).global_position
+				var rq := PhysicsRayQueryParameters3D.create(hub + Vector3(0, 0.6, 0), hub + Vector3(0, -1.5, 0))
+				rq.exclude = [c.get_rid()]
+				var r := space.intersect_ray(rq)
+				hits.append("%s hub %s -> %s" % [String(w.name).substr(5), li * hub, ("%s at %s" % [(r["collider"] as Node).name, li * (r["position"] as Vector3)]) if r else "nothing"])
+			log_line("AT THE LEAF: leaf solid at %s rot %.2f, flap solid at %s rot %.2f; %s" % [li * lst.origin, rad_to_deg((li * lst).basis.get_euler().x), li * ast.origin, rad_to_deg((li * ast).basis.get_euler().x), hits])
 		stalled = stalled + 1.0 / 60.0 if kmh < 0.5 else 0.0
 		if stalled > 3.0 or (l.z < 1.0 and shot_n == 0) or (l.z < -2.0 and shot_n == 1):
 			# side on at wheel height, from the deck's edge
