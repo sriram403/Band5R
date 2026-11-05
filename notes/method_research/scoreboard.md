@@ -94,11 +94,16 @@ for the practice set only.
 |---|---|---|
 | `tools/run_test.sh ramp` on `g12` head `878286d` | **1 scenario, 1 failure**, 45 s of game | The slow try (46.8 km/h) fell short, reset and "nothing lost" passed. The flat-out try: **66.5 km/h at the lip, 1.05 m off the middle, roll up to 14.5 deg, pitch 23.2 deg -> "shallows"** (a miss). The test then returned early (`if go["what"] != "landed": return`), so nothing after the jump ran. The user has played the jump and it works. **Game or test: not measured.** Open question for the auditors: what in the run made a 66.5 km/h jump miss? (The second try starts 0.3 s after the game's own reset, with no `ramp_start()`; the AutoDriver steers.) |
 
+### Today's method on the working game (side data from c1's scoring)
+11 full `t_ramp` runs under the rig: **7 pass, 4 fail** (2 drive-offs, 2 missed jumps: one at
+57 km/h after the reset, one at 66.6 km/h / 0.82 m where another run at 66.6 / 0.81 landed).
+On S1, today's method fails. Details: `trial_c1.md`.
+
 ## Trial scores
 
 | Trial | Branch | S1 false alarms | S2 bugs caught / named | S3 blame | S4 doing nothing | S5 real path | S6 cost | S7 other puzzle | Verdict |
 |---|---|---|---|---|---|---|---|---|---|
-| c1 | `g13-trial-c1` | | | | | | | n/a | |
+| c1 | `g13-trial-c1` `a6a412f` | **10/10** rig healthy | 0/7 (not covered, R5) | **3/3** (defect: one STOP didn't kill) | **4/4**, all <= 27 s | pass | 23 min build; ~140 s per run; no model tokens | n/a | **Passes its claim** (`trial_c1.md`) |
 | g1 | `g13-trial-g1` | | | | | | | n/a | |
 | c2 | `g13-trial-c2` | | | | | | | n/a | |
 | g2 | `g13-trial-g2` | | | | | | | n/a | |
@@ -132,10 +137,17 @@ Asked for by the auditors; they apply to every trial alike.
   reading the game's own state) reaches nothing by play, so S5 has nothing to forbid in it.
   It may claim only what it reads ("the crate's spot is clear"), never what a player can do
   or see there; those stay NOT PROVEN unless an actor reaches them by input.
+- **R8 c1 is fit for reuse (after its scoring).** The GPT auditor's conditions (exact-head
+  controls, a clean `ramp` exercising the receipts) are met by the referee's scoring on
+  `a6a412f`. Reuse its code commits (`920110d`, `3b96807`, `a106f90`, `57b8afd`), recording
+  the SHAs. Known limits travel with it: one STOP failed to kill the game; the 5 s pause
+  rule would stop scenarios that pause on purpose; "pad lost" is always TEST; the 20 s
+  stale limit is unmeasured.
 - **R6 Brief correction.** Walk `expect`s run alongside the steps only when marked
   `watch` (`dev/LiveControl.gd:485-501`, found by both auditors); the brief said all do.
 
 ## Change log
+- 2026-11-05, referee: c1 scored; R8 (c1 fit for reuse).
 - 2026-11-05, referee: R7 added after round 2 (asked by Claude); top 4 agreed, `top4.md`.
 - 2026-11-05, referee: rulings R1-R6 added after Stage 2 round 1 (asked for by both auditors).
 - 2026-11-05, referee: practice patches written and proved (P4's first version put the rubble 1.5 m off the crate's spot and broke nothing: moved onto it).
