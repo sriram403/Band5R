@@ -124,12 +124,9 @@ Fair across all trials, written before the trials, and only the referee changes 
 **Bugs.**
 - **Practice set (public):** the real bugs above; they're in the notes and git, so
   they can't be secret. Put back as patches.
-- **Final set (secret):** at least 5 new bugs written by the referee, not found in any
-  note or commit: subtle ones too (the wheel fits but doesn't turn; the van pulls left
-  after the refit; a door opens but you can't pass; the jump counts without landing).
-  Each one must be seen to break the game for real before it counts. Keep them in
-  `D:\mine\Agentics\T3_Code_Works\MPG_referee\`, outside the repo; never name that
-  folder or its contents to an auditor or builder. Reports during trials give counts
+- **Final set (secret):** new bugs written by the referee, not found in any note or
+  commit, each seen to break the game for real before it counts. Auditors and builders
+  don't get them, and must not go looking for them. Reports during trials give counts
   and reasons for the practice set only.
 
 **Keep in mind:** simple scripts stay for simple things (saves, menus, resets). No method
