@@ -15,7 +15,8 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-11-05. **The ramp jump is built on `g12` in `../MPG_dev`,
+Last updated: 2026-11-05 (later). **Test-method research running: `notes/TEST_METHOD_RESEARCH.md`.** The user played the ramp: it works; the merge waits for the method.
+**The ramp jump is built on `g12` in `../MPG_dev`,
 not merged, not pushed:** it waits for the user's look at
 `appdata/videos/ramp.mp4` (`notes/TODO.md` "Right now", as built in
 `design/PUZZLE_CHANGES.md`). Next: their verdict, then merge and push.
