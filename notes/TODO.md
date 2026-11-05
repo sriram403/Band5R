@@ -6,6 +6,7 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [~] **2026-11-05: the user played the ramp: "the whole thing works on my playthrough"; the problem is how the tests are written (scripts that predict the future).** Plan, the user's: first agree here on what went wrong; then a new thread where two agents (GPT Sol high, Opus 5.5 high) discuss and must agree on one method for verifying complex play in the engine. Merging `g12` still needs the user's explicit OK.
 - [~] **2026-11-05: the ramp jump built on `g12` (`../MPG_dev`), NOT merged,
       NOT pushed: waits for the user's look at the video
       (`appdata/videos/ramp.mp4`).** The user's picks: wheel through the
