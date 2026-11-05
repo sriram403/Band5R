@@ -1,6 +1,6 @@
 # g1 builder contract — GPT auditor, Stage 3
 
-Version 3, 2026-11-05. Build on `g13-trial-g1` from `g12`, in MPG_dev.
+Version 4, 2026-11-05. Build on `g13-trial-g1` from `g12`, in MPG_dev.
 Opus builds; GPT writes no game or test code. This document is the implementation
 contract. No new actor skills, recovery search, game fixes or builder-added rules.
 
@@ -14,6 +14,7 @@ or model thinking between steps. Controller success is never checker evidence.
 | v1, round 1 | Sensed steering plus separate outcome checker. | Replace forward-only driving and distance-from-start passes. |
 | v2, `audit_r2_gpt.md:157-216` | Two driving stretches, keyboard pulses, source-based input path; excluded miss recovery. | Bound the build and ban direct steering/brake setters. |
 | v3, this contract | Restore slow miss, reset and immediate retry to stretch A. Keep B separate. Reuse c1 conditionally; require independent receipt evidence. | Agreed `top4.md:9` includes miss/reset/retry. c1's three false alarms and unverified fix (`trial_c1.md:90-105`) forbid unconditional health inheritance. |
+| v4, one permitted revision | Replace distant straight prediction with immediate chassis-motion sweep; align the no-progress clock; report the speed shortfall; audit all 12 builder departures below. | q1/n1 falsely hit a hut beyond a bend; n2 failed at 10.03 s; requested 65-68 does not establish achieved speed spread. No game/physics change or tuning search. All revision work remains inside 23:24-00:24 (R4). |
 
 ## Coverage (R5): exactly two stretches
 
@@ -87,7 +88,9 @@ Keyboard steer is -1/0/+1 (`core/InputDevice.gd:338-346`). Space toggles the
 ordinary handbrake (`InputDevice.gd:39`; `vehicle/Camper.gd:1016-1017`).
 
 1. Read pose/velocity each physics tick. Reproject onto the road's polyline
-   segments in XZ every tick, not a cached advancing sample index. Use actual
+   segments in XZ every tick in B; in A the driver may omit unused projections
+   between steering decisions. Never use a cached advancing sample index. The
+   checker still projects independently every tick. Use actual
    segment lengths for signed arc position. Choose outgoing sign by its tangent's
    agreement with ramp forward (-ramp basis Z); freeze that sign in the manifest.
    Driver and checker implement their own projections, not a shared progress value.
@@ -114,14 +117,27 @@ ordinary handbrake (`InputDevice.gd:39`; `vehicle/Camper.gd:1016-1017`).
 6. On first supported far-bank contact, brake with S; below 0.5 m/s release S
    (avoids reversing), tap Space if brake is off, and observe the stop. B brakes
    after reaching 35 m signed progress, leaving margin for the checker’s 30 m.
-7. Before ramp entry and during B, sweep the chassis collision volume horizontally
-   along current velocity/heading for two seconds of travel (minimum 3 m).
-   Exclude self and actual continuous road/deck support colliders only; enumerate
-   their IDs from built geometry, never by excluding all static bodies. Disable
-   this sweep from ramp entry through landing; absence of gap support is intended.
-   A non-support hit releases W, commands stop, records collider/path and fails
-   BLOCKED, cause unresolved. Do not steer round it or silently disable the sweep.
-   If driveable support cannot be separated reliably, stop and report that gap.
+7. Before ramp entry and during B, at EVERY physics tick sweep the actual chassis
+   collision shape at its measured world transform by `linear_velocity * delta`,
+   where delta is that physics step's duration in seconds. Use full 3D velocity,
+   no heading fallback, minimum distance, distant target or two-second prediction.
+   Also query current chassis overlaps: a cast alone may omit an initial overlap.
+   Use the chassis's real collision mask/margin; exclude only the van's own bodies
+   and its two seated riders (record IDs), NOT Terrain, road/deck bodies or other
+   world solids. Wheel contact with a road is outside the chassis query; actual
+   chassis obstruction by terrain/deck is a hit, not exempt support. If the actual
+   collision shape cannot be reproduced, report TEST/UNRESOLVED, never PASS.
+   Disable from ramp entry through landing as before. A hit/overlap releases W,
+   commands stop, records shape transform, motion, collider ID, point and hit
+   fraction (or initial overlap), and fails BLOCKED, cause unresolved. No detour.
+
+   Reason/general rule: test the body's immediate motion, not a straight-line
+   prediction of a future steering decision. This has no hut/road/coordinate
+   exceptions and uses the same step duration at every speed and on any bend.
+   A tree on the actual driven path enters this volume as the van approaches;
+   a distant tree/hut outside the next step cannot fail the run. This is imminent
+   obstruction detection, NOT a promise to stop before impact. A missed collision
+   still cannot excuse the independent no-progress/departure obligations.
 
 ## Independent checker and evidence
 
@@ -153,7 +169,7 @@ ordinary c1 wrapper's zero exit status as the combined verdict.
 | Retry / crossing | From actual reset, no test state writes. Within 60 real seconds of retry start: approach >=10 m; all wheels lose contact with centre z <0; then >=2 wheels contact fixed solid far-bank/deck bodies at contact points z < -gap for >=0.2 s, centre z < -gap -0.8, abs(x) < deck_w/2, upright basis Y dot world up >0.6. Require >=1 m further forward displacement after first far support. `jumped` must agree within 1 s of supported landing. No support on trees, wreck, actors or carryables. |
 | A stop | Inside that same retry deadline, speed <0.2 m/s, parking brake on and far-bank support for 2 continuous real seconds. Both aboard throughout A. Any unexpected retry miss is retained failure, not a new attempt. |
 | Departure | Within 60 real seconds of B_BEGIN, checker’s signed road arc position increases >=30 m from B_BEGIN. For the last three continuous moving seconds before braking, speed >0.5 m/s and road distance <=4 m (Landscape.ROAD_HALF); stop also inside that corridor. Then speed <0.2 m/s and brake on for 2 s, both aboard. No closest-ever distance or radial distance substitutes. |
-| No progress | During commanded ground movement, fail after 10 real seconds without >=1 m increase beyond prior best forward progress. Exempt only airborne, declared reset wait/observation and final stop. World-alive/body-stuck must fail too. |
+| No progress | During a phase requiring ground movement (even if the actor sends no input or says done), fail at the first observer physics tick whose monotonic real timestamp is strictly more than 10.000 s after the initial progress sample or last >=1 m increase beyond the recorded best. Exactly 1 m counts. Log threshold timestamp, detection timestamp and tick delay; do not require detection before 10 s. Exempt only airborne, declared reset wait/observation and final stop. World-alive/body-stuck must fail too; external health still bounds frozen/stale observers within 60 s. |
 | Errors/completion | Any SCRIPT ERROR invalidates PASS; attribute TEST only if it identifies test code, otherwise unresolved. Scenario end or actor done without every applicable obligation fails INCOMPLETE. Missing summary/trace/evidence never passes. |
 
 Any unexpected discontinuity (over 5 m translation in one physics tick) outside
@@ -166,11 +182,12 @@ Do not infer “game bug” just because legal input did not succeed. Preserve a
 earlier failures; no automatic reruns. Healthy c1 plus failed game obligations
 must exit nonzero. Report each phase PASS/FAIL/NOT REACHED independently.
 
-Save trace, short summary, failure shot if engine responsive, launch/landing/stop
-shots, and one recorded video under project `appdata/`. Observe from normal
+Save trace, short summary, failure shot if engine responsive, and launch/landing/
+stop shots under project `appdata/`. The referee waived video for this trial:
+stills plus trace suffice. Inspect the stills and matching trace before claiming
+qualification; give event timestamps and what to judge. Observe from normal
 player cameras; optional observer evidence cannot replace a player's reached
-view (R2). No camera writes inside stretches. Watch video/frames before claiming
-qualification. Give timestamps and what to judge. Recording failure means
+view (R2). No camera writes inside stretches. Missing required stills/trace means
 evidence incomplete, not an excuse to rerun the whole route unnoticed.
 
 ## Referee variation switches
@@ -188,6 +205,17 @@ position, full launch vector, landing pose and B start. Referee judges actual
 S1 speed/landing spread, not options. If 68 is unattainable, report the S1
 shortfall; never change physics, accelerate time or weaken the coverage rule.
 
+**v4 speed answer:** the built controller has NOT demonstrated 61-68 km/h.
+The three measured retry launches requested at 66 reached 64.2-64.5 km/h with
+W/raw throttle held at 1.00. Higher requested numbers cannot create acceleration
+once W is already held. Whether steering scrub or route geometry explains the
+difference from AutoDriver is unmeasured. Keep the fixed controller and setup;
+no longer run-up, velocity injection, alternate controller or parameter search
+is authorized by v4. Report the S1 achieved-speed shortfall; do not claim a
+physical impossibility or count 65-68 options as four speed conditions. No new
+speed measurement is needed to make this ruling. Referee S1 runs must still log
+actual lip speed and landing/parking spread, and only the referee can score it.
+
 ## Qualification and stop rules
 
 Before a game run check no referee/game process is using this copy. Wait for
@@ -204,19 +232,98 @@ Within the hour:
    evidence. Log minutes and achieved speed, not an estimated green.
 3. One negative `--g1-negative=idle-departure`: after B_BEGIN the actor sends no
    movement input and immediately announces done. Keep the checker/watchdog
-   running. It must fail INCOMPLETE/no-progress within 10 s, never PASS. The
+   running. It must fail INCOMPLETE/no-progress at the first observer physics
+   tick strictly after the 10.000 s no-progress threshold, never PASS. n2's
+   10.03 s is consistent with this timing if its initial sample/tick timestamps
+   confirm that crossing; report those timestamps, not an invented exact 10 s.
+   S4's separate outer detection limit remains 60 real seconds. The
    checker must not inspect that switch or require the announced done to fail.
    Qualify from the same setup path, not a new teleported B start.
 
 Report qualification logs, code paths, timestamps, changed lines, build and run
-minutes, zero online-model tokens, video timestamps, qualified c1 source and
+minutes, zero online-model tokens, still/trace timestamps, qualified c1 source and
 remaining holes. Referee later runs the ten clean variations and public controls.
 
 Stop and report rather than decide: missing/unqualified c1; unavailable normal
 input or contact APIs; unreliable support filtering; ambiguous route direction;
-missing video support; a required phase not runnable; any real game finding;
+missing required still/trace support; a required phase not runnable; any real game finding;
 three failed fix/run rounds; cap reached. Do not add a pad driver, swimming
 actor, obstacle routing, tuned parameters, a broader state oracle or game fixes.
 Partial implementation is a failed/incomplete trial against this declared scope,
 not a silently narrowed successful one. The referee alone may change scope or
 scoring rules. No merge/push; follow the referee's local-save instructions.
+
+## v4: the builder's departures
+
+Source audit: `G1Drive.gd`, `G1Check.gd`, `tools/g1_run.sh` and the builder's
+12-item report. These verdicts concern v4 compliance, not new qualification.
+q1/n1 stills confirm the bend/hut explanation; existing q2/n2 results do not
+qualify a changed checker/sweep. Do not erase those earlier false alarms.
+
+1. **ACCEPT: diagnostic sweep=log.** The wrapper labels it DIAGNOSTIC and
+   returns nonzero even if other obligations pass. It cannot qualify or enter
+   S1's clean passes; q2/n2 did not use it.
+2. **ACCEPT: 5.5 s reset wait.** The checker still measures its own untouched
+   five seconds and brake/drift thresholds; the extra margin removes an input
+   race without forgiving reset failure. The retry deadline still runs.
+3. **REJECT as built: frozen support rays.** A ray of wheel radius + 1 m can
+   call ground well below a hanging tyre support. Frozen state is not proof
+   of support. Instead retain each wheel's last real allowlisted contact only
+   across freeze: it must have been observed on the immediately preceding
+   physics tick, with contact z < -gap; wheel/van and supporting collider world
+   transforms must remain unchanged while reused. Log source tick, body ID,
+   contact point and transforms; changed/missing provenance invalidates support.
+   No long-ray fallback, no weakening the two-wheel/2 s A-stop requirement.
+   If measured freeze transition cannot satisfy this, report incomplete; do not
+   invent a tolerance or count nearby terrain as wheel contact.
+4. **REJECT the speed-only braking fallback.** Speed <0.5 m/s can mean collision
+   or coasting, not braking. After >=30 m, anchor final braking to the first
+   observed raw/device S brake >0.5 or an observed parking-brake engagement.
+   Require the full preceding three seconds of moving in-corridor samples;
+   low speed alone never supplies a braking timestamp. The remaining observed
+   brake definition is accepted; no actor state may supply it.
+5. **ACCEPT: driver projects only at steering decisions in A.** That projection
+   has no consumer between those decisions; pose/velocity sensing and checker
+   projection remain per tick, and B still projects per tick. Driver item 1 now
+   permits this unused-computation omission; v4 sweep is still per tick.
+6. **ACCEPT: lane offset in B's steering target.** This is ordinary steering
+   toward the declared lane, with no B pose change. The checker's corridor and
+   progress are independent and unchanged.
+7. **REJECT the whole-Terrain exclusion; ACCEPT seated-rider exclusion.** A
+   height-map body can contain an actual chassis blocker as well as road support.
+   Ignoring the entire body weakens detection. Driver item 7 now queries every
+   world solid, including Terrain/decks, using the actual chassis shape; there
+   is no support-body exclusion. Wheel contacts remain a separate query.
+8. **REJECT missing UNOBSERVED accounting.** Per-tick bits allow reconstruction,
+   but no reconstruction is reported. Emit per-pulse key/start/end frame IDs,
+   physics/process counts and UNOBSERVED for pulses lacking the required receipt
+   window; they must never appear as receipt PASS. No new receipt requirement
+   for short taps and no relaxation of outcome obligations.
+9. **REJECT name-only contact trace.** Body names can repeat; a manifest's list
+   of IDs cannot bind a per-wheel contact to an ID. Include numeric body ID with
+   each trace contact/probe and its point/normal. The checker already compares
+   IDs, so this repairs audit evidence rather than changing landing thresholds.
+10. **ACCEPT: story index advance in SETUP_B.** Explicitly declared/logged setup,
+    outside both proven stretches; it proves no hut/player action and preserves
+    the van's actual pose.
+11. **ACCEPT: no video, by the referee's express waiver.** Required stills and
+    trace replace it for this trial only; evidence paragraph above now agrees.
+12. **ACCEPT: g1 in RIG_NEEDS.** It activates the inherited c1 prerequisite and
+    health checks rather than bypassing them; keep c1's recorded source/limits.
+
+**Builder measurements / qualification, inside the existing cap:**
+- Log each revised sweep's physics step duration, shape/transform, displacement,
+  exclusions and hit/overlap result. Re-qualify clean `(66,0)` and idle-departure
+  with the mandatory sweep enabled; report bend passage, never diagnose-as-pass.
+- Demonstrate an on-path placed blocker is caught: in a separate declared
+  negative-control run, put a fixed solid blocker in B's forward chassis path
+  during SETUP_B only (log geometry/ID/pose; no game-source edit or mid-B write),
+  then require BLOCKED naming that ID, never PASS. No routing or extra attempts.
+- Record the A-stop freeze transition: last real wheel contacts, their body IDs,
+  van/wheel/support transforms at that tick and throughout the frozen hold.
+  This must establish contact provenance, not merely show a ray hits terrain.
+- For idle-departure record B_BEGIN, initial progress sample, 10 s threshold
+  and first detecting physics tick. No additional speed experiment is required.
+All post-edit results are new measurements, not assumed successes. If these
+checks or rejected departures cannot be addressed by 00:24, report exactly what
+remains incomplete under R4; do not extend the cap or silently narrow coverage.

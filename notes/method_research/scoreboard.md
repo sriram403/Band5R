@@ -104,7 +104,7 @@ On S1, today's method fails. Details: `trial_c1.md`.
 | Trial | Branch | S1 false alarms | S2 bugs caught / named | S3 blame | S4 doing nothing | S5 real path | S6 cost | S7 other puzzle | Verdict |
 |---|---|---|---|---|---|---|---|---|---|
 | c1 | `g13-trial-c1` `a6a412f` | **10/10** rig healthy | 0/7 (not covered, R5) | **3/3** (defect: one STOP didn't kill) | **4/4**, all <= 27 s | pass | 23 min build; ~140 s per run; no model tokens | n/a | **Passes its claim** (`trial_c1.md`) |
-| g1 | `g13-trial-g1` | | | | | | | n/a | |
+| g1 | `g13-trial-g1` `a367de3` | **fails** (clean retries missed 2/2 in v4: driver 2 m left at the lip; v3 sweep false alarms) | not scored | via c1 (not re-scored) | partly: idle 10.03 s, blocker caught by ID | not audited yet | ~75 s per run; 30 min build in 2 rounds | n/a | **Failed qualification in its cap** (`trial_g1.md`) |
 | c2 | `g13-trial-c2` | | | | | | | n/a | |
 | g2 | `g13-trial-g2` | | | | | | | n/a | |
 | Final | | | | | | | | | |
@@ -143,10 +143,20 @@ Asked for by the auditors; they apply to every trial alike.
   the SHAs. Known limits travel with it: one STOP failed to kill the game; the 5 s pause
   rule would stop scenarios that pause on purpose; "pad lost" is always TEST; the 20 s
   stale limit is unmeasured.
+- **R9 Video (g1 handoff).** Stills of each phase plus the checker's trace suffice for
+  qualification; a video is a bonus, not to be bought with the trial's hour.
+- **R10 Fixing your own trial inside the cap.** A trial's owner may revise its own rules
+  inside the trial's hour (c1's builder fixed its own false alarms; g1's owner, GPT,
+  revised its spec once, and the builder applied it). The revision's time counts against
+  the same cap.
+- **R11 No scoring runs after a failed qualification.** When the clean run already fails
+  in qualification, S1 can't reach 10 / 10; the trial is recorded as failed with its
+  partial results, and no scoring runs are spent.
 - **R6 Brief correction.** Walk `expect`s run alongside the steps only when marked
   `watch` (`dev/LiveControl.gd:485-501`, found by both auditors); the brief said all do.
 
 ## Change log
+- 2026-11-05, referee: g1 failed qualification; R9-R11.
 - 2026-11-05, referee: c1 scored; R8 (c1 fit for reuse).
 - 2026-11-05, referee: R7 added after round 2 (asked by Claude); top 4 agreed, `top4.md`.
 - 2026-11-05, referee: rulings R1-R6 added after Stage 2 round 1 (asked for by both auditors).
