@@ -93,7 +93,6 @@ var _steer := 0.0
 var _wheels: Array[VehicleWheel3D] = []
 var _wheel_meshes: Array[Node3D] = []
 var _teleport_hold := 0.0            ## s after a teleport before it may freeze again
-var on_moving_deck := 0.0            ## s: on a deck that moves (#5's seesaw): never freeze while > 0
 var _wheel_spin := 0.0
 var _needles := {}
 var _steering_wheel: Node3D
@@ -120,6 +119,12 @@ var coolant_added := 0.0
 var coolant := 1.0                 ## 0..1 of the cooling system's fill; the split hose drains it
 ## Opening puncture: one front-left wheel, one spare, a short physical swap.
 var tyre_flat := false
+## The ramp jump's landing: the front-left wheel gone, the van on its hub. The
+## tyre service works as for a flat, from the jack, with no nuts to undo; it
+## needs new nuts (`nuts_found`) from the far hut's toolbox.
+var wheel_off := false
+var nuts_found := false
+var _bare_hub: Node3D
 var spare_available := true
 var tyre_stage := 0                 ## 0 spare, 1 jack, 2 nuts, 3 flat off, 4 spare on, 5 jack down
 var tyre_work := 0.0
@@ -650,13 +655,27 @@ func puncture() -> void:
 		pl.say("A tyre bursts. The van pulls left and struggles for speed. Park with the handbrake, then take the spare off the rear door.", 7.0)
 
 
+## The landing: the wheel's off and gone. See `RampJump`.
+func snap_wheel() -> void:
+	tyre_flat = true
+	wheel_off = true
+	tyre_stage = 1
+	tyre_work = 0.0
+	refresh_tyre_visuals()
+
+
 func refresh_tyre_visuals() -> void:
 	_apply_grip()
-	_wheels[0].wheel_radius = WHEEL_RADIUS * (0.78 if tyre_flat else 1.0)
+	var r := WHEEL_RADIUS * (0.78 if tyre_flat else 1.0)
+	if wheel_off and tyre_stage < 5:
+		r = WHEEL_RADIUS * 0.5          # down on the bare hub
+	_wheels[0].wheel_radius = r
 	# from stage 5 the round spare is on the hub, the van still on the jack
 	_wheel_meshes[0].scale = Vector3(1.0, 0.76, 0.76) if tyre_flat and tyre_stage < 5 else Vector3.ONE
-	_wheel_meshes[0].visible = tyre_stage != 4
-	_spare_mesh.visible = spare_available and tyre_stage == 0
+	_wheel_meshes[0].visible = tyre_stage != 4 and not (wheel_off and tyre_stage < 5)
+	if _bare_hub != null:
+		_bare_hub.visible = wheel_off and tyre_stage < 5
+	_spare_mesh.visible = spare_available and (tyre_stage == 0 or wheel_off)
 	var jack := _body_root.get_node_or_null("WheelJack") as Node3D
 	if jack != null:
 		jack.visible = tyre_flat and tyre_stage >= 2
@@ -676,7 +695,7 @@ func _apply_grip() -> void:
 	for i in _wheels.size():
 		var dry := 3.1 if i < 2 else 3.6
 		if i == 0 and tyre_flat:
-			dry = 1.0
+			dry = 0.7 if wheel_off else 1.0
 		_wheels[i].wheel_friction_slip = dry * mul
 
 
@@ -727,12 +746,16 @@ func _build_tyre_service() -> void:
 				p.say("The spare's on the back. One more flat you can fix.", 3.0))
 	_body_root.add_child(spare)
 
+	# the bare hub, for when the wheel has gone off down the road
+	_bare_hub = Build.cyl(WHEEL_RADIUS * 0.5, 0.2, ToonMat.make(Color(0.42, 0.40, 0.38), 0.015, 0.5), Vector3.ZERO, Vector3(0, 0, 90), 12, "BareHub")
+	_bare_hub.visible = false
+	_wheels[0].add_child(_bare_hub)      # on the wheel's node, so it rides the suspension
 	var jack_visual := Build.box(Vector3(0.5, 0.45, 0.55), ToonMat.make(Color(0.90, 0.66, 0.16)), Vector3(-1.30, 0.25, -WHEELBASE), Vector3.ZERO, "WheelJack")
 	jack_visual.visible = false
 	_body_root.add_child(jack_visual)
 	var nuts := Build.interact_area(Vector3(0.7, 0.9, 1.0), Vector3(-1.55, 0.48, -WHEELBASE), "", func(_p):
 		if tyre_flat and tyre_stage == 1 and _tyre_parked():
-			tyre_stage = 2
+			tyre_stage = 4 if wheel_off else 2          # no wheel to take off
 			refresh_tyre_visuals()
 		elif tyre_flat and tyre_stage == 3 and _tyre_parked():
 			tyre_stage = 4
@@ -741,13 +764,14 @@ func _build_tyre_service() -> void:
 		elif tyre_flat and tyre_stage == 5 and _tyre_parked():
 			tyre_stage = 0
 			tyre_flat = false
+			wheel_off = false
 			refresh_tyre_visuals(), "WheelNuts")
 	nuts.set_meta("prompt_fn", func(_p) -> String:
 		if not tyre_flat or not _tyre_parked(): return ""
 		if tyre_stage == 1: return "Set the jack under the front left sill"
 		if tyre_stage == 2: return "Hold to loosen the wheel nuts"
 		if tyre_stage == 3: return "Pull off the flat wheel"
-		if tyre_stage == 4: return "Bring the spare wheel here"
+		if tyre_stage == 4: return "Bring a wheel here" if wheel_off else "Bring the spare wheel here"
 		if tyre_stage == 5: return "Lower and remove the jack"
 		return "")
 	nuts.set_meta("hold_fn", func(_p, dt: float):
@@ -757,16 +781,24 @@ func _build_tyre_service() -> void:
 				tyre_work = 0.0
 				tyre_stage = 3)
 	nuts.set_meta("held_prompt_fn", func(_p, item) -> String:
-		return "Hold to fit the spare wheel" if tyre_flat and tyre_stage == 4 and item.kind == "spare_wheel" and _tyre_parked() else "")
+		if not tyre_flat or tyre_stage != 4 or not _tyre_parked():
+			return ""
+		if item.kind != "spare_wheel" and item.kind != "van_wheel":
+			return ""
+		if wheel_off and not nuts_found:
+			return "The old nuts sheared off. It needs new ones"
+		return "Hold to fit the wheel" if item.kind == "van_wheel" else "Hold to fit the spare wheel")
 	nuts.set_meta("held_action", func(p, item, dt: float, _first: bool):
-		if tyre_flat and tyre_stage == 4 and item.kind == "spare_wheel" and _tyre_parked():
+		if tyre_flat and tyre_stage == 4 and (item.kind == "spare_wheel" or item.kind == "van_wheel") and _tyre_parked() and (nuts_found or not wheel_off):
 			tyre_work += dt
 			if tyre_work >= 6.0:
+				var own: bool = item.kind == "van_wheel"
 				p.drop_held()
 				item.queue_free()
 				tyre_work = 0.0
 				tyre_stage = 5
-				spare_available = false
+				if not own:
+					spare_available = false
 				refresh_tyre_visuals())
 	_body_root.add_child(nuts)
 
@@ -1225,14 +1257,6 @@ func _set_lamp(key: String, on: bool) -> void:
 ## it has stopped on the handbrake with its wheels down, freeze it in place;
 ## letting the handbrake off releases it on the same tick.
 func _update_parked(delta: float, speed: float) -> void:
-	# on something that moves (the lift bridge's seesaw sets this every tick):
-	# a frozen van would hang in the air as the deck tips away under it
-	if on_moving_deck > 0.0:
-		on_moving_deck -= delta
-		_parked_t = 0.0
-		if freeze:
-			freeze = false
-		return
 	if _teleport_hold > 0.0:
 		_teleport_hold -= delta
 		if freeze:
@@ -1292,6 +1316,8 @@ func repair_all() -> void:
 	fuel_leak = 0.0
 	battery = 1.0
 	tyre_flat = false
+	wheel_off = false
+	nuts_found = false
 	tyre_stage = 0
 	spare_available = true
 	refresh_tyre_visuals()

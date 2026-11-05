@@ -1,0 +1,912 @@
+{
+ "name": "ramp",
+ "setup": [
+  {
+   "do": "eval",
+   "expr": "boot._on_joy_changed(0, true)"
+  }
+ ],
+ "steps": [
+  {
+   "name": "1 F1 Puzzles: the ramp jump: in the van at the run-up",
+   "max": 25,
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Puzzles",
+     "row": "The ramp jump"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the van at the run-up, not jumped",
+     "expr": "camper().global_position.distance_to(rj().van_start.origin) < 6.0 and not rj().jumped",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "2 out at the ramp (a cut): the ramp from the road, Naresh's note",
+   "max": 45,
+   "do": [
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p1",
+      "expr:rj().global_transform * Vector3(3.8, 0.5, 12.5)",
+      0.0
+     ]
+    },
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p2",
+      "expr:rj().global_transform * Vector3(-1.0, 0.5, 13.0)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:rj().global_transform * Vector3(0, 0.8, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:rj().global_transform * Vector3(3.8, 1.2, 7.0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:rj().global_transform * Vector3(3.8, 0.3, 7.8)",
+     "arrive": 0.3,
+     "max": 8
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:rj().global_transform * Vector3(3.8, 1.2, 7.06)"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 4.0
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    }
+   ],
+   "expect": []
+  },
+  {
+   "name": "3 from the ramp's top: the gap, the rusted car in the river, the far hut",
+   "max": 30,
+   "do": [
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p1",
+      "expr:rj().global_transform * Vector3(0, 1.3, 1.0)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:rj().global_transform * Vector3(0, -1.0, -rj().gap_len)"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:rj().get_node('RiverWreck/WreckCar').global_position"
+    },
+    {
+     "do": "wait",
+     "s": 2.5
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:rj().hut.global_position + Vector3(0, 2.5, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    }
+   ],
+   "expect": []
+  },
+  {
+   "name": "4 too slow (P2 watching from the near deck): 48 km/h, into the river",
+   "max": 70,
+   "do": [
+    {
+     "do": "call",
+     "fn": "ramp_start"
+    },
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p2",
+      "expr:rj().global_transform * Vector3(-3.7, 0.6, 2.5)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:rj().global_transform * Vector3(0, -1.5, -rj().gap_len * 0.5)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "spawn",
+     "fn": "ramp_try",
+     "args": [
+      48.0
+     ]
+    },
+    {
+     "do": "until",
+     "expr": "rj().misses > 0",
+     "max": 30
+    },
+    {
+     "do": "wait",
+     "s": 6.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "back at the run-up, nothing lost",
+     "expr": "camper().global_position.distance_to(rj().van_start.origin) < 5.0 and not camper().wheel_off and not rj().jumped and p1().seat != null",
+     "within": 4
+    }
+   ]
+  },
+  {
+   "name": "5 flat out (P2 on the far bank): the jump, the bang, the wheel through the shutter",
+   "max": 60,
+   "do": [
+    {
+     "do": "call",
+     "fn": "ramp_film_can"
+    },
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p2",
+      "expr:rj().global_transform * Vector3(-3.9, 0.6, -rj().gap_len - 7.0)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:rj().global_transform * Vector3(0, 0.8, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.3
+    },
+    {
+     "do": "spawn",
+     "fn": "ramp_try",
+     "args": [
+      80.0
+     ]
+    },
+    {
+     "do": "until",
+     "expr": "rj().jumped",
+     "max": 30
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:rj().hut.global_position + Vector3(0, 2.5, 0)"
+    },
+    {
+     "do": "wait",
+     "s": 3.5
+    },
+    {
+     "do": "hold",
+     "key": "S",
+     "s": 2.5
+    },
+    {
+     "do": "tap",
+     "key": "SPACE"
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "the wheel off and in the hut",
+     "expr": "camper().wheel_off and rj().shutter_broken and rj().van_wheel != null",
+     "within": 3
+    },
+    {
+     "name": "the story asks for it back",
+     "expr": "boot.story.current()['id'] == 'wheel'",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "6 out: the van on its hub; the shutter; the door's bolted",
+   "max": 70,
+   "do": [
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p1",
+      "expr:camper().global_transform * Vector3(-2.9, 0.0, -1.95)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:camper()._wheels[0].global_position"
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    },
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p1",
+      "expr:rj().hut.global_transform * Vector3(0, 0.5, -3.3)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:rj().hut.find_child('HutDoorArea', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    },
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p2",
+      "expr:rj().hut.global_transform * Vector3(ramp_ws() * 6.0, 0.5, 0.0)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:rj().hut.global_transform * Vector3(ramp_ws() * 1.8, 3.0, 0.0)"
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "still bolted",
+     "expr": "not rj().door_open",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "7 a leg-up alone falls short of the shutter",
+   "max": 30,
+   "do": [
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p1",
+      "expr:rj().hut.global_transform * Vector3(ramp_ws() * 2.0, 0.1, 0.0)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:rj().hut.global_transform * Vector3(ramp_ws() * 1.8, 3.0, 0.0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.2
+    },
+    {
+     "do": "down",
+     "key": "CTRL"
+    },
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p2",
+      "expr:rj().hut.global_transform * Vector3(ramp_ws() * 3.05, 0.1, 0.0)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:rj().hut.global_transform * Vector3(ramp_ws() * 1.8, 3.0, 0.0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.8
+    },
+    {
+     "do": "pad_axis",
+     "axis": "LY",
+     "v": -1.0
+    },
+    {
+     "do": "pad_tap",
+     "btn": "A"
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    },
+    {
+     "do": "pad_axis",
+     "axis": "LY",
+     "v": 0.0
+    },
+    {
+     "do": "up",
+     "key": "CTRL"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "still outside",
+     "expr": "not rj().in_hut(p2())",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "8 the crate under the shutter, P1 crouched on it, P2 up and in",
+   "max": 60,
+   "do": [
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p1",
+      "expr:rj().hut.find_child('HutCrate', true, false).global_position + (rj().hut.find_child('HutCrate', true, false).global_position - (rj().hut.global_transform * Vector3(ramp_ws() * 2.0, 0.1, 0.0))).normalized() * 1.0 + Vector3(0, 0.4, 0)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:rj().hut.find_child('HutCrate', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:(rj().hut.global_transform * Vector3(ramp_ws() * 2.0, 0.1, 0.0)) + (rj().hut.global_transform.basis.x * ramp_ws()).normalized() * 1.1",
+     "arrive": 0.3,
+     "max": 10
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:rj().hut.global_transform * Vector3(ramp_ws() * 2.0, 0.1, 0.0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.2
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p1",
+      "expr:rj().hut.find_child('HutCrate', true, false).global_position + Vector3(0, 0.9, 0)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:rj().hut.global_transform * Vector3(ramp_ws() * 1.8, 3.0, 0.0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "down",
+     "key": "CTRL"
+    },
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p2",
+      "expr:rj().hut.global_transform * Vector3(ramp_ws() * 3.05, 0.1, 0.0)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:rj().hut.global_transform * Vector3(ramp_ws() * 1.8, 3.0, 0.0)"
+    },
+    {
+     "do": "wait",
+     "s": 0.8
+    },
+    {
+     "do": "pad_axis",
+     "axis": "LY",
+     "v": -1.0
+    },
+    {
+     "do": "pad_tap",
+     "btn": "A"
+    },
+    {
+     "do": "until",
+     "expr": "rj().in_hut(p2())",
+     "max": 4
+    },
+    {
+     "do": "wait",
+     "s": 0.8
+    },
+    {
+     "do": "pad_axis",
+     "axis": "LY",
+     "v": 0.0
+    },
+    {
+     "do": "up",
+     "key": "CTRL"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "P2 is in the hut",
+     "expr": "rj().in_hut(p2())",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "9 inside: the wheel, the tiffin, the note; the bolt",
+   "max": 60,
+   "do": [
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:rj().van_wheel.global_position"
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:rj().hut.global_transform * Vector3(0, 0.1, 0.2)",
+     "arrive": 0.3,
+     "max": 6
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:rj().hut.find_child('TiffinArea', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 4.0
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:rj().hut.global_transform * Vector3(0, 0.1, -0.7)",
+     "arrive": 0.3,
+     "max": 6
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:rj().hut.find_child('HutDoorArea', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "the door's open",
+     "expr": "rj().door_open",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "10 P1 in by the door, takes the wheel, carries it out (no nuts yet)",
+   "max": 90,
+   "do": [
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p1",
+      "expr:rj().hut.global_transform * Vector3(0, 0.5, -4.0)",
+      0.0
+     ]
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:rj().hut.global_transform * Vector3(0, 0.1, 0.0)",
+     "arrive": 0.5,
+     "max": 10
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:rj().van_wheel.global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "walk",
+     "who": 1,
+     "to": "expr:rj().hut.global_transform * Vector3(0, 0.1, -3.2)",
+     "arrive": 0.5,
+     "max": 12
+    },
+    {
+     "do": "call",
+     "fn": "place_player",
+     "args": [
+      "p1",
+      "expr:camper().global_transform * Vector3(-3.3, 0.3, -1.95)",
+      0.0
+     ]
+    },
+    {
+     "do": "look",
+     "who": 1,
+     "at": "expr:camper().global_transform * Vector3(-1.55, -0.37, -1.95)"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 1.2
+    }
+   ],
+   "expect": [
+    {
+     "name": "the wheel's in the hub's way, put down",
+     "expr": "p1().held == null",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "11 the jack; the wheel to the hub: it says the nuts sheared",
+   "max": 40,
+   "do": [
+    {
+     "do": "eval",
+     "expr": "rj().van_wheel.set('global_position', camper().global_transform * Vector3(-3.3, 0.7, -2.95))"
+    },
+    {
+     "do": "eval",
+     "expr": "rj().van_wheel.set('linear_velocity', Vector3.ZERO)"
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "call",
+     "fn": "face_point",
+     "args": [
+      "p1",
+      "expr:camper().global_transform * Vector3(-1.55, -0.37, -1.95)",
+      1.8,
+      "expr:camper().global_transform.basis.x * -1.0"
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 0.5
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    },
+    {
+     "do": "call",
+     "fn": "face_point",
+     "args": [
+      "p1",
+      "expr:rj().van_wheel.global_position",
+      1.5
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "call",
+     "fn": "face_point",
+     "args": [
+      "p1",
+      "expr:camper().global_transform * Vector3(-1.55, -0.37, -1.95)",
+      1.8,
+      "expr:camper().global_transform.basis.x * -1.0"
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "it says so",
+     "expr": "p1().prompt_text.contains('sheared')",
+     "within": 3
+    }
+   ]
+  },
+  {
+   "name": "12 P2 opens the toolbox: new nuts, a can, a jug",
+   "max": 30,
+   "do": [
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:rj().hut.global_transform * Vector3(0, 0.1, 0.2)",
+     "arrive": 0.3,
+     "max": 6
+    },
+    {
+     "do": "look",
+     "who": 2,
+     "at": "expr:rj().hut.find_child('ToolboxArea', true, false).global_position"
+    },
+    {
+     "do": "wait",
+     "s": 0.6
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 4.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the nuts found",
+     "expr": "camper().nuts_found",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "13 the wheel on, the jack down, and away",
+   "max": 70,
+   "do": [
+    {
+     "do": "call",
+     "fn": "face_point",
+     "args": [
+      "p1",
+      "expr:camper().global_transform * Vector3(-1.55, -0.37, -1.95)",
+      1.8,
+      "expr:camper().global_transform.basis.x * -1.0"
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 0.4
+    },
+    {
+     "do": "hold",
+     "key": "E",
+     "s": 6.6
+    },
+    {
+     "do": "wait",
+     "s": 0.8
+    },
+    {
+     "do": "tap",
+     "key": "E"
+    },
+    {
+     "do": "wait",
+     "s": 1.5
+    },
+    {
+     "do": "call",
+     "fn": "seat_p1_driver"
+    },
+    {
+     "do": "call",
+     "fn": "ramp_drive_off"
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "the wheel is back on, the story moves on",
+     "expr": "not camper().wheel_off and boot.story.current()['id'] != 'wheel'",
+     "within": 3
+    }
+   ]
+  }
+ ]
+}

@@ -319,66 +319,39 @@ and turns the dials.
 windmill, 2 the silo, 3 the shape found twice (on the barn and on Last
 Fuel), 4 the water tower at the coolant works.
 
-### 5. The lift bridge
+### 5. The ramp jump
 
-**Getting there:** F1 → Puzzles → **5. The lift bridge**. You start in the
-van, 25 m short of the barrier. The road lamps are lit, but the hut is dead.
+**Getting there:** F1 → Puzzles → **The ramp jump**. You start in the van at
+the top of the run-up, P2 along.
 
-**The idea (reworked 2026-10-17):** no power. The middle of the bridge (the
-"leaf") sits on its axle like a seesaw, tipped up. Weight far out on it
-brings it down; near the axle, weight does almost nothing. One of you alone
-isn't heavy enough. The lock is thrown from the machinery house, off the
-leaf, so whoever goes to lock it must leave stones at the tip in their place.
+**The idea:** the bridge is out. Not a puzzle: speed up, jump it, and go and
+get your wheel back. The video: `appdata/videos/ramp.mp4`.
 
-1. **Both:** get out (E / X). **P1:** go into the hut and try the levers,
-   then read Naresh's note on the desk.
-   - **You should see:** "No power: the line's down at the last pole." His
-     note says the leaf is like a seesaw. (On the way, the last pole by the
-     road lies snapped in the grass.)
-2. **P2:** walk to the machinery house across the bridge's near end. Try
-   the door; read his note beside it.
-   - **You should see:** "Barred from the inside. There's a hatch higher up
-     the wall." His note: a leg-up through the hatch.
-3. **The leg-up:** P2 stands under the hatch, facing the wall, and holds
-   crouch (B). P1 stands right behind P2 and jumps (Space) while walking
-   forward.
-   - *Exactly how:* P1's screen says "[Space] Leg-up off P2's back" when
-     close enough. A plain jump doesn't reach the sill.
-   - **You should see:** P1 goes up and in through the hatch; P2 hears "Oof!".
-4. **P1 (inside):** lift the bar on the door (E). Walk round the pit to the
-   LEAF LOCK lever by the back wall and try it; read his note there.
-   - **You should see:** the door swings open. The lock says "The leaf isn't
-     down. The bolts won't reach."
-5. **Try the lure (optional):** take a stone from the crew's heap beside
-   the leaf's near end (E) and drop it on the leaf near the axle.
-   - **You should see:** nothing moves.
-6. **P1:** carry a stone up the leaf to the far end (by the yellow stripe)
-   and drop it there. Stay there.
-   - **You should see:** still nothing. One of you plus a stone isn't enough.
-7. **P2:** carry a second stone out along the leaf, slowly. Stop about
-   halfway.
-   - **You should see:** the old timbers groan, then the leaf tips and comes
-     down gently onto the far bank (about 5-10 s).
-8. **P2:** take your stone on to the far end and drop it next to P1's.
-   Then walk off the leaf and back into the machinery house.
-   - **You should see:** the leaf stays down: P1 and the two stones hold it.
-9. **P2:** throw the LEAF LOCK (X).
-   - **You should see:** CLANK, the bolts shoot home, the barriers go. You
-     can drive across.
+1. **Try it too slow:** drive down and hit the ramp under about 57 km/h.
+   - **You should see:** the van falls short into the river, the screen fades,
+     and you're back at the run-up on the handbrake with nothing lost.
+2. **Flat out:** hold the throttle all the way down the run-up.
+   - **You should see:** about 66 km/h at the ramp, the van clears the gap, a
+     BANG on landing, the front-left wheel comes off and goes through the
+     shutter of the hut ahead. Anything on the rack flies off.
+3. **Both out at the van.**
+   - **You should see:** the van on a bare hub. The hut's door is bolted.
+4. **P1 gives P2 a leg-up at the shutter.**
+   - **You should see:** it falls short. Naresh's note by the shutter.
+5. **Push the crate under the shutter,** P1 crouches on it, leg-up again.
+   - **You should see:** P2 goes up and into the hut.
+6. **P2, inside:** look at the wheel, the tiffin and the note. Draw the bolt.
+   - **You should see:** the door opens. P1 walks in and takes the wheel.
+7. **P1:** carry the wheel to the van, jack it up, try to fit it.
+   - **You should see:** it says the nuts sheared.
+8. **P2:** open the toolbox in the hut.
+   - **You should see:** new nuts, a can and a jug.
+9. **Fit the wheel, jack down, drive off.**
+   - **You should see:** the van drives normally; the story moves on.
 
-**What mistakes do:**
-- Too much weight too fast (both of you and a stone at the far end): the
-  leaf **slams** down and throws you flat; stones out at the end can bounce
-  off into the river.
-- The one left alone at the far end (the other stepped off too soon): the
-  leaf rises again with you on it.
-- Off the side of the leaf (jump over the low kerb) or into the river
-  anywhere near the bridge: SPLASH, you swim to the near bank and climb out
-  soaked (drips and shivers for a while). Whatever you held sinks.
-- A stone dropped right at the end can land on the far deck, where it
-  doesn't count.
-
-**Hints:** hold H at the bridge; they get clearer the longer you're there.
+**Mistakes to try:** drive with the wheel off; drive into the hut on the hub
+(you can always reverse out); jump with a boiling engine; jump with P2 left
+behind (they swim across).
 
 ### 6. The ghat pace notes
 

@@ -1560,9 +1560,43 @@ Agreed (all my picks):
   half as weight while the other walks over; both walking on together
   tips the far end down.
 
-### The ramp jump (the user, 2026-10-20): *proposed*, nothing built
+### The ramp jump (the user, 2026-10-20): *built on `g12`, waits for the user's look*
 
 The user: "keep a ramp there where the player has to speed up and cross a
 big jump in the van; when they land one tyre breaks off, and they find that
 tyre in the room at the far end, and other things. Not a puzzle, just a fun
 thing to do." Proposal: in the chat of 2026-10-20 (answers go here).
+
+**The user's answers (2026-11-04):** Q1-Q5 all A (my picks): the wheel goes
+through the shutter into the hut; the nuts snap, new ones are in the hut's
+toolbox; a miss lands in the shallows and you're back at the run-up; the dead
+control hut and snapped pole stay, gate, fence and carts go; git for the
+benchmark folder. S1 (Naresh's note at the ramp) and S2 (a rusted car in the
+river, somebody who tried) yes; S4 yes; S3 (the passenger films it) goes to
+`notes/POLISH.md`.
+
+**As built (`puzzles/RampJump.gd`, group `ramp_jump`):**
+- **The numbers (bench `ramp_bench`):** gap 14 m, ramp 0.8 m high, 8 m long,
+  5.6 m wide, 100 m run-up. 56.6 km/h at the lip falls short, 60.9 lands
+  clean, flat out from the run-up gives about 66. The deck is 12 m above the
+  water.
+- **Gap 14 m, not the proposal's 10.5 m:** my change, not asked for; the
+  ramp looked tiny at 10.5 m. The user kept it (2026-11-05: A).
+- **The jump:** real van physics. On landing the front-left wheel's nuts snap
+  (`Camper.snap_wheel`, the van runs on a bare hub, the HUD says ON THE HUB).
+  Anything loose on the rack flies off.
+- **The wheel's flight is scripted, not physics:** a set path, off a rubble
+  heap and through the shutter (a 1 m window; real physics would rarely get
+  it in). My decision; the user was told.
+- **A miss:** falls short, hangs by the belly, or a boiling engine: fade, "a
+  long, wet hour and a tow rope later", the van back at the run-up on its
+  handbrake, nothing lost. The player left behind after a good jump swims
+  across.
+- **The hut:** door bolted from inside. A leg-up alone falls short of the
+  shutter; a crate underneath with P1 crouched on it gets P2 up and in. P2
+  draws the bolt, P1 comes in by the door, carries the wheel out and jacks the
+  van. Fitting says the nuts sheared; the toolbox has new ones, plus a can and
+  a jug. Then wheel on, jack down, drive off.
+- **My own additions, for the user to judge:** Naresh's tiffin with two spoons
+  (one used, one still in its paper), a rubble heap that kicks the wheel up,
+  the extra notes `rj_hut` and `rj_legup`, a stone door ramp.

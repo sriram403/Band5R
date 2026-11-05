@@ -358,6 +358,8 @@ func _process(delta: float) -> void:
 			w = "STEAM! The coolant hose has split - %d C" % int(camper.temp)
 		elif camper.temp > Camper.TEMP_WARN:
 			w = "ENGINE HOT - ease off or stop"
+		elif camper.wheel_off:
+			w = "ON THE HUB - front-left wheel gone"
 		elif camper.tyre_flat:
 			w = "PUNCTURE - steer pulls left; fit the spare"
 		elif camper.fuel / Camper.FUEL_CAPACITY < 0.18:

@@ -26,7 +26,7 @@ const PUZZLES := [
 	["The windmill", "windmill", "", "Hold the starter lever; head-butt the legs back as they slide; the ladder, the napin. You start in the van at the gate."],
 	["The barn maze", "choose_road", "maze_gate", "Optional (Valley Road): the guide up the silo, the walker in the hedges; snow from the middle."],
 	["The lookout boards", "choose_road", "lookout", "Optional (Ridge Track): pictures on the landmarks, the patrol's riddles, snowballs, the dials."],
-	["The lift bridge", "bridge", "bridge_barrier_near", "The seesaw over the gap: one person past the middle tips it; four blocks on carts; the barrier's winch behind a fence (a leg-up); the lock in the hut on the far bank (in by the window: the crate + a leg-up). You start in the van before the barrier."],
+	["The ramp jump", "bridge", "", "Not a puzzle: the old ramp at the gap. 60 km/h from the run-up, a bang, your wheel through the far hut's shutter. In with the crate and a leg-up; new nuts in the toolbox; the jack. You start in the van at the run-up."],
 	["The ghat pace notes", "ghat", "", "Fog on the hairpins, the notes on the swung nav, the glimpse, the first attack. You start in the van at J3."],
 	["The coast watchtower", "tower", "coast_tower", "Sneak past the creature, climb the ramp, stamp the beach."],
 	["The photo", "photo", "", "Only P2 has the photo: find where it was taken."],
@@ -43,7 +43,7 @@ const PUZZLES := [
 ## Way-out puzzles and the step each belongs to: a jump (Story or Puzzles) to
 ## that step or before puts it back to how you first find it.
 const WAY_OUT_RESETS := [["windmill", "windmill"], ["barn_maze", "choose_road"],
-	["lookout_relay", "choose_road"], ["cooling_station", "coolant"], ["lift_bridge", "bridge"],
+	["lookout_relay", "choose_road"], ["cooling_station", "coolant"], ["ramp_jump", "bridge"],
 	["ghat", "ghat"], ["coast_watch", "tower"]]
 
 ## The journey, in order: [section, [[poi key, name, what's there], ...]].
@@ -77,9 +77,10 @@ const PLACES := [
 		["j2", "Last Fuel (J2)", "The dead pumps and the cans; the note on the kiosk door."],
 		["facility", "Water works", "The valves, the pump and the blue tank."],
 		["turbine", "The turbine", "It starts when the blue tank fills."],
-		["bridge_hut", "Bridge control hut", "W6: the RAISE / LOWER levers and the safety mirror."],
-		["machinery_in", "Bridge machinery house", "The gear, the wedge and the counterweight."],
-		["bridge_far", "Far side of the bridge", "Over the river, towards J3."],
+		["bridge_hut", "Dead bridge hut", "The levers, no power, no bridge left to lift."],
+		["ramp_foot", "The ramp", "The old trailer ramp at the gap. Naresh's note on the post."],
+		["far_hut", "The hut over the gap", "Where your wheel ends up."],
+		["bridge_far", "Far side of the gap", "Over the river, towards J3."],
 		["j3", "Foot of the ghat (J3)", "Where the hairpins start."],
 		["hairpin_1", "First hairpin", "Fog; the pace notes."],
 		["hairpin_2", "Second hairpin", "The glimpse between the trees."],
@@ -824,6 +825,23 @@ func reset_way_out(i: int) -> void:
 	var sta := get_tree().get_first_node_in_group("cooling_station") as CoolingStation
 	if sta != null and i > st.index_of("coolant") and (photo < 0 or i < photo):
 		sta.solve_quietly()
+	# past the ramp: over it, the wheel back on; at the "wheel" step, just landed
+	var rj := get_tree().get_first_node_in_group("ramp_jump") as RampJump
+	if rj != null and i >= st.index_of("wheel"):
+		if i == st.index_of("wheel"):
+			rj.just_landed()
+			st.flags["ramp_jumped"] = true
+			if boot.camper != null:
+				var fw: Vector3 = -rj.far_start.basis.z
+				var at: Vector3 = boot.builder.poi["bridge_far"]
+				van_to(at, atan2(-fw.x, -fw.z))
+				boot.camper.repair_all()
+				boot.camper.snap_wheel()
+				boot.camper.parking_brake = true
+				boot.camper.refresh_tyre_visuals()
+		else:
+			rj.solve_quietly()
+			st.flags["ramp_jumped"] = true
 	# past the water works the hose has split and been fixed: a jump to the
 	# bridge (150 m from the works) split it again, with steam and the
 	# "coolant hose has split" text (found 2026-10-18)
@@ -922,10 +940,10 @@ func play_puzzle(k: int) -> String:
 		teleport(boot.camper.global_transform * Vector3(-3.2, 0, -1.0))
 		run("van_seat")
 	if e[1] == "bridge":
-		# in the van on the road, 25 m short of the barrier, facing the bridge
-		var pr: Route = boot.builder.network.road("pump_house_road")
-		var bi: int = boot.builder.bridge_span.x - 14 - 12
-		van_to(pr.point(bi), atan2(-pr.forward(bi).x, -pr.forward(bi).z))
+		# in the van at the run-up, facing the ramp
+		var rj := get_tree().get_first_node_in_group("ramp_jump") as RampJump
+		var fw: Vector3 = -rj.van_start.basis.z
+		van_to(rj.van_start.origin, atan2(-fw.x, -fw.z))
 		boot.camper.repair_all()
 		teleport(boot.camper.global_transform * Vector3(-3.2, 0, -1.0))
 		run("van_seat")

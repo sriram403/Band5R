@@ -15,7 +15,11 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-10-20 (later). **#5 CUT by the user:** the seesaw
+Last updated: 2026-11-05. **The ramp jump is built on `g12` in `../MPG_dev`,
+not merged, not pushed:** it waits for the user's look at
+`appdata/videos/ramp.mp4` (`notes/TODO.md` "Right now", as built in
+`design/PUZZLE_CHANGES.md`). Next: their verdict, then merge and push.
+Before that, 2026-10-20 (later). **#5 CUT by the user:** the seesaw
 bridge comes out of the game; its full brief is a model benchmark at
 `D:\mine\Agentics\FutureModelTestTasks\bridge-puzzle-from-naresh.md`; the
 build stays on `g11`, tag `bridge-puzzle-reference` (never merged). In its

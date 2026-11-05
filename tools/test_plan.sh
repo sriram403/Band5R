@@ -47,7 +47,7 @@ test_plan() {
 		echo "tyre|tyre"
 		echo "base|gym_quick" ;;
 	set:puzzles)
-		echo "|windmill,waterworks,power,bridge,bridge_mistakes,maze,relay,relay_kb,bino_zoom,snowball" ;;
+		echo "|windmill,waterworks,power,ramp,ramp_edges,ramp_wedge,maze,relay,relay_kb,bino_zoom,snowball" ;;
 	set:creatures)
 		echo "stealth|stealth,taken,hiding"
 		echo "creature|van"

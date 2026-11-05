@@ -85,7 +85,7 @@ static func collect(boot: Node) -> Dictionary:
 		items.append(e)
 	var station := boot.get_tree().get_first_node_in_group("cooling_station") as CoolingStation
 	var windmill := boot.get_tree().get_first_node_in_group("windmill") as WindmillPower
-	var lift := boot.get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
+	var ramp := boot.get_tree().get_first_node_in_group("ramp_jump") as RampJump
 	var maze := boot.get_tree().get_first_node_in_group("barn_maze") as BarnMaze
 	var relay := boot.get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
 	var house := boot.world.get_node_or_null("P2Home") as HouseInterior
@@ -102,7 +102,7 @@ static func collect(boot: Node) -> Dictionary:
 			"xf": _xf(c.global_transform), "fuel": c.fuel, "temp": c.temp, "battery": c.battery,
 			"odometer": c.odometer, "leak": c.coolant_leak, "lockout": c.heat_lockout,
 			"headlights": c.headlights_on, "tarp": c.attack.tarped, "coolant_added": c.coolant_added, "coolant": c.coolant,
-			"park_brake": c.parking_brake, "tyre_flat": c.tyre_flat,
+			"park_brake": c.parking_brake, "tyre_flat": c.tyre_flat, "wheel_off": c.wheel_off, "nuts_found": c.nuts_found,
 			"tyre_stage": c.tyre_stage, "tyre_work": c.tyre_work,
 			"spare_available": c.spare_available,
 		},
@@ -111,7 +111,7 @@ static func collect(boot: Node) -> Dictionary:
 		"story": boot.story.to_dict(),
 		"station": station.to_dict() if station else {},
 		"windmill": windmill.to_dict() if windmill else {},
-		"lift_bridge": lift.to_dict() if lift else {},
+		"ramp_jump": ramp.to_dict() if ramp else {},
 		"maze": maze.to_dict() if maze else {},
 		"relay": relay.to_dict() if relay else {},
 		"house": house.to_dict() if house else {},
@@ -167,6 +167,8 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	c.engine_on = false
 	c.parking_brake = bool(cd.get("park_brake", true))
 	c.tyre_flat = bool(cd.get("tyre_flat", false))
+	c.wheel_off = bool(cd.get("wheel_off", false))
+	c.nuts_found = bool(cd.get("nuts_found", false))
 	c.tyre_stage = int(cd.get("tyre_stage", 0))
 	c.tyre_work = float(cd.get("tyre_work", 0.0))
 	c.spare_available = bool(cd.get("spare_available", true))
@@ -198,9 +200,9 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	var windmill := boot.get_tree().get_first_node_in_group("windmill") as WindmillPower
 	if windmill and d.has("windmill"):
 		windmill.from_dict(d["windmill"])
-	var lift := boot.get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
-	if lift and d.has("lift_bridge"):
-		lift.from_dict(d["lift_bridge"])
+	var ramp := boot.get_tree().get_first_node_in_group("ramp_jump") as RampJump
+	if ramp and d.has("ramp_jump"):
+		ramp.from_dict(d["ramp_jump"])
 	var maze := boot.get_tree().get_first_node_in_group("barn_maze") as BarnMaze
 	if maze and d.has("maze"):
 		maze.from_dict(d["maze"])
@@ -293,6 +295,8 @@ static func _make_item(e: Dictionary) -> Carryable:
 			return SpareWheel.new()
 		"flat_wheel":
 			return SpareWheel.make_flat()
+		"van_wheel":
+			return SpareWheel.make_van_wheel()
 		"batteries":
 			return BatteryPack.new()
 	return null

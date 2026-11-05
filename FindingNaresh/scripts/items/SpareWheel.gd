@@ -21,6 +21,14 @@ static func make_flat() -> SpareWheel:
 	return w
 
 
+## The van's own wheel, knocked off by the ramp jump's landing.
+static func make_van_wheel() -> SpareWheel:
+	var w := SpareWheel.new()
+	w.item_name = "the van's wheel"
+	w.kind = "van_wheel"
+	return w
+
+
 func _ready() -> void:
 	super._ready()
 	var tyre := ToonMat.make(Color(0.13, 0.13, 0.15), 0.02, 0.98)

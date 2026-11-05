@@ -445,3 +445,12 @@ The engine-level details (exact Godot calls, numbers) are also in
   time spent against the user's real clock. Full runs only at milestone
   checkpoints; a fix is tested on its own.
 
+## The ramp jump (2026-11-04)
+
+- **A world change moves the numbers:** a van's reset spot on a slope isn't a
+  rest. Put it on the handbrake, or it rolls and eats its own run-up.
+- **Measure before you promise a speed:** the bench (`ramp_bench`) gave the
+  real limits (57 short, 61 clean, 66 flat out); the proposal's gap didn't
+  hold up visually, so it changed. Tell the user when an agreed number moves.
+- **Don't fake only what physics can't do reliably:** the jump is real, the
+  wheel's path through a 1 m window is scripted.

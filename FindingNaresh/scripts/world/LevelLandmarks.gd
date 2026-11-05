@@ -599,7 +599,7 @@ func _gas_station(at: Vector3) -> void:
 	root.add_child(Build.interact_area(Vector3(0.8, 0.9, 0.8), Vector3(1.4, 1.5, -5.4), "Read the note on the door", func(p):
 		p.say("SORRY - NO FUEL
 
-Power's been off since the turbine at the water works stopped. No power, no pumps. If you're heading north, the old lift bridge runs off the same line.
+Power's been off since the turbine at the water works stopped. No power, no pumps. If you're heading north, the old lift bridge is out too. Has been for years.
 
 - M.", 10.0), "KioskNoteArea"))
 	var sign_n := Node3D.new()
@@ -819,10 +819,8 @@ func _radio_mast(at: Vector3) -> void:
 
 
 ## Where Pump House Road crosses the river: an old timber bridge whose middle
-## span is a lift leaf (`LiftBridge`, built with the hut in
-## `_bridge_hut_and_power`). Decks either side are solid; barriers and signs
-## stop the van until the leaf is down (they live in their own node, which the
-## bridge takes away).
+## span is gone. Decks either side are solid; `RampJump` (built with the huts
+## in `_bridge_hut_and_power`) stands at the near edge of the gap.
 func _broken_bridge() -> void:
 	var road := network.road("pump_house_road")
 	var root := Node3D.new()
@@ -847,6 +845,7 @@ func _broken_bridge() -> void:
 	# start over the bank's dip: a 0.4 m step nobody on foot could climb,
 	# found walking onto it, 2026-10-18), with a ramp plate up from the road
 	const EXTRA := 2
+	const GAP_FAR := 5           # the far edge, samples past the middle: ~14 m of open river
 	for e in [[first - 1 - EXTRA, 1.0], [last + 1 + EXTRA, -1.0]]:
 		var ei: int = e[0]
 		var dir: float = e[1]
@@ -861,10 +860,8 @@ func _broken_bridge() -> void:
 		root.add_child(ramp)
 		body.add_child(_box_shape(rsize, rxf))
 	for i in range(first - 1 - EXTRA, last + 1 + EXTRA):
-		if absi(i - mid) <= 2:
+		if i >= mid - 2 and i <= mid + GAP_FAR - 1:
 			continue               # the missing middle span
-		if i <= mid - 3 and i > mid - 3 - int(round(LiftBridge.APRON / Route.SAMPLE_SPACING)):
-			continue               # the seesaw's flap lies here (#5): the plank above it left a step a person couldn't climb back up; 8 m long since round 2b
 		var a := road.point(i)
 		var b := road.point(i + 1)
 		var c := (a + b) * 0.5
@@ -877,43 +874,29 @@ func _broken_bridge() -> void:
 			for s in [-1.0, 1.0]:
 				var post := Build.cyl(0.12, 1.2, wood, c + road.right(i) * s * (Landscape.ROAD_HALF + 0.2) + Vector3.UP * 0.6, Vector3.ZERO, 6, "RailPost")
 				root.add_child(post)
-	# piers under the ends of the gap; on the near side under the flap's
-	# hinge (at mid - 3 its top stuck up through the flap's hole, round 2b)
-	for gi in [mid - 3 - int(round(LiftBridge.APRON / Route.SAMPLE_SPACING)), mid + 3]:
+	# piers under the ends of the gap
+	for gi in [mid - 3, mid + GAP_FAR + 1]:
 		var gp := road.point(gi)
-		root.add_child(Build.cyl(0.5, 7.0, wood, gp + Vector3.DOWN * 3.5, Vector3.ZERO, 8, "Pier"))
-	# barrier and warning signs on both approaches
-	var bar_root := Node3D.new()
-	bar_root.name = "BridgeBarriers"
-	root.add_child(bar_root)
-	var bar_body := StaticBody3D.new()
-	bar_body.name = "BarrierBody"
-	bar_root.add_child(bar_body)
+		var pier_h := gp.y - _h(gp.x, gp.z) + 0.5   # right down to the river bed (they stopped 7 m down, in mid air)
+		root.add_child(Build.cyl(0.5, pier_h, wood, gp + Vector3.DOWN * pier_h * 0.5, Vector3.ZERO, 8, "Pier"))
+	# a warning sign on each approach, beside the road (nobody bothered with
+	# a barrier: the bridge has been out for years)
 	for end in [[first - 14, 1.0], [last + 14, -1.0]]:
 		var bi: int = end[0]
-		var bp := road.point(bi)
 		var fwd := road.forward(bi) * float(end[1])
-		var bx := Transform3D(Basis.looking_at(fwd, Vector3.UP), bp + Vector3.UP * 0.5)
-		var bar := Build.box(Vector3(Landscape.ROAD_HALF * 2.0, 0.25, 0.2), ToonMat.make(Color(0.95, 0.55, 0.15)), Vector3.ZERO, Vector3.ZERO, "Barrier")
-		bar.transform = bx.translated_local(Vector3(0, 0.6, 0))
-		bar_root.add_child(bar)
-		for s in [-1.0, 1.0]:
-			bar_root.add_child(Build.cyl(0.08, 1.2, ToonMat.make(C_STEEL), bp + road.right(bi) * s * 3.6 + Vector3.UP * 0.6, Vector3.ZERO, 6, "BarrierLeg"))
-		bar_body.add_child(_box_shape(Vector3(Landscape.ROAD_HALF * 2.0, 1.2, 0.3), bx.translated_local(Vector3(0, 0.1, 0))))
 		var sign_n := Node3D.new()
-		sign_n.transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), bp + road.right(bi) * 5.5)
+		sign_n.transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), road.point(bi) + road.right(bi) * 5.5)
 		sign_n.add_child(Build.cyl(0.07, 2.4, ToonMat.make(C_STEEL), Vector3(0, 1.2, 0), Vector3.ZERO, 6, "Post"))
 		sign_n.add_child(Build.box(Vector3(1.8, 1.0, 0.06), ToonMat.make(Color(0.98, 0.82, 0.20)), Vector3(0, 2.3, 0), Vector3.ZERO, "Plate"))
-		sign_n.add_child(Build.label3d("BRIDGE\nUP", Vector3(0, 2.3, 0.05), Vector3.ZERO, 0.32, Color(0.15, 0.12, 0.10)))
-		bar_root.add_child(sign_n)
+		sign_n.add_child(Build.label3d("BRIDGE\nOUT", Vector3(0, 2.3, 0.05), Vector3.ZERO, 0.32, Color(0.15, 0.12, 0.10)))
+		root.add_child(sign_n)
 	poi["bridge"] = road.point(mid)
-	poi["bridge_barrier_near"] = road.point(first - 14)
+	poi["ramp_approach"] = road.point(first - 14)
 	bridge_span = Vector2i(first, last)
 	bridge_mid = mid
-	bridge_barriers = bar_root
 
 
-## D8: the bridge's control hut on the near bank (the lift bridge, D9, is
+## D8: the bridge's dead control hut on the near bank (the leaf it worked is
 ## worked from it) and the power line to it from the water works: a turbine
 ## where the intake pipes meet the river, poles in the yard, then a pole every
 ## 30 m along the road to the hut. `PowerLine` lights it when the blue tank fills.
@@ -1009,44 +992,24 @@ func _bridge_hut_and_power() -> void:
 	world.add_child(line)
 	line.setup(cooling_station, turbine_xf, feet, sides, hut.transform * Vector3(0, H - 0.35, 0))
 
-	# #5 round 2: the seesaw over the gap, the gate before it, the hut on the
-	# far bank; the dead lever panel in the near hut's window
+	# the ramp at the near edge of the gap, the hut on the far bank; the dead
+	# lever panel in the near hut's window
 	var pa := road.point(bridge_mid - 2)
-	var pb := road.point(bridge_mid + 3)
+	var pb := road.point(bridge_mid + 5)
 	var fwd := (pb - pa).normalized()
 	var bz := -fwd
 	var bxa := Vector3.UP.cross(bz).normalized()
 	var bxf := Transform3D(Basis(bxa, bz.cross(bxa), bz), pa + Vector3.UP * 0.17)
 	var win := hut.transform.basis.x * toward_bridge   # from the hut out through its window
 	var panel_xf := Transform3D(Basis.looking_at(win, Vector3.UP), hut.transform * Vector3(bx - toward_bridge * 0.55, 0, -0.5))
-	panel_xf.basis = Basis.looking_at(win, Vector3.UP)     # -Z at the window: the operator faces it
-	# where a swimmer climbs out: the near bank beside the old deck, dry and
-	# not too steep
-	var water_y := Landscape.river_water_level(int(Landscape.river.nearest(pa.x, pa.z)["index"]))
-	var bank := Vector3.INF
-	for si in range(bridge_span.x - 6, bridge_mid - 1):
-		for off in [Landscape.ROAD_HALF + 1.5, Landscape.ROAD_HALF + 3.5, Landscape.ROAD_HALF + 5.5]:
-			var q: Vector3 = road.point(si) + out * float(off)
-			var g := _h(q.x, q.z)
-			if bank != Vector3.INF or g < water_y + 0.25 or Landscape.river_distance(q.x, q.z) > Landscape.RIVER_HALF + 3.0:
-				continue
-			var slope := maxf(absf(_h(q.x + 1.0, q.z) - _h(q.x - 1.0, q.z)), absf(_h(q.x, q.z + 1.0) - _h(q.x, q.z - 1.0))) * 0.5
-			if slope <= 0.45:
-				bank = Vector3(q.x, g + 0.05, q.z)
-	if bank == Vector3.INF:
-		var bi := bridge_span.x - 8
-		bank = road.point(bi) + out * (Landscape.ROAD_HALF + 2.0)
-		bank.y = _h(bank.x, bank.z) + 0.05
-	# the gate where the old barrier stood, facing the bridge
-	var g_i := bridge_span.x - 14
-	var gate_xf := Transform3D(Basis.looking_at(road.forward(g_i), Vector3.UP), road.point(g_i) + Vector3.UP * 0.02)
-	var bgate := BridgeGate.new()
-	bgate.name = "BridgeGate"
-	world.add_child(bgate)
-	bgate.setup(gate_xf, 22.0)
-	# the van's restart spot, 20 m back from the gate
-	var v_i := g_i - 10
-	var van_start := Transform3D(Basis.looking_at(road.forward(v_i), Vector3.UP), road.point(v_i) + Vector3.UP * 0.9)
+	var bank := _swim_out(road, range(bridge_span.x - 6, bridge_mid - 1), out, bridge_span.x - 8)
+	var bank_far := _swim_out(road, range(bridge_span.y + 8, bridge_mid + 5, -1), out, bridge_span.y + 8)
+	# the van's restart: a 100 m run-up to the ramp's foot; on the far side, on
+	# the road away from the gap
+	var r_i := bridge_mid - 2 - int(round((RampJump.RAMP_LEN + RampJump.RUNUP) / Route.SAMPLE_SPACING))
+	var van_start := Transform3D(Basis.looking_at(road.forward(r_i), Vector3.UP), road.point(r_i) + Vector3.UP * 0.9)
+	var f_i := bridge_span.y + 18
+	var far_start := Transform3D(Basis.looking_at(road.forward(f_i), Vector3.UP), road.point(f_i) + Vector3.UP * 0.9)
 	# the far bank's hut, on the hut side of the road, its door facing the road
 	var h_i := bridge_span.y + 6
 	var hp2 := road.point(h_i) + out * (Landscape.ROAD_HALF + 4.0)
@@ -1057,26 +1020,38 @@ func _bridge_hut_and_power() -> void:
 	var h_z := out
 	var h_xa := Vector3.UP.cross(h_z).normalized()
 	var far_hut_xf := Transform3D(Basis(h_xa, Vector3.UP, h_z), hp2)
-	var lift := LiftBridge.new()
-	lift.name = "LiftBridge"
-	world.add_child(lift)
-	# the flap is hinged where the last plank before it really ends (its top,
-	# in the bridge's frame): the road's points aren't exactly 2 m apart
-	var flap_hinge: Vector3 = bxf.affine_inverse() * (road.point(bridge_mid - 2 - int(round(LiftBridge.APRON / Route.SAMPLE_SPACING))) + Vector3.UP * 0.17)
-	lift.setup(bxf, pa.distance_to(pb) + 0.1, Landscape.ROAD_HALF * 2.0 + 0.6, panel_xf, line, bridge_barriers, far_hut_xf, bgate, bank, van_start, Vector2(flap_hinge.z, flap_hinge.y))
-	print("[bridge] the flap hinged at %.2f m back, %.3f m up (the last plank's end)" % [flap_hinge.z, flap_hinge.y])
-	poi["lift_pivot"] = bxf.origin
-	poi["lift_mid"] = bxf * Vector3(0, 0.1, -lift.leaf_len * 0.5)
+	var rj := RampJump.new()
+	rj.name = "RampJump"
+	world.add_child(rj)
+	rj.setup(bxf, pa.distance_to(pb), Landscape.ROAD_HALF * 2.0 + 0.6, panel_xf, far_hut_xf, bank, bank_far, van_start, far_start)
+	poi["ramp_foot"] = bxf * Vector3(0, 0.1, RampJump.RAMP_LEN)
+	poi["ramp_lip"] = bxf.origin
 	poi["bridge_panel"] = panel_xf.origin
-	poi["bridge_far"] = road.point(bridge_mid + 6)
+	poi["bridge_far"] = road.point(bridge_mid + 9)
 	poi["bridge_bank"] = bank
-	poi["bridge_gate"] = gate_xf.origin
-	poi["bridge_winch"] = gate_xf * Vector3(-bgate.half - 0.6, 0.1, -2.3)     # where you stand to wind it
 	poi["van_start"] = van_start.origin
 	poi["far_hut"] = hp2
 	poi["turbine"] = turbine_xf.origin
 	poi["power_line_first"] = feet[2]
 	poi["power_line_last"] = feet[feet.size() - 1]
+
+
+## Where a swimmer climbs out on one bank: dry, beside the deck, not too steep.
+func _swim_out(road: Route, samples: Array, out: Vector3, fallback: int) -> Vector3:
+	var pa := road.point(bridge_mid)
+	var water_y := Landscape.river_water_level(int(Landscape.river.nearest(pa.x, pa.z)["index"]))
+	for si in samples:
+		for off in [Landscape.ROAD_HALF + 1.5, Landscape.ROAD_HALF + 3.5, Landscape.ROAD_HALF + 5.5]:
+			var q: Vector3 = road.point(si) + out * float(off)
+			var g := _h(q.x, q.z)
+			if g < water_y + 0.25 or Landscape.river_distance(q.x, q.z) > Landscape.RIVER_HALF + 3.0:
+				continue
+			var slope := maxf(absf(_h(q.x + 1.0, q.z) - _h(q.x - 1.0, q.z)), absf(_h(q.x, q.z + 1.0) - _h(q.x, q.z - 1.0))) * 0.5
+			if slope <= 0.45:
+				return Vector3(q.x, g + 0.05, q.z)
+	var at := road.point(fallback) + out * (Landscape.ROAD_HALF + 2.0)
+	at.y = _h(at.x, at.z) + 0.05
+	return at
 
 
 ## The destination silhouette: five giant rose monuments on the central hill.

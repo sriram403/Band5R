@@ -6,6 +6,16 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [~] **2026-11-05: the ramp jump built on `g12` (`../MPG_dev`), NOT merged,
+      NOT pushed: waits for the user's look at the video
+      (`appdata/videos/ramp.mp4`).** The user's picks: wheel through the
+      shutter into the hut; nuts snapped, new ones in the hut's toolbox; a
+      miss goes in the shallows, back to the run-up; dead control hut and
+      snapped pole kept, gate/fence/carts gone; git for the benchmark folder
+      (done, local). Passenger filming the jump: `notes/POLISH.md`. Gap kept
+      at 14 m (the user, 2026-11-05: A). As built: `design/PUZZLE_CHANGES.md`
+      "The ramp jump". Next: the user's verdict, then merge into main and
+      push.
 - [~] **2026-10-20: #5 the lift bridge CUT (the user).** The whole seesaw
       puzzle comes out of the game. Its full brief is saved as a model
       benchmark: `D:\mine\Agentics\FutureModelTestTasksridge-puzzle-from-naresh.md`

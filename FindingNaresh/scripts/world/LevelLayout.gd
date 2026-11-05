@@ -199,8 +199,7 @@ var naresh_drops: Array = []
 var facility_xf := Transform3D.IDENTITY   ## the water works yard (its -Z points at the river)
 var cooling_station: CoolingStation
 var bridge_span := Vector2i.ZERO          ## Pump House Road samples over the river
-var bridge_mid := 0                       ## the sample in the middle of the lift leaf's gap
-var bridge_barriers: Node3D               ## barriers and signs, taken away when the leaf is down
+var bridge_mid := 0                       ## the sample in the middle of the gap
 var traffic: Traffic
 ## Scatter transforms by kind ("Rocks", "Trunks", ...), kept for tests and
 ## later systems: a headless run cannot read them back from the MultiMeshes.

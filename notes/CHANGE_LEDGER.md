@@ -490,3 +490,36 @@ works something he was told to; `naresh` checks it.
 
 **Found later**
 - (nothing yet)
+
+---
+
+## #5 The ramp jump replaces the lift bridge (branch `g12` from `g11`; NOT merged, NOT pushed, waits for the user's look)
+
+**What changed**
+- Deleted: `puzzles/LiftBridge.gd`, `puzzles/BridgeGate.gd`, walks
+  `puzzle5*`, the seesaw tests and their bot helpers.
+- `puzzles/RampJump.gd` (new): ramp, wreck, far hut, launch and landing, the
+  miss, hints, reset, save.
+- `world/LevelLandmarks.gd`: gap 14 m (mid-2 to mid+5), BRIDGE OUT signs, piers
+  to the river bed, pois `ramp_approach`, `ramp_foot`, `ramp_lip`, `bridge_far`,
+  `van_start`, `far_hut`. `world/LevelLayout.gd`: `bridge_barriers` gone.
+- `vehicle/Camper.gd`: `wheel_off`, `nuts_found`, `snap_wheel()`, a bare hub;
+  `on_moving_deck` gone. `items/SpareWheel.gd`: `make_van_wheel()`.
+- `core/SaveGame.gd`, `story/Story.gd` (`bridge` done on `ramp_jumped`, new
+  step `wheel`), `world/StormFront.gd`, `dev/DevMenu.gd`, `ui/PlayerHUD.gd`,
+  `tools/test_plan.sh`.
+
+**What it could break**
+- Anything crossing the bridge: `way_out`, the long drives, `return_run`, the
+  storm road (the road continues past a real gap now; the bot must jump or be
+  placed across).
+- `storm_road`, `power`, `save`, `puzzle_resets`, `dev`: adapted, see below.
+- The van's wheel code: the spare-wheel puzzle (`Camper` stage 1 and 4).
+
+**Tests that cover it**
+- `ramp`, `ramp_edges`, `ramp_wedge`, `ramp_retry`, `ramp_bench`; walk `ramp`
+  DONE (13 steps, 169 s).
+- Quick checks at the commit: see TODO "Right now".
+
+**Found later**
+- (nothing yet)

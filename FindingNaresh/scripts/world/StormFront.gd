@@ -204,15 +204,12 @@ func _flash() -> void:
 	_thunder_in = randf_range(1.2, 2.2)       # 430 m away: the sound comes after
 
 
-## The storm takes the power line down and the lift bridge's leaf swings up:
-## the old road is a dead end (design/RETURN.md, decision 1).
+## The storm takes the power line down; the gap still can't be crossed from
+## this side: the old road is a dead end (design/RETURN.md, decision 1).
 func _blow(on: bool) -> void:
 	var line := get_tree().get_first_node_in_group("power_line") as PowerLine
 	if line != null:
 		line.storm_cut(on)
-	var lift := get_tree().get_first_node_in_group("lift_bridge") as LiftBridge
-	if lift != null:
-		lift.storm_blow(on)
 
 
 ## The van at the blown bridge: told what they see; back on the ghat after
@@ -227,7 +224,7 @@ func _dead_end() -> void:
 		at_bridge = true
 		for n in get_tree().get_nodes_in_group("player"):
 			if (n as Node3D).global_position.distance_to(_bridge) < 120.0:
-				(n as PlayerRig).say("The bridge's leaf stands up in the gale again, swaying. Every lamp along the road is dark: the storm has the power line down. No way across.", 8.0)
+				(n as PlayerRig).say("The gap, and the ramp pointing the wrong way on the far side of it. Every lamp over there is dark: the storm has the power line down. No way across.", 8.0)
 	elif at_bridge and not said_north and d > 300.0:
 		said_north = true
 		var nz: Naresh = boot.get("naresh")

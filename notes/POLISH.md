@@ -41,3 +41,8 @@ each puzzle's changes (asked, proposed, agreed) are in
          from there until the dust settles.
       Files: `FindingNaresh/scripts/puzzles/BarnMaze.gd` (dust in
       `blow_dust`), the loft in `LevelLandmarks._barn`; test `t_maze`.
+
+- [ ] **The passenger films the jump (the user, 2026-11-04: "later on the
+      polishing phase").** From the ramp proposal, S3: the passenger holds up
+      a phone during the jump, and the clip can be watched afterwards. Files:
+      `puzzles/RampJump.gd` (launch and landing are detected there).

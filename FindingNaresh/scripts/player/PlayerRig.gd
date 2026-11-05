@@ -147,7 +147,7 @@ const BUTT_WINDUP := 0.14
 var _butt_wind := 0.0                  ## > 0 while rearing back
 var _shake_t := 0.0                    ## > 0: the view shakes (a butt landed)
 var dazed_t := 0.0                     ## > 0: stars circling your view
-## #5: in the river (off the lift bridge): you swim to `_swim_to` on the near
+## In the river at the gap (`RampJump`): you swim to `_swim_to` on the van's
 ## bank and climb out soaked (`wet_t`: drips and shivers for a while)
 var swimming := false
 var wet_t := 0.0
@@ -1526,7 +1526,7 @@ func hold_point(item: Carryable) -> Vector3:
 		return (_using as Node3D).global_position + Vector3.UP * 0.25 + right * 0.1
 	# really heavy things (a 25 kg stone) are hugged at the belly, level,
 	# wherever you look: held out where you looked, a stone carried up the
-	# lift bridge's sloping deck with eyes down was pushed into the deck,
+	# sloping deck with eyes down was pushed into the deck,
 	# lagged and was let go (#5, 2026-10-17)
 	if item.mass >= 24.0:
 		var flat := Vector3(fwd.x, 0.0, fwd.z).normalized()
@@ -1681,7 +1681,7 @@ static func _splash(at: Vector3) -> void:
 	p.finished.connect(p.queue_free)
 
 
-## The leg-up (#5, fun mechanic 5): your partner crouched right in front of
+## The leg-up (fun mechanic 5, learned at the far hut): your partner crouched right in front of
 ## you, both on your feet, your hands free: your jump goes off their back.
 ## Works anywhere from then on.
 func _legup_partner() -> PlayerRig:
