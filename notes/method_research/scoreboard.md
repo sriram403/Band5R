@@ -47,6 +47,27 @@ Stage 3 and checks each one really breaks the game before it counts.
 (Piers stopping in mid air belonged to the cut bridge; it is left out because
 `g12` has no piers.)
 
+**The patches:** `notes/method_research/practice/practice_bugs.py` (one at a time,
+on a trial branch, never committed, `restore` after). The fixes all landed in one
+commit (`98753bf`), so each bug is put back by its symptom.
+
+**Proved by the referee (2026-11-05)**, each against a clean control run (the
+referee's own check, kept private so nobody writes to it):
+
+| ID | Clean game | With the bug |
+|---|---|---|
+| P1 | the van moves 0.04 m in 5 s after a miss's reset, brake on | **3.79 m**, brake off |
+| P2 | P1 walks in by the open door | stuck **2.2 m** short of the door |
+| P3 | the swimmer is on foot after the reset | **still swimming** beside the van |
+| P4 | nearest rubble 1.94 m from the crate's spot | **0.00 m**: the heap under the window (picture) |
+| P5 | the wreck's middle 0.41 m above the water | **1.88 m under** the water |
+| P6 | the hub's bottom -0.01 m from the ground | **-0.19 m**: in the ground |
+| P7 | HUD: "ON THE HUB - front-left wheel gone" | HUD: **"PUNCTURE - steer pulls left"** |
+
+Knock-on seen: with P3 on, the van also moved 0.57 m after the reset with its
+brake on (clean: 0.04 m). I think the swimmer beside it nudged it; not measured.
+A method that blames P1 there has blamed the wrong thing.
+
 ### Test-breakers (for S3)
 | ID | Broken on purpose | Expected verdict |
 |---|---|---|
@@ -84,5 +105,6 @@ for the practice set only.
 | Final | | | | | | | | | |
 
 ## Change log
+- 2026-11-05, referee: practice patches written and proved (P4's first version put the rubble 1.5 m off the crate's spot and broke nothing: moved onto it).
 - 2026-11-05, referee: written before Stage 1. Piers (P-) dropped from the
   practice set: the bridge they belonged to is cut from `g12`.
