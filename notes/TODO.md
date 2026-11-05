@@ -6,6 +6,7 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [~] **2026-11-05: test-method research, NOT started (the user: no new thread yet; `g12` not merged until the method exists).** Ideas from Theo's video, with the user: score methods by a shared benchmark on the ramp: passes on the working game over many runs, catches hidden planted bugs (old real ones from git), says game or test is wrong. Reference: a recording of the user's own play. A separate judge looks at the video. Not yet played by the user: a miss, a boiling engine, P2 left behind.
 - [~] **2026-11-05: the user played the ramp: "the whole thing works on my playthrough"; the problem is how the tests are written (scripts that predict the future).** Plan, the user's: first agree here on what went wrong; then a new thread where two agents (GPT Sol high, Opus 5.5 high) discuss and must agree on one method for verifying complex play in the engine. Merging `g12` still needs the user's explicit OK.
 - [~] **2026-11-05: the ramp jump built on `g12` (`../MPG_dev`), NOT merged,
       NOT pushed: waits for the user's look at the video
