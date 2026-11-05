@@ -11923,22 +11923,14 @@ func t_ramp() -> void:
 	await shot("ramp_wheel_on")
 	# and it drives away
 	await seat_p1_driver()
-	c.set_parking_brake(false)
-	if not c.engine_on:
-		c.toggle_engine()
 	var from := c.global_position
 	log_line("the van parked at %s from the far edge (the gap's frame), the engine %s" % [r.global_transform.affine_inverse() * c.global_position, c.engine_on])
-	var road: Route = b.network.road("pump_house_road")
-	var ad := AutoDriver.new(self, road, c)
-	var dt := 0.0
-	while dt < 8.0:
-		await get_tree().physics_frame
-		dt += 1.0 / 60.0
-		ad.step(35.0)
-	ad.release()
-	check(c.global_position.distance_to(from) > 30.0, "and drives off (%.0f m in 8 s)" % c.global_position.distance_to(from))
+	await ramp_drive_off(26.0)
+	log_line("after the drive: %.0f m from where it stood, closest to the road %.1f m, %.0f km/h" % [c.global_position.distance_to(from), ramp_closest_to_road, kmh()])
+	check(c.global_position.distance_to(from) > 30.0, "and drives off (%.0f m)" % c.global_position.distance_to(from))
+	# the closest it got, not where it ends: the bot circles once on the road
+	check(ramp_closest_to_road < 3.0, "and gets back to the road (%.1f m off it)" % ramp_closest_to_road)
 	can.queue_free()
-	boot._on_joy_changed(0, false)
 
 
 ## The edges: the engine boiling at the ramp is sent back, never left over the
@@ -12007,18 +11999,39 @@ func ramp_film_can() -> void:
 	await physics_frames(2)
 
 
-## For the walk: the wheel's on; away up the road.
-func ramp_drive_off() -> void:
+## The wheel's on; away up the road, as a player would: the bare hub pulls left,
+## so the van can stop in the trees beside the road. Blocked: back up, try again.
+var ramp_closest_to_road := INF
+
+func ramp_drive_off(secs := 14.0) -> void:
 	var c := camper()
 	c.set_parking_brake(false)
 	if not c.engine_on:
 		c.toggle_engine()
 	var ad := AutoDriver.new(self, boot.builder.network.road("pump_house_road"), c)
-	var dt := 0.0
-	while dt < 7.0:
+	var t := 0.0
+	var mark := c.global_position
+	var mark_t := 0.0
+	while t < secs:
 		await get_tree().physics_frame
-		dt += 1.0 / 60.0
+		t += 1.0 / 60.0
 		ad.step(40.0)
+		ramp_closest_to_road = minf(ramp_closest_to_road, float(boot.builder.network.road("pump_house_road").nearest(c.global_position.x, c.global_position.z)["dist"]))
+		if int(t * 60.0) % 120 == 0:
+			log_line("  drive-off %.0f s: %.1f m off the road, %.0f km/h" % [t, float(boot.builder.network.road("pump_house_road").nearest(c.global_position.x, c.global_position.z)["dist"]), kmh()])
+		if t - mark_t > 2.5:
+			if c.global_position.distance_to(mark) < 3.0:
+				ad.release()
+				log_line("blocked at %s: backing up" % c.global_position)
+				var back := 0.0
+				while back < 3.0:
+					await get_tree().physics_frame
+					back += 1.0 / 60.0
+					key(KEY_S, true)
+				key(KEY_S, false)
+				t += back
+			mark = c.global_position
+			mark_t = t
 	ad.release()
 
 
@@ -12107,4 +12120,3 @@ func t_ramp_retry() -> void:
 		check(r.jumped, "try %d: flat out straight after a miss makes it" % k)
 		await until(func() -> bool: return not r.failing, 6.0)
 		await ramp_start()
-	boot._on_joy_changed(0, false)

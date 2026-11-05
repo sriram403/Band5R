@@ -519,7 +519,13 @@ works something he was told to; `naresh` checks it.
 **Tests that cover it**
 - `ramp`, `ramp_edges`, `ramp_wedge`, `ramp_retry`, `ramp_bench`; walk `ramp`
   DONE (13 steps, 169 s).
-- Quick checks at the commit: see TODO "Right now".
+- Run 2026-11-05: smoke 23 scenarios, 0 failures (3 min). `dev`, `power`,
+  `storm_road`, `save`, `puzzle_resets`, `ramp_retry` (4 of 4), `ramp_edges`,
+  `ramp_wedge`: 0 failures.
+- `ramp`: 1 failure, a check added that day (end of the drive on the road); the
+  van reached the road (1.1 m), then the bot went round in circles. The check
+  now asks for the closest it got: that edit has NOT been run.
+- NOT run: `way_out` and the rest of `set:puzzles`.
 
 **Found later**
 - (nothing yet)
