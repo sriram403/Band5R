@@ -104,7 +104,35 @@ for the practice set only.
 | g2 | `g13-trial-g2` | | | | | | | n/a | |
 | Final | | | | | | | | | |
 
+## Referee rulings (after Stage 2 round 1, 2026-11-05)
+
+Asked for by the auditors; they apply to every trial alike.
+
+- **R1 Shared parts.** A part one trial builds (e.g. c1's health layer) may be reused
+  by a later trial only after it passed its own negative controls in its trial. The
+  reusing trial's S3/S4 scores are marked "via c1"; build minutes are charged once,
+  to the trial that built it. A later trial never inherits an untested green claim.
+- **R2 Observer cameras.** A camera no player owns, which can't change play, inputs, or
+  what any actor senses, is allowed for evidence. It is not an "aimed camera" under S5.
+  It may add to, never replace, what a player must see from where they stand
+  (a note readable, a door seen open): that needs a player's view reached by play.
+- **R3 No human operator.** There is no person to play the trials: the user's time is
+  not a per-run resource (the brief's core problem). "Real play" in a trial means an
+  input-only actor whose path has been audited (S5). A model choosing inputs live is
+  allowed only if its S6 cost is measured and answered against the old trap.
+- **R4 The hour cap** covers the build and the builder's own qualification runs. The
+  scoring runs (S1 ten clean runs, S2 practice patches, S3 test-breakers, S4
+  doing-nothing cases) are run by the referee afterwards, watched and timed into S6,
+  and don't count against the cap. A trial that can't reach a runnable state in the
+  hour counts as failed and reports where it got.
+- **R5 Coverage.** A trial is scored on the stretch it claims to prove. Anything outside
+  it is reported NOT PROVEN, and practice bugs outside it count as **not caught** in S2.
+  A jump-only method can't score the hut's bugs.
+- **R6 Brief correction.** Walk `expect`s run alongside the steps only when marked
+  `watch` (`dev/LiveControl.gd:485-501`, found by both auditors); the brief said all do.
+
 ## Change log
+- 2026-11-05, referee: rulings R1-R6 added after Stage 2 round 1 (asked for by both auditors).
 - 2026-11-05, referee: practice patches written and proved (P4's first version put the rubble 1.5 m off the crate's spot and broke nothing: moved onto it).
 - 2026-11-05, referee: written before Stage 1. Piers (P-) dropped from the
   practice set: the bridge they belonged to is cut from `g12`.
