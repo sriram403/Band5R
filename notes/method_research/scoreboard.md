@@ -128,10 +128,15 @@ Asked for by the auditors; they apply to every trial alike.
 - **R5 Coverage.** A trial is scored on the stretch it claims to prove. Anything outside
   it is reported NOT PROVEN, and practice bugs outside it count as **not caught** in S2.
   A jump-only method can't score the hut's bugs.
+- **R7 Reading the built world (after round 2).** A read-only check (probing geometry,
+  reading the game's own state) reaches nothing by play, so S5 has nothing to forbid in it.
+  It may claim only what it reads ("the crate's spot is clear"), never what a player can do
+  or see there; those stay NOT PROVEN unless an actor reaches them by input.
 - **R6 Brief correction.** Walk `expect`s run alongside the steps only when marked
   `watch` (`dev/LiveControl.gd:485-501`, found by both auditors); the brief said all do.
 
 ## Change log
+- 2026-11-05, referee: R7 added after round 2 (asked by Claude); top 4 agreed, `top4.md`.
 - 2026-11-05, referee: rulings R1-R6 added after Stage 2 round 1 (asked for by both auditors).
 - 2026-11-05, referee: practice patches written and proved (P4's first version put the rubble 1.5 m off the crate's spot and broke nothing: moved onto it).
 - 2026-11-05, referee: written before Stage 1. Piers (P-) dropped from the
