@@ -108,7 +108,7 @@ On S1, today's method fails. Details: `trial_c1.md`.
 | c1 | `g13-trial-c1` `a6a412f` | **10/10** rig healthy | 0/7 (not covered, R5) | **3/3** (defect: one STOP didn't kill) | **4/4**, all <= 27 s | pass | 23 min build; ~140 s per run; no model tokens | n/a | **Passes its claim** (`trial_c1.md`) |
 | g1 | `g13-trial-g1` `a367de3` | **fails** (clean retries missed 2/2 in v4: driver 2 m left at the lip; v3 sweep false alarms) | not scored | via c1 (not re-scored) | partly: idle 10.03 s, blocker caught by ID | not audited yet | ~75 s per run; 30 min build in 2 rounds | n/a | **Failed qualification in its cap** (`trial_g1.md`) |
 | c2 | `g13-trial-c2` `04c3102` | **10/10**, 7/7 rules reached each run; spread 65.9-67.0 km/h only (R14) | **6/7 caught + named; P6 1/3** (G3 checks only "below"; the hub floated) | 3/3 via c1; **c2's own stale-field case: false pass** (silent NOT REACHED, 733 errors hidden) | **2/2** + 4/4 via c1; defect: a stuck test step goes unseen (c1's rig) | pass (declared setups) | 33 min build; 161-199 s per run; `c2_more` ~55 s; no model tokens | n/a | **Passes S1 + gates; S2 6/7; S3 hole** (`trial_c2.md`) |
-| g2 | `g13-trial-g2` | | | | | | | n/a | |
+| g2 | `g13-trial-g2` `afb9e9b` | **10/10** INSTRUMENT OK on clean arms; spread 66.4-66.9 only (R14) | **0/2 by verdict** (P1, P3 pass as INSTRUMENT OK); 2/2 visible on reading the sheets; P2, P4-P7 outside coverage | **T4 1/1** (game field renamed -> TEST before drive); T1-T3 via c1 | **N5 caught in 5.0 s** (real minimized window); N1 not passed (via c1, 20 s); N2-N4 via c1 | pass | 29 min build; arm 41-52 s, baseline ~128 s; no model in the loop; a reader needed to diagnose | n/a | **Qualified; strong health checks; not a detector; (a), (b) INCONCLUSIVE** (`trial_g2.md`) |
 | Final | | | | | | | | | |
 
 ## Referee rulings (after Stage 2 round 1, 2026-11-05)
@@ -188,6 +188,7 @@ Asked for by the auditors; they apply to every trial alike.
   `watch` (`dev/LiveControl.gd:485-501`, found by both auditors); the brief said all do.
 
 ## Change log
+- 2026-11-06, referee: g2 scored (14 runs). g2_a0 arms missed 3 / 4, other arms 0 / 13 (counts only).
 - 2026-11-06, referee: R15 (asked by GPT): ERROR / INCOMPLETE apart from NOT REACHED; cases T4, N5 added from g2 on. GPT's c2 audit and g2 spec in.
 - 2026-11-06, referee: c2 scored (24 runs). Found: P6's patch shows either way (the hub turns with the wheel); a stuck test step is unseen by c1's rig.
 - 2026-11-06, referee: R13, R14 (c2's two questions), before scoring c2.
