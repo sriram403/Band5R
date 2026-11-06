@@ -188,6 +188,7 @@ Asked for by the auditors; they apply to every trial alike.
   `watch` (`dev/LiveControl.gd:485-501`, found by both auditors); the brief said all do.
 
 ## Change log
+- 2026-11-06, the user (Stage 4, after 3 rounds): M11 one jump try (GPT); M10 today's drive-off checks + NOT PROVEN (Claude); M6 script errors split by where raised (Claude); M15 earliest condition heads the verdict (Claude). Build text: `final_decisions.md`.
 - 2026-11-06, referee: g2 scored (14 runs). g2_a0 arms missed 3 / 4, other arms 0 / 13 (counts only).
 - 2026-11-06, referee: R15 (asked by GPT): ERROR / INCOMPLETE apart from NOT REACHED; cases T4, N5 added from g2 on. GPT's c2 audit and g2 spec in.
 - 2026-11-06, referee: c2 scored (24 runs). Found: P6's patch shows either way (the hub turns with the wheel); a stuck test step is unseen by c1's rig.

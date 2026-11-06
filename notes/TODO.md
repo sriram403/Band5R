@@ -6,6 +6,7 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [~] **2026-11-06 ~15:00: Stage 4: three rounds done** (r1 blind proposals, r2 audits, r3 merged draft 16 agreed + GPT signs/holds). The user decided the 4 held points (M11 one try; M10, M6, M15 Claude's side). Build text `final_decisions.md` -> **next: an Opus builder builds `g14-final` (~1 h), referee requalifies, freeze, exam.**
 - [~] **2026-11-06 14:05: Stage 3 done. g2 built (29 min) and scored**: health side strong (T4 1/1, N5 caught in 5 s, S1 10/10), not a detector (P1/P3 pass as INSTRUMENT OK), (a)/(b) INCONCLUSIVE; `g2_a0` arms missed 3/4. **Next: Stage 4, the final exam (secret set + second puzzle) and signing.**
 - [~] **2026-11-06 ~13:10: GPT's turn done** (`audit_c2_gpt.md`: c2's score holds in scope; g1 CHANGED: driver and freeze rule retired, its outcome records kept; `trial_g2_spec.md`: baseline x3, 3 one-factor pairs (reset wait, steering release, input phase), swimmer pair, 59.5 min). Ruling R15 (ERROR / INCOMPLETE apart from NOT REACHED; T4, N5). **Next: the Opus builder builds g2 on `g13-trial-g2`.**
 - [~] **2026-11-06 13:20: c2 scored** (S1 10/10, S2 6/7 with P6 1/3, S3 hole: a stale field read gives a silent NOT REACHED; a stuck test step unseen by c1's rig). **Next: GPT answers g1 + c2 and specs g2; an Opus builder builds g2 on `g13-trial-g2`.**
