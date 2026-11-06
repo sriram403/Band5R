@@ -95,6 +95,18 @@ practice, a stale-field false pass), g2 (causal recorder: strong health checks, 
 checks with NOT PROVEN, script errors split by where raised, the earliest condition heads the verdict)
 -> built (24 min) -> frozen -> exam.
 
+## Addendum: final-2 (2026-11-06, after the signatures; the user asked for it)
+Both auditors' next step, done: **4 checks added for the 4 misses**, on `g14-final` **`669071c`**
+(method version final-2; 42 required checks). Written **after** seeing the bugs, so this is not a
+blind score; it proves the checks work, not that the method finds unknown bugs.
+| Check (in `t_ramp`) | Clean run (k2) | With the bug |
+|---|---|---|
+| with a coolant leak the boiling engine is stopped before the gap | stopped, no jump | X7: **FAIL** (jumped) |
+| a can of fuel and a jug of coolant by the bench (now: placed, in the bench's frame) | on the floor by the bench (y 0.00 / -0.01) | X5: **FAIL** (under the floor) |
+| the refitted wheel turns as the van drives | 1481 of 1481 frames | X1: **FAIL** (0 of 1551) |
+| the van steers straight after the fix | pull 0.000 | X2: **FAIL** (pull 0.055) |
+Clean run: **PASS** (179 s). Not re-run: the 10-run S1 on final-2 (one clean run only).
+
 ## Signatures (both: SIGN WITH RESERVATIONS; their fixes are applied above)
 
 ### Claude auditor (`final_sign_claude.md`)
