@@ -6,6 +6,7 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [~] **2026-11-06: next is puzzle #6, the ghat pace notes: waiting for the user's play** (F1 → Puzzles → 6, sheet: `notes/TEST_PUZZLES.md` #6) and what to change. Nothing built. Then the usual: propose (hardest first), a new branch from `main` in `../MPG_dev`, build, record, their OK, push. Still to decide when #6 is built: port the test method from `g14-final` to it (~1 hour, untested on a second puzzle).
 - [x] **2026-11-06 17:00: method final-2** (`g14-final` `669071c`): the 4 missing checks added; clean PASS; X1, X2, X5, X7 each FAIL by name (checks written after seeing the bugs). **`g12` merged into `main` and pushed (the user's OK).** The method itself stays on `g14-final` (test code, not merged).
 - [x] **2026-11-06 16:45: the test-method research is DONE.** Final method on `g14-final` `ceb63e3` (local, not merged): `bash tools/method_run.sh ramp`. Exam: secret 3/7 caught; S1 9/10 PASS + 1 INCOMPLETE (below the 10/10 target); stuck step caught in 5.5 s; stale field -> TEST. Both auditors SIGN WITH RESERVATIONS (`notes/method_research/FINAL.md`). S7 (second puzzle) skipped by the user (cost). **Next (both auditors' advice):** add 4 checks for the misses (rewards on the bench, the refitted wheel turns, the van drives straight, a leak boils and stops the van) and prove each against its bug and the clean game (~12 min of runs). `g12` merge still waits for the user's OK.
 - [~] **2026-11-06 ~15:00: Stage 4: three rounds done** (r1 blind proposals, r2 audits, r3 merged draft 16 agreed + GPT signs/holds). The user decided the 4 held points (M11 one try; M10, M6, M15 Claude's side). Build text `final_decisions.md` -> **next: an Opus builder builds `g14-final` (~1 h), referee requalifies, freeze, exam.**
@@ -243,8 +244,8 @@ being built and tested), so this always shows where the work is right now.
             leg-up over the fence; bug: the lock reachable through the hatch)
       - [ ] round 2 proposal written (PUZZLE_CHANGES #5 "Round 2", S1-S4,
             4 questions); **waiting for your answers**, nothing built
-- [ ] **Bug (your report, 2026-10-17), fix before the next thread's
-      hand-over:** the quiet test window shows nothing when you bring it
+- [x] **Bug (your report, 2026-10-17; fixed and pushed 2026-10-19, "The
+      test window" above):** the quiet test window shows nothing when you bring it
       up (dark strip + white; screenshots inside are fine). Likely the
       no-focus / mouse-passthrough flags from `e52d8fd`. Fix, test, push.
 - [x] **2026-10-17: #4 approved ("continue"), merged and pushed** (main

@@ -15,11 +15,11 @@ is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
 tested, so a new session (any model) can resume if the previous one ran out.
-Last updated: 2026-11-05 (later). **Test-method research running: `notes/TEST_METHOD_RESEARCH.md`.** The user played the ramp: it works; the merge waits for the method.
-**The ramp jump is built on `g12` in `../MPG_dev`,
-not merged, not pushed:** it waits for the user's look at
-`appdata/videos/ramp.mp4` (`notes/TODO.md` "Right now", as built in
-`design/PUZZLE_CHANGES.md`). Next: their verdict, then merge and push.
+Last updated: 2026-11-06. **The ramp jump is approved, merged and pushed
+(main `97eeefd`); the test-method research is done (`notes/method_research/FINAL.md`;
+its code stays on branch `g14-final`, not merged). Next: puzzle #6, the ghat
+pace notes: the user plays F1 → Puzzles → 6 and says what to change.**
+Before that, 2026-11-05: the ramp built on `g12`; the user played it ("the whole thing works").
 Before that, 2026-10-20 (later). **#5 CUT by the user:** the seesaw
 bridge comes out of the game; its full brief is a model benchmark at
 `D:\mine\Agentics\FutureModelTestTasks\bridge-puzzle-from-naresh.md`; the
@@ -675,6 +675,8 @@ choose_road → refuel → pump_road → coolant → pour_coolant → to_bridge 
 ---
 
 ## 6. What to do next
+
+**Update (2026-11-06):** #1-#4 approved and pushed; #5 cut, the ramp jump in its place, merged and pushed (main `97eeefd`). **Next: #6, the ghat pace notes:** the user plays F1 → Puzzles → 6 and says what to change; then propose (hardest idea first), build in `../MPG_dev` on a new branch from `main`, record, push after their OK. Then #7 on, in `TEST_PUZZLES.md` order. The test method (`notes/method_research/FINAL.md`, `bash tools/method_run.sh ramp`) lives on `g14-final`, not merged; porting it to #6 is untested (~1 hour). The older updates below are history.
 
 **Where it stands (2026-10-05, late): Milestone G, the puzzle talk.**
 Puzzle #1 (the water works) done in two rounds, approved, pushed. **Next:
