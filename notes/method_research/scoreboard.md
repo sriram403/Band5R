@@ -74,6 +74,7 @@ A method that blames P1 there has blamed the wrong thing.
 | T1 | P2's pad unplugged mid-run (`boot._on_joy_changed(0, false)`) | test problem (the game correctly pauses) |
 | T2 | A stale / wrong expression or node name in the test | test problem |
 | T3 | A scenario queued after `save` | test problem (it never ran) |
+| T4 | A field the method reads made stale (R15, from g2 on) | test problem, never NOT REACHED |
 
 ### Doing-nothing cases (for S4)
 | ID | Case | Pass |
@@ -82,6 +83,7 @@ A method that blames P1 there has blamed the wrong thing.
 | N2 | The game paused | reported within 60 s |
 | N3 | A player missing (P2 not in the scene / never spawned) | reported, not passed |
 | N4 | A scenario asked for but skipped | the summary says asked n, ran m |
+| N5 | A test step stuck on an await while the game runs (R15, from g2 on) | reported within 60 s; process checked gone |
 
 ### Final exam (secret)
 At least 5 new bugs written by the referee, each seen to break the game before
@@ -173,10 +175,20 @@ Asked for by the auditors; they apply to every trial alike.
   the 61-68 km/h spread S1 asks for is **not reached** and stays a recorded limit, to be met in
   the final exam by whichever driver the final method uses. Not a fail for c2, not a pass of
   the spread either.
+- **R15 Errors aren't NOT REACHED; a stuck step is a doing-nothing case (asked by GPT after c2,
+  2026-11-06).** Both are failure modes measured in c2's scoring, so they become standing checks
+  for g2 and the final exam (no retroactive rescoring: c1's and c2's scores already record them).
+  (1) A method reports three different things: **NOT REACHED** (a healthy observer evaluated the
+  trigger and it never held), **ERROR / TEST** (an observation failed: a missing or stale field,
+  a script error, a failed write), **INCOMPLETE** (an expected checkpoint absent at its deadline).
+  An ERROR or INCOMPLETE never counts as a pass. New S3 case **T4**: a field the method reads is
+  made stale; expected "test problem". (2) New S4 case **N5**: a test step stuck on an await while
+  the game keeps running (heartbeat fresh); reported within 60 s, and the stopped process checked gone.
 - **R6 Brief correction.** Walk `expect`s run alongside the steps only when marked
   `watch` (`dev/LiveControl.gd:485-501`, found by both auditors); the brief said all do.
 
 ## Change log
+- 2026-11-06, referee: R15 (asked by GPT): ERROR / INCOMPLETE apart from NOT REACHED; cases T4, N5 added from g2 on. GPT's c2 audit and g2 spec in.
 - 2026-11-06, referee: c2 scored (24 runs). Found: P6's patch shows either way (the hub turns with the wheel); a stuck test step is unseen by c1's rig.
 - 2026-11-06, referee: R13, R14 (c2's two questions), before scoring c2.
 - 2026-11-06, referee (second referee thread): R12 before c2 (state checks behind a driver that
