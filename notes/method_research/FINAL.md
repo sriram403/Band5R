@@ -29,7 +29,7 @@ rule coverage, the scope, and a NOT PROVEN list.
 ## The numbers (scoreboard checks, frozen head `ceb63e3`, all runs watched by the referee)
 | Check | Result |
 |---|---|
-| S1 no false alarms (10 clean runs, 5 speed x lane profiles x 2) | **9 PASS, 1 INCOMPLETE** (the drive-off flake), **0 FAIL**. Also seen in the exam: one clean-game FAIL from today's hut walk ("out of the door with the wheel"), a test-walker flake. |
+| S1 no false alarms (10 clean runs, 5 speed x lane profiles x 2) | **9 PASS, 1 INCOMPLETE** (the drive-off flake). **S1 did not meet its 10/10 PASS target.** Counting one exam run where the hut walk failed on steps the planted bug can't touch, the working game gave **9 PASS, 1 INCOMPLETE, 1 FAIL in 11 runs**. |
 | S2 secret bugs (ramp, 7) | **3 / 7 caught and named**: the invisible door wall, the short jump counted as landed, the swimmer on the wrong bank. **Missed 4**: a wheel that never turns (looks only), the van pulling left after the refit, the rewards under the floor (the check only asks "do they exist"), a boiling engine jumping (no run tries a leak). |
 | S2 practice set (on c2, the same rules) | 6 / 7 reliably; P6 now has an axle rule (the builder's control catches a 0.25 m hub, FAIL G3b). |
 | S3 blames the right thing | T4 (a game field renamed) -> **TEST before the drive, 26 s**; error in test code -> TEST; error in game code -> FAIL, owner unresolved. |
@@ -44,10 +44,11 @@ final method never hung, said TEST on a broken test, and turned the driver's mis
 INCOMPLETE instead of a game failure.
 
 ## What it can't do (honestly)
-- **It catches bugs only where a check looks** (3 / 7 on the exam). More checks, not more research,
-  close that: see the starter checklist.
-- **The driver and walker still flake** about 1 run in 5 (drive-off 3 / 20 clean landings across the
-  research; one hut-walk flake). The method reports it as INCOMPLETE / FAIL-unresolved; it doesn't fix it.
+- **It catches bugs only where a check looks** (3 / 7 on the exam). Checks aimed at the four misses may
+  close these gaps; prove each against its bug and the clean game (starter checklist below).
+- **A PASS means "the checked parts held", not "the ramp works".**
+- **The driver and walker still flake:** the drive-off failed 3 of 20 clean landings across the research
+  (about 1 in 7), plus one hut-walk FAIL in the exam runs. The method reports it as INCOMPLETE / FAIL-unresolved; it doesn't fix it.
 - **Why the same ~66.5 km/h jump sometimes misses** is still unexplained (g2: INCONCLUSIVE; the short
   0.3 s wait after a reset missed 3 / 4, other arms 0 / 13: a count, not a cause).
 - It doesn't judge fun, or what a player sees (observer pictures only), or anything outside its scope list.
@@ -74,8 +75,8 @@ INCOMPLETE instead of a game failure.
 - v6 = v5's watched run + **an outside judge**: health, completeness and state rules decide one RESULT;
   no model in the loop. Simple scripts stay for simple things.
 - A step never waits without a deadline; a stopped game is checked gone.
-- Missing work is INCOMPLETE, a broken test is TEST, a broken game is FAIL with the thing named;
-  "who's at fault" stays unresolved unless measured.
+- Missing work is INCOMPLETE, a broken test is TEST, a failed check is FAIL with the thing named;
+  whether the game or the test caused it stays unresolved unless measured.
 - Every new puzzle gets the starter checklist before it's called covered.
 - The recorded walkthrough for the user (v5) stays.
 
@@ -94,5 +95,38 @@ practice, a stale-field false pass), g2 (causal recorder: strong health checks, 
 checks with NOT PROVEN, script errors split by where raised, the earliest condition heads the verdict)
 -> built (24 min) -> frozen -> exam.
 
-## Signatures
-(below, in each auditor's own words)
+## Signatures (both: SIGN WITH RESERVATIONS; their fixes are applied above)
+
+### Claude auditor (`final_sign_claude.md`)
+# Claude's signature on FINAL.md (2026-11-06, head `79f41da`, method `g14-final` `ceb63e3`)
+
+**SIGN WITH RESERVATIONS.**
+
+**Why sign:** the run now tells the truth about itself. A broken test says TEST (26 s), a stuck step says STALLED (5.5 s, process gone), missing work says INCOMPLETE, and nothing is proven by teleporting (60 setup lines declared). Today's v5 passed 7 / 11 on a working game and hung ~440 s on a minimized window; this one gave 0 false FAILs from the jump in 10 runs, never hung, and costs ~165 s with no model in the loop.
+
+**Why the reservations:**
+- **It misses more than it catches: 3 / 7 secret bugs.** All 4 misses are the same gap: nothing checks *where* a thing sits (X5), that a fix *works* (X1 wheel, X2 van pulls left), or that a promised mistake *happens* (X7 boil). A false pass is the worse error by the scoreboard's own rule, so "PASS" today means "the checked parts held", not "the ramp works".
+- **S1 doesn't meet its written bar** (10 / 10, "one failure = fail"): 9 PASS + 1 INCOMPLETE, plus one clean-game FAIL from the hut walk. The method labels these honestly, but they're still flakes the user has to read.
+- **Untested beyond the ramp** (S7 skipped), so the "~1 hour" port is a guess.
+
+**Wrong or overstated in FINAL.md (exact fixes):**
+1. S1 row: add "**below the 10 / 10 bar**; counting the exam's clean hut-walk run, 9 PASS of 11 clean runs, 1 INCOMPLETE, 1 FAIL".
+2. "flake about 1 run in 5" -> "drive-off 3 / 20 clean landings (~1 in 7), plus one hut-walk FAIL": give counts, not a rounded rate.
+3. `scoreboard.md` Final row says "**Signed method**" before anyone signed -> "Frozen and examined; signatures in `FINAL.md`".
+4. Under "What it can't do", first bullet: add "so a PASS doesn't mean the ramp works; it means the checked parts held".
+
+**The one thing to do next:** write the four missing checks from the starter checklist (rewards on the bench, wheel turns, van drives straight, a leak boils and stops the van), then plant X1, X2, X5, X7 again and confirm each now FAILs by name (~4 runs, ~12 min). The bugs are no longer secret, so this is practice, not a new exam.
+
+### GPT auditor (`final_sign_gpt.md`)
+SIGN WITH RESERVATIONS
+I sign for limited use on the ramp, not as proof that the game is ready.
+The method caught and named 3/7 secret bugs (X3, X4, X6); it missed 4/7.
+Those misses matter: wheel movement, steering after repair, reward placement, and a jump with a boiling engine.
+S1 was 9 PASS + 1 INCOMPLETE, not the required 10/10 PASS; an exam run also had a clean-game hut-walk FAIL.
+It usefully stops a stuck step in 5.5 seconds, checks the process is gone, and reports a stale field as TEST in 26 seconds.
+At about 165 seconds per run with no model time, that is a useful improvement.
+S7 was skipped at the user's request; use on another puzzle remains untested.
+FINAL.md fix: add "S1 did not meet its 10/10 PASS target" to the S1 result.
+FINAL.md fix: replace "a broken game is FAIL" in the v6 draft with "a failed check is FAIL; whether the game or test caused it remains unresolved".
+FINAL.md fix: replace "More checks, not more research, close that" with "Checks aimed at the four misses may close these gaps; prove each against its bug and the clean game".
+Next: close those four measured ramp gaps, including a player's view of the wheel, and prove each check catches its bug without rejecting the clean game.
