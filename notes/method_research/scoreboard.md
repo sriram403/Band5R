@@ -152,10 +152,20 @@ Asked for by the auditors; they apply to every trial alike.
 - **R11 No scoring runs after a failed qualification.** When the clean run already fails
   in qualification, S1 can't reach 10 / 10; the trial is recorded as failed with its
   partial results, and no scoring runs are spent.
+- **R12 State checks ride on a driver that doesn't always get there (before c2, 2026-11-06).**
+  c2's rules look only where the run reaches; today's `t_ramp` reaches the end 7 / 11 times on the
+  working game. **S1:** a run counts when no rule fires on the working game; a rule the run never
+  reached is NOT REACHED (neither pass nor fail) and each rule's coverage is reported (looked in
+  k / 10 runs; under 5 / 10 is marked "S1 thin" for that rule). A rule firing on the working game
+  is a false alarm, whatever the driver did. A driver failure (miss, drive-off) is not c2's verdict
+  and must not be reported as a game problem by c2. **S2:** a practice bug whose rule was NOT
+  REACHED in its run gets one rerun, logged; still not reached = not caught.
 - **R6 Brief correction.** Walk `expect`s run alongside the steps only when marked
   `watch` (`dev/LiveControl.gd:485-501`, found by both auditors); the brief said all do.
 
 ## Change log
+- 2026-11-06, referee (second referee thread): R12 before c2 (state checks behind a driver that
+  reaches the end 7 / 11 times). The user chose: c2 next (A), report and keep going (A).
 - 2026-11-05, referee: g1 failed qualification; R9-R11.
 - 2026-11-05, referee: c1 scored; R8 (c1 fit for reuse).
 - 2026-11-05, referee: R7 added after round 2 (asked by Claude); top 4 agreed, `top4.md`.
