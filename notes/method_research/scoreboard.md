@@ -160,10 +160,24 @@ Asked for by the auditors; they apply to every trial alike.
   is a false alarm, whatever the driver did. A driver failure (miss, drive-off) is not c2's verdict
   and must not be reported as a game problem by c2. **S2:** a practice bug whose rule was NOT
   REACHED in its run gets one rerun, logged; still not reached = not caught.
+- **R13 Catches through a declared setup (c2's question 1, 2026-11-06).** A bug caught in a
+  stretch reached by a declared setup (e.g. the game's own F1 jump) counts as caught when the
+  bug's code is on that setup's path, and is marked "via setup". Checked for c2: the F1 jump
+  to "wheel" and the real landing both call `Camper.snap_wheel()` (`DevMenu.gd:839`,
+  `RampJump.gd:394`) and the HUD line is shared, so P6 / P7 count. A bug living only in the
+  landing's own code (`RampJump._land`) would not be on that path: there only a played landing
+  counts. The referee runs the practice patches on `ramp,c2_more`, so the played landing is
+  exercised too whenever `t_ramp` lands.
+- **R14 S1 spread for a method that doesn't own the driver (c2's question 2).** c2 is scored
+  on the spread `t_ramp` gives by itself (logged per run: lip speed, offset, where it parks);
+  the 61-68 km/h spread S1 asks for is **not reached** and stays a recorded limit, to be met in
+  the final exam by whichever driver the final method uses. Not a fail for c2, not a pass of
+  the spread either.
 - **R6 Brief correction.** Walk `expect`s run alongside the steps only when marked
   `watch` (`dev/LiveControl.gd:485-501`, found by both auditors); the brief said all do.
 
 ## Change log
+- 2026-11-06, referee: R13, R14 (c2's two questions), before scoring c2.
 - 2026-11-06, referee (second referee thread): R12 before c2 (state checks behind a driver that
   reaches the end 7 / 11 times). The user chose: c2 next (A), report and keep going (A).
 - 2026-11-05, referee: g1 failed qualification; R9-R11.
