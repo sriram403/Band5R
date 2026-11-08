@@ -1600,3 +1600,94 @@ river, somebody who tried) yes; S4 yes; S3 (the passenger films it) goes to
 - **My own additions, for the user to judge:** Naresh's tiffin with two spoons
   (one used, one still in its paper), a rubble heap that kicks the wheel up,
   the extra notes `rj_hut` and `rj_legup`, a stone door ramp.
+
+---
+
+## 6. The ghat pace notes: *proposed* (2026-11-08), nothing built
+
+### The user's asks (2026-11-08)
+- **No driving away.** Once the first tall figure (now named **"Problem"**)
+  sees the van at the second hairpin, the van heats up fast and leaks fuel,
+  because they're in Problem's zone. Driving faster heats it faster, until it
+  breaks down. You can't get over the pass by speed: the end goal is that they
+  need coolant.
+- The heat and the leak stop **only when Problem loses interest**.
+- Once stopped: show Problem **coming**, **looking** for people or anything
+  odd, and **losing interest**, all of it visibly.
+- **The tarp see-through from inside:** sitting in the tarped van you see the
+  tarp and the outside world at the same time.
+- **Port the new test method** (`notes/method_research/FINAL.md`) to #6.
+
+### The proposal (10/10 first; the user tones it down)
+1. **Seen.** At hairpin 2 Problem stands among the trees and turns its head
+   to follow the van: its eyes go from dim to bright, a rising whine. From
+   then the temperature needle climbs, steam leaks from the grille, fuel drips.
+   Hotter the harder you drive (flat out: about 60 s to a breakdown; crawling:
+   about 2 min). The pace notes still matter: a bad corner in fog costs time.
+2. **The breakdown.** The engine coughs, then cuts out in the fog, whichever
+   way they drive, before the pass. It won't restart: the radiator is boiled
+   dry.
+3. **Problem comes.** Far off in the fog, first only two eyes and the
+   whine; branches snap; it steps out onto the road behind them and walks up.
+4. **Hide (both out, each with a job).** Tarp the van (two people, one corner
+   each, as now), climb back in, stay still. From inside: Problem circles,
+   stops, turns its head to sounds, bends to look at the windows, touches the
+   canvas. The needle keeps creeping up while it's interested.
+5. **It loses interest,** visibly: its eyes dim, the whine falls, it turns
+   away slowly, walks off and the fog takes it. Only then do the needle and
+   the drip stop.
+6. **The fix.** Out again, tarp off, coolant into the radiator. Then start up
+   and climb on over the pass.
+
+### My suggestions (yes / no each)
+- **S1. The tarp is old shade netting, not solid canvas** (realistic
+  see-through): from the dark inside you look out through the weave (a fine
+  net pattern over the view, like a mosquito net); from outside it's a dark
+  lump. That's how real netting works: dark side sees out, the bright side
+  can't see in.
+- **S2. A hot radiator bites.** Open the cap too soon and it blows steam:
+  a WHOOSH, a white screen, a yelp, and the noise brings Problem back (the
+  needle starts again). Wait until the hiss stops.
+- **S3. Hold your breath.** When Problem bends to a window, the player there
+  holds a key to hold their breath (a short bar); let go early = a gasp, and
+  its head snaps round. Cold mountain air: your breath fogs the glass, so you
+  see the moment it matters.
+- **S4. Where the coolant comes from: a mountain spring.** If the van
+  carries none, the nearest water is a spring pipe on the bend 40 m back in
+  the fog (plain water works in a real radiator). One fills the jug at the
+  pipe, the other watches the fog with Naresh's binoculars and calls out if
+  the eyes come back. Problem could still be near: crouch, move when it looks
+  away.
+- **S5. Naresh's note on a milestone stone** before hairpin 2: "If the needle
+  climbs after you've seen one, it's them, not the engine. Stop, cover up,
+  don't breathe. Never open the cap hot."
+- **S6. Problem leaves marks:** frost handprints on the glass it touched, and
+  long scrape lines in the dust on the canvas. They fade slowly afterwards.
+
+### Repeats I see (flagged, as the rules ask)
+- **The tarp hide repeats at #13, the salt pans** (`design/RETURN.md`,
+  "halfway, two creatures come for the van, tarp it"). If #6 makes hiding the
+  heart of the puzzle, #13 should change when we get there (e.g. no tarp, or the
+  tarp blown away).
+- **Pouring coolant** is the same act as the split hose (windmill / barn
+  chest). Fine as a tool; the puzzle is the hiding and getting the water.
+- **Sneaking on foot (S4)** brushes against #7, the coast watchtower. Keep S4
+  short (one spring, one look-away), or drop it and rely on coolant in the van.
+
+### Questions
+- Q1. Coolant: A) the spring (S4: both out, a real errand); B) only what's on
+  the rack (none on board = stuck until you find some). My pick: A.
+- Q2. The tarp: A) shade netting (S1, realistic); B) plain see-through
+  canvas. My pick: A.
+- Q3. The breakdown: A) driven by heat (slower = later, never past the pass);
+  B) always at the same spot. My pick: A.
+- Q4. S2, S3, S5, S6: yes / no each.
+
+### The test method on #6 (the user: port it)
+When built: write #6's manifest (required work: seen, heat climbs only while
+it's interested, breakdown before the pass whatever the speed, tarp, it
+loses interest and the heat stops, coolant in, over the pass), typed reads,
+and checks placed where the ramp's exam misses were (where a thing sits, that
+a fix works, that a promised mistake happens). Each check proved against a
+planted bug and the clean game (`FINAL.md` port steps, ~1 hour, first try on a
+second puzzle).
