@@ -1691,3 +1691,14 @@ and checks placed where the ramp's exam misses were (where a thing sits, that
 a fix works, that a promised mistake happens). Each check proved against a
 planted bug and the clean game (`FINAL.md` port steps, ~1 hour, first try on a
 second puzzle).
+
+### Round 1: the user's answers (2026-11-09)
+- S1-S5: yes. Q2 (the tarp): my pick, shade netting (S1).
+- **S6 changed:** the marks stay on the van **for good** (scrapes, dents,
+  handprints), so by the end the van shows how far you've come: a funny
+  look back at the end of the game.
+- **Q1:** coolant already on board → use it; none → the spring (S4).
+- **Q3:** asked again in plain words (below, in the door sweep).
+
+### Round 1b: the door sweep (game-dev §1.2, every role #6 touches)
+Sent to the user 2026-11-09 with a pick for each; answers go here.
