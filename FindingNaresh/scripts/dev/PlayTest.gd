@@ -4606,6 +4606,49 @@ func show_credits() -> void:
 		hc.show_end()
 
 
+## Test bench (2026-11-09, after 3 misses on the second spring trip): one
+## player, the pot, the spring and the radiator, every step logged. Declared:
+## the van set boiled dry at 10 %, cool.
+func t_ghat_pot_bench() -> void:
+	var g := await _ghat_start()
+	var c := camper()
+	var p := p1()
+	await tap(KEY_X, 0.25)
+	c.boiled_dry = true
+	c.coolant = 0.1
+	c.temp = 90.0
+	p.force_exit = true
+	await physics_frames(4)
+	var k := 1
+	var pot: WaterPot = g.pots[k]
+	var sp: Node3D = g.springs[k]
+	await face_point(p, pot.global_position + Vector3.UP * 0.15, 1.6, sp.global_transform.basis.z)
+	await tap(KEY_E)
+	await physics_frames(8)
+	log_line("B1 picked up: held %s" % (p.held.name if p.held else "nothing"))
+	for trip in 3:
+		await face_point(p, sp.global_transform * Vector3(0, 0.8, -0.3), 1.3, sp.global_transform.basis.z)
+		log_line("B2.%d at the pipe: '%s', held %s" % [trip, p.prompt_text, p.held.name if p.held else "nothing"])
+		key(KEY_E, true)
+		await wait(WaterPot.POT_L / Ghat.FILL_RATE + 0.8)
+		key(KEY_E, false)
+		await physics_frames(3)
+		log_line("B3.%d filled: %.2f L, held %s" % [trip, pot.litres, p.held.name if p.held else "nothing"])
+		var front := c._body_root.global_transform * Vector3(0, 0, -5.4)
+		await place_player(p, Vector3(front.x, Landscape.ground(front.x, front.z) + 0.3, front.z), 0.0)
+		log_line("B4.%d carried to the van: held %s, pot %.1f m from P1" % [trip, p.held.name if p.held else "nothing", pot.global_position.distance_to(p.global_position)])
+		await look_at_point(p, c._body_root.global_transform * Vector3(0, 1.45, -4.0))
+		await physics_frames(3)
+		log_line("B5.%d at the bonnet: '%s' (aim %s)" % [trip, p.prompt_text, p.ray.get_collider().name if p.ray.is_colliding() else "nothing"])
+		var c0 := c.coolant
+		key(KEY_E, true)
+		await wait(minf(3.5, pot.litres / 1.6 + 0.3))
+		key(KEY_E, false)
+		await physics_frames(3)
+		log_line("B6.%d poured: coolant %.2f -> %.2f, pot %.2f L, held %s, boiled %s" % [trip, c0, c.coolant, pot.litres, p.held.name if p.held else "nothing", c.boiled_dry])
+		await shot("ghat_bench_%d" % trip)
+
+
 ## A required-work receipt for the method (#6's manifest lists them).
 func _work(id: String, ok: bool) -> void:
 	if mrec != null and mrec.active():
@@ -4822,8 +4865,9 @@ func _fix_with(c: Camper, g: Ghat, pot: WaterPot, sp: Node3D) -> void:
 	log_line("at the bonnet: '%s'" % p.prompt_text)
 	var blows := c.cap_blows
 	key(KEY_E, true)
-	await wait(3.5)
+	await wait(minf(3.5, item.litres / 1.6 + 0.3))   # only while it flows: E held on an empty pot drops it
 	key(KEY_E, false)
+	await physics_frames(3)          # let the release land at the bonnet (moving at once, it counted as a tap: drop)
 	log_line("poured: coolant %.2f, boiled dry %s" % [c.coolant, c.boiled_dry])
 	# hid badly: a second trip to the spring (declared: carried there and back)
 	var trips := 1
@@ -4844,12 +4888,14 @@ func _fix_with(c: Camper, g: Ghat, pot: WaterPot, sp: Node3D) -> void:
 		key(KEY_E, true)
 		await wait(WaterPot.POT_L / Ghat.FILL_RATE + 0.8)
 		key(KEY_E, false)
+		await physics_frames(3)
 		await place_player(p, Vector3(front.x, Landscape.ground(front.x, front.z) + 0.3, front.z), 0.0)
 		await look_at_point(p, c._body_root.global_transform * Vector3(0, 1.45, -4.0))
 		await physics_frames(3)
 		key(KEY_E, true)
-		await wait(3.5)
+		await wait(minf(3.5, item.litres / 1.6 + 0.3))   # only while it flows: E held on an empty pot drops it
 		key(KEY_E, false)
+		await physics_frames(3)
 		log_line("trip %d: coolant %.2f" % [trips, c.coolant])
 	log_line("trips to the spring: %d" % trips if pot != null else "the jug")
 	check(c.cap_blows == blows and not c.boiled_dry and c.coolant >= Camper.COOLANT_RUN, "cool now, it pours in: the radiator is full again (%.0f%%)" % (c.coolant * 100.0))
