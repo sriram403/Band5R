@@ -6,7 +6,14 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- [~] **2026-11-08: #6, the ghat pace notes: proposal with the user** (`design/PUZZLE_CHANGES.md` #6: no driving away; the figure "Problem" sees you and the van heats + leaks until it loses interest; breakdown, hide, coolant; the tarp see-through from inside; S1-S6, Q1-Q4). The user: port the test method to #6. Nothing built.
+- [~] **2026-11-09: #6, the ghat: AGREED, build next** (`design/PUZZLE_CHANGES.md` #6, "The user's answers (2026-11-09)", 11 points). Build in `../MPG_dev` on a new branch `g15` from `main`, in layers, each ending in a test:
+      - [ ] L1 the heat rule (all encounters): seen -> heat + leak until it loses interest; harder driving = hotter; breakdown before the pass; no puncture at #6
+      - [ ] L2 Problem's looks (eyes, head, lean, sniff, give-up turn) and sounds (whine, ticking, hiss)
+      - [ ] L3 the shade-net tarp, seen from inside
+      - [ ] L4 coolant: on board first, else 3 springs + steel pots; S2 hot cap; S3 hold breath; S5 Naresh's note
+      - [ ] L5 marks that stay (saved) + the end-credits turn; save mid-encounter -> before hairpin 2
+      - [ ] L6 the test method ported to #6, checks proved; the walk + video (~20-30 min)
+- [x] **2026-11-08: #6, the ghat pace notes: proposal with the user** (`design/PUZZLE_CHANGES.md` #6: no driving away; the figure "Problem" sees you and the van heats + leaks until it loses interest; breakdown, hide, coolant; the tarp see-through from inside; S1-S6, Q1-Q4). The user: port the test method to #6. Nothing built.
 - [x] **2026-11-06: next is puzzle #6, the ghat pace notes: waiting for the user's play** (F1 → Puzzles → 6, sheet: `notes/TEST_PUZZLES.md` #6) and what to change. Nothing built. Then the usual: propose (hardest first), a new branch from `main` in `../MPG_dev`, build, record, their OK, push. Still to decide when #6 is built: port the test method from `g14-final` to it (~1 hour, untested on a second puzzle).
 - [x] **2026-11-06 17:00: method final-2** (`g14-final` `669071c`): the 4 missing checks added; clean PASS; X1, X2, X5, X7 each FAIL by name (checks written after seeing the bugs). **`g12` merged into `main` and pushed (the user's OK).** The method itself stays on `g14-final` (test code, not merged).
 - [x] **2026-11-06 16:45: the test-method research is DONE.** Final method on `g14-final` `ceb63e3` (local, not merged): `bash tools/method_run.sh ramp`. Exam: secret 3/7 caught; S1 9/10 PASS + 1 INCOMPLETE (below the 10/10 target); stuck step caught in 5.5 s; stale field -> TEST. Both auditors SIGN WITH RESERVATIONS (`notes/method_research/FINAL.md`). S7 (second puzzle) skipped by the user (cost). **Next (both auditors' advice):** add 4 checks for the misses (rewards on the bench, the refitted wheel turns, the van drives straight, a leak boils and stops the van) and prove each against its bug and the clean game (~12 min of runs). `g12` merge still waits for the user's OK.

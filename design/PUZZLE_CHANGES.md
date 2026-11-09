@@ -1702,3 +1702,31 @@ second puzzle).
 
 ### Round 1b: the door sweep (game-dev §1.2, every role #6 touches)
 Sent to the user 2026-11-09 with a pick for each; answers go here.
+**The user's answers (2026-11-09): "recs", all 18 picks taken; Q3 = A (where
+the van dies depends on how hard you drive; never past the pass).** *Agreed:
+ready to build.* Summary of what's agreed for #6:
+1. Heat rule for **every** creature encounter from now on (#6 teaches it): once one
+   has seen the van, it heats and leaks until that creature loses interest; harder
+   driving = hotter. No driving away. The creatures are called **Problems**.
+2. The longer a Problem stays interested, the more coolant boils away (hide well:
+   one jug; sloppy: two trips). No puncture at #6 (no spare left). The leak costs
+   up to about a quarter of a tank, never empty. Pace notes unchanged.
+3. Both on foot: the tarp two-handed (one corner each); at the spring one fills,
+   one watches the fog with the binoculars. Coolant on board is used first; else
+   three springs on the hill, none over ~80 m behind any breakdown, with an old
+   steel water pot at each pipe.
+4. Problem shows interest: eyes dim -> bright, head turn, leans in (curious),
+   crouches and sniffs (searching), slumps and turns away slowly (gives up).
+5. Marks stay all game (scrapes, dents, handprints, per encounter), saved; a slow
+   turn around the battered van in the end credits.
+6. The tarp is old shade netting: from inside a faint grid, the outside clear.
+7. Heat shown only by the dash needle and grille steam. No music: the whine
+   rises with interest, the engine ticks hotter, a kettle hiss when it boils.
+8. Naresh's note (S5) on a milestone stone before hairpin 2. S2 (the hot cap
+   blows steam and brings it back), S3 (hold your breath at the window).
+9. Quit mid-encounter: back just before hairpin 2.
+10. Tests: the new method ported (`notes/method_research/FINAL.md`), checks proved
+    against planted bugs: heat climbs only while interested; breakdown before the
+    pass at every speed; the net tarp hides the van and you see out; heat stops
+    when it gives up; coolant fixes it; over the pass. Then the recorded video.
+11. Time (told to the user): build ~6-8 h in layers; the video ~20-30 min of it.
