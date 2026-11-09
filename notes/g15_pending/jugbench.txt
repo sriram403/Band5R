@@ -1,0 +1,43 @@
+<<<<
+## A required-work receipt for the method (#6's manifest lists them).
+====
+## Test bench (2026-11-09): the jug on the rack was sometimes found 77 m from
+## the van. Put it on the rack as the coolant test does, move the van as the
+## test does, drive, and log where the jug really is at every step.
+func t_ghat_jug_bench() -> void:
+	for round in 3:
+		var g := await _ghat_start()
+		var c := camper()
+		boot.dev_menu.van_jug(5.0)
+		await physics_frames(2)
+		var jug := c.stowed_item(c.storage_slots[2])
+		_jug_log("R%d after van_jug" % round, c, jug)
+		await van_to(g.road.point(g.hairpins[g.seen_hp()] - 35))
+		_jug_log("R%d after van_to" % round, c, jug)
+		var ad := AutoDriver.new(self, g.road, c)
+		var t := 0.0
+		var next := 0.0
+		while t < 25.0:
+			await get_tree().physics_frame
+			t += 1.0 / 60.0
+			ad.step(-1.0)
+			if t >= next:
+				next += 5.0
+				_jug_log("R%d driving %.0f s" % [round, t], c, jug)
+		ad.release()
+		var d := jug.global_position.distance_to(c.global_position) if jug != null else -1.0
+		check(jug != null and d < 6.0, "R%d: the jug rides on the rack (%.1f m from the van)" % [round, d])
+
+
+func _jug_log(tag: String, c: Camper, jug: Carryable) -> void:
+	if jug == null:
+		log_line("%s: no jug on the rack" % tag)
+		return
+	var slot := c.storage_slots[2]
+	log_line("%s: jug %.1f m from the van, %.2f m from its slot; parent %s; frozen %s; physics pos %s vs node %s" % [tag,
+		jug.global_position.distance_to(c.global_position), jug.global_position.distance_to(slot.global_position),
+		jug.get_parent().name, jug.freeze, PhysicsServer3D.body_get_state(jug.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM).origin, jug.global_position])
+
+
+## A required-work receipt for the method (#6's manifest lists them).
+>>>>

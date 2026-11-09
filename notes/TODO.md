@@ -6,6 +6,13 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [~] **2026-11-10 (stopped by the user at 00:05): #6 on `g15`, L6 nearly done. NEXT THREAD, in order:**
+      1. Apply `notes/g15_pending/l6_final.py` (removes the stall drag: measured useless, 32 vs 36 m; window-lean plant to 2.0 m) with `python notes/g15_pending/l6_final.py`; compile.
+      2. Planted-bug proofs (`notes/g15_pending/prove_ghat_2026-11-09.txt`): 17 of 20 PROVED. Left: `lean_close` (rerun group `lean` after step 1), `endless_window` NOT PROVED (with P2 never holding breath the search still ended: find why the plant didn't stop it, or what the check needs), `no_stall_drag` dropped (step 1).
+      3. OPEN bug: the jug on the rack sometimes 77 m from the van (2 of ~5 `ghat_jug` runs; ROUGH_NOTES). Test bench ready: `notes/g15_pending/jugbench.txt` (apply with `patch.py` to `FindingNaresh/scripts/dev/PlayTest.gd`, run `tools/run_test.sh ghat_jug_bench`).
+      4. Re-freeze (`python tools/method/freeze_ghat.py`), one final clean run `tools/method_run.sh ghat` (~20 min, all 7 must PASS).
+      5. The walk: `python tools/live/make_ghat.py`, `tools/record_walk.sh ghat` (~10 min video), watch it, send with times. Two failed takes: stop and tell the user.
+      6. Write the FINAL.md addendum (#6 port) + ledger proof table; the user's OK on the video; then merge `g15` into `main`, push as sriram403 (main's local note commits go with it).
 - [~] **2026-11-09: #6, the ghat: AGREED, build next** (`design/PUZZLE_CHANGES.md` #6, "The user's answers (2026-11-09)", 11 points). Build in `../MPG_dev` on a new branch `g15` from `main`, in layers, each ending in a test:
       - [x] L1 the heat rule (all encounters): seen -> heat + leak until it loses interest; harder driving = hotter; breakdown before the pass; no puncture at #6. `ghat_heat` 0 failures (3 driving profiles), `van` adapted. **Two picks pending the user:** Q1 B (seen at hairpin 1: hairpin 2 leaves 170 m, too short), Q2 B (TEMP/COOL bars hidden only while one is interested). Ledger: #6 L1
       - [x] L2 Problem's looks (eyes, head, lean, sniff, give-up turn) and sounds (whine, ticking, hiss). `ghat_looks` 0 failures

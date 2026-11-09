@@ -85,6 +85,15 @@ they/them.
 
 ## 2. Status right now (2026-09-29; latest at the top, 2026-10-07)
 
+- **2026-11-09: puzzle #6, the ghat, BUILT on `g15` (`../MPG_dev`), NOT merged, NOT pushed:
+  waits for the user's look at the video.** L1-L5 built and tested (`notes/TODO.md`,
+  `notes/CHANGE_LEDGER.md` #6). L6: the test method ported (`tools/method_run.sh ghat`,
+  `GHAT=` / `FIXTURE=`), 116 required checks, `dev/GhatWatch.gd` H1-H3, `core/Plant.gd`
+  (planted bugs, off by default), `tools/method/prove_ghat.py`; each scenario passes under
+  the method. The user's answers while building: Q1 Problem watches from hairpin 1; Q2 the
+  UI to the polish phase (`notes/POLISH.md`). Then: the walk `tools/live/make_ghat.py`,
+  `tools/record_walk.sh ghat`, the user's OK, merge into `main`, push as sriram403.
+
 - **2026-10-17: puzzle #4, the lookout boards, done and pushed** (main
   `f2026b2`, `design/PUZZLE_CHANGES.md` #4, `notes/CHANGE_LEDGER.md` #4).
   The user's asks: codes on the landmarks, scroll zoom (realistic, 8x
