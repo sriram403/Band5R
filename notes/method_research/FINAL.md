@@ -62,6 +62,11 @@ INCOMPLETE instead of a game failure.
 5. Deadline every new await; mark reach steps.
 6. Two clean runs; set step budgets from them; commit.
 7. Report hours and lines.
+8. **The list grows, it is never fixed (the user, 2026-11-09).** Every issue found later (while
+   building, in a watched run, in the video, in the user's play) gets a check that FAILS on it; plant
+   the bug back (or replay the case) to prove the check catches it, and run the clean game to prove it
+   doesn't cry wolf; then add it to the manifest and `notes/CHANGE_LEDGER.md`. A check is only removed
+   with the user's OK. Same rule for every puzzle's tests.
 
 **Starter checklist** (the kinds of rule that caught bugs, or would have):
 - an **indicator matches the real state** (HUD, gauge, prompt);
