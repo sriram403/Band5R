@@ -576,7 +576,11 @@ func _move(delta: float) -> void:
 		v = to.normalized() * spd
 		v = _unstick(v, delta)
 		var want := atan2(-v.x, -v.z) if v.length() > 0.05 else atan2(-to.x, -to.z)
-		rotation.y = lerp_angle(rotation.y, want, 1.0 - exp(-delta * (10.0 if state == State.TAKE else 4.0)))
+		if turn_cap > 0.0:
+			# capped while walking too (it set off and snapped its last 17 deg, 66 deg/s)
+			rotation.y = rotate_toward(rotation.y, want, deg_to_rad(turn_cap) * delta)
+		else:
+			rotation.y = lerp_angle(rotation.y, want, 1.0 - exp(-delta * (10.0 if state == State.TAKE else 4.0)))
 	elif face != Vector3.INF:
 		var look2 := face - global_position
 		if Vector2(look2.x, look2.z).length() > 0.2:

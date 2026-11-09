@@ -674,3 +674,28 @@ screen's timing: E now works after 21 s, not 5).
 |---|---|---|
 | marks piled up across replays of #6 | "a clean van to start with" | don't clear marks on reset |
 | — (the user's ask) | "the marks are saved and come back on load" | don't save marks |
+
+### L6 the test method ported to #6 (2026-11-09)
+**What changed**
+- From `g14-final` (the research's method, `notes/method_research/FINAL.md`): `dev/RigBeat.gd`,
+  `dev/MethodRec.gd`, `dev/C2Watch.gd`, `dev/RigInject.gd`, `tools/method/*`, `tools/method_run.sh`,
+  `tools/rig/*`; PlayTest's method hooks applied 3-way (no conflicts).
+- New for #6: `tools/method_run.sh ghat` (`GHAT=` scenarios, `FIXTURE=` plants); `tools/method/
+  make_ghat_manifest.py` (a scenario's checks *and* its helpers', `%%` handled) and `freeze_ghat.py`
+  (113+ required checks, work receipts seen / boiled / gave_up / fixed / over_pass); `dev/GhatWatch.gd`
+  (state rules H1 heat only while interested, H2 the needle shows the real heat, H3 coolant only rises
+  when poured); `core/Plant.gd` (planted bugs, off by default, one per check, read only at the line
+  each breaks); `tools/method/prove_ghat.py` (runs the planted groups, writes PROVED / NOT PROVED);
+  per-scenario episode deadlines (`PlayTest.EPISODE_S`); the method's whole-run cap and scope for
+  `ghat`; `whole_run_cap_ghat_s` 3300.
+- `MethodRec.WATCHED` gains the 7 #6 scenarios.
+
+**What it could break**: the ramp's method run (`tools/method_run.sh ramp`): the PlayTest hooks are the
+same, `frozen.json` gained entries; not re-run.
+
+**Found by the method's first runs**
+- TEST, correctly: two checks print "50%" and the manifest builder read `%%` literally (fixed).
+- STALLED, correctly: #6's scenarios need their own episode limits (`EPISODE_S`).
+- The clean run: `ghat_heat`'s follow-on waited 55 s for the give-up, but with nobody holding their
+  breath it takes ~3 rounds (by design now): the test hides well there; `ghat_looks` 66 deg/s: the walk
+  away wasn't turn-capped (fixed in `Creature._move`).

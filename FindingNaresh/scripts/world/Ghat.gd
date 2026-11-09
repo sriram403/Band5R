@@ -37,7 +37,7 @@ func setup(b) -> void:
 	road = b.network.road("ghat_road")
 	_find_hairpins()
 	fog_from = maxi(0, (hairpins[0] if not hairpins.is_empty() else 0) - 75)
-	fog_to = road.point_count() - 3      # #6: up to the pass, where the van may die
+	fog_to = road.point_count() - (20 if Plant.on("fog_short") else 3)      # #6: up to the pass, where the van may die
 	b.poi["ghat_fog"] = road.point((fog_from + fog_to) / 2)
 	for k in hairpins.size():
 		b.poi["hairpin_%d" % (k + 1)] = road.point(hairpins[k])
@@ -244,14 +244,14 @@ func _events(van: Camper, i: int) -> void:
 	# measured along the road: the hairpins fold back, a straight-line
 	# distance fired on the first one
 	if hairpins.size() >= 2 and not flags.has("ghat_glimpse") and on_ghat \
-			and i >= hairpins[SEEN_HAIRPIN] - int(GLIMPSE_AT / Route.SAMPLE_SPACING) and i <= hairpins[SEEN_HAIRPIN] + 10:
+			and i >= hairpins[seen_hp()] - int(GLIMPSE_AT / Route.SAMPLE_SPACING) and i <= hairpins[seen_hp()] + 10:
 		flags["ghat_glimpse"] = true
-		_spawn_problem(road.point(hairpins[SEEN_HAIRPIN]), van)
+		_spawn_problem(road.point(hairpins[seen_hp()]), van)
 
 
 ## Among the trees on the outside of the second hairpin, facing the road.
 func _spawn_problem(apex: Vector3, van: Camper) -> void:
-	var h: int = hairpins[SEEN_HAIRPIN]
+	var h: int = hairpins[seen_hp()]
 	var out := apex - road.point(maxi(0, h - 12))
 	out = (out + (apex - road.point(mini(road.point_count() - 1, h + 12)))).normalized()
 	out.y = 0.0
@@ -302,14 +302,17 @@ func _direct() -> Dictionary:
 			to.y = 0.0
 			var fwd := -problem.global_transform.basis.z
 			fwd.y = 0.0
-			if phase_t < SLUMP_S or fwd.angle_to(to) > 0.3:
+			if phase_t < SLUMP_S or (fwd.angle_to(to) > 0.3 and not Plant.on("fast_turn")):
 				return {"goal": here, "face": _leave_to}
 			return {"goal": _leave_to, "speed": LEAVE_SPEED, "face": _leave_to}
 	return {}
 
 
 func _round_point(van: Camper, k: int) -> Vector3:
-	var p: Vector3 = van._body_root.global_transform * (ROUND[k][0] as Vector3)
+	var lk: Vector3 = ROUND[k][0]
+	if Plant.on("lean_close") and absf(lk.x) > 2.5:
+		lk.x = signf(lk.x) * 2.3
+	var p: Vector3 = van._body_root.global_transform * lk
 	p.y = Landscape.ground(p.x, p.z)
 	return p
 
@@ -384,7 +387,7 @@ func _leave_mark(van: Camper, k: int) -> void:
 func adjust_save(d: Dictionary) -> void:
 	if not phase in ["watch", "follow", "come", "circle"]:
 		return
-	var i := maxi(0, hairpins[SEEN_HAIRPIN] - 45)
+	var i := maxi(0, hairpins[seen_hp()] - 45)
 	var p := road.point(i)
 	var f := road.forward(i)
 	var cam: Dictionary = d["camper"]
@@ -438,7 +441,7 @@ func _breath_at_window(van: Camper, delta: float) -> void:
 	var p: PlayerRig = null
 	for n in get_tree().get_nodes_in_group("player"):
 		# (a seat is the seat's node, not the van: comparing it to the van never matched)
-		if (n as PlayerRig).seat != null and (n as PlayerRig).seat_role == role:
+		if ((n as PlayerRig).seat == van if Plant.on("seat_compare") else (n as PlayerRig).seat != null) and (n as PlayerRig).seat_role == role:
 			p = n
 	if p == null:
 		return
@@ -472,7 +475,7 @@ func _given_away(van: Camper, p: PlayerRig, text: String) -> void:
 	breath_events += 1
 	# each window gives you away once an encounter: it starts its search again
 	# (one more round, more coolant boiled away); after that it only lingers
-	if _windows_given.has(p.seat_role):
+	if _windows_given.has(p.seat_role) and not Plant.on("endless_window"):
 		_stop_t = maxf(0.0, _stop_t - 1.5)
 		p.say("Your breath fogs the glass again. It lingers at the window... and moves on.", 4.0)
 		return
@@ -631,7 +634,12 @@ func _build_milestone(b, i: int) -> void:
 
 ## Problem is interested in the van right now (it heats and leaks).
 func interested() -> bool:
-	return phase in ["follow", "come", "circle"]
+	return phase in ["follow", "come", "circle"] or (Plant.on("keeps_interest") and phase == "leave")
+
+
+## Which hairpin it watches from (a plant puts it back at the second).
+func seen_hp() -> int:
+	return 1 if Plant.on("seen_h2") else SEEN_HAIRPIN
 
 
 func _run_problem(van: Camper, delta: float) -> void:
@@ -653,7 +661,7 @@ func _run_problem(van: Camper, delta: float) -> void:
 			problem.show_interest = clampf(1.0 - phase_t / 4.0, 0.0, 1.0)
 			problem.pose = "slump" if phase_t < SLUMP_S + 2.0 else "stand"
 			problem.look_point = Vector3.INF
-			problem.turn_cap = 35.0
+			problem.turn_cap = 0.0 if Plant.on("fast_turn") else 35.0
 	var flags: Dictionary = _story.flags if _story != null else {}
 	var d := Vector2(problem.global_position.x - van.global_position.x, problem.global_position.z - van.global_position.z).length()
 	var stopped := van.boiled_dry or (not van.engine_on and van.linear_velocity.length() < 0.5)
@@ -700,7 +708,7 @@ func _run_problem(van: Camper, delta: float) -> void:
 					quiet_t += delta
 				# it gives up only once it has been all round the van (the bonnet,
 				# both windows, the back) and heard nothing for a while
-				if quiet_t > SEARCH_S and stops_done >= POSED_STOPS:
+				if quiet_t > SEARCH_S and (stops_done >= POSED_STOPS or Plant.on("round_skip")):
 					_give_up(van)
 			else:
 				quiet_t = 0.0
@@ -743,10 +751,10 @@ func _start_come(van: Camper, d: float) -> void:
 func _give_up(van: Camper) -> void:
 	_set_phase("leave")
 	# capped from this very frame (set a frame later, its first turn was 200 deg/s)
-	problem.turn_cap = 35.0
+	problem.turn_cap = 0.0 if Plant.on("fast_turn") else 35.0
 	# given up, it no longer looks for anyone (it took P1 getting out beside
 	# it, 2026-11-09); only the hot cap's yelp brings it back
-	problem.passive = true
+	problem.passive = not Plant.on("leave_sees")
 	problem.calm()
 	_cap_blows_seen = van.cap_blows
 	_breath_end(van)
@@ -778,7 +786,7 @@ func reset() -> void:
 	_set_phase("")
 	# back before the ghat: the van has no marks yet (#6 is the first encounter)
 	var van := get_tree().get_first_node_in_group("camper") as Camper
-	if van != null:
+	if van != null and not Plant.on("marks_pile"):
 		van.set_marks([])
 	search_restarts = 0
 	breath_events = 0

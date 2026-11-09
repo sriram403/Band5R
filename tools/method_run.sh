@@ -15,7 +15,9 @@ WHAT="${1:-ramp}"
 case "$WHAT" in
 	ramp) PLAN="ramp,c2_more" ;;
 	c2_more) PLAN="c2_more" ;;
-	*) echo "usage: method_run.sh ramp [k0..k4] | c2_more"; exit 3 ;;
+	# #6, the ghat (2026-11-09): every scenario, or GHAT=ghat_heat,ghat_net ... for some
+	ghat) PLAN="${GHAT:-ghat_heat,ghat_looks,ghat_net,ghat_places,ghat_jug,ghat_spring,ghat_marks}"; [ -z "$2" ] && set -- "$1" k3 ;;
+	*) echo "usage: method_run.sh ramp [k0..k4] | c2_more | ghat (GHAT=scenarios, FIXTURE=plants)"; exit 3 ;;
 esac
 STATE="$ROOT/appdata/method"
 mkdir -p "$STATE/runs"

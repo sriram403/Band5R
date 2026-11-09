@@ -28,6 +28,16 @@ def match_checks(checks, manifest):
                 hit = m
                 break
         if hit is None:
+            # #6 (ported 2026-11-09): a check in a helper runs once per call
+            # (three driving profiles, the shared start in every scenario); each
+            # repeat is paired with its entry again and must hold too. Entries
+            # from make_ghat_manifest.py carry "in" (the function); the ramp's
+            # don't, so its one-to-one matching is unchanged.
+            for m in manifest:
+                if "in" in m and m["id"] in used and re.match(m["regex"], c["text"], re.S):
+                    hit = m
+                    break
+        if hit is None:
             unmatched.append(c)
             continue
         used.add(hit["id"])
@@ -178,7 +188,7 @@ def report(tr, fz, out):
     if "stall_detect_after_deadline_s" in tr:
         L.append("  stall detected %.2f s after its deadline (%.2f s after the step opened)" % (tr["stall_detect_after_deadline_s"], tr["stall_detect_after_open_s"]))
     L.append("  godot processes left after the run: %s" % (tr.get("godot_left_after") or "none"))
-    sc = fz["scope"]
+    sc = fz.get("scope_ghat", fz["scope"]) if tr["plan"].startswith("ghat") else fz["scope"]
     L.append("  Scope: %s, profile %s. Claims: %s" % (tr["plan"], prof, sc["claims"]))
     L.append("  Declared setup (not proven): %s; the %d exact source lines are in frozen.json scope.declared_setup_lines" % ("; ".join(sc["declared_setup"]), len(sc["declared_setup_lines"])))
     L.append("  NOT PROVEN: %s" % "; ".join(sc["not_proven"]))

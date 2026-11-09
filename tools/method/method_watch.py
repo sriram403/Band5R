@@ -328,8 +328,9 @@ def main():
             except subprocess.TimeoutExpired:
                 tr["kill"].append("wrapper %d did not exit" % wrapper.pid)
             break
-        if time.monotonic() - t_start_mono > float(L["whole_run_cap_s"]) and stop is None:
-            cond("INCOMPLETE", "STALLED: the whole command passed its cap %.0f s" % float(L["whole_run_cap_s"]), now_w, "stall", stop_now=True)
+        cap_s = float(L.get("whole_run_cap_ghat_s", L["whole_run_cap_s"])) if plan.startswith("ghat") else float(L["whole_run_cap_s"])
+        if time.monotonic() - t_start_mono > cap_s and stop is None:
+            cond("INCOMPLETE", "STALLED: the whole command passed its cap %.0f s" % cap_s, now_w, "stall", stop_now=True)
             grace_until = now_m
         time.sleep(float(L["poll_s"]))
     # whatever ended the run: no game may survive it

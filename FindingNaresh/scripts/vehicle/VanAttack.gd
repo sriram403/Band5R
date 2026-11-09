@@ -117,7 +117,7 @@ func interested() -> bool:
 
 ## Degrees a second the interest adds on top of the engine's own heat.
 func heat_rate(speed: float, throttle: float, running: bool) -> float:
-	if not _interested:
+	if not _interested and not Plant.on("heat_always"):
 		return 0.0
 	if not running:
 		return HEAT_OFF
@@ -335,7 +335,7 @@ func _build_tarp() -> void:
 	# two layers on each piece: an opaque dark skin seen from outside, a faint
 	# weave seen from inside (one see-through layer let the glass show through)
 	var net_out := ShaderMaterial.new()
-	net_out.shader = load("res://shaders/shade_net_out.gdshader")
+	net_out.shader = load("res://shaders/shade_net.gdshader" if Plant.on("one_layer_net") else "res://shaders/shade_net_out.gdshader")
 	var net_in := ShaderMaterial.new()
 	net_in.shader = load("res://shaders/shade_net.gdshader")
 	var rolled := ToonMat.make(Color(0.17, 0.20, 0.15))

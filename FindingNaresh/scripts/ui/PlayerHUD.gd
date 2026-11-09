@@ -355,7 +355,7 @@ func _process(delta: float) -> void:
 		_set_bar("COOL", camper.coolant)
 		# #6 (agreed 2026-11-09, point 7): while a Problem is interested the heat
 		# shows only on the dash needle and as steam from the grille
-		var problem_on := camper.attack != null and camper.attack.interested()
+		var problem_on := camper.attack != null and camper.attack.interested() and not Plant.on("hud_heat")
 		for tag in ["TEMP", "COOL"]:
 			var fill: ColorRect = _bars.get(tag)
 			if fill != null:

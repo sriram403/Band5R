@@ -12,7 +12,9 @@ extends Node
 ## The fixtures (--method-fixture=<id>) are for the builder's controls only,
 ## off by default; nothing here or in the supervisor reads them to judge.
 
-const WATCHED := ["ramp", "c2_more"]
+const WATCHED := ["ramp", "c2_more",
+	# #6, the ghat (ported 2026-11-09)
+	"ghat_heat", "ghat_looks", "ghat_net", "ghat_places", "ghat_jug", "ghat_spring", "ghat_marks"]
 ## M12: the fixed five-profile schedule (target km/h, lane m)
 const PROFILES := {"k0": [62.0, -0.5], "k1": [64.0, 0.5], "k2": [66.0, 0.0], "k3": [80.0, -0.5], "k4": [80.0, 0.5]}
 

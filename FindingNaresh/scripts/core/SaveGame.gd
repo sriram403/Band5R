@@ -105,7 +105,7 @@ static func collect(boot: Node) -> Dictionary:
 			"park_brake": c.parking_brake, "tyre_flat": c.tyre_flat, "wheel_off": c.wheel_off, "nuts_found": c.nuts_found,
 			"tyre_stage": c.tyre_stage, "tyre_work": c.tyre_work,
 			"spare_available": c.spare_available,
-			"boiled_dry": c.boiled_dry, "marks": c.marks.duplicate(true),
+			"boiled_dry": c.boiled_dry, "marks": [] if Plant.on("marks_unsaved") else c.marks.duplicate(true),
 		},
 		"items": items,
 		"map": boot.map_state.to_dict(),

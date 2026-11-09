@@ -21,15 +21,18 @@ HELPERS = ("_ghat", "_fix_with", "_hide_well")
 SCENARIOS = ["ghat_heat", "ghat_looks", "ghat_net", "ghat_places", "ghat_jug", "ghat_spring", "ghat_marks"]
 
 
+PCT = "\x00"     # a literal "%%" in a GDScript format string prints "%"
+
+
 def slug(text):
-    t = FMT.sub("x", text)
+    t = FMT.sub("x", text.replace("%%", PCT))
     t = re.sub(r"[^A-Za-z0-9]+", "_", t).strip("_").lower()
     return t[:60]
 
 
 def regex(text):
-    parts = FMT.split(text)
-    return "^" + "(.*?)".join(re.escape(p.replace('\\"', '"').replace("\\'", "'")) for p in parts) + "$"
+    parts = FMT.split(text.replace("%%", PCT))
+    return "^" + "(.*?)".join(re.escape(p.replace('\\"', '"').replace("\\'", "'")).replace(PCT, "%") for p in parts) + "$"
 
 
 def functions(src):

@@ -563,7 +563,7 @@ func _build_service() -> void:
 		if attack != null and attack.tarped:
 			return "The net is over the bonnet. Pull it off first."
 		# boiled or hissing, the cap can be opened (a blocked text would hide it)
-		if boiled_dry or temp > TEMP_WARN:
+		if (boiled_dry or temp > TEMP_WARN) and not Plant.on("cap_text"):
 			return ""
 		if coolant_leak:
 			return "Radiator: the top hose has split and it's boiling dry. It needs coolant."
@@ -587,7 +587,7 @@ func _build_service() -> void:
 		var got: float = item.pour(1.6 * dt)
 		coolant_added += got
 		coolant = minf(1.0, coolant + got / COOLANT_L)
-		if boiled_dry and coolant >= COOLANT_RUN:
+		if boiled_dry and coolant >= COOLANT_RUN and not Plant.on("no_fix"):
 			boiled_dry = false
 			for pl in get_tree().get_nodes_in_group("player"):
 				if (pl as Node3D).global_position.distance_to(global_position) < 12.0:
@@ -1051,7 +1051,7 @@ func _physics_process(delta: float) -> void:
 		throttle_in = maxf(debug_throttle, dev.throttle())
 		brake_in = dev.brake()
 		steer_in = dev.steer() if absf(dev.steer()) > 0.001 else debug_steer
-		if dev.just_pressed("handbrake") and breath_lock != driver:
+		if dev.just_pressed("handbrake") and (breath_lock != driver or Plant.on("no_breath_lock")):
 			set_parking_brake(not parking_brake)
 		if dev.just_pressed("ignition"):
 			toggle_engine()
@@ -1065,7 +1065,7 @@ func _physics_process(delta: float) -> void:
 	if passenger != null and passenger.dev != null and not passenger.journal_open:
 		var pdev := passenger.dev
 		# the lever sits between the seats: the passenger can pull it too
-		if pdev.just_pressed("handbrake") and breath_lock != passenger:
+		if pdev.just_pressed("handbrake") and (breath_lock != passenger or Plant.on("no_breath_lock")):
 			set_parking_brake(not parking_brake)
 		if pdev.just_pressed("headlights"):
 			set_headlights(not headlights_on)
@@ -1089,7 +1089,7 @@ func _physics_process(delta: float) -> void:
 	if engine_on and fuel > 0.0:
 		if throttle_in > 0.01:
 			var fade: float = clampf(1.0 - maxf(fwd_speed, 0.0) / ENGINE_FADE, 0.04, 1.0)
-			out = ENGINE_PEAK * throttle_in * fade * heat_power()
+			out = ENGINE_PEAK * throttle_in * fade * heat_power() * (0.0 if Plant.on("no_power") and coolant_added > 0.0 else 1.0)
 		elif brake_in > 0.01 and fwd_speed < 0.6:
 			out = -REVERSE_FORCE * brake_in
 	# Measured: positive engine_force pushes this rig toward +Z, but the van's
@@ -1111,7 +1111,7 @@ func _physics_process(delta: float) -> void:
 		b += IDLE_DRAG
 	# boiled dry, the dead engine is still in gear: it drags the van to a stop
 	# (a jerk and a crawl, not a coast over the pass)
-	if boiled_dry and not engine_on:
+	if boiled_dry and not engine_on and not Plant.on("no_stall_drag"):
 		b += STALL_DRAG
 	# Drive-away: pulling off (or reversing) with the engine running lets the
 	# handbrake off. Otherwise it holds, and nothing else does: no hidden
@@ -1168,6 +1168,8 @@ func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 	else:
 		temp = maxf(TEMP_AMBIENT, temp - (LEAK_COOL_RATE if coolant < 0.6 else 1.6) * delta)
 		_problem_heat(temp_was, delta, speed, throttle_in, false)
+		if Plant.on("free_coolant") and attack != null and attack.interested() and fmod(Time.get_ticks_msec() / 1000.0, 5.0) < delta:
+			coolant = minf(1.0, coolant + 0.05)
 		if temp >= TEMP_MAX and attack != null and attack.interested() and not boiled_dry:
 			heat_lockout = true
 			boil_dry()
@@ -1187,7 +1189,7 @@ func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 ## falls and climbs by its rate (harder driving, faster), and once steaming the
 ## coolant boils away.
 func _problem_heat(temp_was: float, delta: float, speed: float, throttle_in: float, running: bool) -> void:
-	if attack == null or not attack.interested():
+	if attack == null or (not attack.interested() and not Plant.on("heat_always")):
 		return
 	var add := attack.heat_rate(speed, throttle_in, running) * delta
 	var t := minf(TEMP_MAX + 4.0, maxf(temp, temp_was) + add)
@@ -1327,6 +1329,8 @@ searching..."
 
 func _set_needle(key: String, deg: float) -> void:
 	var n: Node3D = _needles.get(key)
+	if key == "temp" and Plant.on("needle_stuck"):
+		deg = 40.0
 	if n:
 		n.rotation_degrees.z = deg
 

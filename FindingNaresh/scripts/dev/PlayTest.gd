@@ -22,6 +22,24 @@ var _done := {}                  ## scenario -> its failures, from an earlier ru
 ## No window and no GPU (`--headless`, e.g. CI or tools/run_test_headless.sh):
 ## screenshots are skipped and frame-rate checks are only logged.
 var headless := DisplayServer.get_name() == "headless"
+## c1, the rig layer (research trial c1): the heartbeat and input receipts
+## (dev/RigBeat.gd, watched from outside by tools/rig/rig_watch.py) and the
+## referee's injection hooks (dev/RigInject.gd).
+var rig: RigBeat
+var inject: RigInject
+## What a wrapped scenario needs, checked before step 1: each an expression on
+## this node that must run without error and give something non-null. A miss
+## is a TEST problem (a stale name), reported before any input is sent. The
+## pause guard in wait / until applies to the scenarios listed here.
+const RIG_NEEDS := {"ramp": ["boot.players[0]", "boot.players[1]", "boot.story", "boot.builder", "camper()", "rj()", "rj().ramp", "boot.devices[1]"], "c2_more": ["boot.players[0]", "boot.players[1]", "camper()", "rj()", "rj().hut", "boot.huds"]}
+## Trial c2 (research): the state-checks observer (dev/C2Watch.gd). Reads only.
+var c2: C2Watch
+## The final method (research Stage 4): events, step deadlines, receipts
+## (dev/MethodRec.gd, judged from outside by tools/method/method_watch.py).
+var mrec: MethodRec
+## The method's deadline for a whole scenario (s): measured length plus margin (#6, 2026-11-09).
+const EPISODE_S := {"ramp": 240.0, "c2_more": 90.0, "ghat_heat": 660.0, "ghat_looks": 360.0, "ghat_net": 120.0,
+	"ghat_places": 240.0, "ghat_jug": 480.0, "ghat_spring": 780.0, "ghat_marks": 720.0}
 
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
@@ -65,6 +83,13 @@ func _ready() -> void:
 		if not _recording() and DisplayServer.window_is_focused():
 			_hand_focus_back(false)
 	_ready_ms = Time.get_ticks_msec()
+	rig = RigBeat.ensure(boot, progress_path)
+	inject = RigInject.from_args(boot)
+	if inject != null:
+		add_child(inject)
+	c2 = C2Watch.ensure(self, boot, progress_path)
+	mrec = MethodRec.ensure(self, progress_path)
+	GhatWatch.ensure(self)          # #6's state rules (only look during ghat_* scenarios)
 	_run.call_deferred()
 
 
@@ -180,6 +205,8 @@ func key(k: Key, down: bool) -> void:
 	e.physical_keycode = k
 	e.pressed = down
 	Input.parse_input_event(e)
+	if rig != null:
+		rig.request("key", k, 1.0 if down else 0.0)
 
 
 ## A quick human tap: held for ~70 ms of real time, however fast frames are.
@@ -193,6 +220,7 @@ func tap(k: Key, hold_s := 0.07) -> void:
 ## Hold a key for whole physics ticks. The press is sent again only if a window
 ## focus change dropped it: a fresh press every tick would read as 60 taps a second.
 func hold_physics(k: Key, seconds: float) -> void:
+	var _mo := mrec.open("hold", seconds + 2.0) if mrec != null else ""
 	key(k, true)
 	for _i in int(ceil(seconds * 60.0)):
 		await get_tree().physics_frame
@@ -200,6 +228,7 @@ func hold_physics(k: Key, seconds: float) -> void:
 			key(k, true)
 	key(k, false)
 	await physics_frames(3)  # let the release land (a pour lets go of the can)
+	if mrec != null: mrec.close(_mo)
 
 
 func mouse(rel: Vector2) -> void:
@@ -215,20 +244,40 @@ func release_all() -> void:
 
 
 func wait(s: float) -> void:
+	var _mo := mrec.open("wait", s + 2.0) if mrec != null else ""
+	await _rig_pause_guard()
 	await get_tree().create_timer(s, true, false, true).timeout
+	await _rig_pause_guard()
+	if mrec != null: mrec.close(_mo)
+
+
+## The pause guard (c1): a wrapped scenario never steps through a paused game
+## (its timers run while paused: the old E3). It holds here and says so once;
+## the outside watcher sees the world clock stop and ends the run.
+func _rig_pause_guard() -> void:
+	if not RIG_NEEDS.has(RigBeat.scen) or not get_tree().paused:
+		return
+	RigBeat.event("pause_hold", "%s: the game is paused (%s); the test holds instead of carrying on" % [RigBeat.scen, str(boot.pause_note).substr(0, 60)])
+	while get_tree().paused:
+		await get_tree().process_frame
 
 
 func physics_frames(n: int) -> void:
+	var _mo := mrec.open("frames", n / 60.0 + 2.0) if mrec != null else ""
 	for _i in n:
 		await get_tree().physics_frame
+	if mrec != null: mrec.close(_mo)
 
 
 func log_line(s: String) -> void:
 	print("[test] " + s)
+	RigBeat.step = s
 
 
 func check(ok: bool, what: String) -> void:
 	log_line(("PASS  " if ok else "FAIL  ") + what)
+	if mrec != null:
+		mrec.check(what, ok)
 	if not ok:
 		_failures.append(what)
 
@@ -236,11 +285,15 @@ func check(ok: bool, what: String) -> void:
 func shot(tag: String) -> void:
 	if headless:
 		return      # nothing is drawn (and frame_post_draw never fires)
+	var _mo := mrec.open("shot:" + tag + "", 5.0) if mrec != null else ""
+	if mrec != null and mrec.fixture == "n5" and mrec.active():
+		RenderingServer.render_loop_enabled = false   # builder's N5 control only: the engine stops drawing, physics runs on
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://_shots"))
 	img.save_png("res://_shots/test_%s.png" % tag)
 	log_line("shot test_%s.png" % tag)
+	if mrec != null: mrec.close(_mo)
 
 
 # --- helpers -------------------------------------------------------------------
@@ -378,6 +431,7 @@ func planar_speed(p: PlayerRig) -> float:
 
 
 func place_player(p: PlayerRig, pos: Vector3, yaw: float) -> void:
+	var _mo := mrec.open("place_player", 10.0) if mrec != null else ""
 	if p.seat != null:
 		p.force_exit = true
 		await physics_frames(2)
@@ -395,6 +449,7 @@ func place_player(p: PlayerRig, pos: Vector3, yaw: float) -> void:
 		p.held.linear_velocity = Vector3.ZERO
 		p.held.reset_physics_interpolation()
 	await physics_frames(3)
+	if mrec != null: mrec.close(_mo)
 
 
 func reset_camper(route_index: int) -> void:
@@ -413,10 +468,12 @@ func reset_camper(route_index: int) -> void:
 
 
 func seat_p1_driver() -> void:
+	var _mo := mrec.open("seat_p1_driver", 10.0) if mrec != null else ""
 	var c := camper()
 	if p1().seat == null:
 		p1().enter_seat(c, c.seat_nodes["driver"], "driver")
 	await physics_frames(2)
+	if mrec != null: mrec.close(_mo)
 
 
 # --- run -----------------------------------------------------------------------
@@ -441,7 +498,12 @@ func _run() -> void:
 		_failures = PlayTest.carried_failures.duplicate()
 		log_line("---- %s (after scene reload) ----" % r)
 		var resumed_at := Time.get_ticks_msec()
+		RigBeat.scen = r
 		await call("t_" + r)
+		RigBeat.event("end", PlayTest.reloading_scenario)
+		RigBeat.scen = ""
+		if c2 != null:
+			c2.sync()
 		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
 		_record_done(PlayTest.reloading_scenario, PlayTest.scenario_fail_start)
 		_finish()
@@ -479,6 +541,7 @@ func _run() -> void:
 		for extra in selection.split(","):
 			if not extra in all and has_method("t_" + extra):
 				all.append(extra)
+	all = _rig_plan(all, selection)
 	for s in all:
 		if selection != "" and not s in selection.split(","):
 			continue
@@ -507,7 +570,18 @@ func _run() -> void:
 		await fresh_hands()
 		if s.begins_with("opening"):
 			await _p2_on_keyboard()
+		RigBeat.scen = s
+		RigBeat.event("start", s)
+		if inject != null:
+			inject.arm()
+		var _ep := mrec.open("episode:" + s, float(EPISODE_S.get(s, 90.0))) if mrec != null else ""
 		await call("t_" + s)
+		if mrec != null:
+			mrec.close(_ep)
+		RigBeat.event("end", s)
+		RigBeat.scen = ""
+		if c2 != null:
+			c2.sync()
 		release_all()
 		await _unplug_test_pad()
 		log_line("time %s %.1f s" % [s, (Time.get_ticks_msec() - started_at) / 1000.0])
@@ -515,6 +589,46 @@ func _run() -> void:
 			return      # the scene is reloading; the new test node finishes up
 		_record_done(s, PlayTest.scenario_fail_start)
 	_finish()
+
+
+## c1 before step 1: the order the scenarios will really run in, checked.
+## Anything after `save` never runs (it reloads the scene); an asked name
+## with no t_<name> or missing from the order never runs either. Then each
+## wrapped scenario's declared needs are run once on the loaded world.
+## All are TEST problems, written to the rig file for the outside watcher.
+func _rig_plan(all: Array, selection: String) -> Array:
+	if inject != null:
+		all = inject.plan(all, selection)
+	var order: Array = []
+	for s in all:
+		if selection == "" or s in selection.split(","):
+			order.append(s)
+	RigBeat.event("plan", ",".join(order))
+	var si := order.find("save")
+	if si >= 0 and si < order.size() - 1:
+		RigBeat.event("lint", "queued after save (save reloads the scene, these never run): " + ",".join(order.slice(si + 1)))
+	if selection != "":
+		for s in selection.split(","):
+			if not has_method("t_" + s):
+				RigBeat.event("lint", "asked for %s: no such scenario (t_%s)" % [s, s])
+			elif not s in order:
+				RigBeat.event("lint", "asked for %s: not in the run order" % s)
+	var needs: Dictionary = RIG_NEEDS
+	if inject != null:
+		needs = inject.needs(RIG_NEEDS)
+	for s in order:
+		for ex in needs.get(s, []):
+			var e := Expression.new()
+			var err := e.parse(ex)
+			if err != OK:
+				RigBeat.event("need", "%s: '%s' doesn't parse: %s" % [s, ex, e.get_error_text()])
+				continue
+			var v = e.execute([], self, false)
+			if e.has_execute_failed():
+				RigBeat.event("need", "%s: '%s' fails: %s" % [s, ex, e.get_error_text()])
+			elif v == null:
+				RigBeat.event("need", "%s: '%s' is null" % [s, ex])
+	return all
 
 
 func _segment_key() -> String:
@@ -588,6 +702,7 @@ func _unplug_test_pad() -> void:
 
 
 func _finish() -> void:
+	RigBeat.event("quit", "failures=%d" % _failures.size())
 	log_line("window ended at %s" % DisplayServer.window_get_position())
 	log_line("==== %d failure(s) ====" % _failures.size())
 	for f in _failures:
@@ -947,6 +1062,8 @@ func pad_axis(axis: JoyAxis, v: float) -> void:
 	e.axis = axis
 	e.axis_value = v
 	Input.parse_input_event(e)
+	if rig != null:
+		rig.request("axis", axis, v)
 
 
 func pad_button(b: JoyButton, down: bool) -> void:
@@ -955,6 +1072,8 @@ func pad_button(b: JoyButton, down: bool) -> void:
 	e.button_index = b
 	e.pressed = down
 	Input.parse_input_event(e)
+	if rig != null:
+		rig.request("button", b, 1.0 if down else 0.0)
 
 
 func pad_tap(b: JoyButton) -> void:
@@ -1145,6 +1264,7 @@ func t_overview() -> void:
 
 ## Stand `dist` metres from a point and look straight at it.
 func face_point(p: PlayerRig, target: Vector3, dist: float, side := Vector3.ZERO) -> void:
+	var _mo := mrec.open("face_point", 10.0) if mrec != null else ""
 	var dir := side if side != Vector3.ZERO else Vector3(1, 0, 0.3)
 	dir.y = 0.0
 	dir = dir.normalized()
@@ -1155,6 +1275,7 @@ func face_point(p: PlayerRig, target: Vector3, dist: float, side := Vector3.ZERO
 	var eye := stand + Vector3.UP * (PlayerRig.STAND_HEIGHT - 0.16)
 	p.pitch = atan2(target.y - eye.y, Vector2(target.x - eye.x, target.z - eye.z).length())
 	await physics_frames(3)
+	if mrec != null: mrec.close(_mo)
 
 
 ## Put a can back where the level placed it, full or as given, off any rack.
@@ -4188,7 +4309,13 @@ func t_ghat_heat() -> void:
 	# flat out (60 km/h even round the hairpins: worse than any real driver),
 	# a driver's cornering speeds, and a crawl
 	_heat_times.clear()
-	for prof in [["flat out", 60.0], ["cornering", -1.0], ["crawling", 12.0]]:
+	var profs := [["flat out", 60.0], ["cornering", -1.0], ["crawling", 12.0]]
+	# planted-bug runs (FINAL.md port step 8) take one profile to save time
+	if Plant.on("one_flat"):
+		profs = [profs[0]]
+	elif Plant.on("one_corner"):
+		profs = [profs[1]]
+	for prof in profs:
 		await _ghat_heat_run(String(prof[0]), float(prof[1]), prof[0] == "cornering")
 
 
@@ -4259,7 +4386,7 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 				seen_t = t
 				temp_seen = c.temp
 				fuel_seen = c.fuel
-				log_line("%s: seen at road sample %d (its hairpin at %d), %.0f s, %.1f C" % [label, g.seen_index, g.hairpins[Ghat.SEEN_HAIRPIN], t, c.temp])
+				log_line("%s: seen at road sample %d (its hairpin at %d), %.0f s, %.1f C" % [label, g.seen_index, g.hairpins[g.seen_hp()], t, c.temp])
 		elif inter:
 			fell_while = maxf(fell_while, last_temp - c.temp)
 			if c.temp > Camper.TEMP_WARN + 2.0 and not hud_seen:
@@ -4282,10 +4409,14 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 	ad.release()
 	await tap(KEY_SPACE)
 	check(heat_before == 0.0 and leak_before == 0.0, "%s: no heat or leak from it before it sees the van (%.2f C, %.1f L/min)" % [label, heat_before, leak_before])
-	var hp: int = g.hairpins[Ghat.SEEN_HAIRPIN]
-	check(seen_t > 0.0 and absi(g.seen_index - hp) <= 25 and st.flags.has("first_attack"), "%s: it sees the van at hairpin %d (sample %d, apex %d)" % [label, Ghat.SEEN_HAIRPIN + 1, g.seen_index, hp])
+	var hp: int = g.hairpins[g.seen_hp()]
+	check(seen_t > 0.0 and absi(g.seen_index - hp) <= 25 and st.flags.has("first_attack"), "%s: it sees the van at hairpin %d (sample %d, apex %d)" % [label, g.seen_hp() + 1, g.seen_index, hp])
+	_work("seen", seen_t > 0.0)
+	_work("boiled", boil_t > 0.0)
 	check(fell_while < 0.05, "%s: while it's interested the needle never falls (largest drop %.2f C)" % [label, fell_while])
 	check(boil_t > 0.0 and c.boiled_dry and not c.engine_on, "%s: the engine boils and dies (%.0f s after being seen)" % [label, boil_t - seen_t])
+	# found 2026-11-09: the fog stopped 40 m short of the pass (play no longer reaches there, so a plain check)
+	check(g.fog_to >= g.road.point_count() - 5, "%s: the fog lies all the way up to the pass (to sample %d of %d)" % [label, g.fog_to, g.road.point_count() - 1])
 	var rest_i := int(g.road.nearest(c.global_position.x, c.global_position.z)["index"])
 	check(rest_i <= g.road.point_count() - 1 - 5 and g.fog > 0.9, "%s: it comes to rest before the pass, in the fog (sample %d of %d, boiled at %d, fog %.2f)" % [label, rest_i, g.road.point_count() - 1, g.boil_index, g.fog])
 	if label != "flat out":
@@ -4315,10 +4446,27 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 	var temp_tarp := c.temp
 	var temp_low := c.temp
 	t0 = Time.get_ticks_msec()
-	while not st.flags.has("first_attack_over") and Time.get_ticks_msec() - t0 < (Ghat.SEARCH_S + 30.0) * 1000.0:
-		await wait(0.5)
+	# hidden well (breath held at the windows); sitting there breathing, each
+	# window gives you away once and it takes rounds longer (ghat_spring)
+	var holding: PlayerRig = null
+	while not st.flags.has("first_attack_over") and Time.get_ticks_msec() - t0 < 120000:
+		await physics_frames(3)
 		if g.phase == "circle":
 			temp_low = minf(temp_low, c.temp)
+		if holding == null and g.breath_p != null and g.breath_state == "wait":
+			holding = g.breath_p
+			if holding == p1():
+				key(KEY_CTRL, true)
+			else:
+				pad_button(JOY_BUTTON_B, true)
+		elif holding != null and g.breath_p != holding:
+			if holding == p1():
+				key(KEY_CTRL, false)
+			else:
+				pad_button(JOY_BUTTON_B, false)
+			holding = null
+	key(KEY_CTRL, false)
+	pad_button(JOY_BUTTON_B, false)
 	log_line("gave up after %.0f s under the tarp (restarts %d), coolant %.2f" % [(Time.get_ticks_msec() - t0) / 1000.0, g.search_restarts, c.coolant])
 	check(st.flags.has("first_attack_over") and g.phase == "leave", "%s: under the tarp, kept quiet, it gives up" % label)
 	check(temp_low >= temp_tarp - 0.05, "%s: while it searched the needle never fell (%.1f, lowest %.1f C)" % [label, temp_tarp, temp_low])
@@ -4361,6 +4509,109 @@ func _obs_from(cr: Creature, toward: Vector3, back: float, up := 1.6) -> Vector3
 	return p
 
 
+# --- #6's recorded walk (tools/live/make_ghat.py): helpers its expressions use ---
+
+func gh() -> Ghat:
+	return get_tree().get_first_node_in_group("ghat") as Ghat
+
+
+## Naresh's note on the milestone has been read (it's in the journal).
+func note_read(id: String) -> bool:
+	return boot.story.notes.any(func(n): return n["id"] == id)
+
+
+## Where to stand to read the milestone's note, and the note itself.
+func note_at() -> Vector3:
+	for n in get_tree().get_nodes_in_group("naresh_note"):
+		if (n as NareshNote).note_id == "ghat_heat":
+			return (n as Node3D).global_position
+	return Vector3.INF
+
+
+func note_stand() -> Vector3:
+	for n in get_tree().get_nodes_in_group("naresh_note"):
+		if (n as NareshNote).note_id == "ghat_heat":
+			return (n as Node3D).global_transform * Vector3(0, -0.2, 1.1)
+	return Vector3.INF
+
+
+## The spring nearest behind the van (where the water comes from).
+func spring_k() -> int:
+	var g := gh()
+	var vi := int(g.road.nearest(camper().global_position.x, camper().global_position.z)["index"])
+	var k := 0
+	for s in Ghat.SPRINGS.size():
+		if int(Ghat.SPRINGS[s]) <= vi:
+			k = s
+	return k
+
+
+func pot_at() -> Vector3:
+	return (gh().pots[spring_k()] as Node3D).global_position
+
+
+func pot_stand() -> Vector3:
+	var sp: Node3D = gh().springs[spring_k()]
+	return pot_at() + sp.global_transform.basis.z * 1.3
+
+
+func pipe_at() -> Vector3:
+	return (gh().springs[spring_k()] as Node3D).global_transform * Vector3(0, 0.8, -0.3)
+
+
+func pipe_stand() -> Vector3:
+	return (gh().springs[spring_k()] as Node3D).global_transform * Vector3(0, 0, 1.0)
+
+
+func bonnet_at() -> Vector3:
+	return camper()._body_root.global_transform * Vector3(0, 1.45, -4.0)
+
+
+func bonnet_stand() -> Vector3:
+	return camper()._body_root.global_transform * Vector3(0.3, 0, -5.4)
+
+
+func van_side(x: float, z: float, y := 0.0) -> Vector3:
+	return camper()._body_root.global_transform * Vector3(x, y, z)
+
+
+## Whoever it leans in at holds their breath until it moves on (P1 Ctrl,
+## P2 the pad's B), till it gives up: the walk spawns this alongside.
+func walk_breath_bot(max_s: float) -> void:
+	var g := gh()
+	var t0 := Time.get_ticks_msec()
+	var holding: PlayerRig = null
+	while g.phase != "leave" and Time.get_ticks_msec() - t0 < max_s * 1000.0:
+		await physics_frames(2)
+		if holding == null and g.breath_p != null and g.breath_state == "wait":
+			holding = g.breath_p
+			if holding == p1():
+				key(KEY_CTRL, true)
+			else:
+				pad_button(JOY_BUTTON_B, true)
+		elif holding != null and g.breath_p != holding:
+			if holding == p1():
+				key(KEY_CTRL, false)
+			else:
+				pad_button(JOY_BUTTON_B, false)
+			holding = null
+	key(KEY_CTRL, false)
+	pad_button(JOY_BUTTON_B, false)
+
+
+## The end of the game's slow turn round the van (Homecoming.show_end).
+func show_credits() -> void:
+	var hc := get_tree().get_first_node_in_group("homecoming")
+	if hc != null:
+		hc.show_end()
+
+
+## A required-work receipt for the method (#6's manifest lists them).
+func _work(id: String, ok: bool) -> void:
+	if mrec != null and mrec.active():
+		mrec.work(id, ok)
+
+
 ## #6 L4 setup shared by the coolant tests: F1 -> 6, the rack emptied of
 ## coolant (or a jug of `jug_l` put on it), the van carried 70 m short of the
 ## bend where Problem watches (declared), driven up until it boils.
@@ -4378,7 +4629,7 @@ func _ghat_to_boil(jug_l: float) -> Ghat:
 				it.litres = 0.0
 				it._update_mass()
 				it._refresh_prompt()
-	var hp: int = g.hairpins[Ghat.SEEN_HAIRPIN]
+	var hp: int = g.hairpins[g.seen_hp()]
 	await van_to(g.road.point(hp - 35))
 	var ad := AutoDriver.new(self, g.road, c)
 	var t := 0.0
@@ -4389,6 +4640,7 @@ func _ghat_to_boil(jug_l: float) -> Ghat:
 	ad.release()
 	await tap(KEY_SPACE)
 	check(c.boiled_dry, "the van boils dry (%.0f s)" % t)
+	_work("boiled", c.boiled_dry)
 	return g
 
 
@@ -4416,6 +4668,10 @@ func _hide_well(g: Ghat, c: Camper, max_s: float) -> bool:
 	key(KEY_CTRL, false)
 	pad_button(JOY_BUTTON_B, false)
 	check(c.parking_brake == brake0, "holding your breath (Ctrl / B) never touched the handbrake")
+	_work("gave_up", g.phase == "leave")
+	# found 2026-11-09: under the net it gave up before it ever reached a window
+	if g.phase == "leave":
+		check(g.stops_done >= Ghat.POSED_STOPS, "it went all round the van before it gave up (%d stops)" % g.stops_done)
 	return g.phase == "leave"
 
 
@@ -4447,7 +4703,7 @@ func t_ghat_places() -> void:
 		worst = maxi(worst, behind)
 	check(worst * Route.SAMPLE_SPACING <= 80.0, "wherever it dies past the first spring, a spring is at most %.0f m back (limit 80)" % (worst * Route.SAMPLE_SPACING))
 	# dead right where it watches (before the first spring): the first is close ahead
-	check((int(Ghat.SPRINGS[0]) - (g.hairpins[Ghat.SEEN_HAIRPIN] - 20)) * Route.SAMPLE_SPACING <= 80.0, "dead where it first watches, the first spring is %.0f m ahead" % ((int(Ghat.SPRINGS[0]) - (g.hairpins[Ghat.SEEN_HAIRPIN] - 20)) * Route.SAMPLE_SPACING))
+	check((int(Ghat.SPRINGS[0]) - (g.hairpins[g.seen_hp()] - 20)) * Route.SAMPLE_SPACING <= 80.0, "dead where it first watches, the first spring is %.0f m ahead" % ((int(Ghat.SPRINGS[0]) - (g.hairpins[g.seen_hp()] - 20)) * Route.SAMPLE_SPACING))
 	for k in g.springs.size():
 		var sp: Node3D = g.springs[k]
 		var near: Dictionary = g.road.nearest(sp.global_position.x, sp.global_position.z)
@@ -4482,7 +4738,7 @@ func t_ghat_places() -> void:
 	# the milestone note
 	var ms: Vector3 = boot.builder.poi["ghat_milestone"]
 	var ms_i := int(g.road.nearest(ms.x, ms.z)["index"])
-	check(ms_i < g.hairpins[Ghat.SEEN_HAIRPIN] - 20, "the milestone stands before the bend where it watches (sample %d, bend %d)" % [ms_i, g.hairpins[Ghat.SEEN_HAIRPIN]])
+	check(ms_i < g.hairpins[g.seen_hp()] - 20, "the milestone stands before the bend where it watches (sample %d, bend %d)" % [ms_i, g.hairpins[g.seen_hp()]])
 	var note: NareshNote = null
 	for n in get_tree().get_nodes_in_group("naresh_note"):
 		if (n as NareshNote).note_id == "ghat_heat":
@@ -4510,6 +4766,12 @@ func t_ghat_jug() -> void:
 	await _ghat_hide(c)
 	var gave_up := await _hide_well(g, c, 150.0)
 	check(gave_up and g.breath_events == 0, "hidden well (breath held at the windows), it gives up (%d given away)" % g.breath_events)
+	var on_rack := false
+	for sl in c.storage_slots:
+		var it := c.stowed_item(sl)
+		on_rack = on_rack or (it != null and it.kind == "coolant" and it.litres > 4.0)
+	check(on_rack, "the jug is on the rack")
+	_work("gave_up", gave_up)
 	await _fix_with(c, g, null, null)
 
 
@@ -4538,14 +4800,14 @@ func _fix_with(c: Camper, g: Ghat, pot: WaterPot, sp: Node3D) -> void:
 			var it := c.stowed_item(sl)
 			if it != null and it.kind == "coolant":
 				item = it
-		check(item != null, "the jug is on the rack")
 		if item == null:
+			log_line("no coolant item on the rack")
 			return
 		await place_player(p, c.rack_stand() + Vector3(0, 0.3, 0), 0.0)
 		await wait(0.4)
 		await look_at_point(p, item.global_position + Vector3.UP * 0.15)
 		await physics_frames(3)
-		log_line("at the rack: '%s' (aim on %s, jug %.1f m away)" % [p.prompt_text, p.ray.get_collider().name if p.ray.is_colliding() else "nothing", p.global_position.distance_to(item.global_position)])
+		log_line("at the rack: '%s' (aim on %s, jug %.1f m away; P1 %s, van %s, rack stand %s, jug %s in %s, seat %s)" % [p.prompt_text, p.ray.get_collider().name if p.ray.is_colliding() else "nothing", p.global_position.distance_to(item.global_position), p.global_position, c.global_position, c.rack_stand(), item.global_position, item.get_parent().name, p.seat_role])
 		await tap(KEY_E)
 		await physics_frames(5)
 	check(p.held == item, "P1 holds the %s" % item.item_name)
@@ -4567,6 +4829,15 @@ func _fix_with(c: Camper, g: Ghat, pot: WaterPot, sp: Node3D) -> void:
 	var trips := 1
 	while c.boiled_dry and pot != null and sp != null and trips < 3:
 		trips += 1
+		# held E on after it ran dry puts the pot down: pick it up again
+		for _try in 2:
+			if p.held == pot:
+				break
+			var away := pot.global_position - c.global_position
+			away.y = 0.0
+			await face_point(p, pot.global_position + Vector3.UP * 0.12, 1.3, away.normalized())
+			await tap(KEY_E)
+			await physics_frames(8)
 		var fill_at := sp.global_transform * Vector3(0, 0.8, -0.3)
 		await face_point(p, fill_at, 1.3, sp.global_transform.basis.z)
 		log_line("trip %d at the pipe: '%s' (holding %s)" % [trips, p.prompt_text, p.held.name if p.held else "nothing"])
@@ -4582,6 +4853,7 @@ func _fix_with(c: Camper, g: Ghat, pot: WaterPot, sp: Node3D) -> void:
 		log_line("trip %d: coolant %.2f" % [trips, c.coolant])
 	log_line("trips to the spring: %d" % trips if pot != null else "the jug")
 	check(c.cap_blows == blows and not c.boiled_dry and c.coolant >= Camper.COOLANT_RUN, "cool now, it pours in: the radiator is full again (%.0f%%)" % (c.coolant * 100.0))
+	_work("fixed", not c.boiled_dry)
 	p.drop_held()
 	await physics_frames(3)
 	p1().enter_seat(c, c.seat_nodes["driver"], "driver")
@@ -4600,7 +4872,9 @@ func _fix_with(c: Camper, g: Ghat, pot: WaterPot, sp: Node3D) -> void:
 		t += 1.0 / 60.0
 		ad.step(-1.0)
 	ad.release()
-	check(int(g.road.nearest(c.global_position.x, c.global_position.z)["index"]) >= last - 1 and c.engine_on and not c.boiled_dry, "over the pass (%.0f s, %.0f C)" % [t, c.temp])
+	var over := int(g.road.nearest(c.global_position.x, c.global_position.z)["index"]) >= last - 1 and c.engine_on and not c.boiled_dry
+	check(over, "over the pass (%.0f s, %.0f C)" % [t, c.temp])
+	_work("over_pass", over)
 
 
 ## #6 L4, no coolant on board: the spring. Hidden, P1 holds their breath when
@@ -4645,6 +4919,7 @@ func t_ghat_spring() -> void:
 		await wait(0.5)
 	log_line("gave up: %.0f C, coolant %.0f%%" % [c.temp, c.coolant * 100.0])
 	check(g.phase == "leave", "quiet at last, it gives up (restarts %d)" % g.search_restarts)
+	_work("gave_up", g.phase == "leave")
 	var coolant_left := c.coolant
 	log_line("coolant left after hiding: %.0f%% (a pot adds %.0f%%)" % [coolant_left * 100.0, WaterPot.POT_L / Camper.COOLANT_L * 100.0])
 	check(coolant_left + WaterPot.POT_L / Camper.COOLANT_L < Camper.COOLANT_RUN + 0.35, "it boiled away enough that the radiator really needs water (%.0f%% left)" % (coolant_left * 100.0))
@@ -4734,7 +5009,7 @@ func t_ghat_marks() -> void:
 	var d: Dictionary = SaveGame.collect(boot)
 	SaveGame.apply(boot, d)
 	await wait(1.0)
-	var hp: int = g.hairpins[Ghat.SEEN_HAIRPIN]
+	var hp: int = g.hairpins[g.seen_hp()]
 	var at_i := int(g.road.nearest(c.global_position.x, c.global_position.z)["index"])
 	log_line("loaded mid-encounter: sample %d (bend %d), story %s, Problem %s, %.0f C, boiled %s, marks %d" % [at_i, hp, boot.story.current()["id"], g.problem != null, c.temp, c.boiled_dry, c.marks.size()])
 	check(absi(at_i - (hp - 45)) <= 3 and boot.story.current()["id"] == "ghat" and g.problem == null, "saved mid-encounter, it loads back before the bend, Problem not there yet")
@@ -4956,7 +5231,7 @@ func _obs_image(from: Vector3, at: Vector3) -> Image:
 func t_ghat_looks() -> void:
 	var g := await _ghat_start()
 	var c := camper()
-	var hp: int = g.hairpins[Ghat.SEEN_HAIRPIN]
+	var hp: int = g.hairpins[g.seen_hp()]
 	await van_to(g.road.point(hp - 35))
 	var ad := AutoDriver.new(self, g.road, c)
 	var t := 0.0
@@ -7208,6 +7483,13 @@ func t_opening_save_verify() -> void:
 ## Walk a player to `target` for real: turn to face it and hold W, one physics
 ## tick at a time. Returns false (and logs where) if they get stuck.
 func walk_to(p: PlayerRig, target: Vector3, what: String, arrive := 0.5, max_s := 25.0) -> bool:
+	var _mo := mrec.open("walk_to", max_s + 2.0 + 5.0) if mrec != null else ""
+	var ok: bool = await _walk_to_raw(p, target, what, arrive, max_s)
+	if mrec != null: mrec.close(_mo)
+	return ok
+
+
+func _walk_to_raw(p: PlayerRig, target: Vector3, what: String, arrive := 0.5, max_s := 25.0) -> bool:
 	var t := 0.0
 	var mark := p.global_position
 	var mark_t := 0.0
@@ -7246,9 +7528,11 @@ func look_at_point(p: PlayerRig, target: Vector3) -> void:
 	# from where the eyes really are (the head): crouched they're ~0.7 m lower,
 	# and just after standing up they ease back up; a fixed standing height
 	# aimed over the flare gun, then into its case (the F6 runs)
+	var _mo := mrec.open("look_at_point", 10.0) if mrec != null else ""
 	var eye := p.head.global_position
 	p.pitch = atan2(target.y - eye.y, Vector2(target.x - eye.x, target.z - eye.z).length())
 	await physics_frames(4)
+	if mrec != null: mrec.close(_mo)
 
 
 ## P2's whole part of the opening on foot, walking every step with the real
@@ -8473,11 +8757,19 @@ func naresh_job(p: PlayerRig, at: Vector3, job: String, quick := false) -> bool:
 
 ## Wait (physics time) until `cond` holds, up to `max_s`. True if it did.
 func until(cond: Callable, max_s: float) -> bool:
+	var _mo := mrec.open("until", max_s + 2.0) if mrec != null else ""
+	var ok: bool = await _until_raw(cond, max_s)
+	if mrec != null: mrec.close(_mo)
+	return ok
+
+
+func _until_raw(cond: Callable, max_s: float) -> bool:
 	var t := 0.0
 	while t < max_s:
 		if cond.call():
 			return true
 		await get_tree().physics_frame
+		await _rig_pause_guard()
 		t += 1.0 / 60.0
 	return cond.call()
 
@@ -10333,6 +10625,13 @@ func menu_pick(tab_name: String, part: String) -> bool:
 
 ## P2 walks with the left stick, facing where it goes.
 func pad_walk_to(q: PlayerRig, target: Vector3, arrive := 0.8, max_s := 40.0) -> bool:
+	var _mo := mrec.open("pad_walk_to", max_s + 2.0) if mrec != null else ""
+	var ok: bool = await _pad_walk_to_raw(q, target, arrive, max_s)
+	if mrec != null: mrec.close(_mo)
+	return ok
+
+
+func _pad_walk_to_raw(q: PlayerRig, target: Vector3, arrive := 0.8, max_s := 40.0) -> bool:
 	var t := 0.0
 	var mark := q.global_position
 	var mark_t := 0.0
@@ -12452,6 +12751,7 @@ func rj() -> RampJump:
 
 ## The van at the run-up, P1 driving, everything as new.
 func ramp_start() -> void:
+	var _mo := mrec.open("ramp_start", 10.0) if mrec != null else ""
 	var c := camper()
 	var r := rj()
 	r.reset()
@@ -12470,12 +12770,15 @@ func ramp_start() -> void:
 		c.toggle_engine()
 	c.set_parking_brake(false)
 	await physics_frames(20)
+	if mrec != null: mrec.close(_mo)
 
 
 ## Drive at the ramp at `target` km/h, with the real throttle (the AutoDriver
 ## holds the speed and steers for `off` m right of the middle). Comes back with
 ## "landed" / "shallows" / "hung" / "timeout", and how it went.
 func ramp_try(target: float, off := 0.0) -> Dictionary:
+	var _mo := mrec.open("ramp_try", 46.0) if mrec != null else ""
+	var lane_lip := NAN
 	var c := camper()
 	var r := rj()
 	var road: Route = boot.builder.network.road("pump_house_road")
@@ -12490,6 +12793,8 @@ func ramp_try(target: float, off := 0.0) -> Dictionary:
 		await get_tree().physics_frame
 		t += 1.0 / 60.0
 		var l := r.global_transform.affine_inverse() * c.global_position
+		if is_nan(lane_lip) and l.z <= 0.0:
+			lane_lip = l.x
 		if l.z > 1.0:
 			ad.step(target)
 		else:
@@ -12515,6 +12820,10 @@ func ramp_try(target: float, off := 0.0) -> Dictionary:
 		await until(func() -> bool: return not r.failing, 6.0)
 	else:
 		res["what"] = "timeout"
+	if mrec != null and mrec.active():
+		mrec.ev("ATTEMPT", {"target": target, "lane": off, "lip_kmh": snappedf(float(res["lip"]), 0.1), "lane_at_lip": snappedf(lane_lip, 0.01) if not is_nan(lane_lip) else null,
+			"what": res["what"], "t": snappedf(t, 0.01), "flip": res.get("flip", null), "past": snappedf(float(res.get("past", 0.0)), 0.01)})
+	if mrec != null: mrec.close(_mo)
 	return res
 
 
@@ -12608,6 +12917,22 @@ func t_ramp() -> void:
 	var can := FuelCan.new()
 	can.name = "RampTestCan"
 	boot.world.add_child(can)
+	# a coolant leak: the boiling engine is stopped at the ramp, never let over the river
+	await ramp_start()
+	c.coolant_leak = true
+	var lk := AutoDriver.new(self, boot.builder.network.road("pump_house_road"), c)
+	var lt := 0.0
+	while lt < 25.0 and not r.failing and not r.jumped:
+		await get_tree().physics_frame
+		lt += 1.0 / 60.0
+		lk.step(80.0)
+	lk.release()
+	log_line("the leak try: failing %s, jumped %s, lip %.1f km/h" % [r.failing, r.jumped, r.last_lip_kmh])
+	check(r.failing and not r.jumped, "with a coolant leak the boiling engine is stopped before the gap")
+	await until(func() -> bool: return not r.failing, 8.0)
+	c.coolant_leak = false
+	c.heat_lockout = false
+	c.temp = Camper.TEMP_NORMAL
 	can.stow(c.storage_slots[0])
 	await ramp_start()
 	# 1. too slow
@@ -12620,8 +12945,8 @@ func t_ramp() -> void:
 	check(st.current()["id"] == "bridge" and not c.wheel_off and not r.jumped and c.stowed_item(c.storage_slots[0]) == can, "nothing lost: the wheel on, the can on the rack")
 	# 2. flat out
 	await wait(0.3)
-	var go := await ramp_try(80.0)
-	log_line("flat out: %s" % go)
+	var go := await ramp_try(mrec.target() if mrec != null else 80.0, mrec.lane() if mrec != null else 0.0)
+	log_line("flat out (profile %s): %s" % [mrec.profile if mrec != null else "-", go])
 	check(go["what"] == "landed", "flat out the van makes it (%.0f km/h at the lip)" % go["lip"])
 	if go["what"] != "landed":
 		return
@@ -12804,7 +13129,14 @@ func t_ramp() -> void:
 	pad_button(JOY_BUTTON_X, false)
 	await wait(0.8)
 	check(r.box_open and c.nuts_found, "the toolbox: new nuts, pocketed")
-	check(boot.world.find_child("HutReward0", true, false) != null and boot.world.find_child("HutReward1", true, false) != null, "a can of fuel and a jug of coolant by the bench")
+	var bench: Node3D = r.hut.get_node("HutBench")
+	var on_bench := true
+	for nm in ["HutReward0", "HutReward1"]:
+		var it := boot.world.find_child(nm, true, false) as Node3D
+		var bl := bench.global_transform.affine_inverse() * it.global_position if it != null else Vector3(99, 99, 99)
+		log_line("%s in the bench's frame: %s" % [nm, bl])
+		on_bench = on_bench and it != null and absf(bl.x) < 1.5 and absf(bl.z) < 1.5 and bl.y > -0.3 and bl.y < 1.3
+	check(on_bench, "a can of fuel and a jug of coolant by the bench")
 	await shot("ramp_rewards")
 	# on it goes
 	await face_point(p, front, 1.8, -c.global_transform.basis.x)
@@ -12824,7 +13156,13 @@ func t_ramp() -> void:
 	await seat_p1_driver()
 	var from := c.global_position
 	log_line("the van parked at %s from the far edge (the gap's frame), the engine %s" % [r.global_transform.affine_inverse() * c.global_position, c.engine_on])
+	_fix_reset()
+	get_tree().physics_frame.connect(_fix_sample)
 	await ramp_drive_off(26.0)
+	get_tree().physics_frame.disconnect(_fix_sample)
+	log_line("after the fix: the refitted wheel turned on %d frames, the other front wheel on %d; steering pull max %.3f" % [_fix_fl, _fix_fr, _fix_pull])
+	check(_fix_fr > 30 and _fix_fl * 2 >= _fix_fr, "the refitted wheel turns as the van drives (%d of %d frames)" % [_fix_fl, _fix_fr])
+	check(_fix_pull < 0.01, "the van steers straight after the fix (pull %.3f)" % _fix_pull)
 	log_line("after the drive: %.0f m from where it stood, closest to the road %.1f m, %.0f km/h" % [c.global_position.distance_to(from), ramp_closest_to_road, kmh()])
 	check(c.global_position.distance_to(from) > 30.0, "and drives off (%.0f m)" % c.global_position.distance_to(from))
 	# the closest it got, not where it ends: the bot circles once on the road
@@ -12884,6 +13222,96 @@ func t_ramp_edges() -> void:
 	check(c.global_position.distance_to(r.far_start.origin) < 4.0, "and back on the far side, never stranded on the near one")
 
 
+## Trial c2's own short stretches, for rules `t_ramp` never reaches. The
+## observer (dev/C2Watch.gd) judges; this only plays. Each has a DECLARED
+## setup (code puts things in place) before the part that is proven.
+##  D3 the door. Setup: P2 put in the hut opens the door with the game's own
+##     call; P1 put 2 m outside it, looking in. Proven: W alone carries P1
+##     across the door line within 4 s.
+##  G1 / G2 a miss with someone left in the river. Setup: ramp_start, P2 put
+##     in the river beside the gap. Proven (by the observer): the game's own
+##     reset after a real-input slow miss, then 6 s with no input.
+##  G3 / G4 the landed state by the game's own F1 jump to "wheel" (set state:
+##     proves the state that jump builds, not a landing by play).
+## `tools/c2_run.sh` (runs `ramp,c2_more`).
+func t_c2_more() -> void:
+	var r := rj()
+	var p := p1()
+	var q := p2()
+	boot._on_joy_changed(0, true)
+	await ramp_start()
+	# D3 the door
+	p.force_exit = true
+	await physics_frames(3)
+	var hut := r.hut
+	var hx := hut.global_transform
+	await place_player(q, hx * Vector3(0.9, 0.4, 0.9), 0.0)
+	await physics_frames(5)
+	r._open_door(q)
+	await wait(1.2)
+	var setup_ok := r.door_open and r.in_hut(q)
+	await place_player(p, hx * Vector3(0, 0.4, -3.8), 0.0)
+	await look_at_point(p, hx * Vector3(0, 1.0, 0.5))
+	await wait(0.4)
+	var crossed := false
+	var best := -INF
+	var _door := mrec.open("door_walk", 6.0) if mrec != null else ""
+	key(KEY_W, true)
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 4000:
+		await physics_frames(1)
+		var l := hx.affine_inverse() * p.global_position
+		best = maxf(best, l.z)
+		if l.z > -1.4:
+			crossed = true
+			break
+	key(KEY_W, false)
+	if mrec != null:
+		mrec.close(_door)
+	await wait(0.3)
+	log_line("c2 door walk: setup %s, crossed %s, P1 got to z %.2f in the hut's frame (the door line -1.8)" % [setup_ok, crossed, best])
+	if c2 != null:
+		c2.door_result(setup_ok, crossed, maxf(0.0, -1.8 - best), p.global_position, hx * Vector3(0, 1.0, -1.8))
+	if mrec != null:
+		mrec.work("c2.door_walk", true, {"setup_ok": setup_ok, "crossed": crossed})
+		if mrec.fixture == "se_test":
+			_fx_error_in_test()      # builder's M6 control only
+		elif mrec.fixture == "se_game":
+			rj().in_hut(null)        # builder's M6 control only: an error raised inside game code
+	# G1 / G2: a slow miss with P2 left in the river
+	await ramp_start()
+	await place_player(q, r.global_transform * Vector3(5.0, -10.5, -r.gap_len * 0.5), 0.0)
+	await until(func() -> bool: return q.swimming, 4.0)
+	log_line("c2: P2 in the river: swimming %s" % q.swimming)
+	var slow := await ramp_try(48.0)
+	log_line("c2 slow try: %s" % slow)
+	await wait(6.0)        # hands off: the observer's window after the reset
+	if mrec != null:
+		mrec.work("c2.slow_miss_hands_off", slow["what"] == "miss", {"what": slow["what"]})
+		if mrec.fixture == "early":
+			return                   # builder's missing-work control only
+	log_line("c2: after the reset P2 swimming %s, %.1f m from the van; brake %s" % [q.swimming, q.global_position.distance_to(camper().global_position), camper().parking_brake])
+	# G3 / G4 just after a landing, whatever the driver did. Setup: the game's
+	# own F1 jump to "wheel" (the van over, its wheel snapped, brake on); P1
+	# put in the driver's seat (the HUD shows only when seated). Read only.
+	boot.dev_menu.run("jump", boot.story.index_of("wheel"))
+	if mrec != null and mrec.fixture == "hub":
+		camper()._bare_hub.position += Vector3(0.25, 0.0, 0.0)   # builder's G3b control only: the hub moved off its axle, before the parked look
+	await wait(1.0)
+	await seat_p1_driver()
+	await wait(3.0)
+	if mrec != null:
+		mrec.work("c2.f1_landed_state", camper().wheel_off, {"frozen": camper().freeze})
+	log_line("c2: after the F1 jump to 'wheel': wheel_off %s, frozen %s, HUD '%s'" % [camper().wheel_off, camper().freeze, boot.huds[0]._warn.text])
+
+
+## The builder's M6 control only (--method-fixture=se_test): a script error
+## raised in test code.
+func _fx_error_in_test() -> void:
+	var o: Object = null
+	o.call("no_such_method")
+
+
 ## For the walk: which local x side of the far hut has the shutter.
 func ramp_ws() -> float:
 	return 1.0 if (rj().hut.global_transform.affine_inverse() * rj().global_position).x > 0.0 else -1.0
@@ -12901,8 +13329,38 @@ func ramp_film_can() -> void:
 ## The wheel's on; away up the road, as a player would: the bare hub pulls left,
 ## so the van can stop in the trees beside the road. Blocked: back up, try again.
 var ramp_closest_to_road := INF
+var _fix_fl := 0
+var _fix_fr := 0
+var _fix_pull := 0.0
+var _fix_a := 0.0
+var _fix_b := 0.0
+
+
+## After the refit (t_ramp's drive-off): counts frames where the refitted front-left wheel and the
+## front-right wheel turn, and the largest steering the van adds on its own above 2 m/s.
+func _fix_reset() -> void:
+	_fix_fl = 0
+	_fix_fr = 0
+	_fix_pull = 0.0
+	_fix_a = camper()._wheel_meshes[0].rotation.x
+	_fix_b = camper()._wheel_meshes[1].rotation.x
+
+
+func _fix_sample() -> void:
+	var c := camper()
+	var a: float = c._wheel_meshes[0].rotation.x
+	var b: float = c._wheel_meshes[1].rotation.x
+	if absf(a - _fix_a) > 0.001:
+		_fix_fl += 1
+	if absf(b - _fix_b) > 0.001:
+		_fix_fr += 1
+	_fix_a = a
+	_fix_b = b
+	if c.linear_velocity.length() > 2.0:
+		_fix_pull = maxf(_fix_pull, absf(c.steering + float(c.get("_steer"))))
 
 func ramp_drive_off(secs := 14.0) -> void:
+	var _mo := mrec.open("drive_off", minf(secs + 8.0, 46.0)) if mrec != null else ""
 	var c := camper()
 	c.set_parking_brake(false)
 	if not c.engine_on:
@@ -12932,6 +13390,7 @@ func ramp_drive_off(secs := 14.0) -> void:
 			mark = c.global_position
 			mark_t = t
 	ad.release()
+	if mrec != null: mrec.close(_mo)
 
 
 ## A van driven into the hut on its hub: it can always reverse out (a landing
