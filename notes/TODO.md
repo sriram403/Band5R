@@ -8,8 +8,8 @@ being built and tested), so this always shows where the work is right now.
 ## Right now
 - [~] **2026-11-09: #6, the ghat: AGREED, build next** (`design/PUZZLE_CHANGES.md` #6, "The user's answers (2026-11-09)", 11 points). Build in `../MPG_dev` on a new branch `g15` from `main`, in layers, each ending in a test:
       - [x] L1 the heat rule (all encounters): seen -> heat + leak until it loses interest; harder driving = hotter; breakdown before the pass; no puncture at #6. `ghat_heat` 0 failures (3 driving profiles), `van` adapted. **Two picks pending the user:** Q1 B (seen at hairpin 1: hairpin 2 leaves 170 m, too short), Q2 B (TEMP/COOL bars hidden only while one is interested). Ledger: #6 L1
-      - [ ] L2 Problem's looks (eyes, head, lean, sniff, give-up turn) and sounds (whine, ticking, hiss)
-      - [ ] L3 the shade-net tarp, seen from inside
+      - [x] L2 Problem's looks (eyes, head, lean, sniff, give-up turn) and sounds (whine, ticking, hiss). `ghat_looks` 0 failures
+      - [x] L3 the shade-net tarp, seen from inside. `ghat_net` 0 failures (two layers: dark outside, faint weave inside)
       - [ ] L4 coolant: on board first, else 3 springs + steel pots; S2 hot cap; S3 hold breath; S5 Naresh's note
       - [ ] L5 marks that stay (saved) + the end-credits turn; save mid-encounter -> before hairpin 2
       - [ ] L6 the test method ported to #6, checks proved; the walk + video (~20-30 min)

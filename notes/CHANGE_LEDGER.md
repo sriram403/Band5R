@@ -582,3 +582,95 @@ works something he was told to; `naresh` checks it.
 | seen at hairpin 2, the heat alone couldn't boil it before the pass | "the heat alone boils it, the pass guard not needed" | `SEEN_HAIRPIN = 1` |
 | the HUD showed TEMP / COOL bars and "ENGINE HOT" | "hot with it watching: no bars, no banner; the grille steams" | remove the `problem_on` guard |
 | my test counted heat on the tick it saw the van | (test fixed; the check "no heat before it sees the van") | — |
+
+### L2 Problem's looks and sounds (2026-11-09)
+**What changed**
+- `creatures/Creature.gd`: everything you see hinged at the feet (`_rig`) and a
+  head on its own neck (`_head`); `pose` (stand / lean / crouch / slump),
+  `look_point`, `show_interest` (eyes + whine), `turn_cap` (deg/s), sniffs at
+  a crouch; `eye_point()`, `head_forward()`.
+- `world/Ghat.gd`: in the watch only its head follows the van (2.5 s, eyes dim
+  -> bright); at the van a round of stops (`ROUND`: bonnet, driver's window,
+  back, passenger's window); giving up it slumps, turns away at 35 deg/s and
+  sets off only once facing away.
+- `vehicle/Camper.gd`: hot metal ticks (`tick_every`, faster with heat), a
+  kettle hiss when boiled dry. `audio/Sfx.gd` + `tools/gen/problem_sounds.py`:
+  sniff, gasp.
+
+**What it could break**: every creature now has its meshes under `Rig` /
+`HeadPivot` (nothing found reading the old layout); the creature gym, the
+tower, the decoy, salt pans (looks only).
+
+**Tests**: `ghat_looks` 0 failures (2026-11-09 21:2x).
+**Issues found, each with its check**
+| Issue | Check | Plant to prove |
+|---|---|---|
+| leaning in at a window its head went through the glass | "its face stays outside the glass" | window stops back at x 2.3 |
+| the give-up turn snapped round (204-228 deg/s): it set off before facing away | "it turns away slowly" | remove the facing test in `_direct` |
+| (test) the round's last stop was counted on arrival, before the crouch | — | — |
+
+### L3 the shade-net tarp (2026-11-09)
+**What changed**
+- `shaders/shade_net.gdshader` (inside: a faint weave, back faces only) and
+  `shaders/shade_net_out.gdshader` (outside: an opaque dark weave); the tarp is
+  one box over the whole van (bumper to spare wheel) plus the rack, each in
+  both layers. The window gap and "only the door mirrors" are gone.
+
+**What it could break**: `van` (tarp pulled in the creature gym), `ghat`,
+the tower / salt pans hides, mirrors under the tarp (they're inside it now).
+
+**Tests**: `ghat_net` 0 failures.
+| Issue | Check | Plant to prove |
+|---|---|---|
+| one see-through layer: from outside the windows and bonnet showed through | "from outside nothing of the van shows through the net" | one layer again (`shade_net.gdshader` on both) |
+| the net box stopped short of the van's nose | same check | box length back to 7.0 |
+
+### L4 coolant, S2, S3, S5 (2026-11-09)
+**What changed**
+- `items/WaterPot.gd` (new): an old steel pot, 2.5 L of water, kind "coolant" (the radiator takes it).
+- `world/Ghat.gd`: three springs (samples 268 / 304 / 342: one within 80 m back of anywhere past 268),
+  each a pipe in a dressed stone, a puddle, rocks as they fell, its pot on a flat stone; hold use with
+  the pot at the pipe to fill it. Naresh's note on a milestone (sample 205, before hairpin 1). S3: at a
+  window it leans in at, the seated player there holds crouch (Ctrl / pad B) to hold their breath;
+  breathing fogs the glass, letting go early or running out is a gasp; either way it noticed (its
+  search restarts), but each window can give you away only once an encounter. It gives up only after
+  25 s of quiet **and** a full round of its stops. Once given up it is passive (no sight); the hot
+  cap's yelp brings it back (`cap_blows`).
+- `vehicle/Camper.gd`: the net must come off before the bonnet; the cap opens with empty hands; open
+  while it still hisses (> 104 C): a WHOOSH, a white screen, a yelp, 8 % coolant lost (`_blow_cap`);
+  `fog_window`; `breath_lock` (B / Ctrl don't work the handbrake while you hold your breath).
+- `ui/PlayerHUD.gd`: `steam_flash`, the breath bar (`set_breath`). `audio/Sfx.gd`: gasp.
+
+**What it could break**: anything pouring coolant (the opening's split hose, the windmill): the cap's
+prompt now shows when boiled or hissing; the handbrake while a breath is held; `save` (pots are loose items).
+
+**Tests**: `ghat_places` 0 failures; `ghat_jug`, `ghat_spring` (see the run below).
+| Issue found | Check | Plant to prove |
+|---|---|---|
+| the last spring was 90 m short of the pass | "wherever it dies past the first spring, a spring is at most x m back" | springs back at 262 / 298 / 334 |
+| hold-breath never came up (a seat compared with the van) | "at P1's window: HOLD Ctrl" / "both windows visited" | `seat == van` again |
+| under the net it gave up before reaching a window | "it gives up, only after a full round" (looks) | drop the `stops_done` condition |
+| nobody held their breath: the search never ended | "quiet at last, it gives up" (spring) | every window restarts its search |
+| out beside it as it gave up, it took P1 | "out beside it after it gave up: nobody is taken" | not passive when it gives up |
+| the cap's status text hid "Open the radiator cap" | "at the bonnet, still hissing: 'Open the radiator cap'" | blocked text back when hot |
+| (test) a deleted jug found again by name; a 70 ms key tap missed after the long F1 teleport (logged as SUSPECT) | — | — |
+
+### L5 marks that stay, saves, the end-credits turn (2026-11-09)
+**What changed**
+- `vehicle/Camper.gd`: `marks` (handprints on the glass and the bonnet, a dent, scrapes on the back
+  doors, each with a seed and an encounter number), `add_mark`, `set_marks`, `drop_marks`.
+- `world/Ghat.gd`: each posed stop of its round leaves its mark once an encounter; `adjust_save`: a save
+  mid-encounter goes back to 90 m before hairpin 1 (the van as it was, flags and this encounter's marks
+  undone, pots back at their springs); `match_story`; a jump back to the ghat clears the van's marks.
+- `core/SaveGame.gd`: saves `marks` and `boiled_dry`; calls `Ghat.adjust_save` and `match_story`.
+- `world/Homecoming.gd`: `show_end` first turns slowly round the van for 16 s (its own viewport over
+  both halves, "The van. Everything they left on it is still there."), then the old end card.
+
+**What it could break**: `save`, `bessi_jumps`, `step_jumps` (jumps back clear marks), `home` (the end
+screen's timing: E now works after 21 s, not 5).
+
+**Tests**: `ghat_marks` 0 failures (run 2026-11-09 22:04).
+| Issue found | Check | Plant to prove |
+|---|---|---|
+| marks piled up across replays of #6 | "a clean van to start with" | don't clear marks on reset |
+| — (the user's ask) | "the marks are saved and come back on load" | don't save marks |

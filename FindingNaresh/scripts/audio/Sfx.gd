@@ -21,6 +21,8 @@ const FAMILIES := {
 	"squelch": "squelch_", "gurgle": "gurgle_", "groan": "groan_", "splat": "splat_",
 	# made here (tools/gen/maze_sounds.py): the barn maze
 	"bell": "bell_", "caw": "caw_", "moo": "moo_", "sting": "sting_", "crack": "crack_",
+	# made here (tools/gen/problem_sounds.py): the ghat's Problem
+	"sniff": "sniff_", "gasp": "gasp_",
 }
 
 static var _cache := {}

@@ -1,0 +1,450 @@
+{
+ "version": "final-2 (2026-11-06: + 4 checks for the exam misses: the leak boils and stops the van, the rewards by the bench, the refitted wheel turns, the van steers straight)",
+ "sources": "notes/method_research/final_decisions.md (the user's answers 2026-11-06), final_method_draft.md M1-M21, final_r3_gpt.md C1-C4",
+ "policy": {
+  "jump_tries": 1,
+  "departure": "checks",
+  "script_error": "split",
+  "headline": "earliest",
+  "missing_object": "fail_unresolved",
+  "owner_game": "never assigned automatically in this build (owner=UNRESOLVED unless demonstrated)"
+ },
+ "statuses": {
+  "PASS": 0,
+  "FAIL": 1,
+  "INCOMPLETE": 2,
+  "TEST": 3,
+  "NOT HEALTHY": 4
+ },
+ "limits": {
+  "poll_s": 0.5,
+  "startup_first_beat_s": 45,
+  "no_beat_s": 20,
+  "no_physics_s": 10,
+  "pause_s": 5,
+  "missing_actor_beats": 2,
+  "shot_s": 5,
+  "simple_setup_s": 10,
+  "drive_reset_s": 46,
+  "until_extra_s": 2,
+  "door_s": 6,
+  "episode_ramp_s": 240,
+  "episode_c2_more_s": 90,
+  "progress_s": 5,
+  "kill_verify_s": 5,
+  "headline_tie_s": 2.0,
+  "whole_run_cap_s": 600,
+  "_source": "M3 (GPT r2 D8); door 4 s walk + 2 s; reset wait is until(6) + 2 = 8 s (see final_build.md)"
+ },
+ "thresholds": {
+  "G1_drift_m": 0.3,
+  "G1_window_s": 5.0,
+  "G2_dry_m": 0.3,
+  "G2_out_m": 5.0,
+  "G2_secs": 1.0,
+  "G3_sunk_m": -0.12,
+  "G3_parked_s": 0.5,
+  "G4_secs": 0.5,
+  "G4_loose_m": 1.5,
+  "D1_box_m": [
+   1.0,
+   0.7,
+   1.2
+  ],
+  "D3_secs": 4.0,
+  "G3b_tolerance_m": 0.01,
+  "G3b_tolerance_source": "q1 20261106_152334_ramp_k0 + q2 20261106_152640_ramp_k4: 6 parked evaluations (hub + 3 tyres, 4 tyres), clean max norm 0.0000 m <= 0.01 m; tolerance = 0.0000 + 0.01",
+  "_source": "C2Watch.gd constants as built (M7); G3b = clean max norm + 0.01 m, clean max <= 0.01 m (M8)"
+ },
+ "profiles": {
+  "k0": [
+   62,
+   -0.5
+  ],
+  "k1": [
+   64,
+   0.5
+  ],
+  "k2": [
+   66,
+   0.0
+  ],
+  "k3": [
+   80,
+   -0.5
+  ],
+  "k4": [
+   80,
+   0.5
+  ],
+  "_source": "M12 (GPT r2 D2)"
+ },
+ "required": {
+  "ramp": {
+   "checks": [
+    {
+     "id": "ramp/the_ramp_stands_at_the_gap",
+     "regex": "^the\\ ramp\\ stands\\ at\\ the\\ gap$",
+     "line": 11826,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/naresh_s_note_on_the_post_can_be_read_from_the_road_side",
+     "regex": "^Naresh's\\ note\\ on\\ the\\ post\\ can\\ be\\ read\\ from\\ the\\ road\\ side$",
+     "line": 11844,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/with_a_coolant_leak_the_boiling_engine_is_stopped_before_the",
+     "regex": "^with\\ a\\ coolant\\ leak\\ the\\ boiling\\ engine\\ is\\ stopped\\ before\\ the\\ gap$",
+     "line": 11874,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/at_x_km_h_the_van_falls_short",
+     "regex": "^at\\ (.*?)\\ km/h\\ the\\ van\\ falls\\ short$",
+     "line": 11885,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/a_fade_then_back_at_the_run_up_both_still_aboard",
+     "regex": "^a\\ fade,\\ then\\ back\\ at\\ the\\ run\\-up,\\ both\\ still\\ aboard$",
+     "line": 11887,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/nothing_lost_the_wheel_on_the_can_on_the_rack",
+     "regex": "^nothing\\ lost:\\ the\\ wheel\\ on,\\ the\\ can\\ on\\ the\\ rack$",
+     "line": 11888,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/flat_out_the_van_makes_it_x_km_h_at_the_lip",
+     "regex": "^flat\\ out\\ the\\ van\\ makes\\ it\\ \\((.*?)\\ km/h\\ at\\ the\\ lip\\)$",
+     "line": 11893,
+     "kind": "jump"
+    },
+    {
+     "id": "ramp/it_stays_on_its_wheels",
+     "regex": "^it\\ stays\\ on\\ its\\ wheels$",
+     "line": 11896,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_landing_the_wheel_off_through_the_shutter_in_the_hut",
+     "regex": "^the\\ landing:\\ the\\ wheel\\ off,\\ through\\ the\\ shutter,\\ in\\ the\\ hut$",
+     "line": 11899,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_van_sits_on_its_bare_hub",
+     "regex": "^the\\ van\\ sits\\ on\\ its\\ bare\\ hub$",
+     "line": 11900,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_story_get_the_wheel_back_on",
+     "regex": "^the\\ story:\\ get\\ the\\ wheel\\ back\\ on$",
+     "line": 11901,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_wheel_lies_on_the_hut_s_floor",
+     "regex": "^the\\ wheel\\ lies\\ on\\ the\\ hut's\\ floor$",
+     "line": 11905,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_can_flew_off_the_rack_and_landed_on_dry_ground_x_m_from_",
+     "regex": "^the\\ can\\ flew\\ off\\ the\\ rack\\ and\\ landed\\ on\\ dry\\ ground,\\ (.*?)\\ m\\ from\\ the\\ van$",
+     "line": 11906,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/parked_on_its_hub",
+     "regex": "^parked\\ on\\ its\\ hub$",
+     "line": 11915,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/off_the_edge_p2_is_in_the_river",
+     "regex": "^off\\ the\\ edge,\\ P2\\ is\\ in\\ the\\ river$",
+     "line": 11929,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/and_swims_out_on_the_van_s_side",
+     "regex": "^and\\ swims\\ out\\ on\\ the\\ van's\\ side$",
+     "line": 11931,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_door_says_it_s_bolted_from_inside",
+     "regex": "^the\\ door\\ says\\ it's\\ bolted\\ from\\ inside$",
+     "line": 11941,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/a_leg_up_alone_doesn_t_reach_the_shutter",
+     "regex": "^a\\ leg\\-up\\ alone\\ doesn't\\ reach\\ the\\ shutter$",
+     "line": 11963,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/p1_picks_up_the_crate",
+     "regex": "^P1\\ picks\\ up\\ the\\ crate$",
+     "line": 11973,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/crate_leg_up_p2_is_in_through_the_smashed_shutter",
+     "regex": "^crate\\ \\+\\ leg\\-up:\\ P2\\ is\\ in\\ through\\ the\\ smashed\\ shutter$",
+     "line": 11997,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_toolbox_on_the_bench",
+     "regex": "^the\\ toolbox\\ on\\ the\\ bench$",
+     "line": 12008,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/naresh_s_tiffin_on_the_bench",
+     "regex": "^Naresh's\\ tiffin\\ on\\ the\\ bench$",
+     "line": 12013,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/from_inside_slide_the_bolt",
+     "regex": "^from\\ inside:\\ slide\\ the\\ bolt$",
+     "line": 12020,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_door_opens",
+     "regex": "^the\\ door\\ opens$",
+     "line": 12025,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/p1_walks_in_through_the_open_door",
+     "regex": "^P1\\ walks\\ in\\ through\\ the\\ open\\ door$",
+     "line": 12032,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/p1_picks_up_the_van_s_wheel",
+     "regex": "^P1\\ picks\\ up\\ the\\ van's\\ wheel$",
+     "line": 12038,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/out_of_the_door_with_the_wheel",
+     "regex": "^out\\ of\\ the\\ door\\ with\\ the\\ wheel$",
+     "line": 12044,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_wheel_put_down_by_the_hub",
+     "regex": "^the\\ wheel\\ put\\ down\\ by\\ the\\ hub$",
+     "line": 12050,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_sill_offers_the_jack_x",
+     "regex": "^the\\ sill\\ offers\\ the\\ jack\\ \\('(.*?)'\\)$",
+     "line": 12055,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_jack_s_set_no_nuts_to_undo_the_wheel_s_gone",
+     "regex": "^the\\ jack's\\ set;\\ no\\ nuts\\ to\\ undo,\\ the\\ wheel's\\ gone$",
+     "line": 12057,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/without_new_nuts_it_says_so",
+     "regex": "^without\\ new\\ nuts\\ it\\ says\\ so$",
+     "line": 12063,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/and_the_wheel_stays_in_your_hands",
+     "regex": "^and\\ the\\ wheel\\ stays\\ in\\ your\\ hands$",
+     "line": 12065,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_toolbox_new_nuts_pocketed",
+     "regex": "^the\\ toolbox:\\ new\\ nuts,\\ pocketed$",
+     "line": 12074,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/a_can_of_fuel_and_a_jug_of_coolant_by_the_bench",
+     "regex": "^a\\ can\\ of\\ fuel\\ and\\ a\\ jug\\ of\\ coolant\\ by\\ the\\ bench$",
+     "line": 12082,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/now_it_fits",
+     "regex": "^now\\ it\\ fits$",
+     "line": 12088,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_van_s_own_wheel_goes_on_the_spare_isn_t_used",
+     "regex": "^the\\ van's\\ own\\ wheel\\ goes\\ on\\ \\(the\\ spare\\ isn't\\ used\\)$",
+     "line": 12091,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_jack_down_the_wheel_s_on",
+     "regex": "^the\\ jack\\ down:\\ the\\ wheel's\\ on$",
+     "line": 12094,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_story_moves_on_x",
+     "regex": "^the\\ story\\ moves\\ on:\\ (.*?)$",
+     "line": 12096,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_refitted_wheel_turns_as_the_van_drives_x_of_x_frames",
+     "regex": "^the\\ refitted\\ wheel\\ turns\\ as\\ the\\ van\\ drives\\ \\((.*?)\\ of\\ (.*?)\\ frames\\)$",
+     "line": 12107,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_van_steers_straight_after_the_fix_pull_x",
+     "regex": "^the\\ van\\ steers\\ straight\\ after\\ the\\ fix\\ \\(pull\\ (.*?)\\)$",
+     "line": 12108,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/and_drives_off_x_m",
+     "regex": "^and\\ drives\\ off\\ \\((.*?)\\ m\\)$",
+     "line": 12110,
+     "kind": "departure"
+    },
+    {
+     "id": "ramp/and_gets_back_to_the_road_x_m_off_it",
+     "regex": "^and\\ gets\\ back\\ to\\ the\\ road\\ \\((.*?)\\ m\\ off\\ it\\)$",
+     "line": 12112,
+     "kind": "departure"
+    }
+   ],
+   "attempts": 2
+  },
+  "c2_more": {
+   "work": [
+    "c2.door_walk",
+    "c2.slow_miss_hands_off",
+    "c2.f1_landed_state"
+   ],
+   "windows": [
+    "G1",
+    "G3",
+    "G3b"
+   ],
+   "evaluated": [
+    "G1",
+    "G2",
+    "G3",
+    "G3b",
+    "G4",
+    "D1",
+    "D2",
+    "D3"
+   ]
+  }
+ },
+ "scope": {
+  "claims": "the run was alive, in control and complete; every required check ran and held; where each rule was evaluated, the state was right; P1 crosses the open doorway on W; the reset after a keys-only slow miss holds the van; the scheduled landing landed at the logged speed and lane (one try); the drive-off moved > 30 m and came within 3 m of the road; with a coolant leak the boiling engine is stopped before the gap; the rewards lie by the bench; after the fix the refitted wheel turns and the van adds no steering of its own",
+  "declared_setup": [
+   "the sight-line placements before the jump",
+   "the hut stretch's placements (P1 under the window, by the crate, on the crate; P2 in the river and behind)",
+   "the wheel set by the hub (w.global_position = ...)",
+   "look_at_point cameras",
+   "c2_more's F1 jump, door setup and P2 put in the river"
+  ],
+  "declared_setup_lines": [
+   "PlayTest.gd:11827 boot._on_joy_changed(0, true)          # P2 on the pad",
+   "PlayTest.gd:11828 await ramp_start()",
+   "PlayTest.gd:11830 p.force_exit = true",
+   "PlayTest.gd:11834 await place_player(p, foot + back * 7.0 + Vector3(0, 0.3, 0), 0.0)",
+   "PlayTest.gd:11835 await look_at_point(p, r.global_position + Vector3(0, 0.6, 0))",
+   "PlayTest.gd:11839 await place_player(p, r.global_transform * Vector3(RampJump.RAMP_W * 0.5 + 1.0, 0.3, RampJump.RAMP_LEN + 0.7), 0.0)",
+   "PlayTest.gd:11840 await look_at_point(p, r.global_transform * Vector3(RampJump.RAMP_W * 0.5 + 1.0, 1.2, RampJump.RAMP_LEN - 1.0))",
+   "PlayTest.gd:11845 await place_player(p, r.global_transform * Vector3(-RampJump.RAMP_W * 0.5 - 1.2, 0.3, RampJump.RAMP_LEN * 0.35), 0.0)",
+   "PlayTest.gd:11846 await look_at_point(p, r.global_transform * Vector3(0, 0.4, RampJump.RAMP_LEN * 0.3))",
+   "PlayTest.gd:11849 await place_player(p, r.global_transform * Vector3(0, 1.2, 0.8), 0.0)",
+   "PlayTest.gd:11850 await look_at_point(p, r.global_transform * Vector3(0, -1.0, -r.gap_len))",
+   "PlayTest.gd:11853 await look_at_point(p, r.get_node(\"RiverWreck/WreckCar\").global_position)",
+   "PlayTest.gd:11856 await look_at_point(p, r.hut.global_position + Vector3(0, 2.5, 0))",
+   "PlayTest.gd:11864 await ramp_start()",
+   "PlayTest.gd:11879 can.stow(c.storage_slots[0])",
+   "PlayTest.gd:11880 await ramp_start()",
+   "PlayTest.gd:11882 q.enter_seat(c, c.seat_nodes[\"passenger\"], \"passenger\")",
+   "PlayTest.gd:11917 p.force_exit = true",
+   "PlayTest.gd:11919 q.force_exit = true",
+   "PlayTest.gd:11922 await place_player(p, hub_at, 0.0)",
+   "PlayTest.gd:11923 await look_at_point(p, c._wheels[0].global_position)",
+   "PlayTest.gd:11927 await place_player(q, r.global_transform * Vector3(0, -10.5, -r.gap_len * 0.5), 0.0)",
+   "PlayTest.gd:11938 await face_point(p, door.global_position, 1.8, hut.global_transform.basis.z * -1.0)",
+   "PlayTest.gd:11945 await place_player(p, under + hut.global_transform.basis.x * ws * 4.0 + Vector3(0, 0.5, 0), 0.0)",
+   "PlayTest.gd:11946 await look_at_point(p, window_look)",
+   "PlayTest.gd:11950 await place_player(p, under + Vector3(0, 0.4, 0), 0.0)",
+   "PlayTest.gd:11951 await look_at_point(p, window_look)",
+   "PlayTest.gd:11954 await place_player(q, behind + Vector3(0, 0.4, 0), 0.0)",
+   "PlayTest.gd:11955 await look_at_point(q, window_look)",
+   "PlayTest.gd:11968 await place_player(p, crate.global_position + (crate.global_position - under).normalized() * 1.0 + Vector3(0, 0.4, 0), 0.0)",
+   "PlayTest.gd:11969 await look_at_point(p, crate.global_position + Vector3(0, 0.25, 0))",
+   "PlayTest.gd:11976 await look_at_point(p, under + Vector3(0, -0.3, 0))",
+   "PlayTest.gd:11979 await place_player(p, crate.global_position + Vector3(0, 0.9, 0), 0.0)",
+   "PlayTest.gd:11980 await look_at_point(p, window_look)",
+   "PlayTest.gd:11983 await place_player(q, behind + Vector3(0, 0.4, 0), 0.0)",
+   "PlayTest.gd:11984 await look_at_point(q, window_look)",
+   "PlayTest.gd:12004 await look_at_point(q, box_area.global_position)",
+   "PlayTest.gd:12010 await look_at_point(q, tiffin.global_position)",
+   "PlayTest.gd:12017 await look_at_point(q, door.global_position)",
+   "PlayTest.gd:12030 await place_player(p, outside + Vector3(0, 0.4, 0), 0.0)",
+   "PlayTest.gd:12033 await look_at_point(p, w.global_position)",
+   "PlayTest.gd:12046 await face_point(p, front, 1.8, -c.global_transform.basis.x)",
+   "PlayTest.gd:12051 w.global_position = c.global_transform * Vector3(-3.3, 0.7, -Camper.WHEELBASE - 1.0)",
+   "PlayTest.gd:12052 w.linear_velocity = Vector3.ZERO",
+   "PlayTest.gd:12054 await face_point(p, front, 1.8, -c.global_transform.basis.x)",
+   "PlayTest.gd:12058 await face_point(p, w.global_position, 1.5)",
+   "PlayTest.gd:12060 await face_point(p, front, 1.8, -c.global_transform.basis.x)",
+   "PlayTest.gd:12068 await look_at_point(q, box_area.global_position)",
+   "PlayTest.gd:12085 await face_point(p, front, 1.8, -c.global_transform.basis.x)",
+   "PlayTest.gd:12099 await seat_p1_driver()",
+   "PlayTest.gd:12184 boot._on_joy_changed(0, true)",
+   "PlayTest.gd:12185 await ramp_start()",
+   "PlayTest.gd:12187 p.force_exit = true",
+   "PlayTest.gd:12191 await place_player(q, hx * Vector3(0.9, 0.4, 0.9), 0.0)",
+   "PlayTest.gd:12193 r._open_door(q)",
+   "PlayTest.gd:12196 await place_player(p, hx * Vector3(0, 0.4, -3.8), 0.0)",
+   "PlayTest.gd:12197 await look_at_point(p, hx * Vector3(0, 1.0, 0.5))",
+   "PlayTest.gd:12225 await ramp_start()",
+   "PlayTest.gd:12226 await place_player(q, r.global_transform * Vector3(5.0, -10.5, -r.gap_len * 0.5), 0.0)",
+   "PlayTest.gd:12240 boot.dev_menu.run(\"jump\", boot.story.index_of(\"wheel\"))",
+   "PlayTest.gd:12244 await seat_p1_driver()"
+  ],
+  "not_proven": [
+   "that a player can reach the placed spots",
+   "two-player hut completion between them",
+   "what a player sees (observer pictures only, R2)",
+   "a landing-only bug via F1 (R13)",
+   "why a 66.5 km/h jump sometimes misses",
+   "speeds under the slowest landed profile",
+   "that the van drove away along the road, or where it stopped (M10)",
+   "'floating above the ground' beyond G3b's attachment",
+   "tyre attachment beyond the four visible tyres' centres",
+   "secret bugs no rule, check or deadline looks at",
+   "fun",
+   "any whole-game result"
+  ]
+ }
+}

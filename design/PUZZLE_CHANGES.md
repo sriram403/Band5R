@@ -1730,3 +1730,14 @@ ready to build.* Summary of what's agreed for #6:
     pass at every speed; the net tarp hides the van and you see out; heat stops
     when it gives up; coolant fixes it; over the pass. Then the recorded video.
 11. Time (told to the user): build ~6-8 h in layers; the video ~20-30 min of it.
+
+### While building (2026-11-09): the user's answers to the build questions
+- **Q1 (where Problem sees you): hairpin 1** (the user: "okay fine"). Measured: hairpin 2 to the pass is
+  128 m of road, too short for the needle to climb on its own; from hairpin 1 it boils at samples 291-319,
+  well before the pass at 382.
+- **Q2 (the HUD): for now the TEMP / COOL bars and "ENGINE HOT" hide only while a Problem is interested;
+  the whole UI is polished later, talked through then** (`notes/POLISH.md`).
+- Built on the way (design holes found by the tests, each with its check, `notes/CHANGE_LEDGER.md` #6):
+  it gives up only after a full round of the van; each window can give you away once an encounter
+  (else the search never ends); once given up it no longer looks for people (only the hot cap's yelp
+  brings it back); the radiator cap opens with empty hands; a dead engine in gear drags the van to a stop.

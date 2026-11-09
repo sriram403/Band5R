@@ -298,7 +298,7 @@ func _pull(p: PlayerRig, dt: float) -> void:
 	if tarp_work >= (TARP_OFF_S if tarped else TARP_ON_S):
 		tarp_work = 0.0
 		set_tarp(not tarped)
-		p.say("The van is a lump under the canvas now. Keep still and quiet - you can hide inside it. Only the door mirrors show what's out there." if tarped else "The tarp is off and rolled up on the back.", 6.0)
+		p.say("The van is a dark lump under the old shade net now. Get in and keep still and quiet: from inside you can see out through the weave." if tarped else "The net is off and rolled up on the back.", 6.0)
 
 
 func set_tarp(on: bool) -> void:
@@ -330,30 +330,28 @@ func reset() -> void:
 
 
 func _build_tarp() -> void:
-	var canvas := ToonMat.make(Color(0.40, 0.42, 0.30))
-	var fold := ToonMat.make(Color(0.33, 0.35, 0.25))
+	# #6 (agreed 2026-11-09, S1): old shade netting, not canvas. From outside
+	# a dark lump; from inside you see out through the weave (shade_net.gdshader)
+	# two layers on each piece: an opaque dark skin seen from outside, a faint
+	# weave seen from inside (one see-through layer let the glass show through)
+	var net_out := ShaderMaterial.new()
+	net_out.shader = load("res://shaders/shade_net_out.gdshader")
+	var net_in := ShaderMaterial.new()
+	net_in.shader = load("res://shaders/shade_net.gdshader")
+	var rolled := ToonMat.make(Color(0.17, 0.20, 0.15))
 	# rolled up on the back, above the spare wheel (clear of its handle)
-	_roll = Build.cyl(0.13, 1.5, canvas, Vector3(0, 2.80, 3.02), Vector3(0, 0, 90), 10, "TarpRoll")
+	_roll = Build.cyl(0.13, 1.5, rolled, Vector3(0, 2.80, 3.02), Vector3(0, 0, 90), 10, "TarpRoll")
 	van._body_root.add_child(_roll)
-	# over the van: a big lump of canvas down to just above the wheels' middle
+	# over the van: the whole van, down to just above the wheels' middle
 	_tarp = Node3D.new()
 	_tarp.name = "Tarp"
 	_tarp.visible = false
 	van._body_root.add_child(_tarp)
-	# the canvas covers everything but the front doors' side windows: there it
-	# is tucked below and above them, so from a seat you can still see out of
-	# your side window to the door mirror (the only way to watch from inside)
-	const GAP_Z := Vector2(-3.75, -1.1)      # front of the van to behind the front seats
-	const GAP_Y := Vector2(1.52, 2.2)        # the window band
-	var front_len := GAP_Z.y - GAP_Z.x
-	var front_z := (GAP_Z.x + GAP_Z.y) * 0.5
-	_tarp.add_child(Build.box(Vector3(2.56, 2.25, 3.25 - GAP_Z.y), canvas, Vector3(0, 1.72, (3.25 + GAP_Z.y) * 0.5), Vector3.ZERO, "Sheet"))
-	_tarp.add_child(Build.box(Vector3(2.56, GAP_Y.x - 0.6, front_len), canvas, Vector3(0, (0.6 + GAP_Y.x) * 0.5, front_z), Vector3.ZERO, "SheetLow"))
-	_tarp.add_child(Build.box(Vector3(2.56, 2.85 - GAP_Y.y, front_len), canvas, Vector3(0, (GAP_Y.y + 2.85) * 0.5, front_z), Vector3.ZERO, "SheetHigh"))
-	_tarp.add_child(Build.box(Vector3(2.56, GAP_Y.y - GAP_Y.x, 0.06), canvas, Vector3(0, (GAP_Y.x + GAP_Y.y) * 0.5, GAP_Z.x + 0.03), Vector3.ZERO, "SheetFront"))
-	_tarp.add_child(Build.box(Vector3(2.2, 0.62, 5.6), canvas, Vector3(0, 3.1, 0.0), Vector3.ZERO, "OverRack"))
-	for z in [-2.2, 0.0, 2.2]:
-		_tarp.add_child(Build.box(Vector3(2.62, 0.08, 0.1), fold, Vector3(0, 2.2, z), Vector3.ZERO, "Fold"))
+	# bumper (z -3.95) to the spare wheel (3.23), roof rack and crate on top
+	for spec in [[Vector3(2.56, 2.25, 7.45), Vector3(0, 1.72, -0.325), "Sheet"],
+			[Vector3(2.2, 0.62, 5.6), Vector3(0, 3.1, 0.0), "OverRack"]]:
+		_tarp.add_child(Build.box(spec[0], net_out, spec[1], Vector3.ZERO, String(spec[2])))
+		_tarp.add_child(Build.box(spec[0], net_in, spec[1], Vector3.ZERO, String(spec[2]) + "In"))
 	# handles: the roll up top, and both back corners at waist height (clear
 	# of the fuel filler, the rack and the spare wheel)
 	for spec in [[Vector3(1.6, 0.5, 0.5), Vector3(0, 2.75, 3.75), "TarpHandle"],

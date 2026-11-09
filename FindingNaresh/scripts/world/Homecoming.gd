@@ -117,6 +117,7 @@ func _physics_process(delta: float) -> void:
 			_fragments[id] = true
 	if _end_t >= 0.0:
 		_end_t += delta
+		_turn(delta)
 		return
 	var boot := get_tree().current_scene
 	var van: Camper = boot.get("camper")
@@ -253,6 +254,13 @@ func _near_home(delta: float, boot: Node, van: Camper) -> void:
 			return
 
 
+## #6 L5 (the user, 2026-11-09): before the end card, a slow turn round the
+## battered van: every mark the Problems left on it, a funny look back.
+const TURN_S := 16.0
+var credits_cam: Camera3D               ## the turn's camera (tests read it)
+var _turn_van: Camper
+
+
 func show_end() -> void:
 	if _end != null:
 		return
@@ -261,6 +269,49 @@ func show_end() -> void:
 	_end.layer = 90
 	_end.name = "EndScreen"
 	get_tree().current_scene.add_child(_end)
+	var boot := get_tree().current_scene
+	_turn_van = boot.get("camper")
+	var vps = boot.get("viewports")
+	if _turn_van != null and vps != null and (vps as Array).size() > 0:
+		var svc := SubViewportContainer.new()
+		svc.name = "CreditsTurn"
+		svc.stretch = true
+		svc.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_end.add_child(svc)
+		var sv := SubViewport.new()
+		sv.world_3d = (vps[0] as SubViewport).world_3d
+		svc.add_child(sv)
+		credits_cam = Camera3D.new()
+		credits_cam.fov = 45.0
+		credits_cam.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		sv.add_child(credits_cam)
+		credits_cam.current = true
+		_turn(0.0)
+		var cap := Label.new()
+		var n := (_turn_van.marks as Array).size()
+		cap.text = "The van. Everything they left on it is still there." if n > 0 else "The van."
+		cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cap.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		cap.position.y -= 90.0
+		cap.add_theme_font_size_override("font_size", 28)
+		cap.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+		_end.add_child(cap)
+		get_tree().create_timer(TURN_S).timeout.connect(_end_card)
+	else:
+		_end_card()
+
+
+## The slow turn: once round the van in about a minute, at head height.
+func _turn(_delta: float) -> void:
+	if credits_cam == null or not is_instance_valid(credits_cam) or _turn_van == null:
+		return
+	var a := _end_t * TAU / 60.0 + 0.6
+	var c := _turn_van.global_position
+	credits_cam.global_position = c + Vector3(cos(a) * 7.5, 2.2, sin(a) * 7.5)
+	credits_cam.look_at(c + Vector3.UP * 1.2, Vector3.UP)
+
+
+func _end_card() -> void:
 	var bg := ColorRect.new()
 	bg.color = Color(0, 0, 0, 0)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -279,7 +330,7 @@ func show_end() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
-	if _end == null or _end_t < 5.0:
+	if _end == null or _end_t < TURN_S + 5.0:
 		return
 	var go: bool = (ev is InputEventKey and ev.pressed and (ev as InputEventKey).keycode == KEY_E) or \
 		(ev is InputEventJoypadButton and ev.pressed and (ev as InputEventJoypadButton).button_index == JOY_BUTTON_A)

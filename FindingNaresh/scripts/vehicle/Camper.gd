@@ -112,6 +112,18 @@ var heat_lockout := false          ## cut out from overheating; no restart until
 var boiled_dry := false            ## a Problem boiled the radiator: no restart until coolant (or water) goes in
 const COOLANT_RUN := 0.75          ## coolant it needs to run again after boiling dry
 const STALL_DRAG := 18.0           ## brake from a dead engine left in gear
+const TICK_FROM := 100.0           ## C from which the hot engine ticks
+var cap_blows := 0                 ## S2: times the hot cap blew steam (the ghat listens)
+var breath_lock: Node = null       ## S3: this seated player is holding their breath (crouch, not the handbrake)
+var _cap_t := 0.0
+var _window_fog := {}              ## "driver"/"passenger" -> the mist on that side window
+var hot_ticks := 0                 ## ticks so far (tests read it)
+var _tick_t := 0.0
+
+
+## Seconds between the hot engine's ticks: 1.1 s at 100 C, 0.16 s at boiling.
+func tick_every() -> float:
+	return lerpf(1.1, 0.16, clampf((temp - TICK_FROM) / (TEMP_MAX - TICK_FROM), 0.0, 1.0))
 var start_fail := ""               ## why the last start attempt failed, for the HUD
 var start_fail_t := 0.0
 var _steam: CPUParticles3D
@@ -538,21 +550,39 @@ func _build_service() -> void:
 	_body_root.add_child(inlet)
 
 	# radiator filler under the bonnet, reached from the front of the van
-	var rad := Build.interact_area(Vector3(1.4, 0.8, 0.8), Vector3(0, 1.45, -4.0), "", func(_p): pass, "RadiatorCap")
-	rad.set_meta("prompt_fn", func(_p) -> String: return "")
+	# the cap opens with empty hands too (S2: open it while it still hisses and
+	# it blows steam in your face; cool, it just comes off)
+	var rad := Build.interact_area(Vector3(1.4, 0.8, 0.8), Vector3(0, 1.45, -4.0), "", func(p): _open_cap(p), "RadiatorCap")
+	rad.set_meta("prompt_fn", func(_p) -> String:
+		if attack != null and attack.tarped:
+			return ""
+		if boiled_dry or temp > TEMP_WARN:
+			return "Open the radiator cap  -  %d C%s" % [int(temp), ", hissing" if temp > TEMP_WARN else ""]
+		return "")
 	rad.set_meta("blocked_fn", func() -> String:
+		if attack != null and attack.tarped:
+			return "The net is over the bonnet. Pull it off first."
+		# boiled or hissing, the cap can be opened (a blocked text would hide it)
+		if boiled_dry or temp > TEMP_WARN:
+			return ""
 		if coolant_leak:
 			return "Radiator: the top hose has split and it's boiling dry. It needs coolant."
 		return "Radiator - %d C, coolant %d%%" % [int(temp), int(coolant * 100.0)])
 	rad.set_meta("held_prompt_fn", func(_p, item) -> String:
 		if item.kind != "coolant":
 			return ""
+		if attack != null and attack.tarped:
+			return "The net is over the bonnet. Pull it off first."
 		if item.litres <= 0.05:
 			return "The jug is empty"
 		return "Hold to pour coolant into the radiator  -  coolant %d%%" % int(coolant * 100.0))
 	rad.set_meta("pour", true)
 	rad.set_meta("held_action", func(_p, item, dt: float, _first: bool):
-		if item.kind != "coolant":
+		if item.kind != "coolant" or (attack != null and attack.tarped):
+			return
+		# S2: still hissing, the cap blows: wait until the hiss stops
+		if temp > TEMP_WARN:
+			_blow_cap(_p)
 			return
 		var got: float = item.pour(1.6 * dt)
 		coolant_added += got
@@ -1021,7 +1051,7 @@ func _physics_process(delta: float) -> void:
 		throttle_in = maxf(debug_throttle, dev.throttle())
 		brake_in = dev.brake()
 		steer_in = dev.steer() if absf(dev.steer()) > 0.001 else debug_steer
-		if dev.just_pressed("handbrake"):
+		if dev.just_pressed("handbrake") and breath_lock != driver:
 			set_parking_brake(not parking_brake)
 		if dev.just_pressed("ignition"):
 			toggle_engine()
@@ -1035,7 +1065,7 @@ func _physics_process(delta: float) -> void:
 	if passenger != null and passenger.dev != null and not passenger.journal_open:
 		var pdev := passenger.dev
 		# the lever sits between the seats: the passenger can pull it too
-		if pdev.just_pressed("handbrake"):
+		if pdev.just_pressed("handbrake") and breath_lock != passenger:
 			set_parking_brake(not parking_brake)
 		if pdev.just_pressed("headlights"):
 			set_headlights(not headlights_on)
@@ -1212,6 +1242,18 @@ func _update_visuals(delta: float, speed: float, fwd_speed: float) -> void:
 			_steam.amount = puffs
 	if _hiss:
 		_hiss.target = (0.9 if engine_on else 0.4) if coolant_leak else (0.3 if temp > TEMP_WARN else 0.0)
+		# boiled dry: a kettle on the boil until it cools below the warning
+		if boiled_dry and temp > TEMP_WARN:
+			_hiss.target = 1.0
+	# hot metal ticks, faster the hotter it gets (#6: the engine ticks hotter)
+	if temp > TICK_FROM:
+		_tick_t -= delta
+		if _tick_t <= 0.0:
+			_tick_t = tick_every()
+			hot_ticks += 1
+			Sfx.play3d("click", global_transform * Vector3(0, 1.0, -3.2), -16.0 + 8.0 * clampf((temp - TICK_FROM) / 22.0, 0.0, 1.0))
+	else:
+		_tick_t = 0.0
 	if _glug:
 		_pour_t -= delta
 		var flowing := _pour_t > 0.0 and not Sfx.muted
@@ -1595,6 +1637,162 @@ func toggle_engine() -> void:
 		return
 	engine_on = true
 	temp = maxf(temp, TEMP_AMBIENT + 1.0)
+
+
+## S2 (#6): the radiator cap opened while it still hisses. A WHOOSH of steam
+## in your face (a white screen, a yelp), some coolant lost, and the noise
+## carries: a Problem that had given up comes back.
+func _blow_cap(p) -> void:
+	if Time.get_ticks_msec() / 1000.0 - _cap_t < 3.0:
+		return
+	_cap_t = Time.get_ticks_msec() / 1000.0
+	cap_blows += 1
+	coolant = maxf(0.05, coolant - 0.08)
+	var at: Vector3 = global_transform * Vector3(0, 1.5, -3.7)
+	Sfx.play3d("hit_metal_heavy", at, 2.0)
+	Sfx.play3d("gasp", (p as Node3D).global_position + Vector3.UP * 1.5, 4.0)
+	Hearing.emit(at, 60.0, "yelp")
+	if _steam != null:
+		_steam.restart()
+	var huds = get_tree().current_scene.get("huds")
+	if huds != null and (p as PlayerRig).index < (huds as Array).size():
+		(huds[(p as PlayerRig).index] as PlayerHUD).steam_flash(1.4)
+	(p as PlayerRig).say("WHOOSH! Boiling steam blasts out of the radiator. You jump back with a yelp. (Wait until the hissing stops.)", 5.0)
+
+
+## E at the radiator with empty hands: the cap. Hot, it blows (S2).
+func _open_cap(p) -> void:
+	if attack != null and attack.tarped:
+		return
+	if temp > TEMP_WARN:
+		_blow_cap(p)
+	else:
+		(p as PlayerRig).say("The cap comes off. The radiator is %d%% full: pour in coolant, or water." % int(coolant * 100.0), 4.0)
+
+
+# --- #6 L5: marks that stay -----------------------------------------------------
+
+## What Problems did to the van, for good (saved): long thin handprints on the
+## glass and the bonnet, dents, scrapes down the back doors. By the end of the
+## game the van shows how far you've come.
+var marks: Array = []                ## {kind, p: [x, y, z] in the body's frame, s: seed, enc: encounter}
+var _marks_root: Node3D
+
+
+func add_mark(kind: String, local: Vector3, seed: int, enc: int) -> void:
+	var m := {"kind": kind, "p": [local.x, local.y, local.z], "s": seed, "enc": enc}
+	marks.append(m)
+	_build_mark(m)
+
+
+## The saved list back on the van (a load), or [] for a clean van.
+func set_marks(list: Array) -> void:
+	marks = []
+	if _marks_root != null:
+		for ch in _marks_root.get_children():
+			ch.queue_free()
+	for m in list:
+		marks.append(m)
+		_build_mark(m)
+
+
+## An unfinished encounter's marks off again (quit mid-encounter: replayed).
+func drop_marks(enc: int) -> void:
+	set_marks(marks.filter(func(m): return int(m["enc"]) != enc))
+
+
+func _build_mark(m: Dictionary) -> void:
+	if _marks_root == null:
+		_marks_root = Node3D.new()
+		_marks_root.name = "Marks"
+		_body_root.add_child(_marks_root)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(m["s"])
+	var p: Array = m["p"]
+	var root := Node3D.new()
+	root.name = "Mark_" + String(m["kind"])
+	root.position = Vector3(float(p[0]), float(p[1]), float(p[2]))
+	_marks_root.add_child(root)
+	var kind := String(m["kind"])
+	# each mark is drawn in its own XY plane; local +Z is the surface's normal
+	match kind:
+		"hand_glass":
+			root.rotation_degrees = Vector3(0, 90.0 * signf(float(p[0])), rng.randf_range(-25.0, 25.0))
+			_hand(root, Color(0.93, 0.96, 1.0, 0.6), rng)
+		"hand_bonnet":
+			root.rotation_degrees = Vector3(-90, rng.randf_range(-40.0, 40.0), 0)
+			_hand(root, Color(0.10, 0.11, 0.12, 0.55), rng)
+		"dent":
+			root.rotation_degrees = Vector3(-90, rng.randf_range(0.0, 180.0), 0)
+			var dk := _mark_mat(Color(0.05, 0.05, 0.06, 0.45))
+			root.add_child(Build.sphere(0.11, dk, Vector3(0, 0, 0.004), Vector3(1.4, 0.8, 0.02), "Dent"))
+			root.add_child(Build.sphere(0.13, _mark_mat(Color(1, 1, 1, 0.18)), Vector3(0.02, 0.03, 0.002), Vector3(1.4, 0.8, 0.01), "DentRim"))
+		"scrape":
+			root.rotation_degrees = Vector3(0, 0, rng.randf_range(-35.0, -10.0))
+			var bare := _mark_mat(Color(0.78, 0.79, 0.80, 0.85))
+			for k in 4:
+				root.add_child(Build.box(Vector3(rng.randf_range(0.35, 0.6), 0.012, 0.004), bare, Vector3(rng.randf_range(-0.04, 0.04), k * 0.035, 0.0), Vector3.ZERO, "Scrape"))
+
+
+## A long thin hand: a narrow palm and four long fingers, slightly spread.
+func _hand(root: Node3D, col: Color, rng: RandomNumberGenerator) -> void:
+	var mat := _mark_mat(col)
+	root.add_child(Build.sphere(0.06, mat, Vector3(0, 0, 0.003), Vector3(1.0, 1.35, 0.03), "Palm"))
+	for k in 4:
+		var fx := -0.045 + k * 0.03
+		var len := 0.17 + (0.03 if k in [1, 2] else 0.0) + rng.randf_range(-0.01, 0.01)
+		var f := Build.box(Vector3(0.016, len, 0.004), mat, Vector3(fx, 0.07 + len * 0.5, 0.003), Vector3(0, 0, (k - 1.5) * 4.0), "Finger")
+		root.add_child(f)
+	root.add_child(Build.box(Vector3(0.016, 0.11, 0.004), mat, Vector3(-0.075, 0.0, 0.003), Vector3(0, 0, 40.0), "Thumb"))
+
+
+func _mark_mat(col: Color) -> StandardMaterial3D:
+	var mt := StandardMaterial3D.new()
+	mt.albedo_color = col
+	mt.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mt.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mt.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return mt
+
+
+## S3: the mist of your breath on a side window ("driver" / "passenger"), 0..1.
+func fog_window(role: String, amount: float) -> void:
+	var m: MeshInstance3D = _window_fog.get(role)
+	if m == null:
+		var sx := -1.0 if role == "driver" else 1.0
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.albedo_color = Color(0.92, 0.94, 0.96, 0.0)
+		var tex := GradientTexture2D.new()
+		tex.fill = GradientTexture2D.FILL_RADIAL
+		tex.fill_from = Vector2(0.5, 0.5)
+		tex.fill_to = Vector2(1.0, 0.5)
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.set_color(1, Color(1, 1, 1, 0))
+		tex.gradient = g
+		mat.albedo_texture = tex
+		var q := QuadMesh.new()
+		q.size = Vector2(0.6, 0.42)
+		m = MeshInstance3D.new()
+		m.name = "BreathFog_" + role
+		m.mesh = q
+		m.material_override = mat
+		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		m.position = Vector3(sx * 1.08, 1.86, -1.75)
+		m.rotation_degrees = Vector3(0, -90.0 * sx, 0)
+		_body_root.add_child(m)
+		_window_fog[role] = m
+	var mt := m.material_override as StandardMaterial3D
+	mt.albedo_color.a = move_toward(mt.albedo_color.a, 0.75 * amount, 0.04)
+	m.visible = mt.albedo_color.a > 0.01
+
+
+## How misted a side window is now, 0..0.75 (tests read it).
+func window_fog(role: String) -> float:
+	var m: MeshInstance3D = _window_fog.get(role)
+	return (m.material_override as StandardMaterial3D).albedo_color.a if m != null else 0.0
 
 
 func _fail_start(why: String) -> void:
