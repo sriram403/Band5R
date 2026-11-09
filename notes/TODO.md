@@ -8,7 +8,7 @@ being built and tested), so this always shows where the work is right now.
 ## Right now
 - [~] **2026-11-10 (stopped by the user at 00:05): #6 on `g15`, L6 nearly done. NEXT THREAD, in order:**
       1. Apply `notes/g15_pending/l6_final.py` (removes the stall drag: measured useless, 32 vs 36 m; window-lean plant to 2.0 m) with `python notes/g15_pending/l6_final.py`; compile.
-      2. Planted-bug proofs (`notes/g15_pending/prove_ghat_2026-11-09.txt`): 17 of 20 PROVED. Left: `lean_close` (rerun group `lean` after step 1), `endless_window` NOT PROVED (with P2 never holding breath the search still ended: find why the plant didn't stop it, or what the check needs), `no_stall_drag` dropped (step 1).
+      2. Planted-bug proofs (`notes/g15_pending/prove_ghat_2026-11-09.txt`): 18 of 21 PROVED. Left: `lean_close` (rerun group `lean` after step 1), `endless_window` NOT PROVED (with P2 never holding breath the search still ended: find why the plant didn't stop it, or what the check needs), `no_stall_drag` dropped (step 1).
       3. OPEN bug: the jug on the rack sometimes 77 m from the van (2 of ~5 `ghat_jug` runs; ROUGH_NOTES). Test bench ready: `notes/g15_pending/jugbench.txt` (apply with `patch.py` to `FindingNaresh/scripts/dev/PlayTest.gd`, run `tools/run_test.sh ghat_jug_bench`).
       4. Re-freeze (`python tools/method/freeze_ghat.py`), one final clean run `tools/method_run.sh ghat` (~20 min, all 7 must PASS).
       5. The walk: `python tools/live/make_ghat.py`, `tools/record_walk.sh ghat` (~10 min video), watch it, send with times. Two failed takes: stop and tell the user.
