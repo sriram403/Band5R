@@ -109,6 +109,9 @@ var fuel_leak := 0.0
 const CREATURE_LEAK := 1.0
 var attack: VanAttack                ## creatures: their noises, their attack, the tarp
 var heat_lockout := false          ## cut out from overheating; no restart until cool
+var boiled_dry := false            ## a Problem boiled the radiator: no restart until coolant (or water) goes in
+const COOLANT_RUN := 0.75          ## coolant it needs to run again after boiling dry
+const STALL_DRAG := 18.0           ## brake from a dead engine left in gear
 var start_fail := ""               ## why the last start attempt failed, for the HUD
 var start_fail_t := 0.0
 var _steam: CPUParticles3D
@@ -554,6 +557,11 @@ func _build_service() -> void:
 		var got: float = item.pour(1.6 * dt)
 		coolant_added += got
 		coolant = minf(1.0, coolant + got / COOLANT_L)
+		if boiled_dry and coolant >= COOLANT_RUN:
+			boiled_dry = false
+			for pl in get_tree().get_nodes_in_group("player"):
+				if (pl as Node3D).global_position.distance_to(global_position) < 12.0:
+					pl.say("The radiator is full again.", 4.0)
 		if got > 0.0005:
 			_glug_at(Vector3(0, 1.45, -3.6))
 		if coolant_leak and coolant_added >= 3.0:
@@ -1071,6 +1079,10 @@ func _physics_process(delta: float) -> void:
 		b = BRAKE_FORCE * brake_in * lerpf(1.0, WET_BRAKE, wet)
 	if not engine_on or throttle_in < 0.01:
 		b += IDLE_DRAG
+	# boiled dry, the dead engine is still in gear: it drags the van to a stop
+	# (a jerk and a crawl, not a coast over the pass)
+	if boiled_dry and not engine_on:
+		b += STALL_DRAG
 	# Drive-away: pulling off (or reversing) with the engine running lets the
 	# handbrake off. Otherwise it holds, and nothing else does: no hidden
 	# auto-hold, so a van left with it off rolls down any slope.
@@ -1091,6 +1103,7 @@ func _physics_process(delta: float) -> void:
 
 func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 	odometer += speed * delta
+	var temp_was := temp
 	if coolant_leak:
 		coolant = maxf(0.08, coolant - COOLANT_DRAIN * delta * (1.0 if engine_on else 0.25))
 	if engine_on:
@@ -1109,17 +1122,25 @@ func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 		target_temp = clampf(target_temp, TEMP_AMBIENT, TEMP_MAX + 4.0)
 		var rise := LEAK_RISE_RATE if coolant < 0.6 else TEMP_RISE_RATE
 		temp = move_toward(temp, target_temp, (rise if target_temp > temp else TEMP_FALL_RATE) * delta)
+		_problem_heat(temp_was, delta, speed, throttle_in, true)
 		if temp >= TEMP_MAX:
 			# boiled: the engine cuts out and will not restart until it cools
 			engine_on = false
 			heat_lockout = true
-			_fail_start("The engine cut out - it's boiling. It won't restart until it cools.")
+			if attack != null and attack.interested():
+				boil_dry()
+			else:
+				_fail_start("The engine cut out - it's boiling. It won't restart until it cools.")
 		battery = minf(1.0, battery + 0.02 * delta)
 		rpm_norm = clampf(0.16 + throttle_in * 0.55 + clampf(speed / 26.0, 0.0, 1.0) * 0.42, 0.0, 1.0)
 		if fuel <= 0.0:
 			toggle_engine()
 	else:
 		temp = maxf(TEMP_AMBIENT, temp - (LEAK_COOL_RATE if coolant < 0.6 else 1.6) * delta)
+		_problem_heat(temp_was, delta, speed, throttle_in, false)
+		if temp >= TEMP_MAX and attack != null and attack.interested() and not boiled_dry:
+			heat_lockout = true
+			boil_dry()
 		if heat_lockout and temp < RESTART_BELOW:
 			heat_lockout = false
 		rpm_norm = maxf(0.0, rpm_norm - 1.8 * delta)
@@ -1130,6 +1151,31 @@ func _update_condition(delta: float, speed: float, throttle_in: float) -> void:
 		if driver != null and driver.dev != null and engine_on:
 			thr = driver.dev.throttle()
 		_audio.set_state(engine_on, rpm_norm, speed, maxf(thr, debug_throttle))
+
+
+## The heat rule (VanAttack): while a Problem is interested the needle never
+## falls and climbs by its rate (harder driving, faster), and once steaming the
+## coolant boils away.
+func _problem_heat(temp_was: float, delta: float, speed: float, throttle_in: float, running: bool) -> void:
+	if attack == null or not attack.interested():
+		return
+	var add := attack.heat_rate(speed, throttle_in, running) * delta
+	var t := minf(TEMP_MAX + 4.0, maxf(temp, temp_was) + add)
+	attack.heat_added += t - temp
+	temp = t
+	if temp > TEMP_WARN:
+		coolant = maxf(0.05, coolant - VanAttack.BOIL_AWAY * delta)
+		if coolant < 0.6:
+			boiled_dry = true
+
+
+## Boiled by a Problem: a kettle's hiss, half the coolant gone as steam, and
+## it won't start again until the radiator is filled.
+func boil_dry() -> void:
+	boiled_dry = true
+	coolant = minf(coolant, VanAttack.BOILED_TO)
+	Sfx.play3d("hit_metal", global_transform * Vector3(0, 1.2, -3.4), -2.0)
+	_fail_start("The engine coughs and dies. Steam pours from the grille: the radiator has boiled dry.")
 
 
 ## Uphill grade, 0 on the flat or downhill. The nose is -Z, so a raised nose
@@ -1313,6 +1359,7 @@ func repair_all() -> void:
 	coolant = 1.0
 	coolant_leak = false
 	heat_lockout = false
+	boiled_dry = false
 	fuel_leak = 0.0
 	battery = 1.0
 	tyre_flat = false
@@ -1536,6 +1583,9 @@ func toggle_engine() -> void:
 		return
 	if fuel <= 0.0:
 		_fail_start("The engine turns over but won't catch - no fuel.")
+		return
+	if boiled_dry:
+		_fail_start("The starter turns, the engine won't catch: the radiator is boiled dry. It needs coolant, or water.")
 		return
 	if heat_lockout:
 		_fail_start("Too hot to start - %d C. Needs to cool below %d." % [int(temp), int(RESTART_BELOW)])

@@ -529,3 +529,56 @@ works something he was told to; `naresh` checks it.
 
 **Found later**
 - (nothing yet)
+
+---
+
+## #6 The ghat: Problem and the heat rule (branch `g15` from `main` 0705897; NOT merged, NOT pushed, waits for the user's look)
+
+### L1 the heat rule (2026-11-09)
+**What changed**
+- `vehicle/VanAttack.gd`: the heat rule for every encounter. A Problem that
+  wants the van calls `creature_interested()` each tick; while it does
+  (`interested()`), the van leaks 4 L/min (capped 17.5 L an encounter, never
+  below 4 L) and heats (`heat_rate`: 0.3 + 1.9 x throttle + 0.12 x m/s deg/s,
+  0.6 deg/s with the engine off). The old near-the-van harms (cough at 30 s,
+  puncture at 60 s) are kept for other creatures.
+- `vehicle/Camper.gd`: `_problem_heat` (the needle never falls while it's
+  interested; steaming boils coolant away), `boil_dry()` (half the coolant
+  gone, no restart until it is back over 75 %), `boiled_dry`, `STALL_DRAG` (a
+  dead engine in gear drags the van to a stop).
+- `creatures/Creature.gd`: `director` (a puzzle steers it while it has
+  nothing else on its mind; it still sees and hears players); generic
+  creatures report interest (`van_interest > 0`).
+- `world/Ghat.gd`: the old glimpse + attacker at the pass replaced by
+  Problem: watch -> follow -> come -> circle -> leave. Seen at hairpin 1
+  (`SEEN_HAIRPIN`, Q1 pick B pending the user: hairpin 2 leaves 170 m, too
+  short). Fog now up to the pass. A pass guard 50 m short (should never fire).
+- `story/Story.gd`: `hide_van` reworded; new step `ghat_fix`.
+- `ui/PlayerHUD.gd`: TEMP / COOL bars and "ENGINE HOT" hidden while a Problem
+  is interested (Q2 pick B pending the user).
+
+**What it could break**
+- Every creature that wants the van now heats + leaks it until it loses
+  interest (driving away no longer stops the leak): `van` (adapted),
+  `tower`, `decoy`, `saltpans`, `tunnel`, the return run.
+- Old ghat tests: `ghat`, `ghat_menu`, `way_out`/long drives (they expect the
+  creature at the pass), `puzzle_resets` (flags), `storm_road`.
+- Taken.gd's leak after being taken (unchanged, but adds to the new leak).
+
+**Tests that cover it**
+- `ghat_heat` (new; 3 driving profiles): see the run results below.
+- `van` (gym creature, adapted to the rule).
+- Run 2026-11-09 20:36 (`ghat_heat`, 3 profiles, ~9 min): **0 failures**.
+  Seen -> boiled: flat out 6 s (at rest sample 319), cornering 17 s (308),
+  crawling 29 s (292); pass at 382, fog to 380, guard never fired. Hiding well
+  leaves coolant at 21-25 % (one 2.5 L pot refills it to 75 %).
+- `van` (gym creature): 0 failures after adapting 2 checks to the rule.
+
+**Issues found while building L1, each with its own check (prove in L6 against a planted bug + clean run)**
+| Issue found | Check (in `ghat_heat`) | Plant to prove it |
+|---|---|---|
+| the dead van coasted over the pass | "comes to rest before the pass, in the fog" | `STALL_DRAG = 0` |
+| the breakdown came out of the fog (fog ended at 363) | same check (fog > 0.9) | `fog_to = point_count - 20` |
+| seen at hairpin 2, the heat alone couldn't boil it before the pass | "the heat alone boils it, the pass guard not needed" | `SEEN_HAIRPIN = 1` |
+| the HUD showed TEMP / COOL bars and "ENGINE HOT" | "hot with it watching: no bars, no banner; the grille steams" | remove the `problem_on` guard |
+| my test counted heat on the tick it saw the van | (test fixed; the check "no heat before it sees the van") | — |

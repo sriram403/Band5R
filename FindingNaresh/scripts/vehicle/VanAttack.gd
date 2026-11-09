@@ -24,6 +24,22 @@ const SICK_POWER := 0.6
 const TARP_ON_S := 4.0
 const TARP_OFF_S := 2.0
 const TAKEN_LEAK_S := 90.0       ## how long the leak lasts that they leave when they take you both
+## The heat rule (#6 teaches it, every encounter from then on; design/
+## PUZZLE_CHANGES.md #6): once a Problem has seen the van and while it stays
+## interested, the van heats and leaks fuel, wherever it is. Driving harder
+## heats it faster; switched off, the needle still creeps. It all stops only
+## when the Problem loses interest. The longer it lasts, the more coolant
+## boils away.
+const PROBLEM_LEAK := 4.0        ## L a minute while one is interested
+const LEAK_CAP := 17.5           ## L per encounter at most (a quarter of a tank)
+const LEAK_FLOOR := 4.0          ## L: it never drains the tank below this
+const HEAT_BASE := 0.3           ## deg/s, engine running
+const HEAT_THROTTLE := 1.9       ## deg/s more at full throttle
+const HEAT_PER_M := 0.12         ## deg per metre driven
+const HEAT_OFF := 0.6            ## deg/s with the engine off: the needle still creeps
+const BOIL_AWAY := 0.005         ## coolant (0..1) a second, while interested and steaming
+const BOILED_TO := 0.5           ## coolant left the moment it boils
+const CALM_AFTER := 1.0          ## s without interest before the encounter is over
 
 var van: Camper
 var attacked_t := 0.0            ## s a creature has been at the van
@@ -32,6 +48,13 @@ var tarped := false
 var coughing := 0.0              ## s left of a cough (almost no power)
 var leak_left := 0.0             ## s left of `van.fuel_leak`, if it is timed
 var tarp_work := 0.0             ## s of pulling so far (tests read it)
+var interest_t := 0.0            ## s a Problem has been interested, this encounter
+var encounter_leaked := 0.0      ## L leaked this encounter
+var watcher: Node3D = null       ## the Problem that is interested now
+var heat_added := 0.0            ## deg it has added this encounter (tests read it)
+var _interested := false
+var _interest_tick := false
+var _calm_t := 0.0
 var _stage := 0
 var _near_tick := false
 var _away_t := 0.0
@@ -79,6 +102,28 @@ func creature_near(c: Node3D, delta: float) -> void:
 	attacked_t += delta
 
 
+## A Problem that has seen the van calls this every physics tick it stays
+## interested (near or far, tarped or not).
+func creature_interested(c: Node3D, delta: float) -> void:
+	watcher = c
+	_interest_tick = true
+	interest_t += delta
+
+
+## A Problem is interested in the van right now: it heats and leaks.
+func interested() -> bool:
+	return _interested
+
+
+## Degrees a second the interest adds on top of the engine's own heat.
+func heat_rate(speed: float, throttle: float, running: bool) -> float:
+	if not _interested:
+		return 0.0
+	if not running:
+		return HEAT_OFF
+	return HEAT_BASE + HEAT_THROTTLE * clampf(throttle, 0.0, 1.0) + HEAT_PER_M * speed
+
+
 ## Engine pull multiplier: 1 when well, 0.6 when failing, near 0 mid-cough.
 func power() -> float:
 	if coughing > 0.0:
@@ -88,11 +133,35 @@ func power() -> float:
 
 ## Litres a minute leaking out, whatever the cause.
 func leak_rate() -> float:
-	return van.fuel_leak + (Camper.CREATURE_LEAK if stage() >= 1 else 0.0)
+	return van.fuel_leak + (Camper.CREATURE_LEAK if stage() >= 1 else 0.0) + problem_leak()
+
+
+## The interest's own leak: on while it lasts, up to a quarter of a tank.
+func problem_leak() -> float:
+	if _interested and encounter_leaked < LEAK_CAP and van.fuel > LEAK_FLOOR:
+		return PROBLEM_LEAK
+	return 0.0
 
 
 func tick(delta: float, speed: float, throttle: float) -> void:
 	_noises(delta, speed, throttle)
+	# the heat rule: interest seen this tick (or the last: creatures may tick
+	# after the van) keeps it on; a second without and the encounter is over
+	var was := _interested
+	_interested = _interest_tick
+	_interest_tick = false
+	if _interested:
+		_calm_t = 0.0
+		encounter_leaked += problem_leak() / 60.0 * delta
+		if not was:
+			Sfx.play3d("hit_metal", _side_point(0.6), -8.0)
+	else:
+		_calm_t += delta
+		if _calm_t > CALM_AFTER and interest_t > 0.0:
+			interest_t = 0.0
+			encounter_leaked = 0.0
+			heat_added = 0.0
+			watcher = null
 	# the attack runs while something stays; a few seconds without and it stops
 	if _near_tick:
 		_away_t = 0.0
@@ -107,7 +176,7 @@ func tick(delta: float, speed: float, throttle: float) -> void:
 		if s > _stage:
 			_telegraph(s)
 		_stage = s
-	if s >= 1:
+	if s >= 1 or problem_leak() > 0.0:
 		_drip_t -= delta
 		if _drip_t <= 0.0:
 			_drip_t = 1.1
@@ -252,6 +321,12 @@ func reset() -> void:
 	leak_left = 0.0
 	_stage = 0
 	_away_t = 0.0
+	interest_t = 0.0
+	encounter_leaked = 0.0
+	heat_added = 0.0
+	watcher = null
+	_interested = false
+	_interest_tick = false
 
 
 func _build_tarp() -> void:

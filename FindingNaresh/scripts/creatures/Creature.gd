@@ -88,6 +88,12 @@ var _detour_t := 0.0
 var _detour_side := 1.0
 var _detours := 0                     ## sidesteps in a row that didn't free it
 var van_interest := 0.0              ## s left of wanting to be at the van
+## A puzzle steering it (the ghat's Problem): called while it has nothing
+## else on its mind; returns {"goal": Vector3, "speed": float, "face":
+## Vector3} or {}. It still sees and hears players as usual, and leaves the
+## van to the puzzle (no van senses of its own, no harm at the van).
+var director: Callable
+var _dir_speed := -1.0
 ## Where it stands at the start (its first tick): a story jump puts it back
 ## here, calm (`back_to_post`). One-off creatures (the stall's, the developer
 ## menu's) are removed by a jump instead: one left on the road after a stall
@@ -281,6 +287,9 @@ func _physics_process(delta: float) -> void:
 	var v := _van()
 	if state == State.VAN and v != null and _flat_dist(v.global_position) <= VanAttack.NEAR:
 		v.attack.creature_near(self, delta)
+	# the heat rule: while it wants the van, the van heats and leaks, near or far
+	if v != null and van_interest > 0.0 and not director.is_valid():
+		v.attack.creature_interested(self, delta)
 	var nz := _naresh()
 	if nz != null and state == State.WANDER and nz.can_be_taken() and _flat_dist(nz.global_position) < CATCH:
 		nz.take(self)
@@ -358,7 +367,7 @@ func _look_van(space: PhysicsDirectSpaceState3D, eye: Vector3, fwd: Vector3) -> 
 	# close by the van is "simply there" with no sight line, so it sensed the
 	# van through the gallery wall, went for it and stood against the wall
 	# for good (the F6 watched run)
-	if v == null or v.attack.tarped or keeps_post:
+	if v == null or v.attack.tarped or keeps_post or director.is_valid():
 		return
 	var d := _flat_dist(v.global_position)
 	var reach := VanAttack.NEAR
@@ -518,6 +527,14 @@ func _move(delta: float) -> void:
 				target = null
 				took.emit(p)
 				Taken.take(p, self)
+	_dir_speed = -1.0
+	var face := Vector3.INF
+	if director.is_valid() and state == State.WANDER and _noticed_t >= ATTEND:
+		var dd: Dictionary = director.call()
+		if dd.has("goal"):
+			goal = dd["goal"]
+			_dir_speed = float(dd.get("speed", -1.0))
+			face = dd.get("face", Vector3.INF)
 	for f in funnels:
 		var box: AABB = f["box"]
 		if box.has_point(goal) and not box.has_point(global_position):
@@ -531,10 +548,16 @@ func _move(delta: float) -> void:
 		var spd := float(SPEED[State.CURIOUS if naresh_drawn and state == State.WANDER else state])
 		if naresh_drawn and state == State.WANDER and on_return:
 			spd = RETURN_DRIFT
+		if _dir_speed > 0.0:
+			spd = _dir_speed
 		v = to.normalized() * spd
 		v = _unstick(v, delta)
 		var want := atan2(-v.x, -v.z) if v.length() > 0.05 else atan2(-to.x, -to.z)
 		rotation.y = lerp_angle(rotation.y, want, 1.0 - exp(-delta * (10.0 if state == State.TAKE else 4.0)))
+	elif face != Vector3.INF:
+		var look2 := face - global_position
+		if Vector2(look2.x, look2.z).length() > 0.2:
+			rotation.y = lerp_angle(rotation.y, atan2(-look2.x, -look2.z), 1.0 - exp(-delta * 2.5))
 	elif (state != State.WANDER or _noticed_t < ATTEND) and last_noticed != global_position:
 		var look := last_noticed - global_position
 		if Vector2(look.x, look.z).length() > 0.2:

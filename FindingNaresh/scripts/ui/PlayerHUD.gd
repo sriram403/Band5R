@@ -350,13 +350,20 @@ func _process(delta: float) -> void:
 		_set_bar("FUEL", camper.fuel / Camper.FUEL_CAPACITY)
 		_set_bar("TEMP", (camper.temp - Camper.TEMP_AMBIENT) / (Camper.TEMP_MAX - Camper.TEMP_AMBIENT))
 		_set_bar("COOL", camper.coolant)
+		# #6 (agreed 2026-11-09, point 7): while a Problem is interested the heat
+		# shows only on the dash needle and as steam from the grille
+		var problem_on := camper.attack != null and camper.attack.interested()
+		for tag in ["TEMP", "COOL"]:
+			var fill: ColorRect = _bars.get(tag)
+			if fill != null:
+				fill.get_parent().get_parent().visible = not problem_on
 		(_bars["TEMP"] as ColorRect).color = TEMP_HOT if camper.temp > Camper.TEMP_WARN else TEMP_OK
 		var w := ""
 		if camper.start_fail_t > 0.0:
 			w = camper.start_fail
 		elif camper.coolant_leak:
 			w = "STEAM! The coolant hose has split - %d C" % int(camper.temp)
-		elif camper.temp > Camper.TEMP_WARN:
+		elif camper.temp > Camper.TEMP_WARN and not problem_on:
 			w = "ENGINE HOT - ease off or stop"
 		elif camper.wheel_off:
 			w = "ON THE HUB - front-left wheel gone"

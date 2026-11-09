@@ -4177,6 +4177,145 @@ func van_stuck_report() -> String:
 
 
 
+## #6 L1, the heat rule (design/PUZZLE_CHANGES.md #6, agreed 2026-11-09): from
+## F1 -> Puzzles -> 6, drive up at two speeds. Nothing before Problem sees the
+## van; from then the needle never falls, the fuel leaks (capped), harder
+## driving boils it sooner; it boils before the pass with no help from the
+## pass guard; no puncture. Then (flat-out run only) Problem comes, the van is
+## tarped (declared setup: set_tarp), it searches, gives up, and only then do
+## the heat and the leak stop.
+func t_ghat_heat() -> void:
+	# flat out (60 km/h even round the hairpins: worse than any real driver),
+	# a driver's cornering speeds, and a crawl
+	_heat_times.clear()
+	for prof in [["flat out", 60.0], ["cornering", -1.0], ["crawling", 12.0]]:
+		await _ghat_heat_run(String(prof[0]), float(prof[1]), prof[0] == "cornering")
+
+
+## Into the van at the foot of the ghat via F1 (the user's way), engine on.
+func _ghat_start() -> Ghat:
+	var dm: DevMenu = boot.dev_menu
+	var rows := {}
+	for k in DevMenu.PUZZLES.size():
+		rows[DevMenu.PUZZLES[k][0]] = k
+	boot._on_joy_changed(0, true)      # P2 on a pad, in the passenger seat
+	dm.run("puzzle", rows["The ghat pace notes"])
+	await wait(1.0)
+	var g := get_tree().get_first_node_in_group("ghat") as Ghat
+	var c := camper()
+	check(p1().seat_role == "driver" and p2().seat != null and g.phase == "" and g.problem == null, "F1 -> Puzzles -> 6: both in the van at the foot of the ghat, no Problem yet")
+	await tap(KEY_X)
+	await wait(0.5)
+	check(c.engine_on, "the engine starts")
+	return g
+
+
+func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
+	var g := await _ghat_start()
+	var c := camper()
+	var st: Story = boot.story
+	var ad := AutoDriver.new(self, g.road, c)
+	var t := 0.0
+	var log_t := 0.0
+	var seen_t := -1.0
+	var boil_t := -1.0
+	var temp_seen := 0.0
+	var fuel_seen := 0.0
+	var heat_before := 0.0
+	var leak_before := 0.0
+	var fell_while := 0.0           # largest drop of the needle while interested
+	var hud_seen := false
+	var last_temp := c.temp
+	while t < 260.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		if not c.boiled_dry:
+			ad.step(kmh)
+		else:
+			ad.release()
+		var inter := c.attack.interested()
+		if seen_t < 0.0 and not inter:
+			heat_before = maxf(heat_before, c.attack.heat_added)
+			leak_before = maxf(leak_before, c.attack.problem_leak())
+		if seen_t < 0.0:
+			if inter:
+				seen_t = t
+				temp_seen = c.temp
+				fuel_seen = c.fuel
+				log_line("%s: seen at road sample %d (its hairpin at %d), %.0f s, %.1f C" % [label, g.seen_index, g.hairpins[Ghat.SEEN_HAIRPIN], t, c.temp])
+		elif inter:
+			fell_while = maxf(fell_while, last_temp - c.temp)
+			if c.temp > Camper.TEMP_WARN + 2.0 and not hud_seen:
+				hud_seen = true
+				var hud: PlayerHUD = boot.huds[0]
+				var temp_row: Control = (hud._bars["TEMP"] as Control).get_parent().get_parent()
+				var cool_row: Control = (hud._bars["COOL"] as Control).get_parent().get_parent()
+				check(not temp_row.visible and not cool_row.visible and not hud._warn.text.contains("ENGINE HOT") and c._steam.emitting,
+					"%s: hot with it watching: no TEMP / COOL bars, no 'ENGINE HOT' banner; the grille steams (warn '%s')" % [label, hud._warn.text])
+		last_temp = c.temp
+		if boil_t < 0.0 and c.boiled_dry:
+			boil_t = t
+			log_line("%s: boiled at sample %d (pass at %d), %.0f s after it saw the van" % [label, g.boil_index, g.road.point_count() - 1, boil_t - seen_t])
+		log_t += 1.0 / 60.0
+		if log_t >= 1.0:
+			log_t = 0.0
+			log_line("  %s t=%3.0f i=%3d %4.1f km/h thr=%s temp=%5.1f cool=%.2f fuel=%.1f phase=%s int=%s" % [label, t, g._van_i, c.linear_velocity.length() * 3.6, Input.is_key_pressed(KEY_W), c.temp, c.coolant, c.fuel, g.phase, inter])
+		if c.boiled_dry and c.linear_velocity.length() < 0.3 and t - boil_t > 3.0:
+			break
+	ad.release()
+	await tap(KEY_SPACE)
+	check(heat_before == 0.0 and leak_before == 0.0, "%s: no heat or leak from it before it sees the van (%.2f C, %.1f L/min)" % [label, heat_before, leak_before])
+	var hp: int = g.hairpins[Ghat.SEEN_HAIRPIN]
+	check(seen_t > 0.0 and absi(g.seen_index - hp) <= 25 and st.flags.has("first_attack"), "%s: it sees the van at hairpin %d (sample %d, apex %d)" % [label, Ghat.SEEN_HAIRPIN + 1, g.seen_index, hp])
+	check(fell_while < 0.05, "%s: while it's interested the needle never falls (largest drop %.2f C)" % [label, fell_while])
+	check(boil_t > 0.0 and c.boiled_dry and not c.engine_on, "%s: the engine boils and dies (%.0f s after being seen)" % [label, boil_t - seen_t])
+	var rest_i := int(g.road.nearest(c.global_position.x, c.global_position.z)["index"])
+	check(rest_i <= g.road.point_count() - 1 - 5 and g.fog > 0.9, "%s: it comes to rest before the pass, in the fog (sample %d of %d, boiled at %d, fog %.2f)" % [label, rest_i, g.road.point_count() - 1, g.boil_index, g.fog])
+	if label != "flat out":
+		check(not g.guard_fired, "%s: the heat alone boils it, the pass guard not needed" % label)
+	else:
+		log_line("flat out: pass guard fired: %s (allowed at hairpin speeds no driver would use)" % g.guard_fired)
+	var leaked := fuel_seen - c.fuel
+	check(leaked > 0.3 and c.attack.encounter_leaked <= VanAttack.LEAK_CAP + 0.01, "%s: fuel leaks while it's interested (%.1f L, cap %.1f)" % [label, leaked, VanAttack.LEAK_CAP])
+	check(not c.tyre_flat, "%s: no puncture" % label)
+	c.toggle_engine()
+	await physics_frames(2)
+	check(not c.engine_on and c.start_fail.contains("boiled dry"), "%s: it won't start: '%s'" % [label, c.start_fail])
+	_heat_times[label] = boil_t - seen_t
+	if _heat_times.size() == 3:
+		check(float(_heat_times["flat out"]) < float(_heat_times["cornering"]) and float(_heat_times["cornering"]) < float(_heat_times["crawling"]), "harder driving boils it sooner (flat out %.0f s, cornering %.0f s, crawling %.0f s)" % [_heat_times["flat out"], _heat_times["cornering"], _heat_times["crawling"]])
+	await shot("ghat_heat_" + label.replace(" ", "_"))
+	if not follow_on:
+		return
+	# it comes; the van tarped (setup, the tarp itself is L3's test), all quiet
+	var t0 := Time.get_ticks_msec()
+	while g.phase != "circle" and Time.get_ticks_msec() - t0 < 90000:
+		await wait(0.5)
+	log_line("it reached the van in %.0f s (phase %s)" % [(Time.get_ticks_msec() - t0) / 1000.0, g.phase])
+	check(g.phase == "circle" and c.attack.interested(), "%s: it comes up to the van and circles it, still interested" % label)
+	await shot("ghat_problem_at_van")
+	c.attack.set_tarp(true)
+	var temp_tarp := c.temp
+	var temp_low := c.temp
+	t0 = Time.get_ticks_msec()
+	while not st.flags.has("first_attack_over") and Time.get_ticks_msec() - t0 < (Ghat.SEARCH_S + 30.0) * 1000.0:
+		await wait(0.5)
+		if g.phase == "circle":
+			temp_low = minf(temp_low, c.temp)
+	log_line("gave up after %.0f s under the tarp (restarts %d), coolant %.2f" % [(Time.get_ticks_msec() - t0) / 1000.0, g.search_restarts, c.coolant])
+	check(st.flags.has("first_attack_over") and g.phase == "leave", "%s: under the tarp, kept quiet, it gives up" % label)
+	check(temp_low >= temp_tarp - 0.05, "%s: while it searched the needle never fell (%.1f, lowest %.1f C)" % [label, temp_tarp, temp_low])
+	await wait(1.5)
+	var tA := c.temp
+	var fA := c.fuel
+	await wait(5.0)
+	check(not c.attack.interested() and c.temp < tA - 0.5 and absf(c.fuel - fA) < 0.01, "%s: once it gives up the heat and the leak stop (%.1f -> %.1f C, fuel %.2f -> %.2f)" % [label, tA, c.temp, fA, c.fuel])
+	check(st.current()["id"] == "ghat_fix", "the objective: fill the radiator (%s)" % st.current()["id"])
+
+
+var _heat_times := {}
+
+
 ## D10, the ghat: pace notes on the swung nav, the fog on the hairpins, a
 ## glimpse on the second hairpin, then the first creature at the pass comes
 ## for the van; hidden under the tarp, it loses interest and goes.
@@ -5761,9 +5900,18 @@ func t_van() -> void:
 	await tap(KEY_SPACE)            # handbrake
 	await wait(3.0)
 	var gap := cr._flat_dist(c.global_position)
-	log_line("drove off: %.0f m from it; stage %d, leak %.1f, power %.2f" % [gap, c.attack.stage(), c.attack.leak_rate(), c.attack.power()])
-	check(gap > VanAttack.NEAR and c.attack.stage() == 0 and c.attack.leak_rate() == 0.0 and c.tyre_flat,
-		"drive away and the leak and the failing engine stop; the flat stays")
+	log_line("drove off: %.0f m from it; stage %d, leak %.1f, power %.2f, interest %.1f s" % [gap, c.attack.stage(), c.attack.leak_rate(), c.attack.power(), cr.van_interest])
+	# the heat rule (#6, 2026-11-09): no driving away. Out of its reach the
+	# failing engine recovers, but while it's still interested the van leaks
+	# and runs hot; only once it loses interest does it all stop
+	check(gap > VanAttack.NEAR and c.attack.stage() == 0 and c.attack.power() == 1.0 and c.tyre_flat,
+		"drive away: the failing engine recovers; the flat stays")
+	check(cr.van_interest > 0.0 and c.attack.interested() and c.attack.problem_leak() > 0.0,
+		"... but while it's still interested the van leaks (the heat rule: no driving away)")
+	cr.van_interest = 0.0
+	await calm_creature(cr, c.global_position + behind * 120.0, atan2(behind.x, behind.z))
+	await wait(VanAttack.CALM_AFTER + 0.5)
+	check(not c.attack.interested() and c.attack.leak_rate() == 0.0, "once it loses interest, the leak and the heat stop")
 	c.tyre_flat = false
 	c.tyre_stage = 0
 	c.refresh_tyre_visuals()
@@ -5800,8 +5948,10 @@ func t_van() -> void:
 	cr.van_interest = 30.0
 	await wait(3.0)
 	log_line("tarped: stage %d, interest left %.1f s" % [c.attack.stage(), cr.van_interest])
-	check(c.attack.attacked_t == 0.0 and c.attack.leak_rate() == 0.0 and cr.van_interest < 27.5,
-		"at the tarped van it does nothing and loses interest (not refreshed)")
+	check(c.attack.attacked_t == 0.0 and c.attack.stage() == 0 and cr.van_interest < 27.5,
+		"at the tarped van it does no harm of its own and loses interest (not refreshed)")
+	check(c.attack.interested() and c.attack.problem_leak() > 0.0,
+		"... though while it's still interested the heat rule runs (the needle and the drip)")
 	# off again: 2 s
 	await calm_creature(cr, c.global_position + behind * 120.0, atan2(behind.x, behind.z))
 	await place_player(p, Vector3(back.x, c.global_position.y - 0.3, back.z), 0.0)
