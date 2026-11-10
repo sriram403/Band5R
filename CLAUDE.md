@@ -23,6 +23,9 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
 - **Never fire and forget (the user, 2026-10-20), for all testing.** Check
   every run every few seconds while it runs (step, movement, errors); off
   plan -> stop it at once, look, tell the user. Never only read the end.
+- **Never wait for an answer (the user, 2026-11-10).** A design choice that comes up while
+  building: build your recommended pick, note it, tell the user in a line ("my pick, say if you
+  want the other"), keep going. Stop and wait only for merges, pushes, deletes.
 - **Fix what you see (the user, 2026-10-20).** An issue found while working
   is fixed then and there; never offer "record / carry on as is" as an
   option. Questions are for real choices only.
