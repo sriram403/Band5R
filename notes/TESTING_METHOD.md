@@ -142,6 +142,9 @@ reviews first.
   times off the frame grid, not the log; with a failure, look at
   `_shots/test_walk_fail.png` and `appdata/live_run.log` ("PAD WALK
   STUCK at ...") first.
+- **A failed take resumes at the failed step and the parts are joined** (`tools/record_walk.sh`, default since
+  2026-11-10); the user chose this for the final video too (A, 2026-11-10): send it with every join's time
+  ("joins at 0:57, 1:18") and look at the frames either side of each join first.
 - Puzzle walks start from **F1 → Puzzles → N** (`{"do": "menu", "tab":
   "Puzzles", "row": "..."}`): it resets the puzzle, so a walk can be rerun
   in one game.
