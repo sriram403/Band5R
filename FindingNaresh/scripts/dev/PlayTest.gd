@@ -5482,6 +5482,22 @@ func t_ghat_looks() -> void:
 	check(stops.size() >= 4, "it goes round the van, stopping at the bonnet, both windows and the back (%d stops)" % stops.size())
 	check(leaned < -0.3, "at the windows and the bonnet it leans in (%.2f rad)" % leaned)
 	check(crouched < 0.7 and cr.sniffs > sniffs0, "at the back it crouches down and sniffs (%d sniffs)" % (cr.sniffs - sniffs0))
+	# from the far side it walks round, never into the van (2026-11-10: on the
+	# driver's side, making for the passenger's window, it pushed at the van
+	# for minutes; the search never ended)
+	var far := c._body_root.global_transform * Vector3(-2.6, 0, 0.3)
+	cr.global_position = Vector3(far.x, Landscape.ground(far.x, far.z) + 0.05, far.z)
+	cr.reset_physics_interpolation()
+	g.stop_k = 6
+	g.at_stop = false
+	var closest := 9.0
+	t0 = Time.get_ticks_msec()
+	while not (g.at_stop and g.stop_k == 6) and Time.get_ticks_msec() - t0 < 30000:
+		await physics_frames(2)
+		var lp := c._body_root.global_transform.affine_inverse() * cr.global_position
+		closest = minf(closest, maxf(absf(lp.x) - 1.2, absf(lp.z) - 3.0))
+	log_line("round from the far side: reached the passenger's window %s in %.1f s, closest to the body %.2f m" % [g.at_stop and g.stop_k == 6, (Time.get_ticks_msec() - t0) / 1000.0, closest])
+	check(g.at_stop and g.stop_k == 6 and closest > Creature.BODY_R, "from the far side it walks round the van to the other window, not into it (closest %.2f m, its body %.1f m)" % [closest, Creature.BODY_R])
 	# tarped and quiet: it gives up, visibly
 	c.attack.set_tarp(true)
 	t0 = Time.get_ticks_msec()

@@ -592,37 +592,44 @@
      "in": "t_ghat_looks"
     },
     {
+     "id": "ghat_looks/from_the_far_side_it_walks_round_the_van_to_the_other_window",
+     "regex": "^from\\ the\\ far\\ side\\ it\\ walks\\ round\\ the\\ van\\ to\\ the\\ other\\ window,\\ not\\ into\\ it\\ \\(closest\\ (.*?)\\ m,\\ its\\ body\\ (.*?)\\ m\\)$",
+     "line": 5500,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
      "id": "ghat_looks/under_the_tarp_it_gives_up_only_after_a_full_round_of_the_va",
      "regex": "^under\\ the\\ tarp\\ it\\ gives\\ up,\\ only\\ after\\ a\\ full\\ round\\ of\\ the\\ van\\ \\((.*?)\\ stops\\)$",
-     "line": 5490,
+     "line": 5506,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/giving_up_it_slumps_head_down_x_rad",
      "regex": "^giving\\ up\\ it\\ slumps,\\ head\\ down\\ \\((.*?)\\ rad\\)$",
-     "line": 5510,
+     "line": 5526,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/leaning_in_at_a_window_its_face_stays_outside_the_glass_clos",
      "regex": "^leaning\\ in\\ at\\ a\\ window,\\ its\\ face\\ stays\\ outside\\ the\\ glass\\ \\(closest\\ (.*?)\\ m\\)$",
-     "line": 5512,
+     "line": 5528,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/it_turns_away_slowly_fastest_x_deg_s",
      "regex": "^it\\ turns\\ away\\ slowly\\ \\(fastest\\ (.*?)\\ deg/s\\)$",
-     "line": 5513,
+     "line": 5529,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/its_eyes_dim_and_the_whine_falls",
      "regex": "^its\\ eyes\\ dim\\ and\\ the\\ whine\\ falls$",
-     "line": 5514,
+     "line": 5530,
      "kind": "plain",
      "in": "t_ghat_looks"
     }

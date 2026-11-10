@@ -18,6 +18,7 @@ signal took(player: PlayerRig)
 
 enum State { WANDER, CURIOUS, SEARCH, TAKE, VAN }
 
+const BODY_R := 0.3               ## its collision capsule's radius (tests measure clearances against it)
 const FOV_DEG := 110.0
 const CLOSE_SENSE := 3.0          ## m; nearer than this it notices you whatever you do
 const CATCH := 1.5
@@ -141,7 +142,7 @@ func _ready() -> void:
 func _build() -> void:
 	var cs := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
-	cap.radius = 0.3
+	cap.radius = BODY_R
 	cap.height = HEIGHT
 	cs.shape = cap
 	cs.position = Vector3(0, HEIGHT * 0.5, 0)

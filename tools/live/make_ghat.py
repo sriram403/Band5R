@@ -63,14 +63,14 @@ def trip(n):
     return {"name": "%d P2 down the road to the spring: the pot, filled at the pipe, back to the van" % n, "max": 120,
             "do": [walk(2, "expr:pot_stand()", 0.7, 50)] + look(2, "expr:pot_at() + Vector3(0, 0.15, 0)", 0.4)
                   + [pad("X"), wait(0.6)] + [walk(2, "expr:pipe_stand()", 0.5, 10)] + look(2, "expr:pipe_at()", 0.3)
-                  + [pad("X", 5.8), wait(0.3), walk(2, "expr:van_side(-1.2, -5.6)", 0.8, 50)],
+                  + [pad("X", 5.8), wait(0.3), walk(2, "expr:van_side(3.0, 1.5)", 0.8, 50), walk(2, "expr:van_side(1.2, -5.6)", 0.8, 20)],
             "expect": [{"name": "P2 holds a full pot", "expr": "p2().held != null and p2().held.litres > 2.3", "within": 110}]}
 
 
 def refill(n):
     return {"name": "%d not full yet: P2 back down to the spring with the pot, fills it again" % n, "max": 120,
             "do": [walk(2, "expr:pipe_stand()", 0.5, 50)] + look(2, "expr:pipe_at()", 0.3)
-                  + [pad("X", 5.8), wait(0.3), walk(2, "expr:van_side(-1.2, -5.6)", 0.8, 50)],
+                  + [pad("X", 5.8), wait(0.3), walk(2, "expr:van_side(3.0, 1.5)", 0.8, 50), walk(2, "expr:van_side(1.2, -5.6)", 0.8, 20)],
             "expect": [{"name": "P2 holds a full pot", "expr": "p2().held != null and p2().held.litres > 2.3", "within": 110}]}
 
 

@@ -30,6 +30,7 @@ extends RefCounted
 ##   tail_flush      the tail lights sit flush with the back doors (they flicker in and out)
 ##   no_listen       after the hot cap's yelp it comes straight back, no listening first
 ##   hold_through    holding on after the net is on starts pulling it back off
+##   round_through   on its round it walks straight at a stop across the van (and sticks)
 ## Not bugs, the planted runs' time savers (test only): one_flat / one_corner
 ## run ghat_heat at one driving profile.
 

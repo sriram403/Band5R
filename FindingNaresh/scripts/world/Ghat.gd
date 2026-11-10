@@ -295,7 +295,8 @@ func _direct() -> Dictionary:
 			var spot := _round_point(van, stop_k)
 			if at_stop:
 				return {"goal": here, "face": _round_look(van, stop_k)}
-			return {"goal": spot, "speed": CIRCLE_SPEED, "face": spot}
+			var via := _round_via if _round_via != Vector3.INF else spot
+			return {"goal": via, "speed": CIRCLE_SPEED, "face": via}
 		"leave":
 			# slumped, it turns away slowly; it sets off only once it faces the
 			# way out (it set off half turned and snapped round, 2026-11-09)
@@ -345,6 +346,7 @@ func _walk_round(van: Camper, delta: float) -> void:
 	if not at_stop:
 		problem.pose = "stand"
 		problem.look_point = spot + Vector3.UP * 1.5
+		_round_via = _round_waypoint(van, spot)
 		if flat < 0.7:
 			if String(ROUND[stop_k][2]) == "":
 				stop_k = (stop_k + 1) % ROUND.size()
@@ -363,6 +365,49 @@ func _walk_round(van: Camper, delta: float) -> void:
 		stop_k = (stop_k + 1) % ROUND.size()
 		stops_done += 1
 		_breath_end(van)
+
+
+## Where to walk now on the way to `spot`: straight there, unless the line
+## crosses the van; then the next point of its round the short way round
+## (2026-11-10: from the driver's side it pushed at the van for minutes,
+## making for the passenger's window straight through it).
+var _round_via := Vector3.INF
+var _via_k := -1                 ## the ring point it's walking to on the way round (-1: straight to the stop)
+
+
+func _round_waypoint(van: Camper, spot: Vector3) -> Vector3:
+	if Plant.on("round_through"):
+		return spot
+	var inv := van._body_root.global_transform.affine_inverse()
+	var a := inv * problem.global_position
+	var b := inv * spot
+	var blocked := false
+	for i in range(1, 12):
+		var q := a.lerp(b, i / 12.0)
+		if absf(q.x) < 1.6 and absf(q.z) < 3.5:      # the body, with a margin for its own width
+			blocked = true
+			break
+	if not blocked:
+		_via_k = -1
+		return spot
+	var n := ROUND.size()
+	if _via_k < 0:
+		# start at the ring point nearest to it
+		var nd := INF
+		for k in n:
+			var d := problem.global_position.distance_to(_round_point(van, k))
+			if d < nd:
+				nd = d
+				_via_k = k
+	var w := _round_point(van, _via_k)
+	if Vector2(w.x - problem.global_position.x, w.z - problem.global_position.z).length() < 0.9:
+		# reached it: one step on round, the short way towards the stop
+		# (kept until reached: re-choosing the nearest each frame, it went
+		# back and forth between two points, 2026-11-10)
+		var fwd := (stop_k - _via_k + n) % n
+		_via_k = (_via_k + (1 if fwd <= n / 2 else -1) + n) % n
+		w = _round_point(van, _via_k)
+	return w
 
 
 ## L5: what it touched stays on the van (once per stop, per encounter).
