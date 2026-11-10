@@ -39,10 +39,24 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   use game-code wall clocks (stay 1x). Plan with headless ~4.5x: **~61-64 min**. Preconditions: test
   deadlines on game time (5x looser otherwise); screenshots kept. Referee's misread logged: the meter's
   1.3 min looked "slower", it covered far more game time. Next: P1c, drawing off except at shots (~1 min).
+- **Pilot P1c (Claude, ~2.9 pilot min):** `--nodraw` (test-only switch): `RenderingServer.render_loop_enabled`
+  off, on for the one frame a shot / `grab_p1` needs. Shots correct (ghat_net vs 1x: 0.65-2.5 / 255;
+  its 3 pixel checks within 0.002). ghat_net at **5.5x** once off. Works only when switched mid-scenario
+  after a drawn frame (set in `_ready` it reads false and keeps drawing: prove it by frames drawn, never by
+  reading the setting). ghat_heat truly off: not yet measured (~4.5-5x guessed). **Pilots total ~7.4 game min.**
+
+## Next (Stage 3 proper)
+1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
+   scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
+   + a plant each (the clean/plant verdicts must match 1x); ghat_spring / `free_coolant` stay 1x.
+2. GPT writes the T3 + T4 specs (given top4.md + P1-P1c), a Claude builder builds them in their own copy.
+3. The benchmark replay from `speed-base` with all four, metered (wall clock, R2), 7 holes + plants scored;
+   then the extra 2-3 secret plants (R1b), the final run, signatures.
 
 ## Stages
 | Stage | State |
 |---|---|
 | 1 ideas | done: `ideas_claude.md`, `ideas_gpt.md` (no game, no code) |
 | 2 round 1 audits | done (`audit_r1_gpt.md` possibly contaminated, R1; `audit_r1_claude.md`). Claude: 4 trials (speed-up on the game clock, plants one compile + early stop, first+last full run, discovery walk + safe resume); ~99 min at 1x, ~68 at 2x: the speed probe decides |
-| 2 round 2 | running (both) |
+| 2 round 2 | done: both sign the same top 4 (`top4.md`) |
+| 3 pilots | done: P1 1.24x (no-go as built), P1b headless 4.96x, P1c draw-only-at-shots 5.5x (go, one fix) |
