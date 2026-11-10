@@ -5080,9 +5080,38 @@ func t_ghat_spring() -> void:
 	var t1 := Time.get_ticks_msec()
 	while not c.attack.interested() and Time.get_ticks_msec() - t1 < 5000:
 		await wait(0.2)
-	check(c.attack.interested() and g.phase in ["come", "circle"], "the yelp carries: it comes back, and the needle climbs again (%s)" % g.phase)
-	# hide again, well this time
-	await _ghat_hide(c)
+	check(c.attack.interested() and g.phase in ["listen", "come", "circle"], "the yelp carries: it turns back, and the needle climbs again (%s)" % g.phase)
+	# it listens first (the user, 2026-11-10: A): the net back on and both in,
+	# by hand, before it comes (straight back from ~10 m it took both)
+	var listen_t0 := Time.get_ticks_msec()
+	var lis := {"s": -1.0}            # (a lambda captures locals by value: a dictionary is shared)
+	var watch_listen := func() -> void:
+		while g.phase == "listen":
+			await physics_frames(1)
+		lis["s"] = (Time.get_ticks_msec() - listen_t0) / 1000.0
+	watch_listen.call()
+	await _to_tarp_corner(p1(), c, -1.0)
+	await hold_physics(KEY_E, 2.2)
+	await _to_tarp_corner(p2(), c, 1.0)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(2.6)
+	pad_button(JOY_BUTTON_X, false)
+	await _to_door(p1(), c, "driver")
+	await tap(KEY_E)
+	await wait(0.2)
+	await _to_door(p2(), c, "passenger")
+	await pad_tap(JOY_BUTTON_X)
+	await wait(0.5)
+	var hidden_by_hand := c.attack.tarped and p1().seat != null and p2().seat != null
+	var t2 := Time.get_ticks_msec()
+	while float(lis["s"]) < 0.0 and Time.get_ticks_msec() - t2 < 15000:
+		await physics_frames(2)
+	await wait(1.0)
+	var listened := float(lis["s"])
+	log_line("after the yelp: it listened %.1f s; by hand: net %s, P1 %s, P2 %s; taken %d" % [listened, c.attack.tarped, p1().seat_role, p2().seat_role, get_tree().get_nodes_in_group("taken").size()])
+	check(listened >= 8.0 and hidden_by_hand and get_tree().get_nodes_in_group("taken").is_empty(), "it listens before it comes back: time to throw the net on and get in, by hand (listened %.1f s)" % listened)
+	if not (c.attack.tarped and p1().seat != null and p2().seat != null):
+		await _ghat_hide(c)
 	var gave := await _hide_well(g, c, 150.0)
 	check(gave, "hidden again, well, it gives up again")
 	log_line("coolant now %.0f%% (after the blow and a second hiding)" % (c.coolant * 100.0))
@@ -5289,9 +5318,14 @@ func t_ghat_net() -> void:
 	await _to_tarp_corner(q, c, 1.0)
 	pad_button(JOY_BUTTON_X, true)
 	await wait(VanAttack.TARP_ON_S * 0.5 + 0.4)
+	var on_in_time := c.attack.tarped
+	# and keeps holding a while, longer than pulling it off takes (2026-11-10:
+	# a hold carried on past the finish pulled the net straight back off)
+	await wait(VanAttack.TARP_OFF_S + 0.6)
 	pad_button(JOY_BUTTON_X, false)
 	await wait(0.3)
-	check(c.attack.tarped, "P2 finishes it at the other corner: the van is under the net")
+	check(on_in_time, "P2 finishes it at the other corner: the van is under the net")
+	check(c.attack.tarped and c.attack.tarp_work < 0.01, "P2 keeps holding a moment after: the net stays on (work %.1f s)" % c.attack.tarp_work)
 	# from outside: a dark lump
 	var out_from := c._body_root.global_transform * Vector3(-7.0, 1.6, -6.0)
 	await obs_shot("ghat_net_outside", out_from, c.global_position + Vector3.UP * 1.2)

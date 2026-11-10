@@ -287,7 +287,20 @@ func tarp_progress() -> float:
 	return clampf(tarp_work / (TARP_OFF_S if tarped else TARP_ON_S), 0.0, 1.0)
 
 
+## a hold that was going when the net finished does nothing more until it is
+## let go: kept holding, it pulled the net straight back off (2026-11-10)
+var _last_pull := {}
+var _hold_start := {}
+var _done_f := -1
+
+
 func _pull(p: PlayerRig, dt: float) -> void:
+	var f := Engine.get_physics_frames()
+	if f - int(_last_pull.get(p, -100)) > 2:
+		_hold_start[p] = f
+	_last_pull[p] = f
+	if int(_hold_start[p]) <= _done_f and not Plant.on("hold_through"):
+		return
 	if tarp_blocked() != "":
 		return
 	# pulling a big sheet of canvas is not quiet
@@ -297,6 +310,7 @@ func _pull(p: PlayerRig, dt: float) -> void:
 	tarp_work += dt
 	if tarp_work >= (TARP_OFF_S if tarped else TARP_ON_S):
 		tarp_work = 0.0
+		_done_f = f
 		set_tarp(not tarped)
 		p.say("The van is a dark lump under the old shade net now. Get in and keep still and quiet: from inside you can see out through the weave." if tarped else "The net is off and rolled up on the back.", 6.0)
 

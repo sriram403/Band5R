@@ -47,7 +47,7 @@ def both_out():
 
 def net_on():
     return [call("_to_tarp_corner", "p1", "expr:camper()", -1.0), {"do": "hold", "key": "E", "s": 2.2},
-            call("_to_tarp_corner", "p2", "expr:camper()", 1.0), pad("X", 2.6), wait(0.5)]
+            call("_to_tarp_corner", "p2", "expr:camper()", 1.0), pad("X", 2.6), wait(0.2)]
 
 
 def net_off():
@@ -55,8 +55,8 @@ def net_off():
 
 
 def both_in():
-    return [call("_to_door", "p1", "expr:camper()", "driver"), {"do": "tap", "key": "E"}, wait(0.4),
-            call("_to_door", "p2", "expr:camper()", "passenger"), pad("X"), wait(0.8)]
+    return [call("_to_door", "p1", "expr:camper()", "driver"), {"do": "tap", "key": "E"}, wait(0.2),
+            call("_to_door", "p2", "expr:camper()", "passenger"), pad("X"), wait(0.5)]
 
 
 def trip(n):
@@ -89,8 +89,8 @@ steps = [
      "expect": [{"name": "nav swung, engine on", "expr": "camper().nav_aside and camper().engine_on", "within": 6}]},
     {"name": "3 up the hill into the fog, stop at the old milestone", "max": 100,
      "do": [{"do": "drive", "road": "ghat_road", "to": "poi:ghat_milestone", "kmh": 30, "max": 90},
-            {"do": "hold", "key": "S", "s": 1.5}, {"do": "tap", "key": "SPACE"}, {"do": "hold", "key": "X", "s": 0.3}, wait(0.5)],
-     "expect": [{"name": "stopped by the milestone", "expr": "camper().global_position.distance_to(boot.builder.poi['ghat_milestone']) < 18.0", "within": 95}]},
+            {"do": "hold", "key": "X", "s": 0.3}, wait(0.5)],     # (the drive ends parked: S or SPACE here released the handbrake)
+     "expect": [{"name": "stopped by the milestone, parked", "expr": "camper().global_position.distance_to(boot.builder.poi['ghat_milestone']) < 18.0 and camper().parking_brake", "within": 95}]},
     {"name": "4 P1 out: Naresh's note on the milestone", "max": 40,
      "do": [{"do": "tap", "key": "E"}, wait(0.6), walk(1, "expr:note_stand()", 0.4, 20)] + look(1, "expr:note_at()", 0.5)
            + [{"do": "tap", "key": "E"}, wait(7.0)],
@@ -103,8 +103,8 @@ steps = [
      "do": [{"do": "drive", "road": "ghat_road", "until": "gh().phase == 'watch'", "kmh": 28, "max": 60}]
            + [{"do": "look", "who": 2, "at": "expr:gh().problem.eye_point()"}]
            + [{"do": "drive", "road": "ghat_road", "until": "camper().boiled_dry", "kmh": 30, "max": 60},
-              wait(4.0), {"do": "tap", "key": "SPACE"}, wait(1.0)],
-     "expect": [{"name": "seen, boiled dry, stopped", "expr": "gh().seen_index > 0 and camper().boiled_dry and camper().linear_velocity.length() < 0.5", "within": 115}]},
+              wait(1.0)],     # (Problem reaches a stopped van ~27 s after it stops: no dawdling) the drive ends parked; a SPACE here let the van roll back down the ghat (dry run 2026-11-10)
+     "expect": [{"name": "seen, boiled dry, parked", "expr": "gh().seen_index > 0 and camper().boiled_dry and camper().linear_velocity.length() < 0.5 and camper().parking_brake", "within": 115}]},
     {"name": "7 both out: the old shade net over the van, one corner each", "max": 40,
      "do": both_out() + net_on(),
      "expect": [{"name": "the van under the net", "expr": "camper().attack.tarped", "within": 35}]},
@@ -141,7 +141,7 @@ steps = [
                               {"do": "drive", "road": "ghat_road", "kmh": 30, "max": 60}],
      "expect": [{"name": "over the pass, running", "expr": "boot.story.current()['id'] == 'to_tower' and camper().engine_on", "within": 85}]},
     {"name": "20 stopped past the pass: the marks it left on the van", "max": 40,
-     "do": [{"do": "hold", "key": "S", "s": 1.5}, {"do": "tap", "key": "SPACE"}, {"do": "tap", "key": "E"}, wait(0.6),
+     "do": [{"do": "tap", "key": "E"}, wait(0.6),
             call("place_player", "p1", "expr:van_side(-2.7, -1.6)", 0.0)] + look(1, "expr:van_side(-1.15, -1.8, 1.85)", 3.0)
            + [call("place_player", "p1", "expr:van_side(-0.8, -5.8)", 0.0)] + look(1, "expr:van_side(0, -3.3, 1.66)", 3.0)
            + [call("place_player", "p1", "expr:van_side(0.6, 5.8)", 0.0)] + look(1, "expr:van_side(0, 3.0, 1.3)", 3.0),
@@ -151,7 +151,9 @@ steps = [
      "expect": []},
 ]
 
-walk_def = {"name": "ghat", "setup": [], "steps": steps}
+# P2 on the pad (split screen), as the ramp's walk: without it the walk played
+# solo on one keyboard and P2's pad presses went nowhere (take 1, 2026-11-10)
+walk_def = {"name": "ghat", "setup": [{"do": "eval", "expr": "boot._on_joy_changed(0, true)"}], "steps": steps}
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ghat.json")
 with open(out, "w", encoding="utf-8") as f:
     json.dump(walk_def, f, indent=1)

@@ -26,6 +26,8 @@ GROUPS = {
     "lean": ("ghat_looks", "lean_close", {"lean_close": ["its face stays outside the glass"]}),
     "net": ("ghat_net", "one_layer_net,tail_flush", {"one_layer_net": ["from outside nothing of the van shows through the net"],
                                                      "tail_flush": ["the tail lights stand proud of the back doors"]}),
+    "hold": ("ghat_net", "hold_through", {"hold_through": ["P2 keeps holding a moment after: the net stays on"]}),
+    "listen": ("ghat_spring", "no_listen", {"no_listen": ["it listens before it comes back"]}),
     "stow": ("ghat_jug", "stow_live", {"stow_live": ["the jug rode up the ghat in its place on the rack"]}),
     "jug_a": ("ghat_jug", "leave_sees,no_breath_lock,round_skip", {"leave_sees": ["out beside it after it gave up: nobody is taken"],
                                                                      "no_breath_lock": ["never touched the handbrake"],

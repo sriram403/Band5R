@@ -28,6 +28,8 @@ extends RefCounted
 ##   free_coolant    coolant creeps up by itself during the encounter (GhatWatch H3)
 ##   stow_live       a stowed item stays a live body (left behind by a van stowed while awake)
 ##   tail_flush      the tail lights sit flush with the back doors (they flicker in and out)
+##   no_listen       after the hot cap's yelp it comes straight back, no listening first
+##   hold_through    holding on after the net is on starts pulling it back off
 ## Not bugs, the planted runs' time savers (test only): one_flat / one_corner
 ## run ghat_heat at one driving profile.
 

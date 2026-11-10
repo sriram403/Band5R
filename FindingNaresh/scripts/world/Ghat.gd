@@ -159,6 +159,7 @@ const FILL_RATE := 0.5           ## L a second from a spring pipe
 const BREATH_S := 8.0            ## s you can hold your breath
 const BREATH_GRACE := 1.2        ## s after it leans in before your breathing shows
 const SLUMP_S := 3.0             ## s it stands slumped, turning away, before it walks off
+const LISTEN_S := 10.0           ## s it stands listening after the hot cap's yelp before it comes (the user, 2026-11-10: A)
 ## Its round of the van, in the van body's frame (nose -Z): [where it stands,
 ## what it looks at, pose]; pose "" = just walking past the corner.
 const ROUND := [
@@ -173,7 +174,7 @@ const ROUND := [
 ]
 
 var problem: Creature = null
-var phase := ""                  ## "", watch, follow, come, circle, leave
+var phase := ""                  ## "", watch, follow, come, circle, leave, listen
 var phase_t := 0.0
 var quiet_t := 0.0               ## s of quiet at the tarped van (tests read it)
 var search_restarts := 0         ## noises that restarted its search (tests read it)
@@ -305,6 +306,8 @@ func _direct() -> Dictionary:
 			if phase_t < SLUMP_S or (fwd.angle_to(to) > 0.3 and not Plant.on("fast_turn")):
 				return {"goal": here, "face": _leave_to}
 			return {"goal": _leave_to, "speed": LEAVE_SPEED, "face": _leave_to}
+		"listen":
+			return {"goal": here, "face": c}     # stops, turns back slowly, listens
 	return {}
 
 
@@ -634,7 +637,7 @@ func _build_milestone(b, i: int) -> void:
 
 ## Problem is interested in the van right now (it heats and leaks).
 func interested() -> bool:
-	return phase in ["follow", "come", "circle"] or (Plant.on("keeps_interest") and phase == "leave")
+	return phase in ["follow", "come", "circle", "listen"] or (Plant.on("keeps_interest") and phase == "leave")
 
 
 ## Which hairpin it watches from (a plant puts it back at the second).
@@ -657,6 +660,11 @@ func _run_problem(van: Camper, delta: float) -> void:
 		"circle":
 			problem.show_interest = 1.0
 			_walk_round(van, delta)
+		"listen":
+			# the warning: it turns back, head up, the whine rising, eyes brightening
+			problem.show_interest = clampf(phase_t / LISTEN_S, 0.3, 1.0)
+			problem.look_point = van.global_position + Vector3.UP * 1.5
+			problem.pose = "stand"
 		"leave":
 			problem.show_interest = clampf(1.0 - phase_t / 4.0, 0.0, 1.0)
 			problem.pose = "slump" if phase_t < SLUMP_S + 2.0 else "stand"
@@ -717,9 +725,19 @@ func _run_problem(van: Camper, delta: float) -> void:
 			# brings it back (until the van is fixed it stays within earshot)
 			if van.cap_blows > _cap_blows_seen:
 				_cap_blows_seen = van.cap_blows
+				# it stops and listens first (still turning slowly, sees nobody):
+				# straight back from ~10 m it took both before they could hide
+				# (walk dry run, 2026-11-10; the user: A)
+				if Plant.on("no_listen"):
+					problem.turn_cap = 0.0
+					_start_come(van, d)
+				else:
+					_set_phase("listen")
+				_tell("Somewhere up in the fog a whine rises again. It heard that. It's listening: hide, quick.", 6.0)
+		"listen":
+			if phase_t > LISTEN_S:
 				problem.turn_cap = 0.0
 				_start_come(van, d)
-				_tell("Somewhere up in the fog a whine rises again. It heard that.", 6.0)
 			elif d > 130.0 and flags.has("first_attack_over") and not van.boiled_dry:
 				problem.queue_free()
 				problem = null

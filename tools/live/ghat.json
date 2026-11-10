@@ -1,6 +1,11 @@
 {
  "name": "ghat",
- "setup": [],
+ "setup": [
+  {
+   "do": "eval",
+   "expr": "boot._on_joy_changed(0, true)"
+  }
+ ],
  "steps": [
   {
    "name": "1 F1 Puzzles: the ghat: both in the van at the foot of the hairpins",
@@ -67,15 +72,6 @@
     },
     {
      "do": "hold",
-     "key": "S",
-     "s": 1.5
-    },
-    {
-     "do": "tap",
-     "key": "SPACE"
-    },
-    {
-     "do": "hold",
      "key": "X",
      "s": 0.3
     },
@@ -86,8 +82,8 @@
    ],
    "expect": [
     {
-     "name": "stopped by the milestone",
-     "expr": "camper().global_position.distance_to(boot.builder.poi['ghat_milestone']) < 18.0",
+     "name": "stopped by the milestone, parked",
+     "expr": "camper().global_position.distance_to(boot.builder.poi['ghat_milestone']) < 18.0 and camper().parking_brake",
      "within": 95
     }
    ]
@@ -208,21 +204,13 @@
     },
     {
      "do": "wait",
-     "s": 4.0
-    },
-    {
-     "do": "tap",
-     "key": "SPACE"
-    },
-    {
-     "do": "wait",
      "s": 1.0
     }
    ],
    "expect": [
     {
-     "name": "seen, boiled dry, stopped",
-     "expr": "gh().seen_index > 0 and camper().boiled_dry and camper().linear_velocity.length() < 0.5",
+     "name": "seen, boiled dry, parked",
+     "expr": "gh().seen_index > 0 and camper().boiled_dry and camper().linear_velocity.length() < 0.5 and camper().parking_brake",
      "within": 115
     }
    ]
@@ -277,7 +265,7 @@
     },
     {
      "do": "wait",
-     "s": 0.5
+     "s": 0.2
     }
    ],
    "expect": [
@@ -307,7 +295,7 @@
     },
     {
      "do": "wait",
-     "s": 0.4
+     "s": 0.2
     },
     {
      "do": "call",
@@ -324,7 +312,7 @@
     },
     {
      "do": "wait",
-     "s": 0.8
+     "s": 0.5
     }
    ],
    "expect": [
@@ -471,7 +459,7 @@
     },
     {
      "do": "wait",
-     "s": 0.5
+     "s": 0.2
     },
     {
      "do": "call",
@@ -488,7 +476,7 @@
     },
     {
      "do": "wait",
-     "s": 0.4
+     "s": 0.2
     },
     {
      "do": "call",
@@ -505,7 +493,7 @@
     },
     {
      "do": "wait",
-     "s": 0.8
+     "s": 0.5
     }
    ],
    "expect": [
@@ -836,7 +824,7 @@
     },
     {
      "do": "wait",
-     "s": 0.4
+     "s": 0.2
     },
     {
      "do": "call",
@@ -883,15 +871,6 @@
    "name": "20 stopped past the pass: the marks it left on the van",
    "max": 40,
    "do": [
-    {
-     "do": "hold",
-     "key": "S",
-     "s": 1.5
-    },
-    {
-     "do": "tap",
-     "key": "SPACE"
-    },
     {
      "do": "tap",
      "key": "E"
