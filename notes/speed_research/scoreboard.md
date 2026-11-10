@@ -33,6 +33,12 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   0.98x: render-bound, 12-17 ms a frame); < 1.7x -> no-go for the 2x column as built. 19 wall-clock
   deadlines in test code (all loosen when fast: false-PASS risk). Import 9.9 s, not ~40 s (T2's import
   gate likely moot). Next: P1b, headless / tiny window speed (~2 min).
+- **Pilot P1b (Claude, ~2.4 pilot min):** **headless + fast = 4.96x** (334 game s in 67 s), 33 / 33 checks,
+  same result lines as 1x; tiny window 1.23x (CPU-side draw prep per frame, not pixels). Headless-capable:
+  heat, looks, places, jug, marks (73% of a suite); ghat_net reads pixels; ghat_spring + `free_coolant`
+  use game-code wall clocks (stay 1x). Plan with headless ~4.5x: **~61-64 min**. Preconditions: test
+  deadlines on game time (5x looser otherwise); screenshots kept. Referee's misread logged: the meter's
+  1.3 min looked "slower", it covered far more game time. Next: P1c, drawing off except at shots (~1 min).
 
 ## Stages
 | Stage | State |
