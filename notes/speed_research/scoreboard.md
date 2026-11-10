@@ -15,6 +15,14 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   referee copies into `notes/speed_research/sealed/`; reading `MPG\notes` outside `speed_research/` is
   out. GPT's round-1 audit is kept and read as possibly contaminated.
 
+- **R1b (2026-11-10, after the user asked "can't a new thread reset it?"):** yes: every round is a
+  new child thread with no memory, so the leak lives only in the dead r1 GPT thread. What carries a leak
+  on is what that thread WROTE: the referee grepped all four written files (ideas x2, audit_r1 x2) for
+  every hole's words: clean (only generic hits). Ruling: **the 7 holes count as blind again** for every
+  later thread; GPT r1's choice of trials may have been nudged, so the referee still adds **2-3 extra
+  secret plants** as insurance (scored blind at the end). Each later task file repeats the full
+  read-only / do-not-read lists and is read first.
+
 ## Stages
 | Stage | State |
 |---|---|
