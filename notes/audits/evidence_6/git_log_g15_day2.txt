@@ -1,0 +1,12 @@
+600c256 2026-11-10 20:41:39 +0530 Rule: never wait for an answer while building; build my pick and say so (the user)
+31a10c5 2026-11-10 20:31:51 +0530 Walk #6: no end credits (they're the game's ending; the user)
+50d89f1 2026-11-10 19:46:52 +0530 #6 done: final clean run 3 PASS (124/124), 27/27 plants proved, take 3 recorded; FINAL.md #6 addendum; notes
+fe6daf7 2026-11-10 19:07:50 +0530 #6: in the ghat's fog Problem sees 15 m (the user: A); check + plant fog_sees_far
+746ef2a 2026-11-10 18:01:23 +0530 #6: when the van stops Problem stares, reaching it no sooner than 24 s after (it came from close in seconds); the test driver brakes when the engine dies; walk stops short of the milestone; walk: pot down before getting in, both aboard checked
+150d571 2026-11-10 17:36:11 +0530 Ledger: final clean run 2 PASS (122/122) after the walk's fixes
+d83bc6b 2026-11-10 17:16:22 +0530 TODO: #6 state at the two-takes stop
+005ff87 2026-11-10 16:57:10 +0530 #6: Problem walks round the van instead of into it (it stuck for minutes on the far side); check + plant round_through; the walk's pot trips go round the passenger side
+7b864db 2026-11-10 16:26:42 +0530 #6: after the hot cap's yelp Problem listens 10 s before it comes (the user: A); a hold past the net's finish no longer pulls it back off; the walk: P2 on the pad, no handbrake release after drives; checks proved
+1481fb4 2026-11-10 15:51:52 +0530 #6 L6: final clean run PASS (119/119); ramp: P2 waits for the leg-up offer; fling bench (the rack fix leaves the throw unchanged); notes
+3425043 2026-11-10 15:26:58 +0530 #6 L6: stall drag out, lean plant 2.0 m; endless_window proved in ghat_heat; the jug left on the road fixed (stowed items leave the physics world) with its check; tail lights proud of the doors
+5f3e3e3 2026-11-10 00:03:50 +0530 TODO: proofs 18 of 21 (count corrected)

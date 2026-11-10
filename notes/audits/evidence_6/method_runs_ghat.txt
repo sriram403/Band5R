@@ -1,0 +1,40 @@
+20261109_222815_ghat_k3  RESULT: TEST (exit 3): a check outside the declared manifest: 'P1 pulls the net half way (50%)' [began +26.6s]
+20261109_222917_ghat_k3  RESULT: INCOMPLETE (exit 2): STALLED at episode:ghat_jug#56: open 90.27 s, deadline 90.0 s (owner=UNRESOLVED) [began +33.3s]
+20261109_223150_ghat_k3  RESULT: FAIL (exit 1): check failed: 'cornering: under the tarp, kept quiet, it gives up' (ghat_heat/x_under_the_tarp_kept_quiet_it_gives_up), owner=UNRESOLVED [began +203.6s]
+20261109_225315_ghat_k3  RESULT: FAIL (exit 1): check failed: 'cool now, it pours in: the radiator is full again (68%)' (ghat_spring/cool_now_it_pours_in_the_radiator_is_full_again_x), owner=UNRESOLVED [began +944.0s]
+20261109_231404_ghat_k3  RESULT: FAIL (exit 1): check failed: 'cool now, it pours in: the radiator is full again (68%)' (ghat_spring/cool_now_it_pours_in_the_radiator_is_full_again_x), owner=UNRESOLVED [began +242.5s]
+20261109_232118_ghat_k3  RESULT: PASS (exit 0): ghat_spring profile k3
+20261109_232606_ghat_k3_heat_always,one_corner  RESULT: FAIL (exit 1): H1: the van heated 0.04 C with no Problem interested (phase ''), owner=UNRESOLVED [began +19.9s]
+20261109_233135_ghat_k3_no_stall_drag,hud_heat,one_flat  RESULT: FAIL (exit 1): check failed: 'flat out: hot with it watching: no TEMP / COOL bars, no 'ENGINE HOT' banner; the grille steams (warn 'ENGINE HOT - ease off or stop')' (ghat_heat/x_hot_with_it_watching_no_temp_cool_bars_no_engine_hot_banne), owner=UNRESOLVED [began +56.6s]
+20261109_233242_ghat_k3_fog_short,seen_h2,keeps_interest,one_corner  RESULT: FAIL (exit 1): check failed: 'cornering: the fog lies all the way up to the pass (to sample 363 of 382)' (ghat_heat/x_the_fog_lies_all_the_way_up_to_the_pass_to_sample_x_of_x), owner=UNRESOLVED [began +91.2s]
+20261109_233530_ghat_k3_lean_close,fast_turn  RESULT: FAIL (exit 1): check failed: 'it turns away slowly (fastest 345 deg/s)' (ghat_looks/it_turns_away_slowly_fastest_x_deg_s), owner=UNRESOLVED [began +141.9s]
+20261109_233755_ghat_k3_one_layer_net  RESULT: FAIL (exit 1): check failed: 'from outside the van is a dark lump (change 0.013, brightness 0.75)' (ghat_net/from_outside_the_van_is_a_dark_lump_change_x_brightness_x), owner=UNRESOLVED [began +33.4s]
+20261109_233831_ghat_k3_leave_sees,no_breath_lock,round_skip  RESULT: FAIL (exit 1): check failed: 'holding your breath (Ctrl / B) never touched the handbrake' (ghat_jug/holding_your_breath_ctrl_b_never_touched_the_handbrake), owner=UNRESOLVED [began +96.8s]
+20261109_234220_ghat_k3_no_fix,free_coolant,needle_stuck  RESULT: FAIL (exit 1): H2: the temperature needle reads 40 deg, the engine is at 88.0 C (8 deg), owner=UNRESOLVED [began +19.3s]
+20261109_234548_ghat_k3_no_power  RESULT: FAIL (exit 1): check failed: 'P1 holds the coolant jug' (ghat_jug/p1_holds_the_x), owner=UNRESOLVED [began +113.5s]
+20261109_234949_ghat_k3_seat_compare,cap_text  RESULT: FAIL (exit 1): check failed: 'both windows visited (P1 prompt false, held false, P2 fogged false)' (ghat_spring/both_windows_visited_p1_prompt_x_held_x_p2_fogged_x), owner=UNRESOLVED [began +167.7s]
+20261109_235318_ghat_k3_endless_window  RESULT: PASS (exit 0): ghat_spring profile k3
+20261109_235729_ghat_k3_marks_pile,marks_unsaved  RESULT: FAIL (exit 1): check failed: 'a clean van to start with' (ghat_marks/a_clean_van_to_start_with), owner=UNRESOLVED [began +171.3s]
+20261110_150534_ghat_k3_lean_close  RESULT: FAIL (exit 1): check failed: 'leaning in at a window, its face stays outside the glass (closest -0.00 m)' (ghat_looks/leaning_in_at_a_window_its_face_stays_outside_the_glass_clos), owner=UNRESOLVED [began +159.3s]
+20261110_150819_ghat_k3_endless_window,one_corner  RESULT: FAIL (exit 1): check failed: 'cornering: under the tarp, kept quiet, it gives up' (ghat_heat/x_under_the_tarp_kept_quiet_it_gives_up), owner=UNRESOLVED [began +287.3s]
+20261110_152119_ghat_k3_stow_live  RESULT: FAIL (exit 1): check failed: 'the jug rode up the ghat in its place on the rack (77.99 m from its slot)' (ghat_jug/the_jug_rode_up_the_ghat_in_its_place_on_the_rack_x_m_from_i), owner=UNRESOLVED [began +49.1s]
+20261110_152521_ghat_k3_one_layer_net,tail_flush  RESULT: FAIL (exit 1): check failed: 'the tail lights stand proud of the back doors (1 lights, 0.000 m)' (ghat_net/the_tail_lights_stand_proud_of_the_back_doors_x_lights_x_m), owner=UNRESOLVED [began +22.8s]
+20261110_152616_ghat_k3  RESULT: PASS (exit 0): ghat_net profile k3
+20261110_152703_ghat_k3  RESULT: PASS (exit 0): ghat_heat,ghat_looks,ghat_net,ghat_places,ghat_jug,ghat_spring,ghat_marks profile k3
+20261110_161226_ghat_k3  RESULT: FAIL (exit 1): check failed: 'the net comes off' (ghat_spring/the_net_comes_off_2), owner=UNRESOLVED [began +186.9s]
+20261110_161700_ghat_k3  RESULT: PASS (exit 0): ghat_net,ghat_spring profile k3
+20261110_162128_ghat_k3_hold_through  RESULT: FAIL (exit 1): check failed: 'P2 keeps holding a moment after: the net stays on (work 1.0 s)' (ghat_net/p2_keeps_holding_a_moment_after_the_net_stays_on_work_x_s), owner=UNRESOLVED [began +34.4s]
+20261110_162209_ghat_k3_no_listen  RESULT: FAIL (exit 1): check failed: 'it listens before it comes back: time to throw the net on and get in, by hand (listened 0.0 s)' (ghat_spring/it_listens_before_it_comes_back_time_to_throw_the_net_on_and), owner=UNRESOLVED [began +125.9s]
+20261110_163929_ghat_k3  RESULT: FAIL (exit 1): check failed: 'from the far side it walks round the van to the other window, not into it (closest 0.21 m)' (ghat_looks/from_the_far_side_it_walks_round_the_van_to_the_other_window), owner=UNRESOLVED [began +141.8s]
+20261110_164325_ghat_k3  RESULT: FAIL (exit 1): check failed: 'from the far side it walks round the van to the other window, not into it (closest 0.22 m)' (ghat_looks/from_the_far_side_it_walks_round_the_van_to_the_other_window), owner=UNRESOLVED [began +151.4s]
+20261110_164725_ghat_k3  RESULT: FAIL (exit 1): check failed: 'from the far side it walks round the van to the other window, not into it (closest 0.42 m)' (ghat_looks/from_the_far_side_it_walks_round_the_van_to_the_other_window), owner=UNRESOLVED [began +135.8s]
+20261110_165040_ghat_k3  RESULT: PASS (exit 0): ghat_looks profile k3
+20261110_165320_ghat_k3_round_through  RESULT: FAIL (exit 1): check failed: 'from the far side it walks round the van to the other window, not into it (closest 0.22 m, its body 0.3 m)' (ghat_looks/from_the_far_side_it_walks_round_the_van_to_the_other_window), owner=UNRESOLVED [began +151.4s]
+20261110_171622_ghat_k3  RESULT: PASS (exit 0): ghat_heat,ghat_looks,ghat_net,ghat_places,ghat_jug,ghat_spring,ghat_marks profile k3
+20261110_174632_ghat_k3  RESULT: FAIL (exit 1): check failed: 'cornering: even from 15 m it stares first: 7 s to hide before it reaches the van' (ghat_heat/x_even_from_15_m_it_stares_first_x_s_to_hide_before_it_reach), owner=UNRESOLVED [began +139.3s]
+20261110_174916_ghat_k3  RESULT: FAIL (exit 1): check failed: 'flat out: it comes to rest before the pass, in the fog (sample 219 of 382, boiled at 314, fog 0.00)' (ghat_heat/x_it_comes_to_rest_before_the_pass_in_the_fog_sample_x_of_x_), owner=UNRESOLVED [began +97.6s]
+20261110_175142_ghat_k3  RESULT: PASS (exit 0): ghat_heat profile k3
+20261110_175823_ghat_k3_no_min_warn,one_corner  RESULT: FAIL (exit 1): check failed: 'cornering: even from 15 m it stares first: 3 s to hide before it reaches the van' (ghat_heat/x_even_from_15_m_it_stares_first_x_s_to_hide_before_it_reach), owner=UNRESOLVED [began +86.1s]
+20261110_185802_ghat_k3  RESULT: PASS (exit 0): ghat_heat profile k3
+20261110_190438_ghat_k3_fog_sees_far,one_corner  RESULT: FAIL (exit 1): check failed: 'cornering: in the fog it doesn't see someone 25 m off (suspicion 0.94; -1 = it never came)' (ghat_heat/x_in_the_fog_it_doesn_t_see_someone_25_m_off_suspicion_x_1_i), owner=UNRESOLVED [began +83.9s]
+20261110_192650_ghat_k3  RESULT: PASS (exit 0): ghat_heat,ghat_looks,ghat_net,ghat_places,ghat_jug,ghat_spring,ghat_marks profile k3

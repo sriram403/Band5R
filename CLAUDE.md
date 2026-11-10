@@ -97,6 +97,11 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   puzzle changes still wait for the user's look (rule 2). Every new
   session starts from a game that is clean as far as we know.
 
+- **GPT plans, Claude builds (the user, 2026-11-10).** GPT (Codex) writes no game code or game
+  test code and doesn't run the game: it designs, audits, reviews and writes a spec in a file; a
+  Claude builder builds exactly that and reports what it had to change. (AI limit, 2026-11: re-test
+  on newer models.) Skill: `game-dev` §1.6.
+
 ## Two copies of the project
 
 - `MPG` (branch `main`): the long test runs, pushes.

@@ -1,0 +1,139 @@
+# Finding Naresh: instructions for Claude
+
+Start with `notes/MASTER_PROMPT.md` (how to resume, the user's rules, the
+architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
+
+## How to work (the user's principles, `notes/PRINCIPLES.md`)
+
+- **First principles, not analogy.** Break a problem down to what is actually
+  true (measured, tested, in the code) and build the solution up from there.
+- **Never assume a limit you haven't tested**, especially on speed and cost.
+  Run the smallest experiment that answers it, then decide.
+- **The algorithm, in order:** question every requirement (who asked for
+  it?), delete what isn't needed, simplify, speed up the cycle, automate last.
+- **Keep the machine busy and the loop short:** build in the second copy
+  (`../MPG_dev`, a git worktree on its own branch) while long tests run here;
+  run the quick check for a change first, the long runs last.
+- **Measure, then decide.** Numbers before opinions; an unexplained result is
+  a question, not a pass.
+- **Own it:** test it, look at the screenshots, read the logs, write the
+  lesson down at once.
+- **Always record (the user, 2026-10-19): every change shown gets a
+  video, unless the user says no.**
+- **Never fire and forget (the user, 2026-10-20), for all testing.** Check
+  every run every few seconds while it runs (step, movement, errors); off
+  plan -> stop it at once, look, tell the user. Never only read the end.
+- **Fix what you see (the user, 2026-10-20).** An issue found while working
+  is fixed then and there; never offer "record / carry on as is" as an
+  option. Questions are for real choices only.
+- **Debug with pictures (the user, 2026-10-20).** Stuck or wrong: take a
+  shot of that moment from an angle that shows it, solve from what you see;
+  logs only support it.
+- **The check list grows, never fixed (the user, 2026-11-09).** Every issue
+  found (building, a watched run, the video, the user's play) gets its own
+  check that FAILS on it: plant the bug back (`core/Plant.gd`), run the clean
+  game, add it to the manifest and `notes/CHANGE_LEDGER.md`. Remove a check
+  only with the user's OK (FINAL.md port step 8).
+- **Test bench after 2-3 failed fixes (the user, 2026-10-20).** Move the
+  issue to a gym / bare scene, try causes from the most obvious (visible)
+  down one by one, then bring the fix back. "Note this" = a general rule.
+  Proactive: use the skills, update them yourself, tell the user in a line.
+- **Record the walkthrough (the user, 2026-10-05).** Keep writing the
+  test sheet; once its steps are written, play them as a watched run,
+  record it (`tools/record_walk.sh <walk>` -> `appdata/videos/`), watch it,
+  and send it with times and what to judge. The user verifies the video
+  first instead of playing straight away.
+
+- **Fit the world, propose first, add your own ideas (the user,
+  2026-10-05).** When the user asks for "a room", "water", "wind" and so
+  on, design it to belong to that puzzle and place, write it as a short
+  proposal for their review, then build. Add your own ideas or
+  improvements to theirs, marked as suggestions. Puzzles keep both players
+  on their toes (`notes/PRINCIPLES.md` 10, `design/PUZZLE_CHANGES.md`).
+- **Both out of the van, no repeats, fun mechanics (the user,
+  2026-10-06).** Every stop needs both players on foot, each with a job.
+  Never repeat a puzzle (how it plays or what it's for); when the user's
+  ask repeats an earlier puzzle or idea, say so and suggest a way round.
+  A challenge can be the thing instead of a puzzle. At least three fun
+  mechanics like the head-butt. Mistakes have real consequences.
+- **Built for humans (the user, 2026-10-07).** Look at every placed thing
+  from where a player stands before showing it: visible, reachable, notes
+  readable, nothing floating or sunk, blockers that really block (drive
+  round them). Every action shows visibly that it worked.
+- **Realistic, and simple to read (the user, 2026-10-14).** Everything
+  in the world works and looks as it would for real: weather (snow, rain,
+  sun), machines (a wrong code makes the box itself reset), tools
+  (binoculars about 8x, not 12x). Nothing appears out of nowhere. Every
+  message and proposal short and plain; questions as A / B.
+- **Hardest idea first, then tone down (the user, 2026-10-19).** When a
+  design is discussed before building, lead with the hardest, craziest
+  version you can think of (the 10 / 10); the user tones it down. Proposals
+  in plain words, no technical terms ("a barrier pole", not "a boom"; "a
+  weight on a string", not "a plumb bob"); never hide an answer behind a
+  question box.
+- **Lived in, never programmatic (the user, 2026-10-07).** Built things
+  look placed by a person; natural things sit as nature would leave them
+  (clumps, half-sunk rocks, no rows). A cramped space gets bigger.
+- **The change ledger; the full run only at a milestone checkpoint (the
+  user, 2026-10-08, changed 2026-10-14).** A bug fix or a puzzle tuned:
+  test that part alone, thoroughly (its own scenarios, its area set,
+  smoke), never the whole game. **No full run after a push.** The full
+  run is for the end of a whole milestone, e.g. once every puzzle is
+  tuned and looks right to the user: one final full run then. Every change
+  goes into `notes/CHANGE_LEDGER.md` as it lands (what changed, what it
+  could break, which tests cover it), so whoever does that final run can
+  match each failure to its change.
+- **Watch the user's real time (the user, 2026-10-14).** Know what a run
+  costs in minutes before starting it, and notice when work goes in a
+  loop (each run finds something -> fix -> push -> another run): stop and
+  tell the user instead of going round again.
+- **Bug fixes are pushed as they are solved (the user, 2026-10-14).** A
+  fix to a bug (from a long run, a test, the user's report) is pushed as
+  soon as it is solved and its tests pass: commit, merge into `main`,
+  push; no asking, no holding it for the next feature. New features and
+  puzzle changes still wait for the user's look (rule 2). Every new
+  session starts from a game that is clean as far as we know.
+
+## Two copies of the project
+
+- `MPG` (branch `main`): the long test runs, pushes.
+- `MPG_dev` (branch per milestone part, e.g. `e3`): building the next part.
+  It has its own `appdata/` (tests there don't touch this copy's runs) and a
+  copy of `tools/godot` (not in git). Merge into `main` when the part is done.
+- Two game instances at once work on this PC (measured 2026-09-27: 112 fps
+  in one while the other ran the full world test). A frame-rate check that
+  fails while both run is rerun alone before it is believed.
+- Always check which folder a file is written to: a new file for the dev
+  branch written into `MPG` sat outside the branch (2026-09-27).
+
+## The user's rules in short (details in MASTER_PROMPT section 3)
+
+Nothing on C: · one part at a time, the user's test before each push · "let's
+discuss" means discuss · notes current at every step · tests stay behind the
+user's windows · lessons written at once · at the end of a milestone,
+suggest a new thread, wait 3 min, then carry on (`project-memory` skill §4).
+
+## Remember mistakes; "update the md files" (the user, 2026-10-02)
+
+- **The mistake log.** Models don't learn while they work, so we simulate
+  it: whenever what you assumed meets a different reality, write it down at
+  once in `notes/ROUGH_NOTES.md`, section "Assumed -> reality -> fix": what
+  you assumed, what really happened, the fix, the habit to keep. **Read that
+  section before starting something similar.**
+- **Learnings go in the rough notes the moment they happen** (process, code,
+  game; small or big). Sorted lessons go in `notes/LESSONS.md`.
+- **"Update the md files"** means: update every file below that the change
+  touches, without being told which:
+  - `notes/ROUGH_NOTES.md` (learnings, the mistake log)
+  - `notes/LESSONS.md` (sorted lessons), `notes/TODO.md` ("Right now")
+  - `notes/MASTER_PROMPT.md` (status, rules), `notes/PRINCIPLES.md` (how we work)
+  - `notes/TESTING_METHOD.md` (versioned method), the current
+    `notes/TEST_MILESTONE_*.md` sheet, design pages when a decision changes
+  - `CLAUDE.md` and `AGENTS.md` (instructions for Claude and for GPT / other
+    models: keep the two in step)
+  - the user's skills library `D:\mine\Agentics\Skills` (general lessons
+    only, e.g. `game-dev`, `testing-and-verification`,
+    `first-principles-solving`): ask the user first, then follow that
+    folder's `AGENTS.md`. It is linked into `~/.claude/skills` and
+    `~/.agents/skills`, so there are no copies to update.
+  - Claude's memory (`memory/`), for rules about how to work
