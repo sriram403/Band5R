@@ -15,11 +15,11 @@ RULES = [
      "WALK: it RESUMES from the last failed step by default (save points at every step). Use --fresh only "
      "when the cause is before that step or for a final take; never restart from step 1 for a fix after it. "
      "A video shows only the puzzle (no end credits); watch it yourself before sending it with times."),
-    (r"method_run\.sh|prove_\w+\.py",
+    (r"tools/method_run\.sh|tools/method/prove_\w+\.py",
      "METHOD RUN: while fixing, only the changed scenarios; one full run at the milestone. Verdicts: "
      "PASS / FAIL / INCOMPLETE / STALLED / TEST. A new issue gets its own check proved against its planted bug "
      "(core/Plant.gd) + the clean game; add it to the manifest and notes/CHANGE_LEDGER.md."),
-    (r"run_test(_headless)?\.sh",
+    (r"tools/run_test(?:_headless)?\.sh",
      "TEST: size it to the change (its own scenarios, not the full set); a full run only at a milestone. "
      "Two or three failed fixes on one issue -> a test bench."),
 ]
@@ -31,7 +31,10 @@ def main() -> int:
     except ValueError:
         return 0
     cmd = str((data.get("tool_input") or {}).get("command", ""))
-    hits = [txt for pat, txt in RULES if re.search(pat, cmd)]
+    # only where the command RUNS it (a command's start, after ; & | ( or a NAME=value prefix),
+    # not where a commit message or an ls merely names it (it fired on those: noise teaches ignoring)
+    start = r"(?:^|[;&|(\n])\s*(?:\w+=\S*\s+)*(?:bash\s+|sh\s+|python\s+)?(?:\S*/)?"
+    hits = [txt for pat, txt in RULES if re.search(start + "(?:" + pat + ")", cmd, re.M)]
     if not hits:
         return 0
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
