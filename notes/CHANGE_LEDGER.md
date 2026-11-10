@@ -707,3 +707,5 @@ same, `frozen.json` gained entries; not re-run.
 - **Tail lights** 2.5 cm proud of the back doors (were coplanar: flickered); named `TailLightL/R`. Check in `ghat_net` (plant `tail_flush`).
 - **`t_ramp`:** P2 waits for the "Leg-up" offer before jumping. The ramp's two flaky steps (can in the water, leg-up miss) are OPEN (ROUGH_NOTES 2026-11-10).
 - **Final clean run 2026-11-10:** `tools/method_run.sh ghat` PASS, 7 / 7 scenarios, 119 / 119 required checks, 0 FAILs, H1-H3 clean, 1163 s (`appdata/method/runs/20261110_152703_ghat_k3`). Proofs: 22 plants PROVED (`appdata/method/prove_ghat.txt`).
+- **Later on 2026-11-10 (found by the walk), each with its check and plant:** after the hot cap Problem listens 10 s (`no_listen`, `ghat_spring`, the user's pick A); a hold past the net's finish no longer pulls it back off (`hold_through`, `ghat_net`); Problem walks round the van, not into it (`round_through`, `ghat_looks`). Walk fixes: P2 on the pad, no handbrake release after drives, pot trips round the passenger side.
+- **Final clean run 2, after all of today's game changes:** PASS, 7 / 7, 122 / 122 required checks, 0 FAILs (`20261110_171622_ghat_k3`).
