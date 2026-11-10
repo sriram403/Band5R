@@ -23,12 +23,20 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
 - **Never fire and forget (the user, 2026-10-20), for all testing.** Check
   every run every few seconds while it runs (step, movement, errors); off
   plan -> stop it at once, look, tell the user. Never only read the end.
+- **Never wait for an answer (the user, 2026-11-10).** A design choice that comes up while
+  building: build your recommended pick, note it, tell the user in a line ("my pick, say if you
+  want the other"), keep going. Stop and wait only for merges, pushes, deletes.
 - **Fix what you see (the user, 2026-10-20).** An issue found while working
   is fixed then and there; never offer "record / carry on as is" as an
   option. Questions are for real choices only.
 - **Debug with pictures (the user, 2026-10-20).** Stuck or wrong: take a
   shot of that moment from an angle that shows it, solve from what you see;
   logs only support it.
+- **The check list grows, never fixed (the user, 2026-11-09).** Every issue
+  found (building, a watched run, the video, the user's play) gets its own
+  check that FAILS on it: plant the bug back (`core/Plant.gd`), run the clean
+  game, add it to the manifest and `notes/CHANGE_LEDGER.md`. Remove a check
+  only with the user's OK (FINAL.md port step 8).
 - **Test bench after 2-3 failed fixes (the user, 2026-10-20).** Move the
   issue to a gym / bare scene, try causes from the most obvious (visible)
   down one by one, then bring the fix back. "Note this" = a general rule.

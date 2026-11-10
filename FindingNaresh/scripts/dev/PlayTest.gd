@@ -22,6 +22,24 @@ var _done := {}                  ## scenario -> its failures, from an earlier ru
 ## No window and no GPU (`--headless`, e.g. CI or tools/run_test_headless.sh):
 ## screenshots are skipped and frame-rate checks are only logged.
 var headless := DisplayServer.get_name() == "headless"
+## c1, the rig layer (research trial c1): the heartbeat and input receipts
+## (dev/RigBeat.gd, watched from outside by tools/rig/rig_watch.py) and the
+## referee's injection hooks (dev/RigInject.gd).
+var rig: RigBeat
+var inject: RigInject
+## What a wrapped scenario needs, checked before step 1: each an expression on
+## this node that must run without error and give something non-null. A miss
+## is a TEST problem (a stale name), reported before any input is sent. The
+## pause guard in wait / until applies to the scenarios listed here.
+const RIG_NEEDS := {"ramp": ["boot.players[0]", "boot.players[1]", "boot.story", "boot.builder", "camper()", "rj()", "rj().ramp", "boot.devices[1]"], "c2_more": ["boot.players[0]", "boot.players[1]", "camper()", "rj()", "rj().hut", "boot.huds"]}
+## Trial c2 (research): the state-checks observer (dev/C2Watch.gd). Reads only.
+var c2: C2Watch
+## The final method (research Stage 4): events, step deadlines, receipts
+## (dev/MethodRec.gd, judged from outside by tools/method/method_watch.py).
+var mrec: MethodRec
+## The method's deadline for a whole scenario (s): measured length plus margin (#6, 2026-11-09).
+const EPISODE_S := {"ramp": 240.0, "c2_more": 90.0, "ghat_heat": 660.0, "ghat_looks": 360.0, "ghat_net": 120.0,
+	"ghat_places": 240.0, "ghat_jug": 480.0, "ghat_spring": 780.0, "ghat_marks": 720.0}
 
 ## Quick runs basic input/vehicle mechanics in the base gym, then checks the
 ## story, map, puzzle, save/load and rendering in the real world by teleport.
@@ -65,6 +83,13 @@ func _ready() -> void:
 		if not _recording() and DisplayServer.window_is_focused():
 			_hand_focus_back(false)
 	_ready_ms = Time.get_ticks_msec()
+	rig = RigBeat.ensure(boot, progress_path)
+	inject = RigInject.from_args(boot)
+	if inject != null:
+		add_child(inject)
+	c2 = C2Watch.ensure(self, boot, progress_path)
+	mrec = MethodRec.ensure(self, progress_path)
+	GhatWatch.ensure(self)          # #6's state rules (only look during ghat_* scenarios)
 	_run.call_deferred()
 
 
@@ -180,6 +205,8 @@ func key(k: Key, down: bool) -> void:
 	e.physical_keycode = k
 	e.pressed = down
 	Input.parse_input_event(e)
+	if rig != null:
+		rig.request("key", k, 1.0 if down else 0.0)
 
 
 ## A quick human tap: held for ~70 ms of real time, however fast frames are.
@@ -193,6 +220,7 @@ func tap(k: Key, hold_s := 0.07) -> void:
 ## Hold a key for whole physics ticks. The press is sent again only if a window
 ## focus change dropped it: a fresh press every tick would read as 60 taps a second.
 func hold_physics(k: Key, seconds: float) -> void:
+	var _mo := mrec.open("hold", seconds + 2.0) if mrec != null else ""
 	key(k, true)
 	for _i in int(ceil(seconds * 60.0)):
 		await get_tree().physics_frame
@@ -200,6 +228,7 @@ func hold_physics(k: Key, seconds: float) -> void:
 			key(k, true)
 	key(k, false)
 	await physics_frames(3)  # let the release land (a pour lets go of the can)
+	if mrec != null: mrec.close(_mo)
 
 
 func mouse(rel: Vector2) -> void:
@@ -215,20 +244,40 @@ func release_all() -> void:
 
 
 func wait(s: float) -> void:
+	var _mo := mrec.open("wait", s + 2.0) if mrec != null else ""
+	await _rig_pause_guard()
 	await get_tree().create_timer(s, true, false, true).timeout
+	await _rig_pause_guard()
+	if mrec != null: mrec.close(_mo)
+
+
+## The pause guard (c1): a wrapped scenario never steps through a paused game
+## (its timers run while paused: the old E3). It holds here and says so once;
+## the outside watcher sees the world clock stop and ends the run.
+func _rig_pause_guard() -> void:
+	if not RIG_NEEDS.has(RigBeat.scen) or not get_tree().paused:
+		return
+	RigBeat.event("pause_hold", "%s: the game is paused (%s); the test holds instead of carrying on" % [RigBeat.scen, str(boot.pause_note).substr(0, 60)])
+	while get_tree().paused:
+		await get_tree().process_frame
 
 
 func physics_frames(n: int) -> void:
+	var _mo := mrec.open("frames", n / 60.0 + 2.0) if mrec != null else ""
 	for _i in n:
 		await get_tree().physics_frame
+	if mrec != null: mrec.close(_mo)
 
 
 func log_line(s: String) -> void:
 	print("[test] " + s)
+	RigBeat.step = s
 
 
 func check(ok: bool, what: String) -> void:
 	log_line(("PASS  " if ok else "FAIL  ") + what)
+	if mrec != null:
+		mrec.check(what, ok)
 	if not ok:
 		_failures.append(what)
 
@@ -236,11 +285,15 @@ func check(ok: bool, what: String) -> void:
 func shot(tag: String) -> void:
 	if headless:
 		return      # nothing is drawn (and frame_post_draw never fires)
+	var _mo := mrec.open("shot:" + tag + "", 5.0) if mrec != null else ""
+	if mrec != null and mrec.fixture == "n5" and mrec.active():
+		RenderingServer.render_loop_enabled = false   # builder's N5 control only: the engine stops drawing, physics runs on
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://_shots"))
 	img.save_png("res://_shots/test_%s.png" % tag)
 	log_line("shot test_%s.png" % tag)
+	if mrec != null: mrec.close(_mo)
 
 
 # --- helpers -------------------------------------------------------------------
@@ -378,6 +431,7 @@ func planar_speed(p: PlayerRig) -> float:
 
 
 func place_player(p: PlayerRig, pos: Vector3, yaw: float) -> void:
+	var _mo := mrec.open("place_player", 10.0) if mrec != null else ""
 	if p.seat != null:
 		p.force_exit = true
 		await physics_frames(2)
@@ -395,6 +449,7 @@ func place_player(p: PlayerRig, pos: Vector3, yaw: float) -> void:
 		p.held.linear_velocity = Vector3.ZERO
 		p.held.reset_physics_interpolation()
 	await physics_frames(3)
+	if mrec != null: mrec.close(_mo)
 
 
 func reset_camper(route_index: int) -> void:
@@ -413,10 +468,12 @@ func reset_camper(route_index: int) -> void:
 
 
 func seat_p1_driver() -> void:
+	var _mo := mrec.open("seat_p1_driver", 10.0) if mrec != null else ""
 	var c := camper()
 	if p1().seat == null:
 		p1().enter_seat(c, c.seat_nodes["driver"], "driver")
 	await physics_frames(2)
+	if mrec != null: mrec.close(_mo)
 
 
 # --- run -----------------------------------------------------------------------
@@ -441,7 +498,12 @@ func _run() -> void:
 		_failures = PlayTest.carried_failures.duplicate()
 		log_line("---- %s (after scene reload) ----" % r)
 		var resumed_at := Time.get_ticks_msec()
+		RigBeat.scen = r
 		await call("t_" + r)
+		RigBeat.event("end", PlayTest.reloading_scenario)
+		RigBeat.scen = ""
+		if c2 != null:
+			c2.sync()
 		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
 		_record_done(PlayTest.reloading_scenario, PlayTest.scenario_fail_start)
 		_finish()
@@ -479,6 +541,7 @@ func _run() -> void:
 		for extra in selection.split(","):
 			if not extra in all and has_method("t_" + extra):
 				all.append(extra)
+	all = _rig_plan(all, selection)
 	for s in all:
 		if selection != "" and not s in selection.split(","):
 			continue
@@ -507,7 +570,18 @@ func _run() -> void:
 		await fresh_hands()
 		if s.begins_with("opening"):
 			await _p2_on_keyboard()
+		RigBeat.scen = s
+		RigBeat.event("start", s)
+		if inject != null:
+			inject.arm()
+		var _ep := mrec.open("episode:" + s, float(EPISODE_S.get(s, 90.0))) if mrec != null else ""
 		await call("t_" + s)
+		if mrec != null:
+			mrec.close(_ep)
+		RigBeat.event("end", s)
+		RigBeat.scen = ""
+		if c2 != null:
+			c2.sync()
 		release_all()
 		await _unplug_test_pad()
 		log_line("time %s %.1f s" % [s, (Time.get_ticks_msec() - started_at) / 1000.0])
@@ -515,6 +589,46 @@ func _run() -> void:
 			return      # the scene is reloading; the new test node finishes up
 		_record_done(s, PlayTest.scenario_fail_start)
 	_finish()
+
+
+## c1 before step 1: the order the scenarios will really run in, checked.
+## Anything after `save` never runs (it reloads the scene); an asked name
+## with no t_<name> or missing from the order never runs either. Then each
+## wrapped scenario's declared needs are run once on the loaded world.
+## All are TEST problems, written to the rig file for the outside watcher.
+func _rig_plan(all: Array, selection: String) -> Array:
+	if inject != null:
+		all = inject.plan(all, selection)
+	var order: Array = []
+	for s in all:
+		if selection == "" or s in selection.split(","):
+			order.append(s)
+	RigBeat.event("plan", ",".join(order))
+	var si := order.find("save")
+	if si >= 0 and si < order.size() - 1:
+		RigBeat.event("lint", "queued after save (save reloads the scene, these never run): " + ",".join(order.slice(si + 1)))
+	if selection != "":
+		for s in selection.split(","):
+			if not has_method("t_" + s):
+				RigBeat.event("lint", "asked for %s: no such scenario (t_%s)" % [s, s])
+			elif not s in order:
+				RigBeat.event("lint", "asked for %s: not in the run order" % s)
+	var needs: Dictionary = RIG_NEEDS
+	if inject != null:
+		needs = inject.needs(RIG_NEEDS)
+	for s in order:
+		for ex in needs.get(s, []):
+			var e := Expression.new()
+			var err := e.parse(ex)
+			if err != OK:
+				RigBeat.event("need", "%s: '%s' doesn't parse: %s" % [s, ex, e.get_error_text()])
+				continue
+			var v = e.execute([], self, false)
+			if e.has_execute_failed():
+				RigBeat.event("need", "%s: '%s' fails: %s" % [s, ex, e.get_error_text()])
+			elif v == null:
+				RigBeat.event("need", "%s: '%s' is null" % [s, ex])
+	return all
 
 
 func _segment_key() -> String:
@@ -588,6 +702,7 @@ func _unplug_test_pad() -> void:
 
 
 func _finish() -> void:
+	RigBeat.event("quit", "failures=%d" % _failures.size())
 	log_line("window ended at %s" % DisplayServer.window_get_position())
 	log_line("==== %d failure(s) ====" % _failures.size())
 	for f in _failures:
@@ -947,6 +1062,8 @@ func pad_axis(axis: JoyAxis, v: float) -> void:
 	e.axis = axis
 	e.axis_value = v
 	Input.parse_input_event(e)
+	if rig != null:
+		rig.request("axis", axis, v)
 
 
 func pad_button(b: JoyButton, down: bool) -> void:
@@ -955,6 +1072,8 @@ func pad_button(b: JoyButton, down: bool) -> void:
 	e.button_index = b
 	e.pressed = down
 	Input.parse_input_event(e)
+	if rig != null:
+		rig.request("button", b, 1.0 if down else 0.0)
 
 
 func pad_tap(b: JoyButton) -> void:
@@ -1145,6 +1264,7 @@ func t_overview() -> void:
 
 ## Stand `dist` metres from a point and look straight at it.
 func face_point(p: PlayerRig, target: Vector3, dist: float, side := Vector3.ZERO) -> void:
+	var _mo := mrec.open("face_point", 10.0) if mrec != null else ""
 	var dir := side if side != Vector3.ZERO else Vector3(1, 0, 0.3)
 	dir.y = 0.0
 	dir = dir.normalized()
@@ -1155,6 +1275,7 @@ func face_point(p: PlayerRig, target: Vector3, dist: float, side := Vector3.ZERO
 	var eye := stand + Vector3.UP * (PlayerRig.STAND_HEIGHT - 0.16)
 	p.pitch = atan2(target.y - eye.y, Vector2(target.x - eye.x, target.z - eye.z).length())
 	await physics_frames(3)
+	if mrec != null: mrec.close(_mo)
 
 
 ## Put a can back where the level placed it, full or as given, off any rack.
@@ -4177,6 +4298,1276 @@ func van_stuck_report() -> String:
 
 
 
+## #6 L1, the heat rule (design/PUZZLE_CHANGES.md #6, agreed 2026-11-09): from
+## F1 -> Puzzles -> 6, drive up at two speeds. Nothing before Problem sees the
+## van; from then the needle never falls, the fuel leaks (capped), harder
+## driving boils it sooner; it boils before the pass with no help from the
+## pass guard; no puncture. Then (flat-out run only) Problem comes, the van is
+## tarped (declared setup: set_tarp), it searches, gives up, and only then do
+## the heat and the leak stop.
+func t_ghat_heat() -> void:
+	# flat out (60 km/h even round the hairpins: worse than any real driver),
+	# a driver's cornering speeds, and a crawl
+	_heat_times.clear()
+	var profs := [["flat out", 60.0], ["cornering", -1.0], ["crawling", 12.0]]
+	# planted-bug runs (FINAL.md port step 8) take one profile to save time
+	if Plant.on("one_flat"):
+		profs = [profs[0]]
+	elif Plant.on("one_corner"):
+		profs = [profs[1]]
+	for prof in profs:
+		await _ghat_heat_run(String(prof[0]), float(prof[1]), prof[0] == "cornering")
+
+
+## Into the van at the foot of the ghat via F1 (the user's way), engine on.
+func _ghat_start() -> Ghat:
+	var dm: DevMenu = boot.dev_menu
+	var rows := {}
+	for k in DevMenu.PUZZLES.size():
+		rows[DevMenu.PUZZLES[k][0]] = k
+	boot._on_joy_changed(0, true)      # P2 on a pad, in the passenger seat
+	dm.run("puzzle", rows["The ghat pace notes"])
+	await wait(1.0)
+	var g := get_tree().get_first_node_in_group("ghat") as Ghat
+	var c := camper()
+	check(p1().seat_role == "driver" and p2().seat != null and g.phase == "" and g.problem == null, "F1 -> Puzzles -> 6: both in the van at the foot of the ghat, no Problem yet")
+	# a note left open from before (a read note stays up 9 s) swallows the keys
+	for h in boot.huds:
+		(h as PlayerHUD).dismiss_note()
+	await wait(0.2)
+	# the test's X press is now and then missed right after the long F1
+	# teleport (suspects list: the test driver, not the game): retry, logged
+	for attempt in 3:
+		await tap(KEY_X, 0.25)
+		await wait(0.5)
+		if c.engine_on:
+			if attempt > 0:
+				log_line("SUSPECT: X needed %d presses to start the engine after the jump" % (attempt + 1))
+			break
+	if not c.engine_on:
+		var d := p1().dev
+		log_line("no start: driver is P1 %s, journal %s, map %s, dev active %s kind %s, held %s, paused %s, menu %s, prompt '%s', hud note up %s" % [
+			c.driver == p1(), p1().journal_open, p1().map_open, d.active if d else "-", d.kind if d else "-",
+			p1().held, boot.paused, boot.dev_menu.visible, p1().prompt_text, (boot.huds[0] as PlayerHUD)._note.visible])
+		await shot("ghat_no_start")
+	check(c.engine_on, "the engine starts ('%s')" % c.start_fail)
+	return g
+
+
+func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
+	var g := await _ghat_start()
+	var c := camper()
+	var st: Story = boot.story
+	var ad := AutoDriver.new(self, g.road, c)
+	var t := 0.0
+	var log_t := 0.0
+	var seen_t := -1.0
+	var boil_t := -1.0
+	var temp_seen := 0.0
+	var fuel_seen := 0.0
+	var heat_before := 0.0
+	var leak_before := 0.0
+	var fell_while := 0.0           # largest drop of the needle while interested
+	var hud_seen := false
+	var last_temp := c.temp
+	while t < 260.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		if not c.boiled_dry:
+			ad.step(kmh)
+		else:
+			# the engine died: a driver brakes (2026-11-10: left to coast, the
+			# van stopped on the slope and rolled 190 m back down the ghat)
+			ad.release()
+			key(KEY_S, true)
+		var inter := c.attack.interested()
+		if seen_t < 0.0 and not inter:
+			heat_before = maxf(heat_before, c.attack.heat_added)
+			leak_before = maxf(leak_before, c.attack.problem_leak())
+		if seen_t < 0.0:
+			if inter:
+				seen_t = t
+				temp_seen = c.temp
+				fuel_seen = c.fuel
+				log_line("%s: seen at road sample %d (its hairpin at %d), %.0f s, %.1f C" % [label, g.seen_index, g.hairpins[g.seen_hp()], t, c.temp])
+		elif inter:
+			fell_while = maxf(fell_while, last_temp - c.temp)
+			if c.temp > Camper.TEMP_WARN + 2.0 and not hud_seen:
+				hud_seen = true
+				var hud: PlayerHUD = boot.huds[0]
+				var temp_row: Control = (hud._bars["TEMP"] as Control).get_parent().get_parent()
+				var cool_row: Control = (hud._bars["COOL"] as Control).get_parent().get_parent()
+				check(not temp_row.visible and not cool_row.visible and not hud._warn.text.contains("ENGINE HOT") and c._steam.emitting,
+					"%s: hot with it watching: no TEMP / COOL bars, no 'ENGINE HOT' banner; the grille steams (warn '%s')" % [label, hud._warn.text])
+		last_temp = c.temp
+		if boil_t < 0.0 and c.boiled_dry:
+			boil_t = t
+			log_line("%s: boiled at sample %d (pass at %d), %.0f s after it saw the van" % [label, g.boil_index, g.road.point_count() - 1, boil_t - seen_t])
+		log_t += 1.0 / 60.0
+		if log_t >= 1.0:
+			log_t = 0.0
+			log_line("  %s t=%3.0f i=%3d %4.1f km/h thr=%s temp=%5.1f cool=%.2f fuel=%.1f phase=%s int=%s" % [label, t, g._van_i, c.linear_velocity.length() * 3.6, Input.is_key_pressed(KEY_W), c.temp, c.coolant, c.fuel, g.phase, inter])
+		if c.boiled_dry and c.linear_velocity.length() < 0.3 and t - boil_t > 3.0:
+			break
+	ad.release()
+	if not c.parking_brake:
+		await tap(KEY_SPACE)
+	key(KEY_S, false)
+	check(heat_before == 0.0 and leak_before == 0.0, "%s: no heat or leak from it before it sees the van (%.2f C, %.1f L/min)" % [label, heat_before, leak_before])
+	var hp: int = g.hairpins[g.seen_hp()]
+	check(seen_t > 0.0 and absi(g.seen_index - hp) <= 25 and st.flags.has("first_attack"), "%s: it sees the van at hairpin %d (sample %d, apex %d)" % [label, g.seen_hp() + 1, g.seen_index, hp])
+	_work("seen", seen_t > 0.0)
+	_work("boiled", boil_t > 0.0)
+	check(fell_while < 0.05, "%s: while it's interested the needle never falls (largest drop %.2f C)" % [label, fell_while])
+	check(boil_t > 0.0 and c.boiled_dry and not c.engine_on, "%s: the engine boils and dies (%.0f s after being seen)" % [label, boil_t - seen_t])
+	# found 2026-11-09: the fog stopped 40 m short of the pass (play no longer reaches there, so a plain check)
+	check(g.fog_to >= g.road.point_count() - 5, "%s: the fog lies all the way up to the pass (to sample %d of %d)" % [label, g.fog_to, g.road.point_count() - 1])
+	var rest_i := int(g.road.nearest(c.global_position.x, c.global_position.z)["index"])
+	check(rest_i <= g.road.point_count() - 1 - 5 and g.fog > 0.9, "%s: it comes to rest before the pass, in the fog (sample %d of %d, boiled at %d, fog %.2f)" % [label, rest_i, g.road.point_count() - 1, g.boil_index, g.fog])
+	if label != "flat out":
+		check(not g.guard_fired, "%s: the heat alone boils it, the pass guard not needed" % label)
+	else:
+		log_line("flat out: pass guard fired: %s (allowed at hairpin speeds no driver would use)" % g.guard_fired)
+	var leaked := fuel_seen - c.fuel
+	check(leaked > 0.3 and c.attack.encounter_leaked <= VanAttack.LEAK_CAP + 0.01, "%s: fuel leaks while it's interested (%.1f L, cap %.1f)" % [label, leaked, VanAttack.LEAK_CAP])
+	check(not c.tyre_flat, "%s: no puncture" % label)
+	c.toggle_engine()
+	await physics_frames(2)
+	check(not c.engine_on and c.start_fail.contains("boiled dry"), "%s: it won't start: '%s'" % [label, c.start_fail])
+	_heat_times[label] = boil_t - seen_t
+	if _heat_times.size() == 3:
+		check(float(_heat_times["flat out"]) < float(_heat_times["cornering"]) and float(_heat_times["cornering"]) < float(_heat_times["crawling"]), "harder driving boils it sooner (flat out %.0f s, cornering %.0f s, crawling %.0f s)" % [_heat_times["flat out"], _heat_times["cornering"], _heat_times["crawling"]])
+	await shot("ghat_heat_" + label.replace(" ", "_"))
+	if not follow_on:
+		return
+	# time to hide even if it was close when the van died (2026-11-10: it walked
+	# on and reached the van in seconds): set it 15 m behind (declared setup)
+	var t0 := Time.get_ticks_msec()
+	while c.linear_velocity.length() > 0.3 and Time.get_ticks_msec() - t0 < 20000:
+		await physics_frames(2)
+	# the fog cuts its sight as it cuts yours (the user, 2026-11-10: A): as it
+	# walks up, P2 on the road 25 m in front of it, in plain view, isn't seen
+	var tc := Time.get_ticks_msec()
+	while g.phase != "come" and Time.get_ticks_msec() - tc < 40000:
+		await physics_frames(2)
+	var fog_top := -1.0
+	if g.phase == "come":
+		var q2 := p2()
+		q2.force_exit = true
+		await physics_frames(4)
+		var tov := c.global_position - g.problem.global_position
+		tov.y = 0.0
+		var stand := g.problem.global_position + tov.normalized() * 25.0
+		var top := await exposed(q2, Vector3(stand.x, Landscape.ground(stand.x, stand.z) + 0.3, stand.z), 2.0, false, g.problem)
+		log_line("in the fog, P2 25 m in front of it as it comes: suspicion %.2f, taken %d" % [top, get_tree().get_nodes_in_group("taken").size()])
+		fog_top = top if get_tree().get_nodes_in_group("taken").is_empty() else 9.0
+		q2.enter_seat(c, c.seat_nodes["passenger"], "passenger")
+		await physics_frames(4)
+	check(fog_top >= 0.0 and fog_top < 0.3, "%s: in the fog it doesn't see someone 25 m off (suspicion %.2f; -1 = it never came)" % [label, fog_top])
+	var close_i := maxi(0, int(g.road.nearest(c.global_position.x, c.global_position.z)["index"]) - 7)
+	var close_at := g.road.point(close_i) + g.road.right(close_i) * 4.0
+	g.problem.global_position = Vector3(close_at.x, Landscape.ground(close_at.x, close_at.z) + 0.1, close_at.z)
+	g.problem.reset_physics_interpolation()
+	# (setup: trailing 15 m behind, still following, as the van comes to rest;
+	# a boiled van counts as stopped while it rolls, so it had set off already)
+	g._set_phase("follow")
+	var phase_set := g.phase
+	t0 = Time.get_ticks_msec()
+	while g.phase != "circle" and Time.get_ticks_msec() - t0 < 90000:
+		await wait(0.25)
+	var warn_s := (Time.get_ticks_msec() - t0) / 1000.0
+	log_line("it reached the van in %.0f s (from 15 m, phase then %s, now %s)" % [warn_s, phase_set, g.phase])
+	check(phase_set == "follow" and warn_s >= 20.0, "%s: even from 15 m it stares first: %.0f s to hide before it reaches the van" % [label, warn_s])
+	check(g.phase == "circle" and c.attack.interested(), "%s: it comes up to the van and circles it, still interested" % label)
+	await shot("ghat_problem_at_van")
+	c.attack.set_tarp(true)
+	var temp_tarp := c.temp
+	var temp_low := c.temp
+	t0 = Time.get_ticks_msec()
+	# nobody holds their breath (holding it is ghat_jug's and ghat_spring's):
+	# each window gives you away once, the second visit only lingers, so the
+	# search still ends, a few rounds later (2026-11-10: with every visit
+	# restarting it, the search never ended; ghat_spring never saw a window twice)
+	var r0 := g.search_restarts
+	var visits := {}
+	var at_window: PlayerRig = null
+	while not st.flags.has("first_attack_over") and Time.get_ticks_msec() - t0 < 180000:
+		await physics_frames(3)
+		if g.phase == "circle":
+			temp_low = minf(temp_low, c.temp)
+		if g.breath_p != at_window:
+			at_window = g.breath_p
+			if at_window != null:
+				visits[at_window.seat_role] = int(visits.get(at_window.seat_role, 0)) + 1
+	var twice := visits.values().any(func(v): return int(v) >= 2)
+	log_line("gave up after %.0f s under the tarp (window visits %s, restarts %d, given away %d), coolant %.2f" % [(Time.get_ticks_msec() - t0) / 1000.0, str(visits), g.search_restarts - r0, g.breath_events, c.coolant])
+	check(st.flags.has("first_attack_over") and g.phase == "leave", "%s: under the tarp, kept quiet, it gives up" % label)
+	check(twice and g.search_restarts - r0 <= 2, "sitting there breathing, a window gives you away only once: its second visit lingers (visits %s, restarts %d)" % [str(visits), g.search_restarts - r0])
+	check(temp_low >= temp_tarp - 0.05, "%s: while it searched the needle never fell (%.1f, lowest %.1f C)" % [label, temp_tarp, temp_low])
+	await wait(1.5)
+	var tA := c.temp
+	var fA := c.fuel
+	await wait(5.0)
+	check(not c.attack.interested() and c.temp < tA - 0.5 and absf(c.fuel - fA) < 0.01, "%s: once it gives up the heat and the leak stop (%.1f -> %.1f C, fuel %.2f -> %.2f)" % [label, tA, c.temp, fA, c.fuel])
+	check(st.current()["id"] == "ghat_fix", "the objective: fill the radiator (%s)" % st.current()["id"])
+
+
+var _heat_times := {}
+var _lean_gap_min := 99.0
+
+
+## One picture from a camera put at `from`, looking at `at` (P1's view gets
+## its own camera back after).
+func obs_shot(tag: String, from: Vector3, at: Vector3) -> void:
+	var vp: SubViewport = boot.viewports[0]
+	var prev := vp.get_camera_3d()
+	var cam := Camera3D.new()
+	cam.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	cam.fov = 50.0
+	vp.add_child(cam)
+	cam.global_transform = Transform3D(Basis.looking_at(at - from, Vector3.UP), from)
+	cam.current = true
+	await physics_frames(3)
+	await shot(tag)
+	cam.queue_free()
+	if prev != null:
+		prev.current = true
+
+
+## A point `back` m from Problem towards `toward`, at eye height, to look at it from.
+func _obs_from(cr: Creature, toward: Vector3, back: float, up := 1.6) -> Vector3:
+	var d := toward - cr.global_position
+	d.y = 0.0
+	var p := cr.global_position + d.normalized() * back
+	p.y = Landscape.ground(p.x, p.z) + up
+	return p
+
+
+# --- #6's recorded walk (tools/live/make_ghat.py): helpers its expressions use ---
+
+func gh() -> Ghat:
+	return get_tree().get_first_node_in_group("ghat") as Ghat
+
+
+## Naresh's note on the milestone has been read (it's in the journal).
+func note_read(id: String) -> bool:
+	return boot.story.notes.any(func(n): return n["id"] == id)
+
+
+## Where to stand to read the milestone's note, and the note itself.
+func note_at() -> Vector3:
+	for n in get_tree().get_nodes_in_group("naresh_note"):
+		if (n as NareshNote).note_id == "ghat_heat":
+			return (n as Node3D).global_position
+	return Vector3.INF
+
+
+func note_stand() -> Vector3:
+	for n in get_tree().get_nodes_in_group("naresh_note"):
+		if (n as NareshNote).note_id == "ghat_heat":
+			return (n as Node3D).global_transform * Vector3(0, -0.2, 1.1)
+	return Vector3.INF
+
+
+## The spring nearest behind the van (where the water comes from).
+func spring_k() -> int:
+	var g := gh()
+	var vi := int(g.road.nearest(camper().global_position.x, camper().global_position.z)["index"])
+	var k := 0
+	for s in Ghat.SPRINGS.size():
+		if int(Ghat.SPRINGS[s]) <= vi:
+			k = s
+	return k
+
+
+func pot_at() -> Vector3:
+	return (gh().pots[spring_k()] as Node3D).global_position
+
+
+func pot_stand() -> Vector3:
+	var sp: Node3D = gh().springs[spring_k()]
+	return pot_at() + sp.global_transform.basis.z * 1.3
+
+
+func pipe_at() -> Vector3:
+	return (gh().springs[spring_k()] as Node3D).global_transform * Vector3(0, 0.8, -0.3)
+
+
+func pipe_stand() -> Vector3:
+	return (gh().springs[spring_k()] as Node3D).global_transform * Vector3(0, 0, 1.0)
+
+
+func bonnet_at() -> Vector3:
+	return camper()._body_root.global_transform * Vector3(0, 1.45, -4.0)
+
+
+func bonnet_stand() -> Vector3:
+	return camper()._body_root.global_transform * Vector3(0.3, 0, -5.4)
+
+
+func van_side(x: float, z: float, y := 0.0) -> Vector3:
+	return camper()._body_root.global_transform * Vector3(x, y, z)
+
+
+## Whoever it leans in at holds their breath until it moves on (P1 Ctrl,
+## P2 the pad's B), till it gives up: the walk spawns this alongside.
+func walk_breath_bot(max_s: float) -> void:
+	var g := gh()
+	var t0 := Time.get_ticks_msec()
+	var holding: PlayerRig = null
+	while g.phase != "leave" and Time.get_ticks_msec() - t0 < max_s * 1000.0:
+		await physics_frames(2)
+		if holding == null and g.breath_p != null and g.breath_state == "wait":
+			holding = g.breath_p
+			if holding == p1():
+				key(KEY_CTRL, true)
+			else:
+				pad_button(JOY_BUTTON_B, true)
+		elif holding != null and g.breath_p != holding:
+			if holding == p1():
+				key(KEY_CTRL, false)
+			else:
+				pad_button(JOY_BUTTON_B, false)
+			holding = null
+	key(KEY_CTRL, false)
+	pad_button(JOY_BUTTON_B, false)
+
+
+## The end of the game's slow turn round the van (Homecoming.show_end).
+func show_credits() -> void:
+	var hc := get_tree().get_first_node_in_group("homecoming")
+	if hc != null:
+		hc.show_end()
+
+
+## Test bench (2026-11-09, after 3 misses on the second spring trip): one
+## player, the pot, the spring and the radiator, every step logged. Declared:
+## the van set boiled dry at 10 %, cool.
+func t_ghat_pot_bench() -> void:
+	var g := await _ghat_start()
+	var c := camper()
+	var p := p1()
+	await tap(KEY_X, 0.25)
+	c.boiled_dry = true
+	c.coolant = 0.1
+	c.temp = 90.0
+	p.force_exit = true
+	await physics_frames(4)
+	var k := 1
+	var pot: WaterPot = g.pots[k]
+	var sp: Node3D = g.springs[k]
+	await face_point(p, pot.global_position + Vector3.UP * 0.15, 1.6, sp.global_transform.basis.z)
+	await tap(KEY_E)
+	await physics_frames(8)
+	log_line("B1 picked up: held %s" % (p.held.name if p.held else "nothing"))
+	for trip in 3:
+		await face_point(p, sp.global_transform * Vector3(0, 0.8, -0.3), 1.3, sp.global_transform.basis.z)
+		log_line("B2.%d at the pipe: '%s', held %s" % [trip, p.prompt_text, p.held.name if p.held else "nothing"])
+		key(KEY_E, true)
+		await wait(WaterPot.POT_L / Ghat.FILL_RATE + 0.8)
+		key(KEY_E, false)
+		await physics_frames(3)
+		log_line("B3.%d filled: %.2f L, held %s" % [trip, pot.litres, p.held.name if p.held else "nothing"])
+		var front := c._body_root.global_transform * Vector3(0, 0, -5.4)
+		await place_player(p, Vector3(front.x, Landscape.ground(front.x, front.z) + 0.3, front.z), 0.0)
+		log_line("B4.%d carried to the van: held %s, pot %.1f m from P1" % [trip, p.held.name if p.held else "nothing", pot.global_position.distance_to(p.global_position)])
+		await look_at_point(p, c._body_root.global_transform * Vector3(0, 1.45, -4.0))
+		await physics_frames(3)
+		log_line("B5.%d at the bonnet: '%s' (aim %s)" % [trip, p.prompt_text, p.ray.get_collider().name if p.ray.is_colliding() else "nothing"])
+		var c0 := c.coolant
+		key(KEY_E, true)
+		await wait(minf(3.5, pot.litres / 1.6 + 0.3))
+		key(KEY_E, false)
+		await physics_frames(3)
+		log_line("B6.%d poured: coolant %.2f -> %.2f, pot %.2f L, held %s, boiled %s" % [trip, c0, c.coolant, pot.litres, p.held.name if p.held else "nothing", c.boiled_dry])
+		await shot("ghat_bench_%d" % trip)
+
+
+## Test bench (2026-11-09): the jug on the rack was sometimes found 77 m from
+## the van. Put it on the rack as the coolant test does, move the van as the
+## test does, drive, and log where the jug really is at every step.
+## Bench (2026-11-10): does an item flung off the rack (the ramp's landing)
+## keep the throw now that a stowed item leaves the physics world? Fixed vs
+## the old live body (stow_live), the van parked, the throw as RampJump's.
+func t_fling_bench() -> void:
+	var g := await _ghat_start()
+	var c := camper()
+	for round in 2:
+		if round == 0:
+			Plant._names.erase("stow_live")
+		else:
+			Plant._names["stow_live"] = true
+		boot.dev_menu.van_jug(5.0)
+		await physics_frames(30)
+		var slot := c.storage_slots[2]
+		var it := c.stowed_item(slot)
+		var fwd := -c.global_transform.basis.z
+		it.unstow()
+		it.global_position = slot.global_position + Vector3.UP * 0.4
+		it.linear_velocity = fwd * 6.0 + Vector3.UP * 4.0
+		it._thrown = true
+		var p0 := it.global_position
+		for f in 6:
+			await physics_frames(1)
+			log_line("R%d frame %d: v %s (|v| %.2f), moved %.2f m, frozen %s, layer %d" % [round, f + 1, it.linear_velocity, it.linear_velocity.length(), it.global_position.distance_to(p0), it.freeze, it.collision_layer])
+		await wait(1.5)
+		var flat := Vector2(it.global_position.x - p0.x, it.global_position.z - p0.z).length()
+		log_line("R%d after 1.5 s: %.2f m out along the ground" % [round, flat])
+		check(flat > 3.0, "R%d (%s): the thrown item flies (%.2f m)" % [round, "fixed" if round == 0 else "old live body", flat])
+	Plant._names.erase("stow_live")
+
+
+func t_ghat_jug_bench() -> void:
+	# stowed on an awake van: R0 with the bug planted back (stow_live), R1 the
+	# fix; R2 the fix, stowed on a parked van
+	for round in 3:
+		if round == 0:
+			Plant._names["stow_live"] = true
+		else:
+			Plant._names.erase("stow_live")
+		var g := await _ghat_start()
+		var c := camper()
+		if round < 2:
+			c.freeze = false
+			c.sleeping = false
+		boot.dev_menu.van_jug(5.0)
+		await physics_frames(2)
+		var jug := c.stowed_item(c.storage_slots[2])
+		_jug_log("R%d after van_jug" % round, c, jug)
+		await van_to(g.road.point(g.hairpins[g.seen_hp()] - 35))
+		_jug_log("R%d after van_to" % round, c, jug)
+		var ad := AutoDriver.new(self, g.road, c)
+		var t := 0.0
+		var next := 0.0
+		while t < 8.0:
+			await get_tree().physics_frame
+			t += 1.0 / 60.0
+			ad.step(-1.0)
+			if t >= next:
+				next += 2.0
+				_jug_log("R%d driving %.0f s" % [round, t], c, jug)
+				if round < 2 and t > 3.0 and t < 5.0:
+					var sl: Vector3 = c.storage_slots[2].global_position
+					await obs_shot("jug_bench_rack_R%d" % round, c._body_root.global_transform * Vector3(2.2, 2.6, 8.5), sl)
+		ad.release()
+		var d := jug.global_position.distance_to(c.storage_slots[2].global_position) if jug != null else -1.0
+		check((jug != null and d < 0.1) != (round == 0), "R%d: %s (%.2f m from its slot)" % [round, "the bug back: the jug left behind" if round == 0 else "the jug rides in its slot", d])
+	Plant._names.erase("stow_live")
+
+
+func _jug_log(tag: String, c: Camper, jug: Carryable) -> void:
+	if jug == null:
+		log_line("%s: no jug on the rack" % tag)
+		return
+	var slot := c.storage_slots[2]
+	log_line("%s: jug %.1f m from the van, %.2f m from its slot; parent %s; frozen %s; physics pos %s vs node %s" % [tag,
+		jug.global_position.distance_to(c.global_position), jug.global_position.distance_to(slot.global_position),
+		jug.get_parent().name, jug.freeze, PhysicsServer3D.body_get_state(jug.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM).origin, jug.global_position])
+	log_line("    server mode %d, notify_transform %s, top_level %s, local %s, van frozen %s, van mode %d" % [PhysicsServer3D.body_get_mode(jug.get_rid()), jug.is_transform_notification_enabled(), jug.top_level, jug.position, c.freeze, PhysicsServer3D.body_get_mode(c.get_rid())])
+
+
+## A required-work receipt for the method (#6's manifest lists them).
+func _work(id: String, ok: bool) -> void:
+	if mrec != null and mrec.active():
+		mrec.work(id, ok)
+
+
+## #6 L4 setup shared by the coolant tests: F1 -> 6, the rack emptied of
+## coolant (or a jug of `jug_l` put on it), the van carried 70 m short of the
+## bend where Problem watches (declared), driven up until it boils.
+func _ghat_to_boil(jug_l: float) -> Ghat:
+	var g := await _ghat_start()
+	var c := camper()
+	# (a deleted jug was found again by name by van_jug and stowed while dying:
+	# empty it instead, and let van_jug handle the rack)
+	if jug_l > 0.0:
+		# racked on an awake van, as right after you stop (2026-11-10: stowed
+		# like that, the jug stayed on the road while the van drove off)
+		c.freeze = false
+		c.sleeping = false
+		boot.dev_menu.van_jug(jug_l)
+	else:
+		for sl in c.storage_slots:
+			var it := c.stowed_item(sl)
+			if it != null and it.kind == "coolant":
+				it.litres = 0.0
+				it._update_mass()
+				it._refresh_prompt()
+	var hp: int = g.hairpins[g.seen_hp()]
+	await van_to(g.road.point(hp - 35))
+	var ad := AutoDriver.new(self, g.road, c)
+	var t := 0.0
+	while not c.boiled_dry and t < 90.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		ad.step(-1.0)
+	ad.release()
+	await tap(KEY_SPACE)
+	check(c.boiled_dry, "the van boils dry (%.0f s)" % t)
+	_work("boiled", c.boiled_dry)
+	return g
+
+
+## Hiding well until it gives up: whoever it leans in at holds their breath
+## (P1 Ctrl, P2 the pad's B) until it moves on. Returns false on the deadline.
+## B is also the handbrake: it must not toggle while you hold your breath.
+func _hide_well(g: Ghat, c: Camper, max_s: float) -> bool:
+	var t0 := Time.get_ticks_msec()
+	var holding: PlayerRig = null
+	var brake0 := c.parking_brake
+	while g.phase != "leave" and Time.get_ticks_msec() - t0 < max_s * 1000.0:
+		await physics_frames(2)
+		if holding == null and g.breath_p != null and g.breath_state == "wait":
+			holding = g.breath_p
+			if holding == p1():
+				key(KEY_CTRL, true)
+			else:
+				pad_button(JOY_BUTTON_B, true)
+		elif holding != null and g.breath_p != holding:
+			if holding == p1():
+				key(KEY_CTRL, false)
+			else:
+				pad_button(JOY_BUTTON_B, false)
+			holding = null
+	key(KEY_CTRL, false)
+	pad_button(JOY_BUTTON_B, false)
+	check(c.parking_brake == brake0, "holding your breath (Ctrl / B) never touched the handbrake")
+	_work("gave_up", g.phase == "leave")
+	# found 2026-11-09: under the net it gave up before it ever reached a window
+	if g.phase == "leave":
+		check(g.stops_done >= Ghat.POSED_STOPS, "it went all round the van before it gave up (%d stops)" % g.stops_done)
+	return g.phase == "leave"
+
+
+## Both out, the net on (declared: pulling it is ghat_net's), both back in.
+func _ghat_hide(c: Camper) -> void:
+	for p in [p1(), p2()]:
+		if (p as PlayerRig).seat != null:
+			(p as PlayerRig).force_exit = true
+	await physics_frames(4)
+	c.attack.set_tarp(true)
+	p1().enter_seat(c, c.seat_nodes["driver"], "driver")
+	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await wait(0.5)
+
+
+## #6 L4, the springs and Naresh's note, as a person finds them: each spring
+## within reach of the road, on the ground, its pot on its stone and filling
+## at the pipe; one spring no more than ~80 m back from anywhere the van can
+## die; the note on the milestone before the bend, readable, in his words.
+func t_ghat_places() -> void:
+	var g := await _ghat_start()
+	check(g.springs.size() == 3 and g.pots.size() == 3, "three springs, each with its pot (%d, %d)" % [g.springs.size(), g.pots.size()])
+	var worst := 0
+	for i in range(int(Ghat.SPRINGS[0]), g.road.point_count() - 3):
+		var behind := 999
+		for s in Ghat.SPRINGS:
+			if int(s) <= i:
+				behind = mini(behind, i - int(s))
+		worst = maxi(worst, behind)
+	check(worst * Route.SAMPLE_SPACING <= 80.0, "wherever it dies past the first spring, a spring is at most %.0f m back (limit 80)" % (worst * Route.SAMPLE_SPACING))
+	# dead right where it watches (before the first spring): the first is close ahead
+	check((int(Ghat.SPRINGS[0]) - (g.hairpins[g.seen_hp()] - 20)) * Route.SAMPLE_SPACING <= 80.0, "dead where it first watches, the first spring is %.0f m ahead" % ((int(Ghat.SPRINGS[0]) - (g.hairpins[g.seen_hp()] - 20)) * Route.SAMPLE_SPACING))
+	for k in g.springs.size():
+		var sp: Node3D = g.springs[k]
+		var near: Dictionary = g.road.nearest(sp.global_position.x, sp.global_position.z)
+		var pot: WaterPot = g.pots[k]
+		var pot_ground := Landscape.ground(pot.global_position.x, pot.global_position.z)
+		log_line("spring %d: %.1f m off the road centre, pot %.2f m over the ground, %.1f m from the pipe" % [k + 1, float(near["dist"]), pot.global_position.y - pot_ground, pot.global_position.distance_to(sp.global_position)])
+		check(float(near["dist"]) < 8.0 and absf(sp.global_position.y - Landscape.ground(sp.global_position.x, sp.global_position.z)) < 0.2, "spring %d sits on the bank by the road" % (k + 1))
+		check(pot.global_position.y - pot_ground > -0.05 and pot.global_position.y - pot_ground < 0.4 and pot.litres == 0.0, "spring %d: its pot sits on its stone, empty" % (k + 1))
+	# a look from the road at the nearest spring, at a player's height
+	var sp0: Node3D = g.springs[1]
+	var road_pt := sp0.global_transform * Vector3(0, 1.6, 5.5)
+	road_pt.y = Landscape.ground(road_pt.x, road_pt.z) + 1.6
+	await obs_shot("ghat_spring_from_road", road_pt, sp0.global_position + Vector3.UP * 0.6)
+	# P1 picks up the pot and fills it at the pipe
+	var p := p1()
+	p.force_exit = true
+	await physics_frames(4)
+	var pot1: WaterPot = g.pots[1]
+	await face_point(p, pot1.global_position + Vector3.UP * 0.15, 1.6, sp0.global_transform.basis.z)
+	log_line("at the pot: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await physics_frames(10)
+	check(p.held == pot1, "P1 picks up the steel pot ('%s')" % p.prompt_text)
+	await face_point(p, sp0.global_transform * Vector3(0, 0.8, -0.3), 1.3, sp0.global_transform.basis.z)
+	log_line("at the pipe holding the pot: '%s'" % p.prompt_text)
+	check(p.prompt_text.contains("fill the pot"), "at the pipe: 'Hold to fill the pot'")
+	key(KEY_E, true)
+	await wait(WaterPot.POT_L / Ghat.FILL_RATE + 0.8)
+	key(KEY_E, false)
+	check(pot1.litres > WaterPot.POT_L - 0.1, "holding E fills it (%.1f L)" % pot1.litres)
+	await shot("ghat_spring_filled")
+	# the milestone note
+	var ms: Vector3 = boot.builder.poi["ghat_milestone"]
+	var ms_i := int(g.road.nearest(ms.x, ms.z)["index"])
+	check(ms_i < g.hairpins[g.seen_hp()] - 20, "the milestone stands before the bend where it watches (sample %d, bend %d)" % [ms_i, g.hairpins[g.seen_hp()]])
+	var note: NareshNote = null
+	for n in get_tree().get_nodes_in_group("naresh_note"):
+		if (n as NareshNote).note_id == "ghat_heat":
+			note = n
+	check(note != null, "Naresh's note is on the milestone")
+	if note == null:
+		return
+	if p.held != null:
+		p.drop_held()
+	await face_point(p, note.global_position, 1.2, note.global_transform.basis.z)
+	await obs_shot("ghat_milestone_note", note.global_transform * Vector3(0.4, 0.25, 1.4), note.global_position)
+	log_line("at the note: '%s'" % p.prompt_text)
+	await tap(KEY_E)
+	await wait(0.5)
+	check(boot.story.notes.any(func(n): return n["id"] == "ghat_heat"), "E reads it; it goes into the journal")
+	check(note.text.contains("radiator cap hot") and note.text.contains("don't breathe"), "his words: stop, cover up, don't breathe, never open the cap hot")
+
+
+## #6 L4, coolant on board: hidden, it gives up; net off, wait for the hiss
+## to stop, the jug off the rack into the radiator; it starts and climbs on
+## over the pass.
+func t_ghat_jug() -> void:
+	var g := await _ghat_to_boil(5.0)
+	var c := camper()
+	var rj := c.stowed_item(c.storage_slots[2])
+	var off := rj.global_position.distance_to(c.storage_slots[2].global_position) if rj != null else -1.0
+	check(rj != null and off < 0.1, "the jug rode up the ghat in its place on the rack (%.2f m from its slot)" % off)
+	await _ghat_hide(c)
+	var gave_up := await _hide_well(g, c, 150.0)
+	check(gave_up and g.breath_events == 0, "hidden well (breath held at the windows), it gives up (%d given away)" % g.breath_events)
+	var on_rack := false
+	for sl in c.storage_slots:
+		var it := c.stowed_item(sl)
+		on_rack = on_rack or (it != null and it.kind == "coolant" and it.litres > 4.0)
+	check(on_rack, "the jug is on the rack")
+	_work("gave_up", gave_up)
+	await _fix_with(c, g, null, null)
+
+
+## Out, the net off, wait until the hissing stops, pour `pot` (or the jug off
+## the rack), start up, drive over the pass.
+func _fix_with(c: Camper, g: Ghat, pot: WaterPot, sp: Node3D) -> void:
+	p1().force_exit = true
+	p2().force_exit = true
+	await physics_frames(4)
+	await _to_tarp_corner(p1(), c, -1.0)
+	key(KEY_E, true)
+	await wait(VanAttack.TARP_OFF_S + 0.5)
+	key(KEY_E, false)
+	check(not c.attack.tarped, "the net comes off")
+	# found 2026-11-09: getting out beside it as it gave up, it took P1
+	check(get_tree().get_nodes_in_group("taken").is_empty(), "out beside it after it gave up: nobody is taken")
+	var p := p1()
+	var item: CoolantJug = pot
+	if item != null and p.held != item:
+		await face_point(p, item.global_position + Vector3.UP * 0.12, 1.4, c.global_transform.basis.x)
+		log_line("at the pot: '%s'" % p.prompt_text)
+		await tap(KEY_E)
+		await physics_frames(8)
+	if item == null:
+		for sl in c.storage_slots:
+			var it := c.stowed_item(sl)
+			if it != null and it.kind == "coolant":
+				item = it
+		if item == null:
+			log_line("no coolant item on the rack")
+			return
+		await place_player(p, c.rack_stand() + Vector3(0, 0.3, 0), 0.0)
+		await wait(0.4)
+		await look_at_point(p, item.global_position + Vector3.UP * 0.15)
+		await physics_frames(3)
+		log_line("at the rack: '%s' (aim on %s, jug %.1f m away; P1 %s, van %s, rack stand %s, jug %s in %s, seat %s)" % [p.prompt_text, p.ray.get_collider().name if p.ray.is_colliding() else "nothing", p.global_position.distance_to(item.global_position), p.global_position, c.global_position, c.rack_stand(), item.global_position, item.get_parent().name, p.seat_role])
+		await tap(KEY_E)
+		await physics_frames(5)
+	check(p.held == item, "P1 holds the %s" % item.item_name)
+	var t0 := Time.get_ticks_msec()
+	while c.temp > Camper.TEMP_WARN and Time.get_ticks_msec() - t0 < 120000:
+		await wait(0.5)
+	log_line("the hissing stopped after %.0f s (%.0f C)" % [(Time.get_ticks_msec() - t0) / 1000.0, c.temp])
+	var front := c._body_root.global_transform * Vector3(0, 0, -5.4)
+	await place_player(p, Vector3(front.x, Landscape.ground(front.x, front.z) + 0.3, front.z), 0.0)
+	await look_at_point(p, c._body_root.global_transform * Vector3(0, 1.45, -4.0))
+	await physics_frames(3)
+	log_line("at the bonnet: '%s'" % p.prompt_text)
+	var blows := c.cap_blows
+	key(KEY_E, true)
+	await wait(minf(3.5, item.litres / 1.6 + 0.3))   # only while it flows: E held on an empty pot drops it
+	key(KEY_E, false)
+	await physics_frames(3)          # let the release land at the bonnet (moving at once, it counted as a tap: drop)
+	log_line("poured: coolant %.2f, boiled dry %s" % [c.coolant, c.boiled_dry])
+	# hid badly: a second trip to the spring (declared: carried there and back)
+	var trips := 1
+	while c.boiled_dry and pot != null and sp != null and trips < 3:
+		trips += 1
+		# held E on after it ran dry puts the pot down: pick it up again
+		for _try in 2:
+			if p.held == pot:
+				break
+			var away := pot.global_position - c.global_position
+			away.y = 0.0
+			await face_point(p, pot.global_position + Vector3.UP * 0.12, 1.3, away.normalized())
+			await tap(KEY_E)
+			await physics_frames(8)
+		var fill_at := sp.global_transform * Vector3(0, 0.8, -0.3)
+		await face_point(p, fill_at, 1.3, sp.global_transform.basis.z)
+		log_line("trip %d at the pipe: '%s' (holding %s)" % [trips, p.prompt_text, p.held.name if p.held else "nothing"])
+		key(KEY_E, true)
+		await wait(WaterPot.POT_L / Ghat.FILL_RATE + 0.8)
+		key(KEY_E, false)
+		await physics_frames(3)
+		await place_player(p, Vector3(front.x, Landscape.ground(front.x, front.z) + 0.3, front.z), 0.0)
+		await look_at_point(p, c._body_root.global_transform * Vector3(0, 1.45, -4.0))
+		await physics_frames(3)
+		key(KEY_E, true)
+		await wait(minf(3.5, item.litres / 1.6 + 0.3))   # only while it flows: E held on an empty pot drops it
+		key(KEY_E, false)
+		await physics_frames(3)
+		log_line("trip %d: coolant %.2f" % [trips, c.coolant])
+	log_line("trips to the spring: %d" % trips if pot != null else "the jug")
+	check(c.cap_blows == blows and not c.boiled_dry and c.coolant >= Camper.COOLANT_RUN, "cool now, it pours in: the radiator is full again (%.0f%%)" % (c.coolant * 100.0))
+	_work("fixed", not c.boiled_dry)
+	p.drop_held()
+	await physics_frames(3)
+	p1().enter_seat(c, c.seat_nodes["driver"], "driver")
+	p2().enter_seat(c, c.seat_nodes["passenger"], "passenger")
+	await wait(0.4)
+	await tap(KEY_X, 0.25)
+	await wait(0.6)
+	check(c.engine_on, "it starts ('%s')" % c.start_fail)
+	await wait(0.5)
+	check(boot.story.current()["id"] == "to_tower", "the objective moves on, over the pass (%s)" % boot.story.current()["id"])
+	var ad := AutoDriver.new(self, g.road, c)
+	var t := 0.0
+	var last := g.road.point_count() - 1
+	while t < 60.0 and int(g.road.nearest(c.global_position.x, c.global_position.z)["index"]) < last - 1:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		ad.step(-1.0)
+	ad.release()
+	var over := int(g.road.nearest(c.global_position.x, c.global_position.z)["index"]) >= last - 1 and c.engine_on and not c.boiled_dry
+	check(over, "over the pass (%.0f s, %.0f C)" % [t, c.temp])
+	_work("over_pass", over)
+
+
+## #6 L4, no coolant on board: the spring. Hidden, P1 holds their breath when
+## it leans in at the driver's window; P2 at the other doesn't, and the glass
+## fogs: it noticed, its search starts again. It gives up; out, net off; P2
+## fetches water from the nearest spring back down the road; P1 tries the cap
+## while it's still hissing: WHOOSH, and it comes back. Hide again, it gives
+## up again; when the hiss stops, the water in, start, over the pass.
+func t_ghat_spring() -> void:
+	var g := await _ghat_to_boil(0.0)
+	var c := camper()
+	await _ghat_hide(c)
+	# S3 at the windows: P1 holds their breath through its visit, P2 doesn't
+	var held_ok := false
+	var fogged := false
+	var prompt_seen := false
+	var events_before := 0
+	var t0 := Time.get_ticks_msec()
+	while (not held_ok or not fogged) and Time.get_ticks_msec() - t0 < 120000:
+		await physics_frames(2)
+		if g.breath_p == p1() and not prompt_seen and (boot.huds[0] as PlayerHUD).breath_text().contains("HOLD"):
+			prompt_seen = true
+			events_before = g.breath_events
+			log_line("P1 sees: '%s'" % (boot.huds[0] as PlayerHUD).breath_text())
+			key(KEY_CTRL, true)
+			await wait(0.6)
+			await shot("ghat_breath_hold")
+		elif prompt_seen and not held_ok and g.breath_p != p1():
+			key(KEY_CTRL, false)
+			held_ok = true
+			check(g.breath_events == events_before and g.breath_state == "done", "P1 held their breath until it moved on: nothing given away (%s)" % g.breath_state)
+		if g.breath_p == p2() and g.breath_state == "fogged" and not fogged:
+			fogged = true
+			await wait(0.6)
+			log_line("P2's window: fog %.2f, restarts %d, events %d" % [c.window_fog("passenger"), g.search_restarts, g.breath_events])
+			await shot("ghat_breath_fogged")
+			check(c.window_fog("passenger") > 0.3 and g.search_restarts > 0, "P2 doesn't hold their breath: the glass fogs, it noticed (its search starts again)")
+	key(KEY_CTRL, false)
+	check(prompt_seen and held_ok and fogged, "both windows visited (P1 prompt %s, held %s, P2 fogged %s)" % [prompt_seen, held_ok, fogged])
+	t0 = Time.get_ticks_msec()
+	while g.phase != "leave" and Time.get_ticks_msec() - t0 < 150000:
+		await wait(0.5)
+	log_line("gave up: %.0f C, coolant %.0f%%" % [c.temp, c.coolant * 100.0])
+	check(g.phase == "leave", "quiet at last, it gives up (restarts %d)" % g.search_restarts)
+	_work("gave_up", g.phase == "leave")
+	var coolant_left := c.coolant
+	log_line("coolant left after hiding: %.0f%% (a pot adds %.0f%%)" % [coolant_left * 100.0, WaterPot.POT_L / Camper.COOLANT_L * 100.0])
+	check(coolant_left + WaterPot.POT_L / Camper.COOLANT_L < Camper.COOLANT_RUN + 0.35, "it boiled away enough that the radiator really needs water (%.0f%% left)" % (coolant_left * 100.0))
+	# out, net off; P1 tries the cap at once, empty-handed, while it hisses (S2)
+	p1().force_exit = true
+	p2().force_exit = true
+	await physics_frames(4)
+	await _to_tarp_corner(p1(), c, -1.0)
+	log_line("P1 at the back corner: '%s' (crouching %s)" % [p1().prompt_text, p1().crouching])
+	key(KEY_E, true)
+	await wait(VanAttack.TARP_OFF_S + 0.5)
+	key(KEY_E, false)
+	check(not c.attack.tarped, "the net comes off")
+	var front := c._body_root.global_transform * Vector3(0, 0, -5.4)
+	await place_player(p1(), Vector3(front.x, Landscape.ground(front.x, front.z) + 0.3, front.z), 0.0)
+	await look_at_point(p1(), c._body_root.global_transform * Vector3(0, 1.45, -4.0))
+	await physics_frames(3)
+	log_line("at the bonnet, %.0f C: '%s'" % [c.temp, p1().prompt_text])
+	check(c.temp > Camper.TEMP_WARN and p1().prompt_text.contains("Open the radiator cap") and p1().prompt_text.contains("hissing"), "at the bonnet, still hissing: 'Open the radiator cap'")
+	var cool0 := c.coolant
+	await tap(KEY_E)
+	await wait(0.3)
+	await shot("ghat_cap_blows")
+	check(c.cap_blows == 1 and c.coolant < cool0, "opening the hot cap: WHOOSH, steam, coolant lost (%.0f%% -> %.0f%%)" % [cool0 * 100.0, c.coolant * 100.0])
+	check((boot.huds[0] as PlayerHUD)._flash != null and (boot.huds[0] as PlayerHUD)._flash.color.a > 0.3, "a white screen for P1")
+	var t1 := Time.get_ticks_msec()
+	while not c.attack.interested() and Time.get_ticks_msec() - t1 < 5000:
+		await wait(0.2)
+	check(c.attack.interested() and g.phase in ["listen", "come", "circle"], "the yelp carries: it turns back, and the needle climbs again (%s)" % g.phase)
+	# it listens first (the user, 2026-11-10: A): the net back on and both in,
+	# by hand, before it comes (straight back from ~10 m it took both)
+	var listen_t0 := Time.get_ticks_msec()
+	var lis := {"s": -1.0}            # (a lambda captures locals by value: a dictionary is shared)
+	var watch_listen := func() -> void:
+		while g.phase == "listen":
+			await physics_frames(1)
+		lis["s"] = (Time.get_ticks_msec() - listen_t0) / 1000.0
+	watch_listen.call()
+	await _to_tarp_corner(p1(), c, -1.0)
+	await hold_physics(KEY_E, 2.2)
+	await _to_tarp_corner(p2(), c, 1.0)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(2.6)
+	pad_button(JOY_BUTTON_X, false)
+	await _to_door(p1(), c, "driver")
+	await tap(KEY_E)
+	await wait(0.2)
+	await _to_door(p2(), c, "passenger")
+	await pad_tap(JOY_BUTTON_X)
+	await wait(0.5)
+	var hidden_by_hand := c.attack.tarped and p1().seat != null and p2().seat != null
+	var t2 := Time.get_ticks_msec()
+	while float(lis["s"]) < 0.0 and Time.get_ticks_msec() - t2 < 15000:
+		await physics_frames(2)
+	await wait(1.0)
+	var listened := float(lis["s"])
+	log_line("after the yelp: it listened %.1f s; by hand: net %s, P1 %s, P2 %s; taken %d" % [listened, c.attack.tarped, p1().seat_role, p2().seat_role, get_tree().get_nodes_in_group("taken").size()])
+	check(listened >= 8.0 and hidden_by_hand and get_tree().get_nodes_in_group("taken").is_empty(), "it listens before it comes back: time to throw the net on and get in, by hand (listened %.1f s)" % listened)
+	if not (c.attack.tarped and p1().seat != null and p2().seat != null):
+		await _ghat_hide(c)
+	var gave := await _hide_well(g, c, 150.0)
+	check(gave, "hidden again, well, it gives up again")
+	log_line("coolant now %.0f%% (after the blow and a second hiding)" % (c.coolant * 100.0))
+	# out, net off; P2 fetches water from the nearest spring behind (declared:
+	# carried to the spring and back; the walk itself is the recorded walk's)
+	p1().force_exit = true
+	p2().force_exit = true
+	await physics_frames(4)
+	await _to_tarp_corner(p1(), c, -1.0)
+	key(KEY_E, true)
+	await wait(VanAttack.TARP_OFF_S + 0.5)
+	key(KEY_E, false)
+	var van_i := int(g.road.nearest(c.global_position.x, c.global_position.z)["index"])
+	var k := -1
+	for s in Ghat.SPRINGS.size():
+		if int(Ghat.SPRINGS[s]) <= van_i:
+			k = s
+	check(k >= 0 and (van_i - int(Ghat.SPRINGS[k])) * Route.SAMPLE_SPACING <= 80.0, "a spring is %.0f m back down the road" % ((van_i - int(Ghat.SPRINGS[maxi(k, 0)])) * Route.SAMPLE_SPACING))
+	var pot: WaterPot = g.pots[maxi(k, 0)]
+	var sp: Node3D = g.springs[maxi(k, 0)]
+	var q := p2()
+	await face_point(q, pot.global_position + Vector3.UP * 0.15, 1.6, sp.global_transform.basis.z)
+	log_line("P2 at the pot: '%s' (pot %.1f m away, %s)" % [q.prompt_text, q.global_position.distance_to(pot.global_position), q.ray.get_collider().name if q.ray.is_colliding() else "nothing"])
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_X, false)
+	await physics_frames(10)
+	check(q.held == pot, "P2 picks up the pot")
+	await face_point(q, sp.global_transform * Vector3(0, 0.8, -0.3), 1.3, sp.global_transform.basis.z)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(WaterPot.POT_L / Ghat.FILL_RATE + 0.8)
+	pad_button(JOY_BUTTON_X, false)
+	check(pot.litres > WaterPot.POT_L - 0.1, "P2 fills it at the pipe (%.1f L)" % pot.litres)
+	# back at the van: P2 sets it down by the front wheel (declared: carried)
+	var set_at := c._body_root.global_transform * Vector3(-1.9, 0, -4.4)
+	await place_player(q, Vector3(set_at.x, Landscape.ground(set_at.x, set_at.z) + 0.3, set_at.z), 0.0)
+	q.drop_held()
+	await wait(0.8)
+	await _fix_with(c, g, pot, sp)
+
+
+## #6 L5, marks that stay, saves, the credits turn. A save in the middle of the
+## encounter loads back before the bend, the encounter undone (its marks too);
+## a whole encounter leaves a mark at every stop of its round, on the van's
+## surface, and they survive a save and a load; at the end, a slow turn round
+## the van shows them. (Save and load here are the game's own collect/apply,
+## not a file: the slot files are the `save` test's.)
+func t_ghat_marks() -> void:
+	var g := await _ghat_to_boil(0.0)
+	var c := camper()
+	check(c.marks.is_empty(), "a clean van to start with")
+	# mid-encounter: wait till it's at the van, then save and load
+	var t0 := Time.get_ticks_msec()
+	while g.phase != "circle" and Time.get_ticks_msec() - t0 < 60000:
+		await wait(0.5)
+	var d: Dictionary = SaveGame.collect(boot)
+	SaveGame.apply(boot, d)
+	await wait(1.0)
+	var hp: int = g.hairpins[g.seen_hp()]
+	var at_i := int(g.road.nearest(c.global_position.x, c.global_position.z)["index"])
+	log_line("loaded mid-encounter: sample %d (bend %d), story %s, Problem %s, %.0f C, boiled %s, marks %d" % [at_i, hp, boot.story.current()["id"], g.problem != null, c.temp, c.boiled_dry, c.marks.size()])
+	check(absi(at_i - (hp - 45)) <= 3 and boot.story.current()["id"] == "ghat" and g.problem == null, "saved mid-encounter, it loads back before the bend, Problem not there yet")
+	check(c.temp < 95.0 and not c.boiled_dry and c.marks.is_empty() and not boot.story.flags.has("first_attack"), "the van as it was before: cool, not boiled, no marks, the encounter to come")
+	# the whole encounter, round and all
+	for p in [p1(), p2()]:
+		if (p as PlayerRig).seat == null:
+			(p as PlayerRig).enter_seat(c, c.seat_nodes["driver" if p == p1() else "passenger"], "driver" if p == p1() else "passenger")
+	await wait(0.5)
+	await tap(KEY_X, 0.25)
+	await wait(0.5)
+	var ad := AutoDriver.new(self, g.road, c)
+	var t := 0.0
+	while not c.boiled_dry and t < 120.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		ad.step(-1.0)
+	ad.release()
+	await tap(KEY_SPACE)
+	check(c.boiled_dry, "driven up again: it boils again (%.0f s)" % t)
+	await _ghat_hide(c)
+	t0 = Time.get_ticks_msec()
+	while g.stops_done < Ghat.POSED_STOPS and Time.get_ticks_msec() - t0 < 120000:
+		await wait(0.5)
+	await wait(0.5)
+	var kinds := {}
+	for m in c.marks:
+		kinds[String(m["kind"])] = int(kinds.get(String(m["kind"]), 0)) + 1
+	log_line("marks after its round: %s" % str(kinds))
+	check(int(kinds.get("hand_glass", 0)) == 2 and kinds.has("hand_bonnet") and kinds.has("dent") and kinds.has("scrape"), "its round leaves a mark at every stop: two hands on the glass, a hand and a dent on the bonnet, scrapes on the back")
+	# each on the surface it touched (the body's frame)
+	var on_surface := true
+	for m in c.marks:
+		var p: Array = m["p"]
+		match String(m["kind"]):
+			"hand_glass":
+				on_surface = on_surface and absf(absf(float(p[0])) - 1.15) < 0.02 and float(p[1]) > 1.5 and float(p[1]) < 2.16
+			"hand_bonnet", "dent":
+				on_surface = on_surface and absf(float(p[1]) - 1.665) < 0.01 and float(p[2]) < -2.9 and float(p[2]) > -3.8
+			"scrape":
+				on_surface = on_surface and absf(float(p[2]) - 3.0) < 0.02
+	check(on_surface, "every mark sits on the surface it touched")
+	# hidden well, it gives up; the marks survive a save and a load
+	var gave := await _hide_well(g, c, 150.0)
+	check(gave, "hidden well, it gives up")
+	await wait(0.5)
+	var before := c.marks.duplicate(true)
+	d = SaveGame.collect(boot)
+	c.set_marks([])
+	SaveGame.apply(boot, d)
+	await wait(0.6)
+	check(c.marks.size() == before.size() and str(c.marks) == str(before) and c._marks_root.get_child_count() == before.size(), "the marks are saved and come back on load (%d)" % c.marks.size())
+	check(c.boiled_dry, "... and the van is still boiled dry (the encounter was over)")
+	# close-ups from where a player stands
+	var b := c._body_root.global_transform
+	await obs_shot("ghat_marks_window", b * Vector3(-2.6, 1.7, -1.8), b * Vector3(-1.15, 1.85, -1.8))
+	await obs_shot("ghat_marks_bonnet", b * Vector3(-1.2, 2.6, -5.6), b * Vector3(0, 1.66, -3.3))
+	await obs_shot("ghat_marks_back", b * Vector3(0.8, 1.6, 5.6), b * Vector3(0, 1.3, 3.0))
+	# the end: a slow turn round the van
+	var hc := get_tree().get_first_node_in_group("homecoming")
+	check(hc != null, "the finale is there")
+	if hc == null:
+		return
+	hc.show_end()
+	await wait(2.0)
+	var cam: Camera3D = hc.credits_cam
+	var y0 := Vector2(cam.global_position.x - c.global_position.x, cam.global_position.z - c.global_position.z).angle()
+	await shot("ghat_credits_turn")
+	await wait(3.0)
+	var y1 := Vector2(cam.global_position.x - c.global_position.x, cam.global_position.z - c.global_position.z).angle()
+	var dist := cam.global_position.distance_to(c.global_position)
+	var facing := (-cam.global_transform.basis.z).angle_to((c.global_position - cam.global_position).normalized())
+	log_line("credits turn: %.1f m off, %.0f deg off the van, turned %.0f deg in 3 s" % [dist, rad_to_deg(facing), rad_to_deg(absf(angle_difference(y0, y1)))])
+	check(cam.current and dist > 6.0 and dist < 9.0 and rad_to_deg(facing) < 15.0, "the end credits: a camera on the van")
+	check(absf(angle_difference(y0, y1)) > deg_to_rad(8.0) and absf(angle_difference(y0, y1)) < deg_to_rad(40.0), "... turning slowly round it")
+	await wait(Homecoming.TURN_S)
+	await shot("ghat_credits_card")
+
+
+## P1's half of the window as an image (after the next frame is drawn).
+func grab_p1() -> Image:
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	var r := (boot.viewports[0].get_parent() as Control).get_global_rect()
+	return img.get_region(Rect2i(r))
+
+
+## Mean brightness and mean difference of two images over a centre box
+## (fractions of the size), sampled on a grid.
+func img_stats(a: Image, b: Image, box: Rect2) -> Vector2:
+	var luma := 0.0
+	var diff := 0.0
+	var n := 0
+	for yy in 24:
+		for xx in 32:
+			var px := int((box.position.x + box.size.x * (xx + 0.5) / 32.0) * a.get_width())
+			var py := int((box.position.y + box.size.y * (yy + 0.5) / 24.0) * a.get_height())
+			var ca := a.get_pixel(px, py)
+			var cb := b.get_pixel(px, py)
+			luma += cb.get_luminance()
+			diff += (absf(ca.r - cb.r) + absf(ca.g - cb.g) + absf(ca.b - cb.b)) / 3.0
+			n += 1
+	return Vector2(luma / n, diff / n)
+
+
+## #6 L3, the shade-net tarp: both out, one corner each (P1 starts, P2
+## finishes), both back in. From the driver's seat the view out of the
+## windscreen barely changes (a faint grid over the outside); from outside
+## the van is a dark lump; Problem walking right by doesn't notice it.
+func t_ghat_net() -> void:
+	var g := await _ghat_start()
+	var c := camper()
+	var q := p2()
+	await tap(KEY_X)                   # engine off again, parked
+	await wait(0.5)
+	check(not c.engine_on, "parked, engine off")
+	# the back of the van seen from outside: the tail lights stand proud of the
+	# doors (flush, they flickered in and out with the angle, 2026-11-10)
+	var door := c.find_child("DoorL", true, false) as Node3D
+	var proud := 1.0
+	var lights := c.find_children("TailLight*", "", true, false)
+	for l in lights:
+		proud = minf(proud, (l as Node3D).position.z - door.position.z)
+	check(lights.size() == 2 and proud > 0.01, "the tail lights stand proud of the back doors (%d lights, %.3f m)" % [lights.size(), proud])
+	# the view out before
+	mouse(Vector2(0, 40))
+	await wait(0.8)
+	var before := await grab_p1()
+	await shot("ghat_net_before")
+	# both out, one corner each
+	await tap(KEY_E)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.6)
+	check(p1().seat == null and q.seat == null, "both out of the van")
+	await _to_tarp_corner(p1(), c, -1.0)
+	log_line("P1 at the back corner: '%s'" % p1().prompt_text)
+	key(KEY_E, true)
+	await wait(VanAttack.TARP_ON_S * 0.5)
+	key(KEY_E, false)
+	await wait(0.5)
+	var half := c.attack.tarp_progress()
+	check(not c.attack.tarped and half > 0.35 and half < 0.65, "P1 pulls the net half way (%.0f%%)" % (half * 100.0))
+	await _to_tarp_corner(q, c, 1.0)
+	pad_button(JOY_BUTTON_X, true)
+	await wait(VanAttack.TARP_ON_S * 0.5 + 0.4)
+	var on_in_time := c.attack.tarped
+	# and keeps holding a while, longer than pulling it off takes (2026-11-10:
+	# a hold carried on past the finish pulled the net straight back off)
+	await wait(VanAttack.TARP_OFF_S + 0.6)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.3)
+	check(on_in_time, "P2 finishes it at the other corner: the van is under the net")
+	check(c.attack.tarped and c.attack.tarp_work < 0.01, "P2 keeps holding a moment after: the net stays on (work %.1f s)" % c.attack.tarp_work)
+	# from outside: a dark lump
+	var out_from := c._body_root.global_transform * Vector3(-7.0, 1.6, -6.0)
+	await obs_shot("ghat_net_outside", out_from, c.global_position + Vector3.UP * 1.2)
+	# back in: the doors work under the net
+	await _to_door(p1(), c, "driver")
+	await tap(KEY_E)
+	await _to_door(q, c, "passenger")
+	pad_button(JOY_BUTTON_X, true)
+	await wait(0.1)
+	pad_button(JOY_BUTTON_X, false)
+	await wait(0.8)
+	check(p1().seat_role == "driver" and q.seat_role == "passenger", "both climb back in under the net")
+	await wait(0.6)
+	var after := await grab_p1()
+	await shot("ghat_net_inside")
+	var s := img_stats(before, after, Rect2(0.2, 0.15, 0.6, 0.35))
+	log_line("through the windscreen: brightness %.3f, changed by %.3f" % [s.x, s.y])
+	check(s.y > 0.004 and s.y < 0.12 and s.x > 0.25, "from inside you see out through the weave: a faint grid, the outside clear (change %.3f, brightness %.2f)" % [s.y, s.x])
+	# outside again, compared with no net
+	c.attack.set_tarp(false)
+	var vp: SubViewport = boot.viewports[0]
+	await obs_shot("ghat_net_outside_bare", out_from, c.global_position + Vector3.UP * 1.2)
+	c.attack.set_tarp(true)
+	var outside_net := await _obs_image(out_from, c.global_position + Vector3.UP * 1.2)
+	c.attack.set_tarp(false)
+	var outside_bare := await _obs_image(out_from, c.global_position + Vector3.UP * 1.2)
+	c.attack.set_tarp(true)
+	var so := img_stats(outside_bare, outside_net, Rect2(0.35, 0.3, 0.3, 0.35))
+	log_line("from outside: brightness under the net %.3f, changed by %.3f" % [so.x, so.y])
+	check(so.y > 0.08 and so.x < 0.3, "from outside the van is a dark lump (change %.3f, brightness %.2f)" % [so.y, so.x])
+	# found 2026-11-09 (the picture): the windows and the bonnet showed through
+	# the net from outside; nothing bright may show on the lump
+	var bright := bright_share(outside_net, Rect2(0.3, 0.35, 0.4, 0.3), 0.55)
+	var bright_bare := bright_share(outside_bare, Rect2(0.3, 0.35, 0.4, 0.3), 0.55)
+	check(bright < 0.03 and bright_bare > bright + 0.05, "from outside nothing of the van shows through the net (bright %.0f%% of the lump, %.0f%% bare)" % [bright * 100.0, bright_bare * 100.0])
+
+
+## Share of grid samples in `box` brighter than `luma`.
+func bright_share(img: Image, box: Rect2, luma: float) -> float:
+	var n := 0
+	var hit := 0
+	for yy in 24:
+		for xx in 32:
+			var c := img.get_pixel(int((box.position.x + box.size.x * (xx + 0.5) / 32.0) * img.get_width()),
+				int((box.position.y + box.size.y * (yy + 0.5) / 24.0) * img.get_height()))
+			n += 1
+			if c.get_luminance() > luma:
+				hit += 1
+	return float(hit) / float(n)
+
+
+## P1's view through a camera at `from` looking at `at`, as an image.
+func _obs_image(from: Vector3, at: Vector3) -> Image:
+	var vp: SubViewport = boot.viewports[0]
+	var prev := vp.get_camera_3d()
+	var cam := Camera3D.new()
+	cam.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	cam.fov = 50.0
+	vp.add_child(cam)
+	cam.global_transform = Transform3D(Basis.looking_at(at - from, Vector3.UP), from)
+	cam.current = true
+	await physics_frames(3)
+	var img := await grab_p1()
+	cam.queue_free()
+	if prev != null:
+		prev.current = true
+	return img
+
+
+## #6 L2, Problem's looks and sounds: in the watch its body stays put and its
+## head follows the van, the eyes go from dim to bright and the whine rises;
+## at the van it leans in at the windows and the bonnet, crouches at the back
+## and sniffs; giving up it slumps, the eyes dim, the whine falls and it turns
+## away slowly. The hot engine ticks faster the hotter it is; boiled, it hisses
+## like a kettle. Declared setup: the van carried to 70 m short of hairpin 1
+## (the drive there is ghat_heat's), the tarp put on (L3 tests pulling it).
+func t_ghat_looks() -> void:
+	var g := await _ghat_start()
+	var c := camper()
+	var hp: int = g.hairpins[g.seen_hp()]
+	await van_to(g.road.point(hp - 35))
+	var ad := AutoDriver.new(self, g.road, c)
+	var t := 0.0
+	while g.phase != "watch" and t < 40.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		ad.step(-1.0)
+	check(g.phase == "watch" and g.problem != null, "Problem appears among the trees (%.0f s)" % t)
+	if g.problem == null:
+		ad.release()
+		return
+	var cr := g.problem
+	var glow0: float = cr._eye_mat.emission_energy_multiplier
+	var hum0: float = cr._hum.pitch
+	var body_yaw0 := cr.rotation.y
+	var body_turn := 0.0
+	var head_off := 999.0
+	var shot_watch := false
+	while g.phase == "watch":
+		await get_tree().physics_frame
+		ad.step(-1.0)
+		body_turn = maxf(body_turn, absf(angle_difference(body_yaw0, cr.rotation.y)))
+		var to_van := c.global_position - cr.global_position
+		to_van.y = 0.0
+		head_off = rad_to_deg(cr.head_forward().angle_to(to_van.normalized()))
+		if not shot_watch and g.phase_t > Ghat.WATCH_S * 0.6:
+			shot_watch = true
+			await obs_shot("ghat_look_watch", _obs_from(cr, c.global_position, 6.0), cr.eye_point())
+	var glow1: float = cr._eye_mat.emission_energy_multiplier
+	log_line("watch: eyes %.1f -> %.1f, whine pitch %.2f -> %.2f, body turned %.0f deg, head %.0f deg off the van" % [glow0, glow1, hum0, cr._hum.pitch, rad_to_deg(body_turn), head_off])
+	check(glow0 < 1.5 and glow1 > 4.5 and cr._hum.pitch > hum0 + 1.0, "its eyes go from dim to bright and the whine rises (%.1f -> %.1f)" % [glow0, glow1])
+	check(body_turn < deg_to_rad(5.0) and head_off < 25.0, "its body stays put, its head follows the van (%.0f deg off)" % head_off)
+	# on: it boils, it comes
+	var tick_cool := c.tick_every()
+	while not c.boiled_dry and t < 120.0:
+		await get_tree().physics_frame
+		t += 1.0 / 60.0
+		ad.step(-1.0)
+	ad.release()
+	await tap(KEY_SPACE)
+	check(c.tick_every() < tick_cool * 0.5 and c.hot_ticks > 5, "the hot engine ticks, faster as it heats (every %.2f s -> %.2f s, %d ticks)" % [tick_cool, c.tick_every(), c.hot_ticks])
+	await wait(0.5)
+	check(c._hiss.target >= 1.0, "boiled: it hisses like a kettle")
+	var t0 := Time.get_ticks_msec()
+	while g.phase != "circle" and Time.get_ticks_msec() - t0 < 60000:
+		await wait(0.25)
+	check(g.phase == "circle", "it comes to the van")
+	# one round: lean in at the windows and the bonnet, crouch and sniff at the back
+	var leaned := 0.0
+	var crouched := 1.0
+	var sniffs0 := cr.sniffs
+	var shots := {}
+	var stops := {}                 # stops held long enough to show their pose
+	t0 = Time.get_ticks_msec()
+	while stops.size() < 4 and Time.get_ticks_msec() - t0 < 80000:
+		await physics_frames(2)
+		if g.at_stop:
+			if g._stop_t > Ghat.STATION_S - 0.5:
+				stops[g.stop_k] = true
+			var p := String(Ghat.ROUND[g.stop_k][2])
+			if p == "lean":
+				leaned = minf(leaned, cr._rig.rotation.x)
+				if absf((Ghat.ROUND[g.stop_k][0] as Vector3).x) > 1.0:
+					# how far its eyes are outside the van's side (the body is 1.2 m half-wide)
+					var local := c._body_root.global_transform.affine_inverse() * cr.eye_point()
+					_lean_gap_min = minf(_lean_gap_min, absf(local.x) - 1.25)
+			if p == "crouch":
+				crouched = minf(crouched, cr._rig.scale.y)
+			if g._stop_t > 2.0 and not shots.has(g.stop_k):
+				shots[g.stop_k] = true
+				var side := cr.global_transform.basis.x
+				await obs_shot("ghat_look_stop%d_%s" % [g.stop_k, p], cr.global_position + side * 4.5 + Vector3.UP * 1.4, cr.global_position + Vector3.UP * 1.3)
+	log_line("round: stops %s, lean %.2f rad, crouch scale %.2f, sniffs %d" % [str(stops.keys()), leaned, crouched, cr.sniffs - sniffs0])
+	check(stops.size() >= 4, "it goes round the van, stopping at the bonnet, both windows and the back (%d stops)" % stops.size())
+	check(leaned < -0.3, "at the windows and the bonnet it leans in (%.2f rad)" % leaned)
+	check(crouched < 0.7 and cr.sniffs > sniffs0, "at the back it crouches down and sniffs (%d sniffs)" % (cr.sniffs - sniffs0))
+	# from the far side it walks round, never into the van (2026-11-10: on the
+	# driver's side, making for the passenger's window, it pushed at the van
+	# for minutes; the search never ended)
+	var far := c._body_root.global_transform * Vector3(-2.6, 0, 0.3)
+	cr.global_position = Vector3(far.x, Landscape.ground(far.x, far.z) + 0.05, far.z)
+	cr.reset_physics_interpolation()
+	g.stop_k = 6
+	g.at_stop = false
+	var closest := 9.0
+	t0 = Time.get_ticks_msec()
+	while not (g.at_stop and g.stop_k == 6) and Time.get_ticks_msec() - t0 < 30000:
+		await physics_frames(2)
+		var lp := c._body_root.global_transform.affine_inverse() * cr.global_position
+		closest = minf(closest, maxf(absf(lp.x) - 1.2, absf(lp.z) - 3.0))
+	log_line("round from the far side: reached the passenger's window %s in %.1f s, closest to the body %.2f m" % [g.at_stop and g.stop_k == 6, (Time.get_ticks_msec() - t0) / 1000.0, closest])
+	check(g.at_stop and g.stop_k == 6 and closest > Creature.BODY_R, "from the far side it walks round the van to the other window, not into it (closest %.2f m, its body %.1f m)" % [closest, Creature.BODY_R])
+	# tarped and quiet: it gives up, visibly
+	c.attack.set_tarp(true)
+	t0 = Time.get_ticks_msec()
+	while g.phase != "leave" and Time.get_ticks_msec() - t0 < (Ghat.SEARCH_S + 45.0) * 1000.0:
+		await wait(0.25)
+	check(g.phase == "leave" and g.stops_done >= Ghat.POSED_STOPS, "under the tarp it gives up, only after a full round of the van (%d stops)" % g.stops_done)
+	var yaw_prev := cr.rotation.y
+	var fastest := 0.0
+	var head_down := 0.0
+	var took_slump_shot := false
+	var fast_why := ""
+	while g.phase == "leave" and g.phase_t < Ghat.SLUMP_S + 1.0:
+		await get_tree().physics_frame
+		var rate := absf(angle_difference(yaw_prev, cr.rotation.y)) * 60.0
+		if rate > fastest:
+			fastest = rate
+			fast_why = "t=%.2f state=%s noticed=%.2f cap=%.0f vel=%.2f susp=%.2f dir_speed=%.1f goal_off=%.2f" % [g.phase_t, Creature.State.keys()[cr.state], cr._noticed_t, cr.turn_cap, Vector2(cr.velocity.x, cr.velocity.z).length(), cr.suspicion, cr._dir_speed, (cr.goal_now - cr.global_position).length()]
+		yaw_prev = cr.rotation.y
+		head_down = minf(head_down, cr._head.rotation.x)
+		if not took_slump_shot and g.phase_t > 2.0:
+			took_slump_shot = true
+			await obs_shot("ghat_look_slump", _obs_from(cr, c.global_position, 5.0), cr.global_position + Vector3.UP * 1.6)
+			yaw_prev = cr.rotation.y
+	await wait(2.0)
+	log_line("gives up: head pitch %.2f, fastest turn %.0f deg/s (%s), eyes %.1f, whine %.2f" % [head_down, rad_to_deg(fastest), fast_why, cr._eye_mat.emission_energy_multiplier, cr._hum.target])
+	check(head_down < -0.35, "giving up it slumps, head down (%.2f rad)" % head_down)
+	# its face at a window stays outside the glass (found 2026-11-09: it leaned its head through)
+	check(_lean_gap_min > 0.15, "leaning in at a window, its face stays outside the glass (closest %.2f m)" % _lean_gap_min)
+	check(rad_to_deg(fastest) < 60.0, "it turns away slowly (fastest %.0f deg/s)" % rad_to_deg(fastest))
+	check(cr._eye_mat.emission_energy_multiplier < 1.5 and cr._hum.target < 0.5, "its eyes dim and the whine falls")
+
+
 ## D10, the ghat: pace notes on the swung nav, the fog on the hairpins, a
 ## glimpse on the second hairpin, then the first creature at the pass comes
 ## for the van; hidden under the tarp, it loses interest and goes.
@@ -5761,9 +7152,18 @@ func t_van() -> void:
 	await tap(KEY_SPACE)            # handbrake
 	await wait(3.0)
 	var gap := cr._flat_dist(c.global_position)
-	log_line("drove off: %.0f m from it; stage %d, leak %.1f, power %.2f" % [gap, c.attack.stage(), c.attack.leak_rate(), c.attack.power()])
-	check(gap > VanAttack.NEAR and c.attack.stage() == 0 and c.attack.leak_rate() == 0.0 and c.tyre_flat,
-		"drive away and the leak and the failing engine stop; the flat stays")
+	log_line("drove off: %.0f m from it; stage %d, leak %.1f, power %.2f, interest %.1f s" % [gap, c.attack.stage(), c.attack.leak_rate(), c.attack.power(), cr.van_interest])
+	# the heat rule (#6, 2026-11-09): no driving away. Out of its reach the
+	# failing engine recovers, but while it's still interested the van leaks
+	# and runs hot; only once it loses interest does it all stop
+	check(gap > VanAttack.NEAR and c.attack.stage() == 0 and c.attack.power() == 1.0 and c.tyre_flat,
+		"drive away: the failing engine recovers; the flat stays")
+	check(cr.van_interest > 0.0 and c.attack.interested() and c.attack.problem_leak() > 0.0,
+		"... but while it's still interested the van leaks (the heat rule: no driving away)")
+	cr.van_interest = 0.0
+	await calm_creature(cr, c.global_position + behind * 120.0, atan2(behind.x, behind.z))
+	await wait(VanAttack.CALM_AFTER + 0.5)
+	check(not c.attack.interested() and c.attack.leak_rate() == 0.0, "once it loses interest, the leak and the heat stop")
 	c.tyre_flat = false
 	c.tyre_stage = 0
 	c.refresh_tyre_visuals()
@@ -5800,8 +7200,10 @@ func t_van() -> void:
 	cr.van_interest = 30.0
 	await wait(3.0)
 	log_line("tarped: stage %d, interest left %.1f s" % [c.attack.stage(), cr.van_interest])
-	check(c.attack.attacked_t == 0.0 and c.attack.leak_rate() == 0.0 and cr.van_interest < 27.5,
-		"at the tarped van it does nothing and loses interest (not refreshed)")
+	check(c.attack.attacked_t == 0.0 and c.attack.stage() == 0 and cr.van_interest < 27.5,
+		"at the tarped van it does no harm of its own and loses interest (not refreshed)")
+	check(c.attack.interested() and c.attack.problem_leak() > 0.0,
+		"... though while it's still interested the heat rule runs (the needle and the drip)")
 	# off again: 2 s
 	await calm_creature(cr, c.global_position + behind * 120.0, atan2(behind.x, behind.z))
 	await place_player(p, Vector3(back.x, c.global_position.y - 0.3, back.z), 0.0)
@@ -6309,6 +7711,13 @@ func t_opening_save_verify() -> void:
 ## Walk a player to `target` for real: turn to face it and hold W, one physics
 ## tick at a time. Returns false (and logs where) if they get stuck.
 func walk_to(p: PlayerRig, target: Vector3, what: String, arrive := 0.5, max_s := 25.0) -> bool:
+	var _mo := mrec.open("walk_to", max_s + 2.0 + 5.0) if mrec != null else ""
+	var ok: bool = await _walk_to_raw(p, target, what, arrive, max_s)
+	if mrec != null: mrec.close(_mo)
+	return ok
+
+
+func _walk_to_raw(p: PlayerRig, target: Vector3, what: String, arrive := 0.5, max_s := 25.0) -> bool:
 	var t := 0.0
 	var mark := p.global_position
 	var mark_t := 0.0
@@ -6347,9 +7756,11 @@ func look_at_point(p: PlayerRig, target: Vector3) -> void:
 	# from where the eyes really are (the head): crouched they're ~0.7 m lower,
 	# and just after standing up they ease back up; a fixed standing height
 	# aimed over the flare gun, then into its case (the F6 runs)
+	var _mo := mrec.open("look_at_point", 10.0) if mrec != null else ""
 	var eye := p.head.global_position
 	p.pitch = atan2(target.y - eye.y, Vector2(target.x - eye.x, target.z - eye.z).length())
 	await physics_frames(4)
+	if mrec != null: mrec.close(_mo)
 
 
 ## P2's whole part of the opening on foot, walking every step with the real
@@ -7574,11 +8985,19 @@ func naresh_job(p: PlayerRig, at: Vector3, job: String, quick := false) -> bool:
 
 ## Wait (physics time) until `cond` holds, up to `max_s`. True if it did.
 func until(cond: Callable, max_s: float) -> bool:
+	var _mo := mrec.open("until", max_s + 2.0) if mrec != null else ""
+	var ok: bool = await _until_raw(cond, max_s)
+	if mrec != null: mrec.close(_mo)
+	return ok
+
+
+func _until_raw(cond: Callable, max_s: float) -> bool:
 	var t := 0.0
 	while t < max_s:
 		if cond.call():
 			return true
 		await get_tree().physics_frame
+		await _rig_pause_guard()
 		t += 1.0 / 60.0
 	return cond.call()
 
@@ -9434,6 +10853,13 @@ func menu_pick(tab_name: String, part: String) -> bool:
 
 ## P2 walks with the left stick, facing where it goes.
 func pad_walk_to(q: PlayerRig, target: Vector3, arrive := 0.8, max_s := 40.0) -> bool:
+	var _mo := mrec.open("pad_walk_to", max_s + 2.0) if mrec != null else ""
+	var ok: bool = await _pad_walk_to_raw(q, target, arrive, max_s)
+	if mrec != null: mrec.close(_mo)
+	return ok
+
+
+func _pad_walk_to_raw(q: PlayerRig, target: Vector3, arrive := 0.8, max_s := 40.0) -> bool:
 	var t := 0.0
 	var mark := q.global_position
 	var mark_t := 0.0
@@ -11553,6 +12979,7 @@ func rj() -> RampJump:
 
 ## The van at the run-up, P1 driving, everything as new.
 func ramp_start() -> void:
+	var _mo := mrec.open("ramp_start", 10.0) if mrec != null else ""
 	var c := camper()
 	var r := rj()
 	r.reset()
@@ -11571,12 +12998,15 @@ func ramp_start() -> void:
 		c.toggle_engine()
 	c.set_parking_brake(false)
 	await physics_frames(20)
+	if mrec != null: mrec.close(_mo)
 
 
 ## Drive at the ramp at `target` km/h, with the real throttle (the AutoDriver
 ## holds the speed and steers for `off` m right of the middle). Comes back with
 ## "landed" / "shallows" / "hung" / "timeout", and how it went.
 func ramp_try(target: float, off := 0.0) -> Dictionary:
+	var _mo := mrec.open("ramp_try", 46.0) if mrec != null else ""
+	var lane_lip := NAN
 	var c := camper()
 	var r := rj()
 	var road: Route = boot.builder.network.road("pump_house_road")
@@ -11591,6 +13021,8 @@ func ramp_try(target: float, off := 0.0) -> Dictionary:
 		await get_tree().physics_frame
 		t += 1.0 / 60.0
 		var l := r.global_transform.affine_inverse() * c.global_position
+		if is_nan(lane_lip) and l.z <= 0.0:
+			lane_lip = l.x
 		if l.z > 1.0:
 			ad.step(target)
 		else:
@@ -11616,6 +13048,10 @@ func ramp_try(target: float, off := 0.0) -> Dictionary:
 		await until(func() -> bool: return not r.failing, 6.0)
 	else:
 		res["what"] = "timeout"
+	if mrec != null and mrec.active():
+		mrec.ev("ATTEMPT", {"target": target, "lane": off, "lip_kmh": snappedf(float(res["lip"]), 0.1), "lane_at_lip": snappedf(lane_lip, 0.01) if not is_nan(lane_lip) else null,
+			"what": res["what"], "t": snappedf(t, 0.01), "flip": res.get("flip", null), "past": snappedf(float(res.get("past", 0.0)), 0.01)})
+	if mrec != null: mrec.close(_mo)
 	return res
 
 
@@ -11709,6 +13145,22 @@ func t_ramp() -> void:
 	var can := FuelCan.new()
 	can.name = "RampTestCan"
 	boot.world.add_child(can)
+	# a coolant leak: the boiling engine is stopped at the ramp, never let over the river
+	await ramp_start()
+	c.coolant_leak = true
+	var lk := AutoDriver.new(self, boot.builder.network.road("pump_house_road"), c)
+	var lt := 0.0
+	while lt < 25.0 and not r.failing and not r.jumped:
+		await get_tree().physics_frame
+		lt += 1.0 / 60.0
+		lk.step(80.0)
+	lk.release()
+	log_line("the leak try: failing %s, jumped %s, lip %.1f km/h" % [r.failing, r.jumped, r.last_lip_kmh])
+	check(r.failing and not r.jumped, "with a coolant leak the boiling engine is stopped before the gap")
+	await until(func() -> bool: return not r.failing, 8.0)
+	c.coolant_leak = false
+	c.heat_lockout = false
+	c.temp = Camper.TEMP_NORMAL
 	can.stow(c.storage_slots[0])
 	await ramp_start()
 	# 1. too slow
@@ -11721,8 +13173,8 @@ func t_ramp() -> void:
 	check(st.current()["id"] == "bridge" and not c.wheel_off and not r.jumped and c.stowed_item(c.storage_slots[0]) == can, "nothing lost: the wheel on, the can on the rack")
 	# 2. flat out
 	await wait(0.3)
-	var go := await ramp_try(80.0)
-	log_line("flat out: %s" % go)
+	var go := await ramp_try(mrec.target() if mrec != null else 80.0, mrec.lane() if mrec != null else 0.0)
+	log_line("flat out (profile %s): %s" % [mrec.profile if mrec != null else "-", go])
 	check(go["what"] == "landed", "flat out the van makes it (%.0f km/h at the lip)" % go["lip"])
 	if go["what"] != "landed":
 		return
@@ -11815,7 +13267,12 @@ func t_ramp() -> void:
 	key(KEY_CTRL, true)
 	await place_player(q, behind + Vector3(0, 0.4, 0), 0.0)
 	await look_at_point(q, window_look)
-	await wait(0.4)
+	# jump when the offer shows, as a player would (2026-11-10: 0.4 s after
+	# being set down it wasn't up yet; the picture a moment later showed it)
+	var t_offer := Time.get_ticks_msec()
+	while not q.prompt_text.contains("Leg-up") and Time.get_ticks_msec() - t_offer < 3000:
+		await physics_frames(2)
+	log_line("the leg-up offered after %.2f s" % ((Time.get_ticks_msec() - t_offer) / 1000.0))
 	log_line("crate %.2f m from the wall's foot, P1 %.2f m up; P2: '%s'" % [crate.global_position.distance_to(under), p.global_position.y - under.y, q.prompt_text])
 	pad_axis(JOY_AXIS_LEFT_Y, -1.0)
 	pad_button(JOY_BUTTON_A, true)
@@ -11905,7 +13362,14 @@ func t_ramp() -> void:
 	pad_button(JOY_BUTTON_X, false)
 	await wait(0.8)
 	check(r.box_open and c.nuts_found, "the toolbox: new nuts, pocketed")
-	check(boot.world.find_child("HutReward0", true, false) != null and boot.world.find_child("HutReward1", true, false) != null, "a can of fuel and a jug of coolant by the bench")
+	var bench: Node3D = r.hut.get_node("HutBench")
+	var on_bench := true
+	for nm in ["HutReward0", "HutReward1"]:
+		var it := boot.world.find_child(nm, true, false) as Node3D
+		var bl := bench.global_transform.affine_inverse() * it.global_position if it != null else Vector3(99, 99, 99)
+		log_line("%s in the bench's frame: %s" % [nm, bl])
+		on_bench = on_bench and it != null and absf(bl.x) < 1.5 and absf(bl.z) < 1.5 and bl.y > -0.3 and bl.y < 1.3
+	check(on_bench, "a can of fuel and a jug of coolant by the bench")
 	await shot("ramp_rewards")
 	# on it goes
 	await face_point(p, front, 1.8, -c.global_transform.basis.x)
@@ -11925,7 +13389,13 @@ func t_ramp() -> void:
 	await seat_p1_driver()
 	var from := c.global_position
 	log_line("the van parked at %s from the far edge (the gap's frame), the engine %s" % [r.global_transform.affine_inverse() * c.global_position, c.engine_on])
+	_fix_reset()
+	get_tree().physics_frame.connect(_fix_sample)
 	await ramp_drive_off(26.0)
+	get_tree().physics_frame.disconnect(_fix_sample)
+	log_line("after the fix: the refitted wheel turned on %d frames, the other front wheel on %d; steering pull max %.3f" % [_fix_fl, _fix_fr, _fix_pull])
+	check(_fix_fr > 30 and _fix_fl * 2 >= _fix_fr, "the refitted wheel turns as the van drives (%d of %d frames)" % [_fix_fl, _fix_fr])
+	check(_fix_pull < 0.01, "the van steers straight after the fix (pull %.3f)" % _fix_pull)
 	log_line("after the drive: %.0f m from where it stood, closest to the road %.1f m, %.0f km/h" % [c.global_position.distance_to(from), ramp_closest_to_road, kmh()])
 	check(c.global_position.distance_to(from) > 30.0, "and drives off (%.0f m)" % c.global_position.distance_to(from))
 	# the closest it got, not where it ends: the bot circles once on the road
@@ -11985,6 +13455,96 @@ func t_ramp_edges() -> void:
 	check(c.global_position.distance_to(r.far_start.origin) < 4.0, "and back on the far side, never stranded on the near one")
 
 
+## Trial c2's own short stretches, for rules `t_ramp` never reaches. The
+## observer (dev/C2Watch.gd) judges; this only plays. Each has a DECLARED
+## setup (code puts things in place) before the part that is proven.
+##  D3 the door. Setup: P2 put in the hut opens the door with the game's own
+##     call; P1 put 2 m outside it, looking in. Proven: W alone carries P1
+##     across the door line within 4 s.
+##  G1 / G2 a miss with someone left in the river. Setup: ramp_start, P2 put
+##     in the river beside the gap. Proven (by the observer): the game's own
+##     reset after a real-input slow miss, then 6 s with no input.
+##  G3 / G4 the landed state by the game's own F1 jump to "wheel" (set state:
+##     proves the state that jump builds, not a landing by play).
+## `tools/c2_run.sh` (runs `ramp,c2_more`).
+func t_c2_more() -> void:
+	var r := rj()
+	var p := p1()
+	var q := p2()
+	boot._on_joy_changed(0, true)
+	await ramp_start()
+	# D3 the door
+	p.force_exit = true
+	await physics_frames(3)
+	var hut := r.hut
+	var hx := hut.global_transform
+	await place_player(q, hx * Vector3(0.9, 0.4, 0.9), 0.0)
+	await physics_frames(5)
+	r._open_door(q)
+	await wait(1.2)
+	var setup_ok := r.door_open and r.in_hut(q)
+	await place_player(p, hx * Vector3(0, 0.4, -3.8), 0.0)
+	await look_at_point(p, hx * Vector3(0, 1.0, 0.5))
+	await wait(0.4)
+	var crossed := false
+	var best := -INF
+	var _door := mrec.open("door_walk", 6.0) if mrec != null else ""
+	key(KEY_W, true)
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 4000:
+		await physics_frames(1)
+		var l := hx.affine_inverse() * p.global_position
+		best = maxf(best, l.z)
+		if l.z > -1.4:
+			crossed = true
+			break
+	key(KEY_W, false)
+	if mrec != null:
+		mrec.close(_door)
+	await wait(0.3)
+	log_line("c2 door walk: setup %s, crossed %s, P1 got to z %.2f in the hut's frame (the door line -1.8)" % [setup_ok, crossed, best])
+	if c2 != null:
+		c2.door_result(setup_ok, crossed, maxf(0.0, -1.8 - best), p.global_position, hx * Vector3(0, 1.0, -1.8))
+	if mrec != null:
+		mrec.work("c2.door_walk", true, {"setup_ok": setup_ok, "crossed": crossed})
+		if mrec.fixture == "se_test":
+			_fx_error_in_test()      # builder's M6 control only
+		elif mrec.fixture == "se_game":
+			rj().in_hut(null)        # builder's M6 control only: an error raised inside game code
+	# G1 / G2: a slow miss with P2 left in the river
+	await ramp_start()
+	await place_player(q, r.global_transform * Vector3(5.0, -10.5, -r.gap_len * 0.5), 0.0)
+	await until(func() -> bool: return q.swimming, 4.0)
+	log_line("c2: P2 in the river: swimming %s" % q.swimming)
+	var slow := await ramp_try(48.0)
+	log_line("c2 slow try: %s" % slow)
+	await wait(6.0)        # hands off: the observer's window after the reset
+	if mrec != null:
+		mrec.work("c2.slow_miss_hands_off", slow["what"] == "miss", {"what": slow["what"]})
+		if mrec.fixture == "early":
+			return                   # builder's missing-work control only
+	log_line("c2: after the reset P2 swimming %s, %.1f m from the van; brake %s" % [q.swimming, q.global_position.distance_to(camper().global_position), camper().parking_brake])
+	# G3 / G4 just after a landing, whatever the driver did. Setup: the game's
+	# own F1 jump to "wheel" (the van over, its wheel snapped, brake on); P1
+	# put in the driver's seat (the HUD shows only when seated). Read only.
+	boot.dev_menu.run("jump", boot.story.index_of("wheel"))
+	if mrec != null and mrec.fixture == "hub":
+		camper()._bare_hub.position += Vector3(0.25, 0.0, 0.0)   # builder's G3b control only: the hub moved off its axle, before the parked look
+	await wait(1.0)
+	await seat_p1_driver()
+	await wait(3.0)
+	if mrec != null:
+		mrec.work("c2.f1_landed_state", camper().wheel_off, {"frozen": camper().freeze})
+	log_line("c2: after the F1 jump to 'wheel': wheel_off %s, frozen %s, HUD '%s'" % [camper().wheel_off, camper().freeze, boot.huds[0]._warn.text])
+
+
+## The builder's M6 control only (--method-fixture=se_test): a script error
+## raised in test code.
+func _fx_error_in_test() -> void:
+	var o: Object = null
+	o.call("no_such_method")
+
+
 ## For the walk: which local x side of the far hut has the shutter.
 func ramp_ws() -> float:
 	return 1.0 if (rj().hut.global_transform.affine_inverse() * rj().global_position).x > 0.0 else -1.0
@@ -12002,8 +13562,38 @@ func ramp_film_can() -> void:
 ## The wheel's on; away up the road, as a player would: the bare hub pulls left,
 ## so the van can stop in the trees beside the road. Blocked: back up, try again.
 var ramp_closest_to_road := INF
+var _fix_fl := 0
+var _fix_fr := 0
+var _fix_pull := 0.0
+var _fix_a := 0.0
+var _fix_b := 0.0
+
+
+## After the refit (t_ramp's drive-off): counts frames where the refitted front-left wheel and the
+## front-right wheel turn, and the largest steering the van adds on its own above 2 m/s.
+func _fix_reset() -> void:
+	_fix_fl = 0
+	_fix_fr = 0
+	_fix_pull = 0.0
+	_fix_a = camper()._wheel_meshes[0].rotation.x
+	_fix_b = camper()._wheel_meshes[1].rotation.x
+
+
+func _fix_sample() -> void:
+	var c := camper()
+	var a: float = c._wheel_meshes[0].rotation.x
+	var b: float = c._wheel_meshes[1].rotation.x
+	if absf(a - _fix_a) > 0.001:
+		_fix_fl += 1
+	if absf(b - _fix_b) > 0.001:
+		_fix_fr += 1
+	_fix_a = a
+	_fix_b = b
+	if c.linear_velocity.length() > 2.0:
+		_fix_pull = maxf(_fix_pull, absf(c.steering + float(c.get("_steer"))))
 
 func ramp_drive_off(secs := 14.0) -> void:
+	var _mo := mrec.open("drive_off", minf(secs + 8.0, 46.0)) if mrec != null else ""
 	var c := camper()
 	c.set_parking_brake(false)
 	if not c.engine_on:
@@ -12033,6 +13623,7 @@ func ramp_drive_off(secs := 14.0) -> void:
 			mark = c.global_position
 			mark_t = t
 	ad.release()
+	if mrec != null: mrec.close(_mo)
 
 
 ## A van driven into the hut on its hub: it can always reverse out (a landing

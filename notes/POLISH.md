@@ -46,3 +46,10 @@ each puzzle's changes (asked, proposed, agreed) are in
       polishing phase").** From the ramp proposal, S3: the passenger holds up
       a phone during the jump, and the clip can be watched afterwards. Files:
       `puzzles/RampJump.gd` (launch and landing are detected there).
+
+- [ ] **The HUD as a whole (the user, 2026-11-09, Q2: "polish the UI as
+      well, we'll talk then").** For now (#6): the TEMP / COOL bars and the
+      "ENGINE HOT" banner hide while a Problem is interested (heat shows only
+      on the dash needle and the grille steam), and come back otherwise. At
+      the polish phase: talk through the whole HUD (bars, banners, prompts,
+      the breath bar) with the user. Files: `ui/PlayerHUD.gd`.

@@ -18,6 +18,7 @@ signal took(player: PlayerRig)
 
 enum State { WANDER, CURIOUS, SEARCH, TAKE, VAN }
 
+const BODY_R := 0.3               ## its collision capsule's radius (tests measure clearances against it)
 const FOV_DEG := 110.0
 const CLOSE_SENSE := 3.0          ## m; nearer than this it notices you whatever you do
 const CATCH := 1.5
@@ -72,6 +73,7 @@ var box_moved := false               ## it is watching a box move right now (tes
 var _box_notice := false             ## what it last noticed was a box
 var _item_ms := -99999               ## when and where the last item it heard landed
 var passive := false                 ## only walks its patrol and shows itself (a glimpse)
+var sight_cap := INF                ## the furthest it can see anyone now (fog: the ghat sets it)
 var dormant := false                 ## switched off (the Naresh gym's creature switch)
 var naresh_drawn := false            ## drifting towards Naresh right now (tests read this)
 var goal_now := Vector3.ZERO          ## where it's heading this frame (the live line shows it)
@@ -88,6 +90,27 @@ var _detour_t := 0.0
 var _detour_side := 1.0
 var _detours := 0                     ## sidesteps in a row that didn't free it
 var van_interest := 0.0              ## s left of wanting to be at the van
+## A puzzle steering it (the ghat's Problem): called while it has nothing
+## else on its mind; returns {"goal": Vector3, "speed": float, "face":
+## Vector3} or {}. It still sees and hears players as usual, and leaves the
+## van to the puzzle (no van senses of its own, no harm at the van).
+var director: Callable
+var _dir_speed := -1.0
+## Body language (#6, Problem): "stand", "lean" (bends in to look: curious),
+## "crouch" (folds down low and sniffs: searching), "slump" (head down,
+## shoulders back: it gives up). A puzzle sets these; plain creatures stand.
+var pose := "stand"
+var look_point := Vector3.INF        ## the head turns to this (within reach of its neck)
+var show_interest := -1.0            ## 0..1, eyes and whine follow this when >= 0 (else suspicion)
+var face_rate := 2.5                 ## how fast it turns to a director's "face" point
+var turn_cap := 0.0                  ## deg/s at most while turning to "face" (0 = no cap)
+var _rig: Node3D                     ## everything you see, hinged at the feet
+var _head: Node3D
+var _lean := 0.0
+var _crouch := 0.0
+var _slump := 0.0
+var _sniff_t := 0.0
+var sniffs := 0                      ## sniffs so far (tests read it)
 ## Where it stands at the start (its first tick): a story jump puts it back
 ## here, calm (`back_to_post`). One-off creatures (the stall's, the developer
 ## menu's) are removed by a jump instead: one left on the road after a stall
@@ -120,20 +143,28 @@ func _ready() -> void:
 func _build() -> void:
 	var cs := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
-	cap.radius = 0.3
+	cap.radius = BODY_R
 	cap.height = HEIGHT
 	cs.shape = cap
 	cs.position = Vector3(0, HEIGHT * 0.5, 0)
 	add_child(cs)
+	_rig = Node3D.new()
+	_rig.name = "Rig"
+	add_child(_rig)
 	var skin := StandardMaterial3D.new()
 	skin.albedo_color = Color(0.16, 0.17, 0.2, 0.82)
 	skin.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	skin.roughness = 1.0
-	add_child(Build.cyl(0.2, HEIGHT - 0.5, skin, Vector3(0, (HEIGHT - 0.5) * 0.5, 0), Vector3.ZERO, 8, "Body"))
-	add_child(Build.box(Vector3(0.9, 0.08, 0.1), skin, Vector3(0, HEIGHT - 0.75, 0), Vector3(0, 0, 8), "Shoulders"))
+	_rig.add_child(Build.cyl(0.2, HEIGHT - 0.5, skin, Vector3(0, (HEIGHT - 0.5) * 0.5, 0), Vector3.ZERO, 8, "Body"))
+	_rig.add_child(Build.box(Vector3(0.9, 0.08, 0.1), skin, Vector3(0, HEIGHT - 0.75, 0), Vector3(0, 0, 8), "Shoulders"))
 	for sx in [-0.42, 0.42]:
-		add_child(Build.cyl(0.05, 1.5, skin, Vector3(sx, HEIGHT - 1.5, 0), Vector3(0, 0, sx * 6.0), 6, "Arm"))
-	add_child(Build.sphere(0.2, skin, Vector3(0, HEIGHT - 0.3, 0), Vector3(0.8, 1.25, 0.8), "Head"))
+		_rig.add_child(Build.cyl(0.05, 1.5, skin, Vector3(sx, HEIGHT - 1.5, 0), Vector3(0, 0, sx * 6.0), 6, "Arm"))
+	# the head turns on its own neck (eyes and glow with it)
+	_head = Node3D.new()
+	_head.name = "HeadPivot"
+	_head.position = Vector3(0, HEIGHT - 0.42, 0)
+	_rig.add_child(_head)
+	_head.add_child(Build.sphere(0.2, skin, Vector3(0, 0.12, 0), Vector3(0.8, 1.25, 0.8), "Head"))
 	_eye_mat = StandardMaterial3D.new()
 	_eye_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_eye_mat.albedo_color = Color(0.85, 0.95, 1.0)
@@ -159,17 +190,17 @@ func _build() -> void:
 	var quad := QuadMesh.new()
 	quad.size = Vector2(0.34, 0.34)
 	for sx in [-0.07, 0.07]:
-		var e := Build.sphere(0.045, _eye_mat, Vector3(sx, HEIGHT - 0.27, -0.16), Vector3.ONE, "Eye")
+		var e := Build.sphere(0.045, _eye_mat, Vector3(sx, 0.15, -0.16), Vector3.ONE, "Eye")
 		e.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(e)
+		_head.add_child(e)
 		_eyes.append(e)
 		var halo := MeshInstance3D.new()
 		halo.name = "Glow"
 		halo.mesh = quad
 		halo.material_override = _glow_mat
 		halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		halo.position = Vector3(sx, HEIGHT - 0.27, -0.22)
-		add_child(halo)
+		halo.position = Vector3(sx, 0.15, -0.22)
+		_head.add_child(halo)
 	_hum = NoiseLoop.new()
 	_hum.kind = NoiseLoop.Kind.HUM
 	_hum.volume_db = -4.0
@@ -281,6 +312,9 @@ func _physics_process(delta: float) -> void:
 	var v := _van()
 	if state == State.VAN and v != null and _flat_dist(v.global_position) <= VanAttack.NEAR:
 		v.attack.creature_near(self, delta)
+	# the heat rule: while it wants the van, the van heats and leaks, near or far
+	if v != null and van_interest > 0.0 and not director.is_valid():
+		v.attack.creature_interested(self, delta)
 	var nz := _naresh()
 	if nz != null and state == State.WANDER and nz.can_be_taken() and _flat_dist(nz.global_position) < CATCH:
 		nz.take(self)
@@ -316,12 +350,12 @@ func _look(dt: float) -> void:
 			continue
 		var to := p.global_position - global_position
 		var d := to.length()
-		var reach: float = p.sight_range(light)
+		var reach: float = minf(p.sight_range(light), sight_cap)
 		# a box is a box, but a box that moves gets looked at from as far as
 		# it would see you standing ("that box moved")
 		var box_reach := 0.0
 		if p.in_box and Vector2(p.velocity.x, p.velocity.z).length() >= 0.3:
-			box_reach = float(PlayerRig.SIGHT_STAND[clampi(light, 0, 2)])
+			box_reach = minf(float(PlayerRig.SIGHT_STAND[clampi(light, 0, 2)]), sight_cap)
 		if d > maxf(maxf(reach, box_reach), CLOSE_SENSE):
 			continue
 		if d > CLOSE_SENSE:
@@ -358,7 +392,7 @@ func _look_van(space: PhysicsDirectSpaceState3D, eye: Vector3, fwd: Vector3) -> 
 	# close by the van is "simply there" with no sight line, so it sensed the
 	# van through the gallery wall, went for it and stood against the wall
 	# for good (the F6 watched run)
-	if v == null or v.attack.tarped or keeps_post:
+	if v == null or v.attack.tarped or keeps_post or director.is_valid():
 		return
 	var d := _flat_dist(v.global_position)
 	var reach := VanAttack.NEAR
@@ -518,6 +552,14 @@ func _move(delta: float) -> void:
 				target = null
 				took.emit(p)
 				Taken.take(p, self)
+	_dir_speed = -1.0
+	var face := Vector3.INF
+	if director.is_valid() and state == State.WANDER and _noticed_t >= ATTEND:
+		var dd: Dictionary = director.call()
+		if dd.has("goal"):
+			goal = dd["goal"]
+			_dir_speed = float(dd.get("speed", -1.0))
+			face = dd.get("face", Vector3.INF)
 	for f in funnels:
 		var box: AABB = f["box"]
 		if box.has_point(goal) and not box.has_point(global_position):
@@ -531,10 +573,24 @@ func _move(delta: float) -> void:
 		var spd := float(SPEED[State.CURIOUS if naresh_drawn and state == State.WANDER else state])
 		if naresh_drawn and state == State.WANDER and on_return:
 			spd = RETURN_DRIFT
+		if _dir_speed > 0.0:
+			spd = _dir_speed
 		v = to.normalized() * spd
 		v = _unstick(v, delta)
 		var want := atan2(-v.x, -v.z) if v.length() > 0.05 else atan2(-to.x, -to.z)
-		rotation.y = lerp_angle(rotation.y, want, 1.0 - exp(-delta * (10.0 if state == State.TAKE else 4.0)))
+		if turn_cap > 0.0:
+			# capped while walking too (it set off and snapped its last 17 deg, 66 deg/s)
+			rotation.y = rotate_toward(rotation.y, want, deg_to_rad(turn_cap) * delta)
+		else:
+			rotation.y = lerp_angle(rotation.y, want, 1.0 - exp(-delta * (10.0 if state == State.TAKE else 4.0)))
+	elif face != Vector3.INF:
+		var look2 := face - global_position
+		if Vector2(look2.x, look2.z).length() > 0.2:
+			var want_y := atan2(-look2.x, -look2.z)
+			if turn_cap > 0.0:
+				rotation.y = rotate_toward(rotation.y, want_y, deg_to_rad(turn_cap) * delta)
+			else:
+				rotation.y = lerp_angle(rotation.y, want_y, 1.0 - exp(-delta * face_rate))
 	elif (state != State.WANDER or _noticed_t < ATTEND) and last_noticed != global_position:
 		var look := last_noticed - global_position
 		if Vector2(look.x, look.z).length() > 0.2:
@@ -580,10 +636,52 @@ func _flat_dist(p: Vector3) -> float:
 	return Vector2(p.x - global_position.x, p.z - global_position.z).length()
 
 
-## Eyes brighten and the whine rises with suspicion.
-func _show(_delta: float) -> void:
-	var glow := lerpf(0.4, 6.0, suspicion)
+## Eyes brighten and the whine rises with suspicion (or a puzzle's interest);
+## the body leans, folds down or slumps, and the head turns to what it looks at.
+func _show(delta: float) -> void:
+	var level := maxf(suspicion, show_interest)
+	var glow := lerpf(0.4, 6.0, level)
 	_eye_mat.emission_energy_multiplier = glow
-	_glow_mat.albedo_color.a = lerpf(0.35, 1.0, suspicion)
-	_hum.target = 0.35 + suspicion * 0.65
-	_hum.pitch = 1.0 + suspicion * 1.6
+	_glow_mat.albedo_color.a = lerpf(0.35, 1.0, level)
+	_hum.target = 0.35 + level * 0.65
+	_hum.pitch = 1.0 + level * 1.6
+	if _rig == null:
+		return
+	var k := 1.0 - exp(-delta * 3.0)
+	_lean = lerpf(_lean, 1.0 if pose == "lean" else 0.0, k)
+	_crouch = lerpf(_crouch, 1.0 if pose == "crouch" else 0.0, k)
+	_slump = lerpf(_slump, 1.0 if pose == "slump" else 0.0, 1.0 - exp(-delta * 1.2))
+	# hinged at the feet: forward is -Z, so a forward bend is a negative X turn
+	_rig.rotation.x = -0.38 * _lean - 0.55 * _crouch + 0.10 * _slump
+	_rig.scale = Vector3(1.0, 1.0 - 0.38 * _crouch, 1.0)
+	# the head: towards what it looks at (within 110 deg of its body), nodding down when slumped
+	var yaw := 0.0
+	var pitch := -0.65 * _slump + 0.25 * _crouch
+	if look_point != Vector3.INF:
+		var lp := global_transform.affine_inverse() * look_point
+		yaw = clampf(atan2(-lp.x, -lp.z), deg_to_rad(-110.0), deg_to_rad(110.0))
+		var flat := Vector2(lp.x, lp.z).length()
+		pitch += clampf(atan2(lp.y - (HEIGHT - 0.3), maxf(flat, 0.3)), -0.7, 0.5)
+	_head.rotation.y = lerp_angle(_head.rotation.y, yaw, 1.0 - exp(-delta * 5.0))
+	_head.rotation.x = lerpf(_head.rotation.x, pitch, 1.0 - exp(-delta * 4.0))
+	# crouched down at something, it sniffs
+	if pose == "crouch" and _crouch > 0.7:
+		_sniff_t -= delta
+		if _sniff_t <= 0.0:
+			_sniff_t = randf_range(1.4, 2.4)
+			sniffs += 1
+			Sfx.play3d("sniff", _head.global_position, -2.0)
+	else:
+		_sniff_t = 0.4
+
+
+## Where its eyes are (tests and the puzzles read it).
+func eye_point() -> Vector3:
+	return _head.global_position + _head.global_transform.basis.y * 0.15 if _head != null else global_position + Vector3.UP * (HEIGHT - 0.27)
+
+
+## Which way its head faces, flat (tests read it).
+func head_forward() -> Vector3:
+	var f := -_head.global_transform.basis.z if _head != null else -global_transform.basis.z
+	f.y = 0.0
+	return f.normalized()

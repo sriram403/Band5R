@@ -529,3 +529,185 @@ works something he was told to; `naresh` checks it.
 
 **Found later**
 - (nothing yet)
+
+---
+
+## #6 The ghat: Problem and the heat rule (branch `g15` from `main` 0705897; NOT merged, NOT pushed, waits for the user's look)
+
+### L1 the heat rule (2026-11-09)
+**What changed**
+- `vehicle/VanAttack.gd`: the heat rule for every encounter. A Problem that
+  wants the van calls `creature_interested()` each tick; while it does
+  (`interested()`), the van leaks 4 L/min (capped 17.5 L an encounter, never
+  below 4 L) and heats (`heat_rate`: 0.3 + 1.9 x throttle + 0.12 x m/s deg/s,
+  0.6 deg/s with the engine off). The old near-the-van harms (cough at 30 s,
+  puncture at 60 s) are kept for other creatures.
+- `vehicle/Camper.gd`: `_problem_heat` (the needle never falls while it's
+  interested; steaming boils coolant away), `boil_dry()` (half the coolant
+  gone, no restart until it is back over 75 %), `boiled_dry`, `STALL_DRAG` (a
+  dead engine in gear drags the van to a stop).
+- `creatures/Creature.gd`: `director` (a puzzle steers it while it has
+  nothing else on its mind; it still sees and hears players); generic
+  creatures report interest (`van_interest > 0`).
+- `world/Ghat.gd`: the old glimpse + attacker at the pass replaced by
+  Problem: watch -> follow -> come -> circle -> leave. Seen at hairpin 1
+  (`SEEN_HAIRPIN`, Q1 pick B pending the user: hairpin 2 leaves 170 m, too
+  short). Fog now up to the pass. A pass guard 50 m short (should never fire).
+- `story/Story.gd`: `hide_van` reworded; new step `ghat_fix`.
+- `ui/PlayerHUD.gd`: TEMP / COOL bars and "ENGINE HOT" hidden while a Problem
+  is interested (Q2 pick B pending the user).
+
+**What it could break**
+- Every creature that wants the van now heats + leaks it until it loses
+  interest (driving away no longer stops the leak): `van` (adapted),
+  `tower`, `decoy`, `saltpans`, `tunnel`, the return run.
+- Old ghat tests: `ghat`, `ghat_menu`, `way_out`/long drives (they expect the
+  creature at the pass), `puzzle_resets` (flags), `storm_road`.
+- Taken.gd's leak after being taken (unchanged, but adds to the new leak).
+
+**Tests that cover it**
+- `ghat_heat` (new; 3 driving profiles): see the run results below.
+- `van` (gym creature, adapted to the rule).
+- Run 2026-11-09 20:36 (`ghat_heat`, 3 profiles, ~9 min): **0 failures**.
+  Seen -> boiled: flat out 6 s (at rest sample 319), cornering 17 s (308),
+  crawling 29 s (292); pass at 382, fog to 380, guard never fired. Hiding well
+  leaves coolant at 21-25 % (one 2.5 L pot refills it to 75 %).
+- `van` (gym creature): 0 failures after adapting 2 checks to the rule.
+
+**Issues found while building L1, each with its own check (prove in L6 against a planted bug + clean run)**
+| Issue found | Check (in `ghat_heat`) | Plant to prove it |
+|---|---|---|
+| the dead van coasted over the pass | "comes to rest before the pass, in the fog" | `STALL_DRAG = 0` |
+| the breakdown came out of the fog (fog ended at 363) | same check (fog > 0.9) | `fog_to = point_count - 20` |
+| seen at hairpin 2, the heat alone couldn't boil it before the pass | "the heat alone boils it, the pass guard not needed" | `SEEN_HAIRPIN = 1` |
+| the HUD showed TEMP / COOL bars and "ENGINE HOT" | "hot with it watching: no bars, no banner; the grille steams" | remove the `problem_on` guard |
+| my test counted heat on the tick it saw the van | (test fixed; the check "no heat before it sees the van") | — |
+
+### L2 Problem's looks and sounds (2026-11-09)
+**What changed**
+- `creatures/Creature.gd`: everything you see hinged at the feet (`_rig`) and a
+  head on its own neck (`_head`); `pose` (stand / lean / crouch / slump),
+  `look_point`, `show_interest` (eyes + whine), `turn_cap` (deg/s), sniffs at
+  a crouch; `eye_point()`, `head_forward()`.
+- `world/Ghat.gd`: in the watch only its head follows the van (2.5 s, eyes dim
+  -> bright); at the van a round of stops (`ROUND`: bonnet, driver's window,
+  back, passenger's window); giving up it slumps, turns away at 35 deg/s and
+  sets off only once facing away.
+- `vehicle/Camper.gd`: hot metal ticks (`tick_every`, faster with heat), a
+  kettle hiss when boiled dry. `audio/Sfx.gd` + `tools/gen/problem_sounds.py`:
+  sniff, gasp.
+
+**What it could break**: every creature now has its meshes under `Rig` /
+`HeadPivot` (nothing found reading the old layout); the creature gym, the
+tower, the decoy, salt pans (looks only).
+
+**Tests**: `ghat_looks` 0 failures (2026-11-09 21:2x).
+**Issues found, each with its check**
+| Issue | Check | Plant to prove |
+|---|---|---|
+| leaning in at a window its head went through the glass | "its face stays outside the glass" | window stops back at x 2.3 |
+| the give-up turn snapped round (204-228 deg/s): it set off before facing away | "it turns away slowly" | remove the facing test in `_direct` |
+| (test) the round's last stop was counted on arrival, before the crouch | — | — |
+
+### L3 the shade-net tarp (2026-11-09)
+**What changed**
+- `shaders/shade_net.gdshader` (inside: a faint weave, back faces only) and
+  `shaders/shade_net_out.gdshader` (outside: an opaque dark weave); the tarp is
+  one box over the whole van (bumper to spare wheel) plus the rack, each in
+  both layers. The window gap and "only the door mirrors" are gone.
+
+**What it could break**: `van` (tarp pulled in the creature gym), `ghat`,
+the tower / salt pans hides, mirrors under the tarp (they're inside it now).
+
+**Tests**: `ghat_net` 0 failures.
+| Issue | Check | Plant to prove |
+|---|---|---|
+| one see-through layer: from outside the windows and bonnet showed through | "from outside nothing of the van shows through the net" | one layer again (`shade_net.gdshader` on both) |
+| the net box stopped short of the van's nose | same check | box length back to 7.0 |
+
+### L4 coolant, S2, S3, S5 (2026-11-09)
+**What changed**
+- `items/WaterPot.gd` (new): an old steel pot, 2.5 L of water, kind "coolant" (the radiator takes it).
+- `world/Ghat.gd`: three springs (samples 268 / 304 / 342: one within 80 m back of anywhere past 268),
+  each a pipe in a dressed stone, a puddle, rocks as they fell, its pot on a flat stone; hold use with
+  the pot at the pipe to fill it. Naresh's note on a milestone (sample 205, before hairpin 1). S3: at a
+  window it leans in at, the seated player there holds crouch (Ctrl / pad B) to hold their breath;
+  breathing fogs the glass, letting go early or running out is a gasp; either way it noticed (its
+  search restarts), but each window can give you away only once an encounter. It gives up only after
+  25 s of quiet **and** a full round of its stops. Once given up it is passive (no sight); the hot
+  cap's yelp brings it back (`cap_blows`).
+- `vehicle/Camper.gd`: the net must come off before the bonnet; the cap opens with empty hands; open
+  while it still hisses (> 104 C): a WHOOSH, a white screen, a yelp, 8 % coolant lost (`_blow_cap`);
+  `fog_window`; `breath_lock` (B / Ctrl don't work the handbrake while you hold your breath).
+- `ui/PlayerHUD.gd`: `steam_flash`, the breath bar (`set_breath`). `audio/Sfx.gd`: gasp.
+
+**What it could break**: anything pouring coolant (the opening's split hose, the windmill): the cap's
+prompt now shows when boiled or hissing; the handbrake while a breath is held; `save` (pots are loose items).
+
+**Tests**: `ghat_places` 0 failures; `ghat_jug`, `ghat_spring` (see the run below).
+| Issue found | Check | Plant to prove |
+|---|---|---|
+| the last spring was 90 m short of the pass | "wherever it dies past the first spring, a spring is at most x m back" | springs back at 262 / 298 / 334 |
+| hold-breath never came up (a seat compared with the van) | "at P1's window: HOLD Ctrl" / "both windows visited" | `seat == van` again |
+| under the net it gave up before reaching a window | "it gives up, only after a full round" (looks) | drop the `stops_done` condition |
+| nobody held their breath: the search never ended | "quiet at last, it gives up" (spring) | every window restarts its search |
+| out beside it as it gave up, it took P1 | "out beside it after it gave up: nobody is taken" | not passive when it gives up |
+| the cap's status text hid "Open the radiator cap" | "at the bonnet, still hissing: 'Open the radiator cap'" | blocked text back when hot |
+| (test) a deleted jug found again by name; a 70 ms key tap missed after the long F1 teleport (logged as SUSPECT) | — | — |
+
+### L5 marks that stay, saves, the end-credits turn (2026-11-09)
+**What changed**
+- `vehicle/Camper.gd`: `marks` (handprints on the glass and the bonnet, a dent, scrapes on the back
+  doors, each with a seed and an encounter number), `add_mark`, `set_marks`, `drop_marks`.
+- `world/Ghat.gd`: each posed stop of its round leaves its mark once an encounter; `adjust_save`: a save
+  mid-encounter goes back to 90 m before hairpin 1 (the van as it was, flags and this encounter's marks
+  undone, pots back at their springs); `match_story`; a jump back to the ghat clears the van's marks.
+- `core/SaveGame.gd`: saves `marks` and `boiled_dry`; calls `Ghat.adjust_save` and `match_story`.
+- `world/Homecoming.gd`: `show_end` first turns slowly round the van for 16 s (its own viewport over
+  both halves, "The van. Everything they left on it is still there."), then the old end card.
+
+**What it could break**: `save`, `bessi_jumps`, `step_jumps` (jumps back clear marks), `home` (the end
+screen's timing: E now works after 21 s, not 5).
+
+**Tests**: `ghat_marks` 0 failures (run 2026-11-09 22:04).
+| Issue found | Check | Plant to prove |
+|---|---|---|
+| marks piled up across replays of #6 | "a clean van to start with" | don't clear marks on reset |
+| — (the user's ask) | "the marks are saved and come back on load" | don't save marks |
+
+### L6 the test method ported to #6 (2026-11-09)
+**What changed**
+- From `g14-final` (the research's method, `notes/method_research/FINAL.md`): `dev/RigBeat.gd`,
+  `dev/MethodRec.gd`, `dev/C2Watch.gd`, `dev/RigInject.gd`, `tools/method/*`, `tools/method_run.sh`,
+  `tools/rig/*`; PlayTest's method hooks applied 3-way (no conflicts).
+- New for #6: `tools/method_run.sh ghat` (`GHAT=` scenarios, `FIXTURE=` plants); `tools/method/
+  make_ghat_manifest.py` (a scenario's checks *and* its helpers', `%%` handled) and `freeze_ghat.py`
+  (113+ required checks, work receipts seen / boiled / gave_up / fixed / over_pass); `dev/GhatWatch.gd`
+  (state rules H1 heat only while interested, H2 the needle shows the real heat, H3 coolant only rises
+  when poured); `core/Plant.gd` (planted bugs, off by default, one per check, read only at the line
+  each breaks); `tools/method/prove_ghat.py` (runs the planted groups, writes PROVED / NOT PROVED);
+  per-scenario episode deadlines (`PlayTest.EPISODE_S`); the method's whole-run cap and scope for
+  `ghat`; `whole_run_cap_ghat_s` 3300.
+- `MethodRec.WATCHED` gains the 7 #6 scenarios.
+
+**What it could break**: the ramp's method run (`tools/method_run.sh ramp`): the PlayTest hooks are the
+same, `frozen.json` gained entries; not re-run.
+
+**Found by the method's first runs**
+- TEST, correctly: two checks print "50%" and the manifest builder read `%%` literally (fixed).
+- STALLED, correctly: #6's scenarios need their own episode limits (`EPISODE_S`).
+- The clean run: `ghat_heat`'s follow-on waited 55 s for the give-up, but with nobody holding their
+  breath it takes ~3 rounds (by design now): the test hides well there; `ghat_looks` 66 deg/s: the walk
+  away wasn't turn-capped (fixed in `Creature._move`).
+
+### L6 finishing (2026-11-10)
+- The stall drag deleted (measured useless: 32 m vs 36 m of coasting after a boil); plant `no_stall_drag` gone; window-lean plant moved to 2.0 m (at 2.3 m its face stayed 0.14 m outside the glass). Could break: where a boiled van rolls to a stop (`ghat_heat` "it comes to rest before the pass").
+- `ghat_heat`'s follow-on: nobody holds their breath any more; new check "sitting there breathing, a window gives you away only once: its second visit lingers" (plant `endless_window`, moved from `ghat_spring`, which never visits a window twice). Could break: the give-up takes ~3 rounds (wait 180 s).
+- **The jug left on the road (bug fix, all puzzles):** `Carryable.stow` takes a stowed item out of the physics world (`process_mode` DISABLED), back on `unstow`. Could break: anything stowed or taken off the rack anywhere (fuel cans, the drum, boxes, the ramp's fling). Covered: `ghat_jug` "the jug rode up the ghat in its place on the rack" (plant `stow_live`), `ghat_jug` / `ghat_spring` take items off the rack, `ramp` (the can thrown off: passed once, landed in the water once, as it did once before the fix; `fling_bench`: identical throw with and without the fix).
+- **Tail lights** 2.5 cm proud of the back doors (were coplanar: flickered); named `TailLightL/R`. Check in `ghat_net` (plant `tail_flush`).
+- **`t_ramp`:** P2 waits for the "Leg-up" offer before jumping. The ramp's two flaky steps (can in the water, leg-up miss) are OPEN (ROUGH_NOTES 2026-11-10).
+- **Final clean run 2026-11-10:** `tools/method_run.sh ghat` PASS, 7 / 7 scenarios, 119 / 119 required checks, 0 FAILs, H1-H3 clean, 1163 s (`appdata/method/runs/20261110_152703_ghat_k3`). Proofs: 22 plants PROVED (`appdata/method/prove_ghat.txt`).
+- **Later on 2026-11-10 (found by the walk), each with its check and plant:** after the hot cap Problem listens 10 s (`no_listen`, `ghat_spring`, the user's pick A); a hold past the net's finish no longer pulls it back off (`hold_through`, `ghat_net`); Problem walks round the van, not into it (`round_through`, `ghat_looks`). Walk fixes: P2 on the pad, no handbrake release after drives, pot trips round the passenger side.
+- **Final clean run 2, after all of today's game changes:** PASS, 7 / 7, 122 / 122 required checks, 0 FAILs (`20261110_171622_ghat_k3`).
+- **Also found by the walk (2026-11-10):** when the van stops Problem stares, reaching it no sooner than 24 s later (`no_min_warn`, `ghat_heat`); in the ghat's fog it sees 15 m (`fog_sees_far`, `ghat_heat`; the user's pick A). Test driver brakes when the engine dies.
+- **Final clean run 3 (all changes in):** PASS, 7 / 7, 124 / 124, 0 FAILs (`20261110_192650_ghat_k3`). 27 / 27 plants PROVED (table: `notes/method_research/FINAL.md` addendum). Video take 3: `appdata/videos/ghat.mp4` (6:41, all 21 steps, nobody taken).

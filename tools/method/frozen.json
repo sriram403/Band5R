@@ -1,0 +1,1408 @@
+{
+ "version": "final-2 (2026-11-06: + 4 checks for the exam misses: the leak boils and stops the van, the rewards by the bench, the refitted wheel turns, the van steers straight) | ghat-1 (2026-11-09: the method ported to #6, the ghat: 7 scenarios, 113 required checks from make_ghat_manifest.py, work receipts, GhatWatch H1-H3)",
+ "sources": "notes/method_research/final_decisions.md (the user's answers 2026-11-06), final_method_draft.md M1-M21, final_r3_gpt.md C1-C4",
+ "policy": {
+  "jump_tries": 1,
+  "departure": "checks",
+  "script_error": "split",
+  "headline": "earliest",
+  "missing_object": "fail_unresolved",
+  "owner_game": "never assigned automatically in this build (owner=UNRESOLVED unless demonstrated)"
+ },
+ "statuses": {
+  "PASS": 0,
+  "FAIL": 1,
+  "INCOMPLETE": 2,
+  "TEST": 3,
+  "NOT HEALTHY": 4
+ },
+ "limits": {
+  "poll_s": 0.5,
+  "startup_first_beat_s": 45,
+  "no_beat_s": 20,
+  "no_physics_s": 10,
+  "pause_s": 5,
+  "missing_actor_beats": 2,
+  "shot_s": 5,
+  "simple_setup_s": 10,
+  "drive_reset_s": 46,
+  "until_extra_s": 2,
+  "door_s": 6,
+  "episode_ramp_s": 240,
+  "episode_c2_more_s": 90,
+  "progress_s": 5,
+  "kill_verify_s": 5,
+  "headline_tie_s": 2.0,
+  "whole_run_cap_s": 600,
+  "_source": "M3 (GPT r2 D8); door 4 s walk + 2 s; reset wait is until(6) + 2 = 8 s (see final_build.md)",
+  "whole_run_cap_ghat_s": 3300
+ },
+ "thresholds": {
+  "G1_drift_m": 0.3,
+  "G1_window_s": 5.0,
+  "G2_dry_m": 0.3,
+  "G2_out_m": 5.0,
+  "G2_secs": 1.0,
+  "G3_sunk_m": -0.12,
+  "G3_parked_s": 0.5,
+  "G4_secs": 0.5,
+  "G4_loose_m": 1.5,
+  "D1_box_m": [
+   1.0,
+   0.7,
+   1.2
+  ],
+  "D3_secs": 4.0,
+  "G3b_tolerance_m": 0.01,
+  "G3b_tolerance_source": "q1 20261106_152334_ramp_k0 + q2 20261106_152640_ramp_k4: 6 parked evaluations (hub + 3 tyres, 4 tyres), clean max norm 0.0000 m <= 0.01 m; tolerance = 0.0000 + 0.01",
+  "_source": "C2Watch.gd constants as built (M7); G3b = clean max norm + 0.01 m, clean max <= 0.01 m (M8)"
+ },
+ "profiles": {
+  "k0": [
+   62,
+   -0.5
+  ],
+  "k1": [
+   64,
+   0.5
+  ],
+  "k2": [
+   66,
+   0.0
+  ],
+  "k3": [
+   80,
+   -0.5
+  ],
+  "k4": [
+   80,
+   0.5
+  ],
+  "_source": "M12 (GPT r2 D2)"
+ },
+ "required": {
+  "ramp": {
+   "checks": [
+    {
+     "id": "ramp/the_ramp_stands_at_the_gap",
+     "regex": "^the\\ ramp\\ stands\\ at\\ the\\ gap$",
+     "line": 11826,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/naresh_s_note_on_the_post_can_be_read_from_the_road_side",
+     "regex": "^Naresh's\\ note\\ on\\ the\\ post\\ can\\ be\\ read\\ from\\ the\\ road\\ side$",
+     "line": 11844,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/with_a_coolant_leak_the_boiling_engine_is_stopped_before_the",
+     "regex": "^with\\ a\\ coolant\\ leak\\ the\\ boiling\\ engine\\ is\\ stopped\\ before\\ the\\ gap$",
+     "line": 11874,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/at_x_km_h_the_van_falls_short",
+     "regex": "^at\\ (.*?)\\ km/h\\ the\\ van\\ falls\\ short$",
+     "line": 11885,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/a_fade_then_back_at_the_run_up_both_still_aboard",
+     "regex": "^a\\ fade,\\ then\\ back\\ at\\ the\\ run\\-up,\\ both\\ still\\ aboard$",
+     "line": 11887,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/nothing_lost_the_wheel_on_the_can_on_the_rack",
+     "regex": "^nothing\\ lost:\\ the\\ wheel\\ on,\\ the\\ can\\ on\\ the\\ rack$",
+     "line": 11888,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/flat_out_the_van_makes_it_x_km_h_at_the_lip",
+     "regex": "^flat\\ out\\ the\\ van\\ makes\\ it\\ \\((.*?)\\ km/h\\ at\\ the\\ lip\\)$",
+     "line": 11893,
+     "kind": "jump"
+    },
+    {
+     "id": "ramp/it_stays_on_its_wheels",
+     "regex": "^it\\ stays\\ on\\ its\\ wheels$",
+     "line": 11896,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_landing_the_wheel_off_through_the_shutter_in_the_hut",
+     "regex": "^the\\ landing:\\ the\\ wheel\\ off,\\ through\\ the\\ shutter,\\ in\\ the\\ hut$",
+     "line": 11899,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_van_sits_on_its_bare_hub",
+     "regex": "^the\\ van\\ sits\\ on\\ its\\ bare\\ hub$",
+     "line": 11900,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_story_get_the_wheel_back_on",
+     "regex": "^the\\ story:\\ get\\ the\\ wheel\\ back\\ on$",
+     "line": 11901,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_wheel_lies_on_the_hut_s_floor",
+     "regex": "^the\\ wheel\\ lies\\ on\\ the\\ hut's\\ floor$",
+     "line": 11905,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_can_flew_off_the_rack_and_landed_on_dry_ground_x_m_from_",
+     "regex": "^the\\ can\\ flew\\ off\\ the\\ rack\\ and\\ landed\\ on\\ dry\\ ground,\\ (.*?)\\ m\\ from\\ the\\ van$",
+     "line": 11906,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/parked_on_its_hub",
+     "regex": "^parked\\ on\\ its\\ hub$",
+     "line": 11915,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/off_the_edge_p2_is_in_the_river",
+     "regex": "^off\\ the\\ edge,\\ P2\\ is\\ in\\ the\\ river$",
+     "line": 11929,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/and_swims_out_on_the_van_s_side",
+     "regex": "^and\\ swims\\ out\\ on\\ the\\ van's\\ side$",
+     "line": 11931,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_door_says_it_s_bolted_from_inside",
+     "regex": "^the\\ door\\ says\\ it's\\ bolted\\ from\\ inside$",
+     "line": 11941,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/a_leg_up_alone_doesn_t_reach_the_shutter",
+     "regex": "^a\\ leg\\-up\\ alone\\ doesn't\\ reach\\ the\\ shutter$",
+     "line": 11963,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/p1_picks_up_the_crate",
+     "regex": "^P1\\ picks\\ up\\ the\\ crate$",
+     "line": 11973,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/crate_leg_up_p2_is_in_through_the_smashed_shutter",
+     "regex": "^crate\\ \\+\\ leg\\-up:\\ P2\\ is\\ in\\ through\\ the\\ smashed\\ shutter$",
+     "line": 11997,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_toolbox_on_the_bench",
+     "regex": "^the\\ toolbox\\ on\\ the\\ bench$",
+     "line": 12008,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/naresh_s_tiffin_on_the_bench",
+     "regex": "^Naresh's\\ tiffin\\ on\\ the\\ bench$",
+     "line": 12013,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/from_inside_slide_the_bolt",
+     "regex": "^from\\ inside:\\ slide\\ the\\ bolt$",
+     "line": 12020,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_door_opens",
+     "regex": "^the\\ door\\ opens$",
+     "line": 12025,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/p1_walks_in_through_the_open_door",
+     "regex": "^P1\\ walks\\ in\\ through\\ the\\ open\\ door$",
+     "line": 12032,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/p1_picks_up_the_van_s_wheel",
+     "regex": "^P1\\ picks\\ up\\ the\\ van's\\ wheel$",
+     "line": 12038,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/out_of_the_door_with_the_wheel",
+     "regex": "^out\\ of\\ the\\ door\\ with\\ the\\ wheel$",
+     "line": 12044,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_wheel_put_down_by_the_hub",
+     "regex": "^the\\ wheel\\ put\\ down\\ by\\ the\\ hub$",
+     "line": 12050,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_sill_offers_the_jack_x",
+     "regex": "^the\\ sill\\ offers\\ the\\ jack\\ \\('(.*?)'\\)$",
+     "line": 12055,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_jack_s_set_no_nuts_to_undo_the_wheel_s_gone",
+     "regex": "^the\\ jack's\\ set;\\ no\\ nuts\\ to\\ undo,\\ the\\ wheel's\\ gone$",
+     "line": 12057,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/without_new_nuts_it_says_so",
+     "regex": "^without\\ new\\ nuts\\ it\\ says\\ so$",
+     "line": 12063,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/and_the_wheel_stays_in_your_hands",
+     "regex": "^and\\ the\\ wheel\\ stays\\ in\\ your\\ hands$",
+     "line": 12065,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_toolbox_new_nuts_pocketed",
+     "regex": "^the\\ toolbox:\\ new\\ nuts,\\ pocketed$",
+     "line": 12074,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/a_can_of_fuel_and_a_jug_of_coolant_by_the_bench",
+     "regex": "^a\\ can\\ of\\ fuel\\ and\\ a\\ jug\\ of\\ coolant\\ by\\ the\\ bench$",
+     "line": 12082,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/now_it_fits",
+     "regex": "^now\\ it\\ fits$",
+     "line": 12088,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_van_s_own_wheel_goes_on_the_spare_isn_t_used",
+     "regex": "^the\\ van's\\ own\\ wheel\\ goes\\ on\\ \\(the\\ spare\\ isn't\\ used\\)$",
+     "line": 12091,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_jack_down_the_wheel_s_on",
+     "regex": "^the\\ jack\\ down:\\ the\\ wheel's\\ on$",
+     "line": 12094,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_story_moves_on_x",
+     "regex": "^the\\ story\\ moves\\ on:\\ (.*?)$",
+     "line": 12096,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_refitted_wheel_turns_as_the_van_drives_x_of_x_frames",
+     "regex": "^the\\ refitted\\ wheel\\ turns\\ as\\ the\\ van\\ drives\\ \\((.*?)\\ of\\ (.*?)\\ frames\\)$",
+     "line": 12107,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/the_van_steers_straight_after_the_fix_pull_x",
+     "regex": "^the\\ van\\ steers\\ straight\\ after\\ the\\ fix\\ \\(pull\\ (.*?)\\)$",
+     "line": 12108,
+     "kind": "plain"
+    },
+    {
+     "id": "ramp/and_drives_off_x_m",
+     "regex": "^and\\ drives\\ off\\ \\((.*?)\\ m\\)$",
+     "line": 12110,
+     "kind": "departure"
+    },
+    {
+     "id": "ramp/and_gets_back_to_the_road_x_m_off_it",
+     "regex": "^and\\ gets\\ back\\ to\\ the\\ road\\ \\((.*?)\\ m\\ off\\ it\\)$",
+     "line": 12112,
+     "kind": "departure"
+    }
+   ],
+   "attempts": 2
+  },
+  "c2_more": {
+   "work": [
+    "c2.door_walk",
+    "c2.slow_miss_hands_off",
+    "c2.f1_landed_state"
+   ],
+   "windows": [
+    "G1",
+    "G3",
+    "G3b"
+   ],
+   "evaluated": [
+    "G1",
+    "G2",
+    "G3",
+    "G3b",
+    "G4",
+    "D1",
+    "D2",
+    "D3"
+   ]
+  },
+  "ghat_heat": {
+   "checks": [
+    {
+     "id": "ghat_heat/f1_puzzles_6_both_in_the_van_at_the_foot_of_the_ghat_no_prob",
+     "regex": "^F1\\ \\->\\ Puzzles\\ \\->\\ 6:\\ both\\ in\\ the\\ van\\ at\\ the\\ foot\\ of\\ the\\ ghat,\\ no\\ Problem\\ yet$",
+     "line": 4333,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_heat/the_engine_starts_x",
+     "regex": "^the\\ engine\\ starts\\ \\('(.*?)'\\)$",
+     "line": 4353,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_heat/x_hot_with_it_watching_no_temp_cool_bars_no_engine_hot_banne",
+     "regex": "^(.*?):\\ hot\\ with\\ it\\ watching:\\ no\\ TEMP\\ /\\ COOL\\ bars,\\ no\\ 'ENGINE\\ HOT'\\ banner;\\ the\\ grille\\ steams\\ \\(warn\\ '(.*?)'\\)$",
+     "line": 4400,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_no_heat_or_leak_from_it_before_it_sees_the_van_x_c_x_l_min",
+     "regex": "^(.*?):\\ no\\ heat\\ or\\ leak\\ from\\ it\\ before\\ it\\ sees\\ the\\ van\\ \\((.*?)\\ C,\\ (.*?)\\ L/min\\)$",
+     "line": 4416,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_it_sees_the_van_at_hairpin_x_sample_x_apex_x",
+     "regex": "^(.*?):\\ it\\ sees\\ the\\ van\\ at\\ hairpin\\ (.*?)\\ \\(sample\\ (.*?),\\ apex\\ (.*?)\\)$",
+     "line": 4418,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_while_it_s_interested_the_needle_never_falls_largest_drop_",
+     "regex": "^(.*?):\\ while\\ it's\\ interested\\ the\\ needle\\ never\\ falls\\ \\(largest\\ drop\\ (.*?)\\ C\\)$",
+     "line": 4421,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_the_engine_boils_and_dies_x_s_after_being_seen",
+     "regex": "^(.*?):\\ the\\ engine\\ boils\\ and\\ dies\\ \\((.*?)\\ s\\ after\\ being\\ seen\\)$",
+     "line": 4422,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_the_fog_lies_all_the_way_up_to_the_pass_to_sample_x_of_x",
+     "regex": "^(.*?):\\ the\\ fog\\ lies\\ all\\ the\\ way\\ up\\ to\\ the\\ pass\\ \\(to\\ sample\\ (.*?)\\ of\\ (.*?)\\)$",
+     "line": 4424,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_it_comes_to_rest_before_the_pass_in_the_fog_sample_x_of_x_",
+     "regex": "^(.*?):\\ it\\ comes\\ to\\ rest\\ before\\ the\\ pass,\\ in\\ the\\ fog\\ \\(sample\\ (.*?)\\ of\\ (.*?),\\ boiled\\ at\\ (.*?),\\ fog\\ (.*?)\\)$",
+     "line": 4426,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_the_heat_alone_boils_it_the_pass_guard_not_needed",
+     "regex": "^(.*?):\\ the\\ heat\\ alone\\ boils\\ it,\\ the\\ pass\\ guard\\ not\\ needed$",
+     "line": 4428,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_fuel_leaks_while_it_s_interested_x_l_cap_x",
+     "regex": "^(.*?):\\ fuel\\ leaks\\ while\\ it's\\ interested\\ \\((.*?)\\ L,\\ cap\\ (.*?)\\)$",
+     "line": 4432,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_no_puncture",
+     "regex": "^(.*?):\\ no\\ puncture$",
+     "line": 4433,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_it_won_t_start_x",
+     "regex": "^(.*?):\\ it\\ won't\\ start:\\ '(.*?)'$",
+     "line": 4436,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/harder_driving_boils_it_sooner_flat_out_x_s_cornering_x_s_cr",
+     "regex": "^harder\\ driving\\ boils\\ it\\ sooner\\ \\(flat\\ out\\ (.*?)\\ s,\\ cornering\\ (.*?)\\ s,\\ crawling\\ (.*?)\\ s\\)$",
+     "line": 4439,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_in_the_fog_it_doesn_t_see_someone_25_m_off_suspicion_x_1_i",
+     "regex": "^(.*?):\\ in\\ the\\ fog\\ it\\ doesn't\\ see\\ someone\\ 25\\ m\\ off\\ \\(suspicion\\ (.*?);\\ \\-1\\ =\\ it\\ never\\ came\\)$",
+     "line": 4466,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_even_from_15_m_it_stares_first_x_s_to_hide_before_it_reach",
+     "regex": "^(.*?):\\ even\\ from\\ 15\\ m\\ it\\ stares\\ first:\\ (.*?)\\ s\\ to\\ hide\\ before\\ it\\ reaches\\ the\\ van$",
+     "line": 4480,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_it_comes_up_to_the_van_and_circles_it_still_interested",
+     "regex": "^(.*?):\\ it\\ comes\\ up\\ to\\ the\\ van\\ and\\ circles\\ it,\\ still\\ interested$",
+     "line": 4481,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_under_the_tarp_kept_quiet_it_gives_up",
+     "regex": "^(.*?):\\ under\\ the\\ tarp,\\ kept\\ quiet,\\ it\\ gives\\ up$",
+     "line": 4504,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/sitting_there_breathing_a_window_gives_you_away_only_once_it",
+     "regex": "^sitting\\ there\\ breathing,\\ a\\ window\\ gives\\ you\\ away\\ only\\ once:\\ its\\ second\\ visit\\ lingers\\ \\(visits\\ (.*?),\\ restarts\\ (.*?)\\)$",
+     "line": 4505,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_while_it_searched_the_needle_never_fell_x_lowest_x_c",
+     "regex": "^(.*?):\\ while\\ it\\ searched\\ the\\ needle\\ never\\ fell\\ \\((.*?),\\ lowest\\ (.*?)\\ C\\)$",
+     "line": 4506,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/x_once_it_gives_up_the_heat_and_the_leak_stop_x_x_c_fuel_x_x",
+     "regex": "^(.*?):\\ once\\ it\\ gives\\ up\\ the\\ heat\\ and\\ the\\ leak\\ stop\\ \\((.*?)\\ \\->\\ (.*?)\\ C,\\ fuel\\ (.*?)\\ \\->\\ (.*?)\\)$",
+     "line": 4511,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
+     "id": "ghat_heat/the_objective_fill_the_radiator_x",
+     "regex": "^the\\ objective:\\ fill\\ the\\ radiator\\ \\((.*?)\\)$",
+     "line": 4512,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    }
+   ],
+   "work": [
+    "seen",
+    "boiled"
+   ],
+   "evaluated": [
+    "H1",
+    "H2"
+   ]
+  },
+  "ghat_looks": {
+   "checks": [
+    {
+     "id": "ghat_looks/f1_puzzles_6_both_in_the_van_at_the_foot_of_the_ghat_no_prob",
+     "regex": "^F1\\ \\->\\ Puzzles\\ \\->\\ 6:\\ both\\ in\\ the\\ van\\ at\\ the\\ foot\\ of\\ the\\ ghat,\\ no\\ Problem\\ yet$",
+     "line": 4333,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_looks/the_engine_starts_x",
+     "regex": "^the\\ engine\\ starts\\ \\('(.*?)'\\)$",
+     "line": 4353,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_looks/problem_appears_among_the_trees_x_s",
+     "regex": "^Problem\\ appears\\ among\\ the\\ trees\\ \\((.*?)\\ s\\)$",
+     "line": 5454,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/its_eyes_go_from_dim_to_bright_and_the_whine_rises_x_x",
+     "regex": "^its\\ eyes\\ go\\ from\\ dim\\ to\\ bright\\ and\\ the\\ whine\\ rises\\ \\((.*?)\\ \\->\\ (.*?)\\)$",
+     "line": 5477,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/its_body_stays_put_its_head_follows_the_van_x_deg_off",
+     "regex": "^its\\ body\\ stays\\ put,\\ its\\ head\\ follows\\ the\\ van\\ \\((.*?)\\ deg\\ off\\)$",
+     "line": 5478,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/the_hot_engine_ticks_faster_as_it_heats_every_x_s_x_s_x_tick",
+     "regex": "^the\\ hot\\ engine\\ ticks,\\ faster\\ as\\ it\\ heats\\ \\(every\\ (.*?)\\ s\\ \\->\\ (.*?)\\ s,\\ (.*?)\\ ticks\\)$",
+     "line": 5487,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/boiled_it_hisses_like_a_kettle",
+     "regex": "^boiled:\\ it\\ hisses\\ like\\ a\\ kettle$",
+     "line": 5489,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/it_comes_to_the_van",
+     "regex": "^it\\ comes\\ to\\ the\\ van$",
+     "line": 5493,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/it_goes_round_the_van_stopping_at_the_bonnet_both_windows_an",
+     "regex": "^it\\ goes\\ round\\ the\\ van,\\ stopping\\ at\\ the\\ bonnet,\\ both\\ windows\\ and\\ the\\ back\\ \\((.*?)\\ stops\\)$",
+     "line": 5520,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/at_the_windows_and_the_bonnet_it_leans_in_x_rad",
+     "regex": "^at\\ the\\ windows\\ and\\ the\\ bonnet\\ it\\ leans\\ in\\ \\((.*?)\\ rad\\)$",
+     "line": 5521,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/at_the_back_it_crouches_down_and_sniffs_x_sniffs",
+     "regex": "^at\\ the\\ back\\ it\\ crouches\\ down\\ and\\ sniffs\\ \\((.*?)\\ sniffs\\)$",
+     "line": 5522,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/from_the_far_side_it_walks_round_the_van_to_the_other_window",
+     "regex": "^from\\ the\\ far\\ side\\ it\\ walks\\ round\\ the\\ van\\ to\\ the\\ other\\ window,\\ not\\ into\\ it\\ \\(closest\\ (.*?)\\ m,\\ its\\ body\\ (.*?)\\ m\\)$",
+     "line": 5538,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/under_the_tarp_it_gives_up_only_after_a_full_round_of_the_va",
+     "regex": "^under\\ the\\ tarp\\ it\\ gives\\ up,\\ only\\ after\\ a\\ full\\ round\\ of\\ the\\ van\\ \\((.*?)\\ stops\\)$",
+     "line": 5544,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/giving_up_it_slumps_head_down_x_rad",
+     "regex": "^giving\\ up\\ it\\ slumps,\\ head\\ down\\ \\((.*?)\\ rad\\)$",
+     "line": 5564,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/leaning_in_at_a_window_its_face_stays_outside_the_glass_clos",
+     "regex": "^leaning\\ in\\ at\\ a\\ window,\\ its\\ face\\ stays\\ outside\\ the\\ glass\\ \\(closest\\ (.*?)\\ m\\)$",
+     "line": 5566,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/it_turns_away_slowly_fastest_x_deg_s",
+     "regex": "^it\\ turns\\ away\\ slowly\\ \\(fastest\\ (.*?)\\ deg/s\\)$",
+     "line": 5567,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    },
+    {
+     "id": "ghat_looks/its_eyes_dim_and_the_whine_falls",
+     "regex": "^its\\ eyes\\ dim\\ and\\ the\\ whine\\ falls$",
+     "line": 5568,
+     "kind": "plain",
+     "in": "t_ghat_looks"
+    }
+   ],
+   "work": [],
+   "evaluated": []
+  },
+  "ghat_net": {
+   "checks": [
+    {
+     "id": "ghat_net/f1_puzzles_6_both_in_the_van_at_the_foot_of_the_ghat_no_prob",
+     "regex": "^F1\\ \\->\\ Puzzles\\ \\->\\ 6:\\ both\\ in\\ the\\ van\\ at\\ the\\ foot\\ of\\ the\\ ghat,\\ no\\ Problem\\ yet$",
+     "line": 4333,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_net/the_engine_starts_x",
+     "regex": "^the\\ engine\\ starts\\ \\('(.*?)'\\)$",
+     "line": 4353,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_net/parked_engine_off",
+     "regex": "^parked,\\ engine\\ off$",
+     "line": 5327,
+     "kind": "plain",
+     "in": "t_ghat_net"
+    },
+    {
+     "id": "ghat_net/the_tail_lights_stand_proud_of_the_back_doors_x_lights_x_m",
+     "regex": "^the\\ tail\\ lights\\ stand\\ proud\\ of\\ the\\ back\\ doors\\ \\((.*?)\\ lights,\\ (.*?)\\ m\\)$",
+     "line": 5335,
+     "kind": "plain",
+     "in": "t_ghat_net"
+    },
+    {
+     "id": "ghat_net/both_out_of_the_van",
+     "regex": "^both\\ out\\ of\\ the\\ van$",
+     "line": 5347,
+     "kind": "plain",
+     "in": "t_ghat_net"
+    },
+    {
+     "id": "ghat_net/p1_pulls_the_net_half_way_x",
+     "regex": "^P1\\ pulls\\ the\\ net\\ half\\ way\\ \\((.*?)%\\)$",
+     "line": 5355,
+     "kind": "plain",
+     "in": "t_ghat_net"
+    },
+    {
+     "id": "ghat_net/p2_finishes_it_at_the_other_corner_the_van_is_under_the_net",
+     "regex": "^P2\\ finishes\\ it\\ at\\ the\\ other\\ corner:\\ the\\ van\\ is\\ under\\ the\\ net$",
+     "line": 5365,
+     "kind": "plain",
+     "in": "t_ghat_net"
+    },
+    {
+     "id": "ghat_net/p2_keeps_holding_a_moment_after_the_net_stays_on_work_x_s",
+     "regex": "^P2\\ keeps\\ holding\\ a\\ moment\\ after:\\ the\\ net\\ stays\\ on\\ \\(work\\ (.*?)\\ s\\)$",
+     "line": 5366,
+     "kind": "plain",
+     "in": "t_ghat_net"
+    },
+    {
+     "id": "ghat_net/both_climb_back_in_under_the_net",
+     "regex": "^both\\ climb\\ back\\ in\\ under\\ the\\ net$",
+     "line": 5378,
+     "kind": "plain",
+     "in": "t_ghat_net"
+    },
+    {
+     "id": "ghat_net/from_inside_you_see_out_through_the_weave_a_faint_grid_the_o",
+     "regex": "^from\\ inside\\ you\\ see\\ out\\ through\\ the\\ weave:\\ a\\ faint\\ grid,\\ the\\ outside\\ clear\\ \\(change\\ (.*?),\\ brightness\\ (.*?)\\)$",
+     "line": 5384,
+     "kind": "plain",
+     "in": "t_ghat_net"
+    },
+    {
+     "id": "ghat_net/from_outside_the_van_is_a_dark_lump_change_x_brightness_x",
+     "regex": "^from\\ outside\\ the\\ van\\ is\\ a\\ dark\\ lump\\ \\(change\\ (.*?),\\ brightness\\ (.*?)\\)$",
+     "line": 5396,
+     "kind": "plain",
+     "in": "t_ghat_net"
+    },
+    {
+     "id": "ghat_net/from_outside_nothing_of_the_van_shows_through_the_net_bright",
+     "regex": "^from\\ outside\\ nothing\\ of\\ the\\ van\\ shows\\ through\\ the\\ net\\ \\(bright\\ (.*?)%\\ of\\ the\\ lump,\\ (.*?)%\\ bare\\)$",
+     "line": 5401,
+     "kind": "plain",
+     "in": "t_ghat_net"
+    }
+   ],
+   "work": [],
+   "evaluated": []
+  },
+  "ghat_places": {
+   "checks": [
+    {
+     "id": "ghat_places/f1_puzzles_6_both_in_the_van_at_the_foot_of_the_ghat_no_prob",
+     "regex": "^F1\\ \\->\\ Puzzles\\ \\->\\ 6:\\ both\\ in\\ the\\ van\\ at\\ the\\ foot\\ of\\ the\\ ghat,\\ no\\ Problem\\ yet$",
+     "line": 4333,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_places/the_engine_starts_x",
+     "regex": "^the\\ engine\\ starts\\ \\('(.*?)'\\)$",
+     "line": 4353,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_places/three_springs_each_with_its_pot_x_x",
+     "regex": "^three\\ springs,\\ each\\ with\\ its\\ pot\\ \\((.*?),\\ (.*?)\\)$",
+     "line": 4860,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    },
+    {
+     "id": "ghat_places/wherever_it_dies_past_the_first_spring_a_spring_is_at_most_x",
+     "regex": "^wherever\\ it\\ dies\\ past\\ the\\ first\\ spring,\\ a\\ spring\\ is\\ at\\ most\\ (.*?)\\ m\\ back\\ \\(limit\\ 80\\)$",
+     "line": 4868,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    },
+    {
+     "id": "ghat_places/dead_where_it_first_watches_the_first_spring_is_x_m_ahead",
+     "regex": "^dead\\ where\\ it\\ first\\ watches,\\ the\\ first\\ spring\\ is\\ (.*?)\\ m\\ ahead$",
+     "line": 4870,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    },
+    {
+     "id": "ghat_places/spring_x_sits_on_the_bank_by_the_road",
+     "regex": "^spring\\ (.*?)\\ sits\\ on\\ the\\ bank\\ by\\ the\\ road$",
+     "line": 4877,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    },
+    {
+     "id": "ghat_places/spring_x_its_pot_sits_on_its_stone_empty",
+     "regex": "^spring\\ (.*?):\\ its\\ pot\\ sits\\ on\\ its\\ stone,\\ empty$",
+     "line": 4878,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    },
+    {
+     "id": "ghat_places/p1_picks_up_the_steel_pot_x",
+     "regex": "^P1\\ picks\\ up\\ the\\ steel\\ pot\\ \\('(.*?)'\\)$",
+     "line": 4893,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    },
+    {
+     "id": "ghat_places/at_the_pipe_hold_to_fill_the_pot",
+     "regex": "^at\\ the\\ pipe:\\ 'Hold\\ to\\ fill\\ the\\ pot'$",
+     "line": 4896,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    },
+    {
+     "id": "ghat_places/holding_e_fills_it_x_l",
+     "regex": "^holding\\ E\\ fills\\ it\\ \\((.*?)\\ L\\)$",
+     "line": 4900,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    },
+    {
+     "id": "ghat_places/the_milestone_stands_before_the_bend_where_it_watches_sample",
+     "regex": "^the\\ milestone\\ stands\\ before\\ the\\ bend\\ where\\ it\\ watches\\ \\(sample\\ (.*?),\\ bend\\ (.*?)\\)$",
+     "line": 4905,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    },
+    {
+     "id": "ghat_places/naresh_s_note_is_on_the_milestone",
+     "regex": "^Naresh's\\ note\\ is\\ on\\ the\\ milestone$",
+     "line": 4910,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    },
+    {
+     "id": "ghat_places/e_reads_it_it_goes_into_the_journal",
+     "regex": "^E\\ reads\\ it;\\ it\\ goes\\ into\\ the\\ journal$",
+     "line": 4920,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    },
+    {
+     "id": "ghat_places/his_words_stop_cover_up_don_t_breathe_never_open_the_cap_hot",
+     "regex": "^his\\ words:\\ stop,\\ cover\\ up,\\ don't\\ breathe,\\ never\\ open\\ the\\ cap\\ hot$",
+     "line": 4921,
+     "kind": "plain",
+     "in": "t_ghat_places"
+    }
+   ],
+   "work": [],
+   "evaluated": []
+  },
+  "ghat_jug": {
+   "checks": [
+    {
+     "id": "ghat_jug/f1_puzzles_6_both_in_the_van_at_the_foot_of_the_ghat_no_prob",
+     "regex": "^F1\\ \\->\\ Puzzles\\ \\->\\ 6:\\ both\\ in\\ the\\ van\\ at\\ the\\ foot\\ of\\ the\\ ghat,\\ no\\ Problem\\ yet$",
+     "line": 4333,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_jug/the_engine_starts_x",
+     "regex": "^the\\ engine\\ starts\\ \\('(.*?)'\\)$",
+     "line": 4353,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_jug/the_van_boils_dry_x_s",
+     "regex": "^the\\ van\\ boils\\ dry\\ \\((.*?)\\ s\\)$",
+     "line": 4806,
+     "kind": "plain",
+     "in": "_ghat_to_boil"
+    },
+    {
+     "id": "ghat_jug/the_jug_rode_up_the_ghat_in_its_place_on_the_rack_x_m_from_i",
+     "regex": "^the\\ jug\\ rode\\ up\\ the\\ ghat\\ in\\ its\\ place\\ on\\ the\\ rack\\ \\((.*?)\\ m\\ from\\ its\\ slot\\)$",
+     "line": 4932,
+     "kind": "plain",
+     "in": "t_ghat_jug"
+    },
+    {
+     "id": "ghat_jug/holding_your_breath_ctrl_b_never_touched_the_handbrake",
+     "regex": "^holding\\ your\\ breath\\ \\(Ctrl\\ /\\ B\\)\\ never\\ touched\\ the\\ handbrake$",
+     "line": 4834,
+     "kind": "plain",
+     "in": "_hide_well"
+    },
+    {
+     "id": "ghat_jug/it_went_all_round_the_van_before_it_gave_up_x_stops",
+     "regex": "^it\\ went\\ all\\ round\\ the\\ van\\ before\\ it\\ gave\\ up\\ \\((.*?)\\ stops\\)$",
+     "line": 4838,
+     "kind": "plain",
+     "in": "_hide_well"
+    },
+    {
+     "id": "ghat_jug/hidden_well_breath_held_at_the_windows_it_gives_up_x_given_a",
+     "regex": "^hidden\\ well\\ \\(breath\\ held\\ at\\ the\\ windows\\),\\ it\\ gives\\ up\\ \\((.*?)\\ given\\ away\\)$",
+     "line": 4935,
+     "kind": "plain",
+     "in": "t_ghat_jug"
+    },
+    {
+     "id": "ghat_jug/the_jug_is_on_the_rack",
+     "regex": "^the\\ jug\\ is\\ on\\ the\\ rack$",
+     "line": 4940,
+     "kind": "plain",
+     "in": "t_ghat_jug"
+    },
+    {
+     "id": "ghat_jug/the_net_comes_off",
+     "regex": "^the\\ net\\ comes\\ off$",
+     "line": 4955,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_jug/out_beside_it_after_it_gave_up_nobody_is_taken",
+     "regex": "^out\\ beside\\ it\\ after\\ it\\ gave\\ up:\\ nobody\\ is\\ taken$",
+     "line": 4957,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_jug/p1_holds_the_x",
+     "regex": "^P1\\ holds\\ the\\ (.*?)$",
+     "line": 4980,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_jug/cool_now_it_pours_in_the_radiator_is_full_again_x",
+     "regex": "^cool\\ now,\\ it\\ pours\\ in:\\ the\\ radiator\\ is\\ full\\ again\\ \\((.*?)%\\)$",
+     "line": 5025,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_jug/it_starts_x",
+     "regex": "^it\\ starts\\ \\('(.*?)'\\)$",
+     "line": 5034,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_jug/the_objective_moves_on_over_the_pass_x",
+     "regex": "^the\\ objective\\ moves\\ on,\\ over\\ the\\ pass\\ \\((.*?)\\)$",
+     "line": 5036,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_jug/over_the_pass_x_s_x_c",
+     "regex": "^over\\ the\\ pass\\ \\((.*?)\\ s,\\ (.*?)\\ C\\)$",
+     "line": 5046,
+     "kind": "plain",
+     "in": "_fix_with"
+    }
+   ],
+   "work": [
+    "boiled",
+    "gave_up",
+    "fixed",
+    "over_pass"
+   ],
+   "evaluated": [
+    "H1",
+    "H2",
+    "H3"
+   ]
+  },
+  "ghat_spring": {
+   "checks": [
+    {
+     "id": "ghat_spring/f1_puzzles_6_both_in_the_van_at_the_foot_of_the_ghat_no_prob",
+     "regex": "^F1\\ \\->\\ Puzzles\\ \\->\\ 6:\\ both\\ in\\ the\\ van\\ at\\ the\\ foot\\ of\\ the\\ ghat,\\ no\\ Problem\\ yet$",
+     "line": 4333,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_spring/the_engine_starts_x",
+     "regex": "^the\\ engine\\ starts\\ \\('(.*?)'\\)$",
+     "line": 4353,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_spring/the_van_boils_dry_x_s",
+     "regex": "^the\\ van\\ boils\\ dry\\ \\((.*?)\\ s\\)$",
+     "line": 4806,
+     "kind": "plain",
+     "in": "_ghat_to_boil"
+    },
+    {
+     "id": "ghat_spring/p1_held_their_breath_until_it_moved_on_nothing_given_away_x",
+     "regex": "^P1\\ held\\ their\\ breath\\ until\\ it\\ moved\\ on:\\ nothing\\ given\\ away\\ \\((.*?)\\)$",
+     "line": 5078,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/p2_doesn_t_hold_their_breath_the_glass_fogs_it_noticed_its_s",
+     "regex": "^P2\\ doesn't\\ hold\\ their\\ breath:\\ the\\ glass\\ fogs,\\ it\\ noticed\\ \\(its\\ search\\ starts\\ again\\)$",
+     "line": 5084,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/both_windows_visited_p1_prompt_x_held_x_p2_fogged_x",
+     "regex": "^both\\ windows\\ visited\\ \\(P1\\ prompt\\ (.*?),\\ held\\ (.*?),\\ P2\\ fogged\\ (.*?)\\)$",
+     "line": 5086,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/quiet_at_last_it_gives_up_restarts_x",
+     "regex": "^quiet\\ at\\ last,\\ it\\ gives\\ up\\ \\(restarts\\ (.*?)\\)$",
+     "line": 5091,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/it_boiled_away_enough_that_the_radiator_really_needs_water_x",
+     "regex": "^it\\ boiled\\ away\\ enough\\ that\\ the\\ radiator\\ really\\ needs\\ water\\ \\((.*?)%\\ left\\)$",
+     "line": 5095,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/the_net_comes_off",
+     "regex": "^the\\ net\\ comes\\ off$",
+     "line": 5105,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/at_the_bonnet_still_hissing_open_the_radiator_cap",
+     "regex": "^at\\ the\\ bonnet,\\ still\\ hissing:\\ 'Open\\ the\\ radiator\\ cap'$",
+     "line": 5111,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/opening_the_hot_cap_whoosh_steam_coolant_lost_x_x",
+     "regex": "^opening\\ the\\ hot\\ cap:\\ WHOOSH,\\ steam,\\ coolant\\ lost\\ \\((.*?)%\\ \\->\\ (.*?)%\\)$",
+     "line": 5116,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/a_white_screen_for_p1",
+     "regex": "^a\\ white\\ screen\\ for\\ P1$",
+     "line": 5117,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/the_yelp_carries_it_turns_back_and_the_needle_climbs_again_x",
+     "regex": "^the\\ yelp\\ carries:\\ it\\ turns\\ back,\\ and\\ the\\ needle\\ climbs\\ again\\ \\((.*?)\\)$",
+     "line": 5121,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/it_listens_before_it_comes_back_time_to_throw_the_net_on_and",
+     "regex": "^it\\ listens\\ before\\ it\\ comes\\ back:\\ time\\ to\\ throw\\ the\\ net\\ on\\ and\\ get\\ in,\\ by\\ hand\\ \\(listened\\ (.*?)\\ s\\)$",
+     "line": 5150,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/holding_your_breath_ctrl_b_never_touched_the_handbrake",
+     "regex": "^holding\\ your\\ breath\\ \\(Ctrl\\ /\\ B\\)\\ never\\ touched\\ the\\ handbrake$",
+     "line": 4834,
+     "kind": "plain",
+     "in": "_hide_well"
+    },
+    {
+     "id": "ghat_spring/it_went_all_round_the_van_before_it_gave_up_x_stops",
+     "regex": "^it\\ went\\ all\\ round\\ the\\ van\\ before\\ it\\ gave\\ up\\ \\((.*?)\\ stops\\)$",
+     "line": 4838,
+     "kind": "plain",
+     "in": "_hide_well"
+    },
+    {
+     "id": "ghat_spring/hidden_again_well_it_gives_up_again",
+     "regex": "^hidden\\ again,\\ well,\\ it\\ gives\\ up\\ again$",
+     "line": 5154,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/a_spring_is_x_m_back_down_the_road",
+     "regex": "^a\\ spring\\ is\\ (.*?)\\ m\\ back\\ down\\ the\\ road$",
+     "line": 5170,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/p2_picks_up_the_pot",
+     "regex": "^P2\\ picks\\ up\\ the\\ pot$",
+     "line": 5180,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/p2_fills_it_at_the_pipe_x_l",
+     "regex": "^P2\\ fills\\ it\\ at\\ the\\ pipe\\ \\((.*?)\\ L\\)$",
+     "line": 5185,
+     "kind": "plain",
+     "in": "t_ghat_spring"
+    },
+    {
+     "id": "ghat_spring/the_net_comes_off_2",
+     "regex": "^the\\ net\\ comes\\ off$",
+     "line": 4955,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_spring/out_beside_it_after_it_gave_up_nobody_is_taken",
+     "regex": "^out\\ beside\\ it\\ after\\ it\\ gave\\ up:\\ nobody\\ is\\ taken$",
+     "line": 4957,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_spring/p1_holds_the_x",
+     "regex": "^P1\\ holds\\ the\\ (.*?)$",
+     "line": 4980,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_spring/cool_now_it_pours_in_the_radiator_is_full_again_x",
+     "regex": "^cool\\ now,\\ it\\ pours\\ in:\\ the\\ radiator\\ is\\ full\\ again\\ \\((.*?)%\\)$",
+     "line": 5025,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_spring/it_starts_x",
+     "regex": "^it\\ starts\\ \\('(.*?)'\\)$",
+     "line": 5034,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_spring/the_objective_moves_on_over_the_pass_x",
+     "regex": "^the\\ objective\\ moves\\ on,\\ over\\ the\\ pass\\ \\((.*?)\\)$",
+     "line": 5036,
+     "kind": "plain",
+     "in": "_fix_with"
+    },
+    {
+     "id": "ghat_spring/over_the_pass_x_s_x_c",
+     "regex": "^over\\ the\\ pass\\ \\((.*?)\\ s,\\ (.*?)\\ C\\)$",
+     "line": 5046,
+     "kind": "plain",
+     "in": "_fix_with"
+    }
+   ],
+   "work": [
+    "boiled",
+    "gave_up",
+    "fixed",
+    "over_pass"
+   ],
+   "evaluated": [
+    "H1",
+    "H2",
+    "H3"
+   ]
+  },
+  "ghat_marks": {
+   "checks": [
+    {
+     "id": "ghat_marks/f1_puzzles_6_both_in_the_van_at_the_foot_of_the_ghat_no_prob",
+     "regex": "^F1\\ \\->\\ Puzzles\\ \\->\\ 6:\\ both\\ in\\ the\\ van\\ at\\ the\\ foot\\ of\\ the\\ ghat,\\ no\\ Problem\\ yet$",
+     "line": 4333,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_marks/the_engine_starts_x",
+     "regex": "^the\\ engine\\ starts\\ \\('(.*?)'\\)$",
+     "line": 4353,
+     "kind": "plain",
+     "in": "_ghat_start"
+    },
+    {
+     "id": "ghat_marks/the_van_boils_dry_x_s",
+     "regex": "^the\\ van\\ boils\\ dry\\ \\((.*?)\\ s\\)$",
+     "line": 4806,
+     "kind": "plain",
+     "in": "_ghat_to_boil"
+    },
+    {
+     "id": "ghat_marks/a_clean_van_to_start_with",
+     "regex": "^a\\ clean\\ van\\ to\\ start\\ with$",
+     "line": 5203,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    },
+    {
+     "id": "ghat_marks/saved_mid_encounter_it_loads_back_before_the_bend_problem_no",
+     "regex": "^saved\\ mid\\-encounter,\\ it\\ loads\\ back\\ before\\ the\\ bend,\\ Problem\\ not\\ there\\ yet$",
+     "line": 5214,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    },
+    {
+     "id": "ghat_marks/the_van_as_it_was_before_cool_not_boiled_no_marks_the_encoun",
+     "regex": "^the\\ van\\ as\\ it\\ was\\ before:\\ cool,\\ not\\ boiled,\\ no\\ marks,\\ the\\ encounter\\ to\\ come$",
+     "line": 5215,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    },
+    {
+     "id": "ghat_marks/driven_up_again_it_boils_again_x_s",
+     "regex": "^driven\\ up\\ again:\\ it\\ boils\\ again\\ \\((.*?)\\ s\\)$",
+     "line": 5231,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    },
+    {
+     "id": "ghat_marks/its_round_leaves_a_mark_at_every_stop_two_hands_on_the_glass",
+     "regex": "^its\\ round\\ leaves\\ a\\ mark\\ at\\ every\\ stop:\\ two\\ hands\\ on\\ the\\ glass,\\ a\\ hand\\ and\\ a\\ dent\\ on\\ the\\ bonnet,\\ scrapes\\ on\\ the\\ back$",
+     "line": 5241,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    },
+    {
+     "id": "ghat_marks/every_mark_sits_on_the_surface_it_touched",
+     "regex": "^every\\ mark\\ sits\\ on\\ the\\ surface\\ it\\ touched$",
+     "line": 5253,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    },
+    {
+     "id": "ghat_marks/holding_your_breath_ctrl_b_never_touched_the_handbrake",
+     "regex": "^holding\\ your\\ breath\\ \\(Ctrl\\ /\\ B\\)\\ never\\ touched\\ the\\ handbrake$",
+     "line": 4834,
+     "kind": "plain",
+     "in": "_hide_well"
+    },
+    {
+     "id": "ghat_marks/it_went_all_round_the_van_before_it_gave_up_x_stops",
+     "regex": "^it\\ went\\ all\\ round\\ the\\ van\\ before\\ it\\ gave\\ up\\ \\((.*?)\\ stops\\)$",
+     "line": 4838,
+     "kind": "plain",
+     "in": "_hide_well"
+    },
+    {
+     "id": "ghat_marks/hidden_well_it_gives_up",
+     "regex": "^hidden\\ well,\\ it\\ gives\\ up$",
+     "line": 5256,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    },
+    {
+     "id": "ghat_marks/the_marks_are_saved_and_come_back_on_load_x",
+     "regex": "^the\\ marks\\ are\\ saved\\ and\\ come\\ back\\ on\\ load\\ \\((.*?)\\)$",
+     "line": 5263,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    },
+    {
+     "id": "ghat_marks/and_the_van_is_still_boiled_dry_the_encounter_was_over",
+     "regex": "^\\.\\.\\.\\ and\\ the\\ van\\ is\\ still\\ boiled\\ dry\\ \\(the\\ encounter\\ was\\ over\\)$",
+     "line": 5264,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    },
+    {
+     "id": "ghat_marks/the_finale_is_there",
+     "regex": "^the\\ finale\\ is\\ there$",
+     "line": 5272,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    },
+    {
+     "id": "ghat_marks/the_end_credits_a_camera_on_the_van",
+     "regex": "^the\\ end\\ credits:\\ a\\ camera\\ on\\ the\\ van$",
+     "line": 5285,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    },
+    {
+     "id": "ghat_marks/turning_slowly_round_it",
+     "regex": "^\\.\\.\\.\\ turning\\ slowly\\ round\\ it$",
+     "line": 5286,
+     "kind": "plain",
+     "in": "t_ghat_marks"
+    }
+   ],
+   "work": [
+    "boiled",
+    "gave_up"
+   ],
+   "evaluated": []
+  }
+ },
+ "scope": {
+  "claims": "the run was alive, in control and complete; every required check ran and held; where each rule was evaluated, the state was right; P1 crosses the open doorway on W; the reset after a keys-only slow miss holds the van; the scheduled landing landed at the logged speed and lane (one try); the drive-off moved > 30 m and came within 3 m of the road; with a coolant leak the boiling engine is stopped before the gap; the rewards lie by the bench; after the fix the refitted wheel turns and the van adds no steering of its own",
+  "declared_setup": [
+   "the sight-line placements before the jump",
+   "the hut stretch's placements (P1 under the window, by the crate, on the crate; P2 in the river and behind)",
+   "the wheel set by the hub (w.global_position = ...)",
+   "look_at_point cameras",
+   "c2_more's F1 jump, door setup and P2 put in the river"
+  ],
+  "declared_setup_lines": [
+   "PlayTest.gd:11827 boot._on_joy_changed(0, true)          # P2 on the pad",
+   "PlayTest.gd:11828 await ramp_start()",
+   "PlayTest.gd:11830 p.force_exit = true",
+   "PlayTest.gd:11834 await place_player(p, foot + back * 7.0 + Vector3(0, 0.3, 0), 0.0)",
+   "PlayTest.gd:11835 await look_at_point(p, r.global_position + Vector3(0, 0.6, 0))",
+   "PlayTest.gd:11839 await place_player(p, r.global_transform * Vector3(RampJump.RAMP_W * 0.5 + 1.0, 0.3, RampJump.RAMP_LEN + 0.7), 0.0)",
+   "PlayTest.gd:11840 await look_at_point(p, r.global_transform * Vector3(RampJump.RAMP_W * 0.5 + 1.0, 1.2, RampJump.RAMP_LEN - 1.0))",
+   "PlayTest.gd:11845 await place_player(p, r.global_transform * Vector3(-RampJump.RAMP_W * 0.5 - 1.2, 0.3, RampJump.RAMP_LEN * 0.35), 0.0)",
+   "PlayTest.gd:11846 await look_at_point(p, r.global_transform * Vector3(0, 0.4, RampJump.RAMP_LEN * 0.3))",
+   "PlayTest.gd:11849 await place_player(p, r.global_transform * Vector3(0, 1.2, 0.8), 0.0)",
+   "PlayTest.gd:11850 await look_at_point(p, r.global_transform * Vector3(0, -1.0, -r.gap_len))",
+   "PlayTest.gd:11853 await look_at_point(p, r.get_node(\"RiverWreck/WreckCar\").global_position)",
+   "PlayTest.gd:11856 await look_at_point(p, r.hut.global_position + Vector3(0, 2.5, 0))",
+   "PlayTest.gd:11864 await ramp_start()",
+   "PlayTest.gd:11879 can.stow(c.storage_slots[0])",
+   "PlayTest.gd:11880 await ramp_start()",
+   "PlayTest.gd:11882 q.enter_seat(c, c.seat_nodes[\"passenger\"], \"passenger\")",
+   "PlayTest.gd:11917 p.force_exit = true",
+   "PlayTest.gd:11919 q.force_exit = true",
+   "PlayTest.gd:11922 await place_player(p, hub_at, 0.0)",
+   "PlayTest.gd:11923 await look_at_point(p, c._wheels[0].global_position)",
+   "PlayTest.gd:11927 await place_player(q, r.global_transform * Vector3(0, -10.5, -r.gap_len * 0.5), 0.0)",
+   "PlayTest.gd:11938 await face_point(p, door.global_position, 1.8, hut.global_transform.basis.z * -1.0)",
+   "PlayTest.gd:11945 await place_player(p, under + hut.global_transform.basis.x * ws * 4.0 + Vector3(0, 0.5, 0), 0.0)",
+   "PlayTest.gd:11946 await look_at_point(p, window_look)",
+   "PlayTest.gd:11950 await place_player(p, under + Vector3(0, 0.4, 0), 0.0)",
+   "PlayTest.gd:11951 await look_at_point(p, window_look)",
+   "PlayTest.gd:11954 await place_player(q, behind + Vector3(0, 0.4, 0), 0.0)",
+   "PlayTest.gd:11955 await look_at_point(q, window_look)",
+   "PlayTest.gd:11968 await place_player(p, crate.global_position + (crate.global_position - under).normalized() * 1.0 + Vector3(0, 0.4, 0), 0.0)",
+   "PlayTest.gd:11969 await look_at_point(p, crate.global_position + Vector3(0, 0.25, 0))",
+   "PlayTest.gd:11976 await look_at_point(p, under + Vector3(0, -0.3, 0))",
+   "PlayTest.gd:11979 await place_player(p, crate.global_position + Vector3(0, 0.9, 0), 0.0)",
+   "PlayTest.gd:11980 await look_at_point(p, window_look)",
+   "PlayTest.gd:11983 await place_player(q, behind + Vector3(0, 0.4, 0), 0.0)",
+   "PlayTest.gd:11984 await look_at_point(q, window_look)",
+   "PlayTest.gd:12004 await look_at_point(q, box_area.global_position)",
+   "PlayTest.gd:12010 await look_at_point(q, tiffin.global_position)",
+   "PlayTest.gd:12017 await look_at_point(q, door.global_position)",
+   "PlayTest.gd:12030 await place_player(p, outside + Vector3(0, 0.4, 0), 0.0)",
+   "PlayTest.gd:12033 await look_at_point(p, w.global_position)",
+   "PlayTest.gd:12046 await face_point(p, front, 1.8, -c.global_transform.basis.x)",
+   "PlayTest.gd:12051 w.global_position = c.global_transform * Vector3(-3.3, 0.7, -Camper.WHEELBASE - 1.0)",
+   "PlayTest.gd:12052 w.linear_velocity = Vector3.ZERO",
+   "PlayTest.gd:12054 await face_point(p, front, 1.8, -c.global_transform.basis.x)",
+   "PlayTest.gd:12058 await face_point(p, w.global_position, 1.5)",
+   "PlayTest.gd:12060 await face_point(p, front, 1.8, -c.global_transform.basis.x)",
+   "PlayTest.gd:12068 await look_at_point(q, box_area.global_position)",
+   "PlayTest.gd:12085 await face_point(p, front, 1.8, -c.global_transform.basis.x)",
+   "PlayTest.gd:12099 await seat_p1_driver()",
+   "PlayTest.gd:12184 boot._on_joy_changed(0, true)",
+   "PlayTest.gd:12185 await ramp_start()",
+   "PlayTest.gd:12187 p.force_exit = true",
+   "PlayTest.gd:12191 await place_player(q, hx * Vector3(0.9, 0.4, 0.9), 0.0)",
+   "PlayTest.gd:12193 r._open_door(q)",
+   "PlayTest.gd:12196 await place_player(p, hx * Vector3(0, 0.4, -3.8), 0.0)",
+   "PlayTest.gd:12197 await look_at_point(p, hx * Vector3(0, 1.0, 0.5))",
+   "PlayTest.gd:12225 await ramp_start()",
+   "PlayTest.gd:12226 await place_player(q, r.global_transform * Vector3(5.0, -10.5, -r.gap_len * 0.5), 0.0)",
+   "PlayTest.gd:12240 boot.dev_menu.run(\"jump\", boot.story.index_of(\"wheel\"))",
+   "PlayTest.gd:12244 await seat_p1_driver()"
+  ],
+  "not_proven": [
+   "that a player can reach the placed spots",
+   "two-player hut completion between them",
+   "what a player sees (observer pictures only, R2)",
+   "a landing-only bug via F1 (R13)",
+   "why a 66.5 km/h jump sometimes misses",
+   "speeds under the slowest landed profile",
+   "that the van drove away along the road, or where it stopped (M10)",
+   "'floating above the ground' beyond G3b's attachment",
+   "tyre attachment beyond the four visible tyres' centres",
+   "secret bugs no rule, check or deadline looks at",
+   "fun",
+   "any whole-game result"
+  ]
+ },
+ "scope_ghat": {
+  "claims": "the run was alive, in control and complete; every required #6 check ran and held (the heat only while it's interested, the breakdown before the pass at three driving profiles, the net hides the van and you see out, the heat stops when it gives up, coolant or water fixes it, over the pass; and every issue found while building); H1-H3 held wherever they looked",
+  "declared_setup": [
+   "F1 -> Puzzles -> 6 (the user's own way in)",
+   "the van carried 70 m short of hairpin 1 (ghat_looks, the coolant scenarios)",
+   "the net put on with set_tarp in ghat_heat / ghat_looks / the coolant scenarios (pulling it is ghat_net's)",
+   "both seated with enter_seat to hide",
+   "carried to the spring and back (place_player / face_point)",
+   "save and load through SaveGame.collect / apply, not a file"
+  ],
+  "declared_setup_lines": [],
+  "not_proven": [
+   "what a player sees and feels (judged from the recorded walk)",
+   "the fog's look",
+   "sound levels",
+   "walking to the spring (carried)",
+   "a real file save (the save scenario covers files)",
+   "the other creature encounters under the heat rule (only the gym's `van`)"
+  ]
+ }
+}

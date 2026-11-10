@@ -90,7 +90,7 @@ static func collect(boot: Node) -> Dictionary:
 	var relay := boot.get_tree().get_first_node_in_group("lookout_relay") as LookoutRelay
 	var house := boot.world.get_node_or_null("P2Home") as HouseInterior
 	var town_pump := boot.world.get_node_or_null("TownFuel/WorkingPump") as FuelSource
-	return {
+	var out := {
 		"version": VERSION,
 		"meta": {
 			"saved_at": Time.get_datetime_string_from_system(false, true),
@@ -105,6 +105,7 @@ static func collect(boot: Node) -> Dictionary:
 			"park_brake": c.parking_brake, "tyre_flat": c.tyre_flat, "wheel_off": c.wheel_off, "nuts_found": c.nuts_found,
 			"tyre_stage": c.tyre_stage, "tyre_work": c.tyre_work,
 			"spare_available": c.spare_available,
+			"boiled_dry": c.boiled_dry, "marks": [] if Plant.on("marks_unsaved") else c.marks.duplicate(true),
 		},
 		"items": items,
 		"map": boot.map_state.to_dict(),
@@ -119,6 +120,11 @@ static func collect(boot: Node) -> Dictionary:
 		"naresh": boot.naresh.save_state() if boot.naresh != null and is_instance_valid(boot.naresh) else {},
 		"mood": _mood(boot),
 	}
+	# #6: a save in the middle of the ghat's encounter goes back before it
+	var gh := boot.get_tree().get_first_node_in_group("ghat") as Ghat
+	if gh != null:
+		gh.adjust_save(out)
+	return out
 
 
 const PLACE_NAMES := {"homestead": "Homestead", "town_fuel": "Town", "p2_home": "P2's house",
@@ -172,6 +178,8 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	c.tyre_stage = int(cd.get("tyre_stage", 0))
 	c.tyre_work = float(cd.get("tyre_work", 0.0))
 	c.spare_available = bool(cd.get("spare_available", true))
+	c.boiled_dry = bool(cd.get("boiled_dry", false))
+	c.set_marks((cd.get("marks", []) as Array).duplicate(true))
 	c.refresh_tyre_visuals()
 	c.set_headlights(bool(cd.get("headlights", false)))
 	c.attack.set_tarp(bool(cd.get("tarp", false)))
@@ -187,6 +195,7 @@ static func apply(boot: Node, d: Dictionary) -> void:
 	boot.get_tree().call_group("swing_bridge", "match_story")       # F5: the span open or locked
 	boot.get_tree().call_group("radio_mast", "match_story")         # F7: the generator, the dishes
 	boot.get_tree().call_group("homecoming", "match_story")         # F8: he's home or not
+	boot.get_tree().call_group("ghat", "match_story")               # #6: Problem only mid-encounter
 	boot.map_state.from_dict(d.get("map", {}))
 	var station := boot.get_tree().get_first_node_in_group("cooling_station") as CoolingStation
 	if station and d.has("station"):

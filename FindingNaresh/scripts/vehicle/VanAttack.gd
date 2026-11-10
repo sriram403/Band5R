@@ -24,6 +24,22 @@ const SICK_POWER := 0.6
 const TARP_ON_S := 4.0
 const TARP_OFF_S := 2.0
 const TAKEN_LEAK_S := 90.0       ## how long the leak lasts that they leave when they take you both
+## The heat rule (#6 teaches it, every encounter from then on; design/
+## PUZZLE_CHANGES.md #6): once a Problem has seen the van and while it stays
+## interested, the van heats and leaks fuel, wherever it is. Driving harder
+## heats it faster; switched off, the needle still creeps. It all stops only
+## when the Problem loses interest. The longer it lasts, the more coolant
+## boils away.
+const PROBLEM_LEAK := 4.0        ## L a minute while one is interested
+const LEAK_CAP := 17.5           ## L per encounter at most (a quarter of a tank)
+const LEAK_FLOOR := 4.0          ## L: it never drains the tank below this
+const HEAT_BASE := 0.3           ## deg/s, engine running
+const HEAT_THROTTLE := 1.9       ## deg/s more at full throttle
+const HEAT_PER_M := 0.12         ## deg per metre driven
+const HEAT_OFF := 0.6            ## deg/s with the engine off: the needle still creeps
+const BOIL_AWAY := 0.005         ## coolant (0..1) a second, while interested and steaming
+const BOILED_TO := 0.5           ## coolant left the moment it boils
+const CALM_AFTER := 1.0          ## s without interest before the encounter is over
 
 var van: Camper
 var attacked_t := 0.0            ## s a creature has been at the van
@@ -32,6 +48,13 @@ var tarped := false
 var coughing := 0.0              ## s left of a cough (almost no power)
 var leak_left := 0.0             ## s left of `van.fuel_leak`, if it is timed
 var tarp_work := 0.0             ## s of pulling so far (tests read it)
+var interest_t := 0.0            ## s a Problem has been interested, this encounter
+var encounter_leaked := 0.0      ## L leaked this encounter
+var watcher: Node3D = null       ## the Problem that is interested now
+var heat_added := 0.0            ## deg it has added this encounter (tests read it)
+var _interested := false
+var _interest_tick := false
+var _calm_t := 0.0
 var _stage := 0
 var _near_tick := false
 var _away_t := 0.0
@@ -79,6 +102,28 @@ func creature_near(c: Node3D, delta: float) -> void:
 	attacked_t += delta
 
 
+## A Problem that has seen the van calls this every physics tick it stays
+## interested (near or far, tarped or not).
+func creature_interested(c: Node3D, delta: float) -> void:
+	watcher = c
+	_interest_tick = true
+	interest_t += delta
+
+
+## A Problem is interested in the van right now: it heats and leaks.
+func interested() -> bool:
+	return _interested
+
+
+## Degrees a second the interest adds on top of the engine's own heat.
+func heat_rate(speed: float, throttle: float, running: bool) -> float:
+	if not _interested and not Plant.on("heat_always"):
+		return 0.0
+	if not running:
+		return HEAT_OFF
+	return HEAT_BASE + HEAT_THROTTLE * clampf(throttle, 0.0, 1.0) + HEAT_PER_M * speed
+
+
 ## Engine pull multiplier: 1 when well, 0.6 when failing, near 0 mid-cough.
 func power() -> float:
 	if coughing > 0.0:
@@ -88,11 +133,35 @@ func power() -> float:
 
 ## Litres a minute leaking out, whatever the cause.
 func leak_rate() -> float:
-	return van.fuel_leak + (Camper.CREATURE_LEAK if stage() >= 1 else 0.0)
+	return van.fuel_leak + (Camper.CREATURE_LEAK if stage() >= 1 else 0.0) + problem_leak()
+
+
+## The interest's own leak: on while it lasts, up to a quarter of a tank.
+func problem_leak() -> float:
+	if _interested and encounter_leaked < LEAK_CAP and van.fuel > LEAK_FLOOR:
+		return PROBLEM_LEAK
+	return 0.0
 
 
 func tick(delta: float, speed: float, throttle: float) -> void:
 	_noises(delta, speed, throttle)
+	# the heat rule: interest seen this tick (or the last: creatures may tick
+	# after the van) keeps it on; a second without and the encounter is over
+	var was := _interested
+	_interested = _interest_tick
+	_interest_tick = false
+	if _interested:
+		_calm_t = 0.0
+		encounter_leaked += problem_leak() / 60.0 * delta
+		if not was:
+			Sfx.play3d("hit_metal", _side_point(0.6), -8.0)
+	else:
+		_calm_t += delta
+		if _calm_t > CALM_AFTER and interest_t > 0.0:
+			interest_t = 0.0
+			encounter_leaked = 0.0
+			heat_added = 0.0
+			watcher = null
 	# the attack runs while something stays; a few seconds without and it stops
 	if _near_tick:
 		_away_t = 0.0
@@ -107,7 +176,7 @@ func tick(delta: float, speed: float, throttle: float) -> void:
 		if s > _stage:
 			_telegraph(s)
 		_stage = s
-	if s >= 1:
+	if s >= 1 or problem_leak() > 0.0:
 		_drip_t -= delta
 		if _drip_t <= 0.0:
 			_drip_t = 1.1
@@ -218,7 +287,20 @@ func tarp_progress() -> float:
 	return clampf(tarp_work / (TARP_OFF_S if tarped else TARP_ON_S), 0.0, 1.0)
 
 
+## a hold that was going when the net finished does nothing more until it is
+## let go: kept holding, it pulled the net straight back off (2026-11-10)
+var _last_pull := {}
+var _hold_start := {}
+var _done_f := -1
+
+
 func _pull(p: PlayerRig, dt: float) -> void:
+	var f := Engine.get_physics_frames()
+	if f - int(_last_pull.get(p, -100)) > 2:
+		_hold_start[p] = f
+	_last_pull[p] = f
+	if int(_hold_start[p]) <= _done_f and not Plant.on("hold_through"):
+		return
 	if tarp_blocked() != "":
 		return
 	# pulling a big sheet of canvas is not quiet
@@ -228,8 +310,9 @@ func _pull(p: PlayerRig, dt: float) -> void:
 	tarp_work += dt
 	if tarp_work >= (TARP_OFF_S if tarped else TARP_ON_S):
 		tarp_work = 0.0
+		_done_f = f
 		set_tarp(not tarped)
-		p.say("The van is a lump under the canvas now. Keep still and quiet - you can hide inside it. Only the door mirrors show what's out there." if tarped else "The tarp is off and rolled up on the back.", 6.0)
+		p.say("The van is a dark lump under the old shade net now. Get in and keep still and quiet: from inside you can see out through the weave." if tarped else "The net is off and rolled up on the back.", 6.0)
 
 
 func set_tarp(on: bool) -> void:
@@ -252,33 +335,37 @@ func reset() -> void:
 	leak_left = 0.0
 	_stage = 0
 	_away_t = 0.0
+	interest_t = 0.0
+	encounter_leaked = 0.0
+	heat_added = 0.0
+	watcher = null
+	_interested = false
+	_interest_tick = false
 
 
 func _build_tarp() -> void:
-	var canvas := ToonMat.make(Color(0.40, 0.42, 0.30))
-	var fold := ToonMat.make(Color(0.33, 0.35, 0.25))
+	# #6 (agreed 2026-11-09, S1): old shade netting, not canvas. From outside
+	# a dark lump; from inside you see out through the weave (shade_net.gdshader)
+	# two layers on each piece: an opaque dark skin seen from outside, a faint
+	# weave seen from inside (one see-through layer let the glass show through)
+	var net_out := ShaderMaterial.new()
+	net_out.shader = load("res://shaders/shade_net.gdshader" if Plant.on("one_layer_net") else "res://shaders/shade_net_out.gdshader")
+	var net_in := ShaderMaterial.new()
+	net_in.shader = load("res://shaders/shade_net.gdshader")
+	var rolled := ToonMat.make(Color(0.17, 0.20, 0.15))
 	# rolled up on the back, above the spare wheel (clear of its handle)
-	_roll = Build.cyl(0.13, 1.5, canvas, Vector3(0, 2.80, 3.02), Vector3(0, 0, 90), 10, "TarpRoll")
+	_roll = Build.cyl(0.13, 1.5, rolled, Vector3(0, 2.80, 3.02), Vector3(0, 0, 90), 10, "TarpRoll")
 	van._body_root.add_child(_roll)
-	# over the van: a big lump of canvas down to just above the wheels' middle
+	# over the van: the whole van, down to just above the wheels' middle
 	_tarp = Node3D.new()
 	_tarp.name = "Tarp"
 	_tarp.visible = false
 	van._body_root.add_child(_tarp)
-	# the canvas covers everything but the front doors' side windows: there it
-	# is tucked below and above them, so from a seat you can still see out of
-	# your side window to the door mirror (the only way to watch from inside)
-	const GAP_Z := Vector2(-3.75, -1.1)      # front of the van to behind the front seats
-	const GAP_Y := Vector2(1.52, 2.2)        # the window band
-	var front_len := GAP_Z.y - GAP_Z.x
-	var front_z := (GAP_Z.x + GAP_Z.y) * 0.5
-	_tarp.add_child(Build.box(Vector3(2.56, 2.25, 3.25 - GAP_Z.y), canvas, Vector3(0, 1.72, (3.25 + GAP_Z.y) * 0.5), Vector3.ZERO, "Sheet"))
-	_tarp.add_child(Build.box(Vector3(2.56, GAP_Y.x - 0.6, front_len), canvas, Vector3(0, (0.6 + GAP_Y.x) * 0.5, front_z), Vector3.ZERO, "SheetLow"))
-	_tarp.add_child(Build.box(Vector3(2.56, 2.85 - GAP_Y.y, front_len), canvas, Vector3(0, (GAP_Y.y + 2.85) * 0.5, front_z), Vector3.ZERO, "SheetHigh"))
-	_tarp.add_child(Build.box(Vector3(2.56, GAP_Y.y - GAP_Y.x, 0.06), canvas, Vector3(0, (GAP_Y.x + GAP_Y.y) * 0.5, GAP_Z.x + 0.03), Vector3.ZERO, "SheetFront"))
-	_tarp.add_child(Build.box(Vector3(2.2, 0.62, 5.6), canvas, Vector3(0, 3.1, 0.0), Vector3.ZERO, "OverRack"))
-	for z in [-2.2, 0.0, 2.2]:
-		_tarp.add_child(Build.box(Vector3(2.62, 0.08, 0.1), fold, Vector3(0, 2.2, z), Vector3.ZERO, "Fold"))
+	# bumper (z -3.95) to the spare wheel (3.23), roof rack and crate on top
+	for spec in [[Vector3(2.56, 2.25, 7.45), Vector3(0, 1.72, -0.325), "Sheet"],
+			[Vector3(2.2, 0.62, 5.6), Vector3(0, 3.1, 0.0), "OverRack"]]:
+		_tarp.add_child(Build.box(spec[0], net_out, spec[1], Vector3.ZERO, String(spec[2])))
+		_tarp.add_child(Build.box(spec[0], net_in, spec[1], Vector3.ZERO, String(spec[2]) + "In"))
 	# handles: the roll up top, and both back corners at waist height (clear
 	# of the fuel filler, the rack and the spare wheel)
 	for spec in [[Vector3(1.6, 0.5, 0.5), Vector3(0, 2.75, 3.75), "TarpHandle"],

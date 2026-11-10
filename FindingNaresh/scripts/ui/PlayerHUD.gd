@@ -337,6 +337,9 @@ func _process(delta: float) -> void:
 	if binoculars.visible and player.dev != null:
 		binoculars.show_level(player.zoom, player.dev.glyph("zoom_in"), player.dev.glyph("zoom_out"))
 	box_view.amount = move_toward(box_view.amount, 1.0 if player.in_box else 0.0, get_process_delta_time() * 4.0)
+	if _flash != null:
+		_flash_t = maxf(0.0, _flash_t - delta)
+		_flash.color.a = 0.95 * clampf(_flash_t / maxf(_flash_len, 0.01), 0.0, 1.0)
 	var seated := player.seat != null
 	_update_hint(delta, seated)
 	_gauges.visible = seated
@@ -350,13 +353,20 @@ func _process(delta: float) -> void:
 		_set_bar("FUEL", camper.fuel / Camper.FUEL_CAPACITY)
 		_set_bar("TEMP", (camper.temp - Camper.TEMP_AMBIENT) / (Camper.TEMP_MAX - Camper.TEMP_AMBIENT))
 		_set_bar("COOL", camper.coolant)
+		# #6 (agreed 2026-11-09, point 7): while a Problem is interested the heat
+		# shows only on the dash needle and as steam from the grille
+		var problem_on := camper.attack != null and camper.attack.interested() and not Plant.on("hud_heat")
+		for tag in ["TEMP", "COOL"]:
+			var fill: ColorRect = _bars.get(tag)
+			if fill != null:
+				fill.get_parent().get_parent().visible = not problem_on
 		(_bars["TEMP"] as ColorRect).color = TEMP_HOT if camper.temp > Camper.TEMP_WARN else TEMP_OK
 		var w := ""
 		if camper.start_fail_t > 0.0:
 			w = camper.start_fail
 		elif camper.coolant_leak:
 			w = "STEAM! The coolant hose has split - %d C" % int(camper.temp)
-		elif camper.temp > Camper.TEMP_WARN:
+		elif camper.temp > Camper.TEMP_WARN and not problem_on:
 			w = "ENGINE HOT - ease off or stop"
 		elif camper.wheel_off:
 			w = "ON THE HUB - front-left wheel gone"
@@ -442,6 +452,59 @@ func _update_hint(delta: float, seated: bool) -> void:
 	if text != "" and ctx != "driver" and get_tree().get_first_node_in_group("naresh") != null:
 		text += " · %s (hold) Naresh" % d.glyph("command")
 	_hint.text = text
+
+
+## #6 S2: boiling steam in your face, a white screen fading over `seconds`.
+var _flash: ColorRect
+var _flash_t := 0.0
+var _flash_len := 1.0
+func steam_flash(seconds: float) -> void:
+	if _flash == null:
+		_flash = ColorRect.new()
+		_flash.name = "SteamFlash"
+		_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_flash.color = Color(1, 1, 1, 0)
+		add_child(_flash)
+	_flash_t = seconds
+	_flash_len = seconds
+
+
+## #6 S3: the hold-your-breath bar under the middle of the view.
+var _breath_box: VBoxContainer
+var _breath_lbl: Label
+var _breath_fill: ColorRect
+func set_breath(on: bool, level: float, text: String) -> void:
+	if _breath_box == null:
+		if not on:
+			return
+		_breath_box = VBoxContainer.new()
+		_breath_box.name = "Breath"
+		_breath_box.set_anchors_preset(Control.PRESET_CENTER)
+		_breath_box.position = Vector2(-160, 60)
+		_breath_box.custom_minimum_size = Vector2(320, 0)
+		_breath_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_breath_box)
+		_breath_lbl = _label(18, Color(1, 1, 1, 0.95))
+		_breath_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_breath_box.add_child(_breath_lbl)
+		var back := ColorRect.new()
+		back.color = Color(0, 0, 0, 0.5)
+		back.custom_minimum_size = Vector2(320, 10)
+		_breath_box.add_child(back)
+		_breath_fill = ColorRect.new()
+		_breath_fill.color = Color(0.75, 0.88, 1.0)
+		_breath_fill.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+		back.add_child(_breath_fill)
+	_breath_box.visible = on
+	_breath_lbl.text = text
+	_breath_fill.anchor_right = clampf(level, 0.0, 1.0)
+	_breath_fill.offset_right = 0
+
+
+## The breath bar's text, or "" when it's not up (tests read it).
+func breath_text() -> String:
+	return _breath_lbl.text if _breath_box != null and _breath_box.visible else ""
 
 
 func _set_bar(tag: String, v: float) -> void:

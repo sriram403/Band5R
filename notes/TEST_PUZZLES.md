@@ -357,20 +357,56 @@ behind (they swim across).
 
 **Getting there:** F1 → Puzzles → **6. The ghat pace notes**. You start in the van at the foot of the ghat, P2 alongside.
 
-**The idea:** fog on the hairpins. Only the passenger can read the bends
-on the nav.
+**The idea (rebuilt 2026-11-09):** fog on the hairpins, only the passenger
+can read the bends on the nav. Then the first Problem sees the van, and you
+can't drive away from it: the van heats up and leaks until it boils dry.
+Hide, keep still, hold your breath, and get water into the radiator.
 
 1. **P2:** swing the nav (A). Drive up the hill.
    - **You should see:** fog comes down. P2's nav shows notes like "70 LEFT
-     HAIRPIN / DON'T CUT"; the driver's nav is blank. P2 calls them out.
-2. On the second hairpin, look out to the side.
-   - **You should see:** a tall figure with glowing eyes among the trees,
-     walking away.
-3. At the pass.
-   - **You should see:** something steps out ahead and comes for the van,
-     and fuel starts dripping. Either drive away, or hide: pull over, engine
-     off (X), lights off (L), both out, hold E at the back for the tarp, and
-     keep out of sight. It loses interest in 20-40 s.
+     HAIRPIN / DON'T CUT"; the driver's nav is blank.
+2. Before the first hairpin, an old white milestone on the uphill side has a
+   note pinned to it. Stop, get out and read it (E).
+   - **You should see:** Naresh's note: if the needle climbs after you've
+     seen one, it's them; stop, cover the van, don't breathe; never open the
+     radiator cap hot.
+3. Drive on round the first hairpin, and look out to the side.
+   - **You should see:** something tall among the trees on the bend. Its
+     head turns to follow you, its eyes brighten, a whine rises.
+4. Keep driving (any speed).
+   - **You should see:** the temperature needle on the dash climbs and steam
+     comes from the grille (no TEMP bar on screen now). Faster, it climbs
+     faster. Before the pass the engine coughs and dies, the van drags to a
+     stop in the fog, and it won't restart: "boiled dry".
+5. **Both out.** One corner of the back each: hold E (P1) / X (P2) to pull
+   the old shade net over the van, then both get back in.
+   - **You should see:** from outside the van is a dark lump; from inside
+     you see out through a faint net.
+6. **Keep still.** It comes out of the fog, walks round the van, leans in at
+   the bonnet and the windows, crouches and sniffs at the back. When it leans
+   in at **your** window, **hold Ctrl (P1) / B (P2)** to hold your breath
+   until it moves on (the bar under the middle of your view).
+   - **You should see:** if you breathe, your breath fogs the glass and it
+     stops at your window and starts its search again (once per window). If
+     you hold, it moves on. After a full round and a quiet while, it slumps,
+     its eyes dim, it turns away slowly and the fog takes it. The needle stops
+     climbing. Its handprints, a dent and scrapes stay on the van for good.
+7. **Out, net off** (hold E at a back corner). Try the radiator cap at the
+   front (E) while it's still hissing.
+   - **You should see:** WHOOSH: steam in your face, a white screen, a yelp,
+     and it hears: the whine comes back up the road. Hide again (steps 5-6).
+8. **Coolant.** If a coolant jug is on the rack, use it. If not: there are
+   spring pipes in the bank on the bends below, each with an old steel pot.
+   One fills the pot at the pipe (hold E / X), the other watches the fog.
+   Wait until the hissing stops, then pour it in at the front.
+   - **You should see:** "The radiator is full again." Hid well: one pot is
+     enough; hid badly: two trips.
+9. Start up and drive on over the pass.
+   - **You should see:** the objective moves on to the coast watchtower.
+
+**Saving in the middle of it** puts you back before the first hairpin. **At
+the very end of the game** the camera turns slowly round the van, with every
+mark the Problems left on it.
 
 ### 7. The coast watchtower
 
