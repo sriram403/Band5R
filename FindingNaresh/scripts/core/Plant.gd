@@ -33,6 +33,7 @@ extends RefCounted
 ##   round_through   on its round it walks straight at a stop across the van (and sticks)
 ##   no_min_warn     when the van stops it walks on and comes at once, however close
 ##   fog_sees_far    in the ghat's fog it still sees people from ~40 m
+##   wheel_unlinked  after a load the ramp loses track of its wheel in the hut (h1, found by a resumed walk)
 ## Not bugs, the planted runs' time savers (test only): one_flat / one_corner
 ## run ghat_heat at one driving profile.
 

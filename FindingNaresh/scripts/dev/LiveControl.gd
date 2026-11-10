@@ -597,7 +597,8 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 		if _fail != "":
 			break
 		# the frame: a recording at a fixed fps cuts a resumed take here (tools/record_walk.sh)
-		_say("step %s (%.0f s, frame %d)" % [nm, (Time.get_ticks_msec() - t0) / 1000.0, Engine.get_frames_drawn()])
+		# frame = process frames (one per frame Movie Maker writes at --fixed-fps); drawn kept to compare
+		_say("step %s (%.0f s, frame %d, drawn %d)" % [nm, (Time.get_ticks_msec() - t0) / 1000.0, Engine.get_process_frames(), Engine.get_frames_drawn()])
 		ctx["step_until"] = Time.get_ticks_msec() + int(float(st.get("max", 300.0)) * 1000.0)
 		ctx["step_name"] = nm
 		for c in st.get("do", []):

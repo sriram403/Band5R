@@ -254,6 +254,10 @@ static func apply(boot: Node, d: Dictionary) -> void:
 		it.reset_physics_interpolation()
 		if e.has("slot"):
 			it.stow(c.storage_slots[int(e["slot"])])
+	# the ramp's wheel in the hut was made again above: the puzzle must know it
+	# (it lost track: a reset after a load left the old wheel lying there)
+	if ramp and not Plant.on("wheel_unlinked"):
+		ramp.van_wheel = world.find_child("VanWheel", true, false) as SpareWheel
 
 	# fragments already picked up are gone
 	for f in boot.get_tree().get_nodes_in_group("memory_fragment"):

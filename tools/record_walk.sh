@@ -61,7 +61,7 @@ cp "$log" "$parts/part$k.walk.log"
 cat "$parts/part$k.client.log" | grep "^RESUME" ; cat "$log"
 # this part's cut: from the first step it played (a resume: skip the load),
 # to the start of the step it failed at (that step is played again next part)
-first=$(grep -m1 -oE "^step .*frame [0-9]+\)" "$log" | grep -oE "frame [0-9]+" | grep -oE "[0-9]+")
+first=$(grep -m1 -E "^step .*frame [0-9]+" "$log" | grep -oE "frame [0-9]+" | grep -oE "[0-9]+")
 resumed=$(grep -c "^resumed at" "$log")
 ss=0
 [ "$resumed" -gt 0 ] && [ -n "$first" ] && ss=$(python -c "print(max(0, $first / $FPS - 0.2))")
