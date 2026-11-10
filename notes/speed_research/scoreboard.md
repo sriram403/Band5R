@@ -19,4 +19,5 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
 | Stage | State |
 |---|---|
 | 1 ideas | done: `ideas_claude.md`, `ideas_gpt.md` (no game, no code) |
-| 2 round 1 audits | GPT done (`audit_r1_gpt.md`, R1); Claude running |
+| 2 round 1 audits | done (`audit_r1_gpt.md` possibly contaminated, R1; `audit_r1_claude.md`). Claude: 4 trials (speed-up on the game clock, plants one compile + early stop, first+last full run, discovery walk + safe resume); ~99 min at 1x, ~68 at 2x: the speed probe decides |
+| 2 round 2 | running (both) |
