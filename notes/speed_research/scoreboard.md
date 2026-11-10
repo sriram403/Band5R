@@ -23,6 +23,17 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   secret plants** as insurance (scored blind at the end). Each later task file repeats the full
   read-only / do-not-read lists and is read first.
 
+- **R2 (2026-11-10, after pilot P1):** the score was "summed game minutes of every Godot process", so two
+  games at once could not help. But the brief's core problem is the user's real waiting time
+  (TESTING_METHOD's core: wall-clock time to a proven sheet). Ruling: **primary score = wall-clock minutes
+  during which any game process of the trial copy runs** (the meter's union); summed process minutes are
+  still reported and may not exceed the baseline's share by more than 10%. Target unchanged: <= 75
+  wall-clock game minutes. Two games at once is back in play (the referee's pick; the user may overrule).
+- **Pilot P1 (Claude, 2.0 pilot min):** uncapped fixed-fps 60 = **1.24x** (open road ~1.4x, the encounter
+  0.98x: render-bound, 12-17 ms a frame); < 1.7x -> no-go for the 2x column as built. 19 wall-clock
+  deadlines in test code (all loosen when fast: false-PASS risk). Import 9.9 s, not ~40 s (T2's import
+  gate likely moot). Next: P1b, headless / tiny window speed (~2 min).
+
 ## Stages
 | Stage | State |
 |---|---|
