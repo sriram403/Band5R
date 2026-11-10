@@ -51,6 +51,17 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   `speed-base` with the finished tools. The meter now logs both (`WALL` = R2's union, `proc` = summed).
   Caps: T1 <= 45 wall game min (stop at 60); each GPT spec's build + proof <= 15.
 
+- **R4 (2026-11-10, GPT's T3 spec asked):** the plant inventory at `speed-base` is **21 rows** (GPT is right;
+  the brief's 20 counted day 2's removal of `no_stall_drag`). The replay keeps all 21; a row leaves only if the
+  replay removes the thing it plants, with the reason written. Final = 21 (or 20 with that reason) + one per
+  hole found + the referee's exam rows. Shortcut flags (`one_flat`, `one_corner`) are not bugs.
+- **R5 (2026-11-10, a disagreement between GPT's T4 spec and `top4.md`):** GPT's spec wants a separate
+  uninterrupted fresh walk even when every join of a take passed the 3-layer gate. `top4.md` (signed by both)
+  says a step resumed from a point that FAILS the gate doesn't count, so one that passes it does. Ruling, by the
+  signed text and the user's choice A (joined takes are fine): **a joined take where every join is SAME on all 3
+  layers, under the recording profile, counts as both the clean walk and the video.** A join without SAME
+  doesn't; then a fresh take is needed. GPT's stricter rule is noted as its reservation for the signatures.
+
 ## Next (Stage 3 proper)
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
@@ -67,4 +78,5 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
 | 2 round 2 | done: both sign the same top 4 (`top4.md`) |
 | 3 pilots | done: P1 1.24x (no-go as built), P1b headless 4.96x, P1c draw-only-at-shots 5.5x (go, one fix) |
 | 3 T1 + T2 build | running (Claude auditor, `MPG_speed_t1`, task `trial_T1_task.md`) |
-| 3 T3 + T4 specs | running (GPT, task `trial_T34_spec_task.md`); builder copy `MPG_speed_t34` (branch `speed-t34` from `speed-base`) ready |
+| 3 T3 + T4 specs | done (GPT): `trial_T3_spec.md` (discovery, selection map, receipts, **the replay playbook**: ~99 min 1x / ~62 fast, ~54 with two games), `trial_T4_spec.md` (sections, the 3-layer gate, the video); qualification 9/6 + 14 min. GPT on T1: old 1x plant verdicts need matching identities; the deadline control at 1x too |
+| 3 T3 + T4 build | running (Claude builder, `MPG_speed_t34`, task `trial_T34_build_task.md`) |
