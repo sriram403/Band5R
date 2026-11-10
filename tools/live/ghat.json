@@ -66,7 +66,7 @@
     {
      "do": "drive",
      "road": "ghat_road",
-     "to": "poi:ghat_milestone",
+     "to": "expr:gh().road.point(199)",
      "kmh": 30,
      "max": 90
     },
@@ -811,13 +811,26 @@
    "max": 90,
    "do": [
     {
-     "do": "call",
-     "fn": "place_player",
-     "args": [
-      "p2",
-      "expr:van_side(2.9, -1.8)",
-      0.0
-     ]
+     "do": "walk",
+     "who": 2,
+     "to": "expr:van_side(3.6, -3.6)",
+     "arrive": 0.8,
+     "max": 20
+    },
+    {
+     "do": "pad_tap",
+     "btn": "X"
+    },
+    {
+     "do": "wait",
+     "s": 0.8
+    },
+    {
+     "do": "walk",
+     "who": 2,
+     "to": "expr:van_side(2.9, -1.8)",
+     "arrive": 0.6,
+     "max": 10
     },
     {
      "do": "wait",
@@ -875,8 +888,8 @@
    ],
    "expect": [
     {
-     "name": "over the pass, running",
-     "expr": "boot.story.current()['id'] == 'to_tower' and camper().engine_on",
+     "name": "over the pass, running, both aboard",
+     "expr": "boot.story.current()['id'] == 'to_tower' and camper().engine_on and p1().seat_role == 'driver' and p2().seat != null",
      "within": 85
     }
    ]
@@ -958,7 +971,7 @@
   },
   {
    "name": "21 the end credits: a slow turn round the battered van",
-   "max": 30,
+   "max": 60,
    "do": [
     {
      "do": "call",

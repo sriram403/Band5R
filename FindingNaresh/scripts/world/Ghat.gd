@@ -151,6 +151,7 @@ const SEARCH_S := 25.0           ## s of quiet at the tarped van before it gives
 const LEAVE_SPEED := 1.0
 const PASS_GUARD := 25           ## samples (50 m) before the pass: interested, it boils there at the latest
 const STOP_S := 2.0              ## s stopped (engine off) before it comes
+const MIN_WARN := 24.0           ## s from the van stopping to it reaching the van, at the least: time to hide (2026-11-10)
 const STATION_S := 3.5           ## s it stays at each stop round the van
 const POSED_STOPS := 4           ## stops of its round with a pose (bonnet, two windows, back)
 const SPRINGS := [268, 304, 342] ## road samples of the spring pipes: one within 80 m back of anywhere past 268 (breakdowns measured at 291-319)
@@ -286,6 +287,10 @@ func _direct() -> Dictionary:
 		"watch":
 			return {"goal": here}       # the body stays put; only its head follows the van
 		"follow":
+			# the van stopped: it stops too and stares (it kept walking on and
+			# reached a van that died near it in seconds, 2026-11-10)
+			if _stopped_t > 0.0 and not Plant.on("no_min_warn"):
+				return {"goal": here, "face": c}
 			return {"goal": c, "speed": FOLLOW_SPEED, "face": c}
 		"come":
 			var off := here - c
@@ -735,7 +740,11 @@ func _run_problem(van: Camper, delta: float) -> void:
 				_tell("Among the trees on the bend, something tall turns its head to follow the van. Its eyes brighten.", 7.0)
 		"follow":
 			_stopped_t = _stopped_t + delta if stopped else 0.0
-			if _stopped_t > STOP_S:
+			# it comes so that it reaches the van no sooner than MIN_WARN after
+			# the stop: from close by it stares longer first
+			var walk_s := maxf(0.0, minf(d, COME_FROM) - CIRCLE_R) / COME_SPEED
+			var wait_s := STOP_S if Plant.on("no_min_warn") else maxf(STOP_S, MIN_WARN - walk_s)
+			if _stopped_t > wait_s:
 				_start_come(van, d)
 		"come":
 			if not stopped:

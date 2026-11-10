@@ -31,6 +31,7 @@ extends RefCounted
 ##   no_listen       after the hot cap's yelp it comes straight back, no listening first
 ##   hold_through    holding on after the net is on starts pulling it back off
 ##   round_through   on its round it walks straight at a stop across the van (and sticks)
+##   no_min_warn     when the van stops it walks on and comes at once, however close
 ## Not bugs, the planted runs' time savers (test only): one_flat / one_corner
 ## run ghat_heat at one driving profile.
 

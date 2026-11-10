@@ -461,44 +461,51 @@
      "in": "_ghat_heat_run"
     },
     {
+     "id": "ghat_heat/x_even_from_15_m_it_stares_first_x_s_to_hide_before_it_reach",
+     "regex": "^(.*?):\\ even\\ from\\ 15\\ m\\ it\\ stares\\ first:\\ (.*?)\\ s\\ to\\ hide\\ before\\ it\\ reaches\\ the\\ van$",
+     "line": 4453,
+     "kind": "plain",
+     "in": "_ghat_heat_run"
+    },
+    {
      "id": "ghat_heat/x_it_comes_up_to_the_van_and_circles_it_still_interested",
      "regex": "^(.*?):\\ it\\ comes\\ up\\ to\\ the\\ van\\ and\\ circles\\ it,\\ still\\ interested$",
-     "line": 4443,
+     "line": 4454,
      "kind": "plain",
      "in": "_ghat_heat_run"
     },
     {
      "id": "ghat_heat/x_under_the_tarp_kept_quiet_it_gives_up",
      "regex": "^(.*?):\\ under\\ the\\ tarp,\\ kept\\ quiet,\\ it\\ gives\\ up$",
-     "line": 4466,
+     "line": 4477,
      "kind": "plain",
      "in": "_ghat_heat_run"
     },
     {
      "id": "ghat_heat/sitting_there_breathing_a_window_gives_you_away_only_once_it",
      "regex": "^sitting\\ there\\ breathing,\\ a\\ window\\ gives\\ you\\ away\\ only\\ once:\\ its\\ second\\ visit\\ lingers\\ \\(visits\\ (.*?),\\ restarts\\ (.*?)\\)$",
-     "line": 4467,
+     "line": 4478,
      "kind": "plain",
      "in": "_ghat_heat_run"
     },
     {
      "id": "ghat_heat/x_while_it_searched_the_needle_never_fell_x_lowest_x_c",
      "regex": "^(.*?):\\ while\\ it\\ searched\\ the\\ needle\\ never\\ fell\\ \\((.*?),\\ lowest\\ (.*?)\\ C\\)$",
-     "line": 4468,
+     "line": 4479,
      "kind": "plain",
      "in": "_ghat_heat_run"
     },
     {
      "id": "ghat_heat/x_once_it_gives_up_the_heat_and_the_leak_stop_x_x_c_fuel_x_x",
      "regex": "^(.*?):\\ once\\ it\\ gives\\ up\\ the\\ heat\\ and\\ the\\ leak\\ stop\\ \\((.*?)\\ \\->\\ (.*?)\\ C,\\ fuel\\ (.*?)\\ \\->\\ (.*?)\\)$",
-     "line": 4473,
+     "line": 4484,
      "kind": "plain",
      "in": "_ghat_heat_run"
     },
     {
      "id": "ghat_heat/the_objective_fill_the_radiator_x",
      "regex": "^the\\ objective:\\ fill\\ the\\ radiator\\ \\((.*?)\\)$",
-     "line": 4474,
+     "line": 4485,
      "kind": "plain",
      "in": "_ghat_heat_run"
     }
@@ -531,105 +538,105 @@
     {
      "id": "ghat_looks/problem_appears_among_the_trees_x_s",
      "regex": "^Problem\\ appears\\ among\\ the\\ trees\\ \\((.*?)\\ s\\)$",
-     "line": 5416,
+     "line": 5427,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/its_eyes_go_from_dim_to_bright_and_the_whine_rises_x_x",
      "regex": "^its\\ eyes\\ go\\ from\\ dim\\ to\\ bright\\ and\\ the\\ whine\\ rises\\ \\((.*?)\\ \\->\\ (.*?)\\)$",
-     "line": 5439,
+     "line": 5450,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/its_body_stays_put_its_head_follows_the_van_x_deg_off",
      "regex": "^its\\ body\\ stays\\ put,\\ its\\ head\\ follows\\ the\\ van\\ \\((.*?)\\ deg\\ off\\)$",
-     "line": 5440,
+     "line": 5451,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/the_hot_engine_ticks_faster_as_it_heats_every_x_s_x_s_x_tick",
      "regex": "^the\\ hot\\ engine\\ ticks,\\ faster\\ as\\ it\\ heats\\ \\(every\\ (.*?)\\ s\\ \\->\\ (.*?)\\ s,\\ (.*?)\\ ticks\\)$",
-     "line": 5449,
+     "line": 5460,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/boiled_it_hisses_like_a_kettle",
      "regex": "^boiled:\\ it\\ hisses\\ like\\ a\\ kettle$",
-     "line": 5451,
+     "line": 5462,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/it_comes_to_the_van",
      "regex": "^it\\ comes\\ to\\ the\\ van$",
-     "line": 5455,
+     "line": 5466,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/it_goes_round_the_van_stopping_at_the_bonnet_both_windows_an",
      "regex": "^it\\ goes\\ round\\ the\\ van,\\ stopping\\ at\\ the\\ bonnet,\\ both\\ windows\\ and\\ the\\ back\\ \\((.*?)\\ stops\\)$",
-     "line": 5482,
+     "line": 5493,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/at_the_windows_and_the_bonnet_it_leans_in_x_rad",
      "regex": "^at\\ the\\ windows\\ and\\ the\\ bonnet\\ it\\ leans\\ in\\ \\((.*?)\\ rad\\)$",
-     "line": 5483,
+     "line": 5494,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/at_the_back_it_crouches_down_and_sniffs_x_sniffs",
      "regex": "^at\\ the\\ back\\ it\\ crouches\\ down\\ and\\ sniffs\\ \\((.*?)\\ sniffs\\)$",
-     "line": 5484,
+     "line": 5495,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/from_the_far_side_it_walks_round_the_van_to_the_other_window",
      "regex": "^from\\ the\\ far\\ side\\ it\\ walks\\ round\\ the\\ van\\ to\\ the\\ other\\ window,\\ not\\ into\\ it\\ \\(closest\\ (.*?)\\ m,\\ its\\ body\\ (.*?)\\ m\\)$",
-     "line": 5500,
+     "line": 5511,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/under_the_tarp_it_gives_up_only_after_a_full_round_of_the_va",
      "regex": "^under\\ the\\ tarp\\ it\\ gives\\ up,\\ only\\ after\\ a\\ full\\ round\\ of\\ the\\ van\\ \\((.*?)\\ stops\\)$",
-     "line": 5506,
+     "line": 5517,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/giving_up_it_slumps_head_down_x_rad",
      "regex": "^giving\\ up\\ it\\ slumps,\\ head\\ down\\ \\((.*?)\\ rad\\)$",
-     "line": 5526,
+     "line": 5537,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/leaning_in_at_a_window_its_face_stays_outside_the_glass_clos",
      "regex": "^leaning\\ in\\ at\\ a\\ window,\\ its\\ face\\ stays\\ outside\\ the\\ glass\\ \\(closest\\ (.*?)\\ m\\)$",
-     "line": 5528,
+     "line": 5539,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/it_turns_away_slowly_fastest_x_deg_s",
      "regex": "^it\\ turns\\ away\\ slowly\\ \\(fastest\\ (.*?)\\ deg/s\\)$",
-     "line": 5529,
+     "line": 5540,
      "kind": "plain",
      "in": "t_ghat_looks"
     },
     {
      "id": "ghat_looks/its_eyes_dim_and_the_whine_falls",
      "regex": "^its\\ eyes\\ dim\\ and\\ the\\ whine\\ falls$",
-     "line": 5530,
+     "line": 5541,
      "kind": "plain",
      "in": "t_ghat_looks"
     }
@@ -656,70 +663,70 @@
     {
      "id": "ghat_net/parked_engine_off",
      "regex": "^parked,\\ engine\\ off$",
-     "line": 5289,
+     "line": 5300,
      "kind": "plain",
      "in": "t_ghat_net"
     },
     {
      "id": "ghat_net/the_tail_lights_stand_proud_of_the_back_doors_x_lights_x_m",
      "regex": "^the\\ tail\\ lights\\ stand\\ proud\\ of\\ the\\ back\\ doors\\ \\((.*?)\\ lights,\\ (.*?)\\ m\\)$",
-     "line": 5297,
+     "line": 5308,
      "kind": "plain",
      "in": "t_ghat_net"
     },
     {
      "id": "ghat_net/both_out_of_the_van",
      "regex": "^both\\ out\\ of\\ the\\ van$",
-     "line": 5309,
+     "line": 5320,
      "kind": "plain",
      "in": "t_ghat_net"
     },
     {
      "id": "ghat_net/p1_pulls_the_net_half_way_x",
      "regex": "^P1\\ pulls\\ the\\ net\\ half\\ way\\ \\((.*?)%\\)$",
-     "line": 5317,
+     "line": 5328,
      "kind": "plain",
      "in": "t_ghat_net"
     },
     {
      "id": "ghat_net/p2_finishes_it_at_the_other_corner_the_van_is_under_the_net",
      "regex": "^P2\\ finishes\\ it\\ at\\ the\\ other\\ corner:\\ the\\ van\\ is\\ under\\ the\\ net$",
-     "line": 5327,
+     "line": 5338,
      "kind": "plain",
      "in": "t_ghat_net"
     },
     {
      "id": "ghat_net/p2_keeps_holding_a_moment_after_the_net_stays_on_work_x_s",
      "regex": "^P2\\ keeps\\ holding\\ a\\ moment\\ after:\\ the\\ net\\ stays\\ on\\ \\(work\\ (.*?)\\ s\\)$",
-     "line": 5328,
+     "line": 5339,
      "kind": "plain",
      "in": "t_ghat_net"
     },
     {
      "id": "ghat_net/both_climb_back_in_under_the_net",
      "regex": "^both\\ climb\\ back\\ in\\ under\\ the\\ net$",
-     "line": 5340,
+     "line": 5351,
      "kind": "plain",
      "in": "t_ghat_net"
     },
     {
      "id": "ghat_net/from_inside_you_see_out_through_the_weave_a_faint_grid_the_o",
      "regex": "^from\\ inside\\ you\\ see\\ out\\ through\\ the\\ weave:\\ a\\ faint\\ grid,\\ the\\ outside\\ clear\\ \\(change\\ (.*?),\\ brightness\\ (.*?)\\)$",
-     "line": 5346,
+     "line": 5357,
      "kind": "plain",
      "in": "t_ghat_net"
     },
     {
      "id": "ghat_net/from_outside_the_van_is_a_dark_lump_change_x_brightness_x",
      "regex": "^from\\ outside\\ the\\ van\\ is\\ a\\ dark\\ lump\\ \\(change\\ (.*?),\\ brightness\\ (.*?)\\)$",
-     "line": 5358,
+     "line": 5369,
      "kind": "plain",
      "in": "t_ghat_net"
     },
     {
      "id": "ghat_net/from_outside_nothing_of_the_van_shows_through_the_net_bright",
      "regex": "^from\\ outside\\ nothing\\ of\\ the\\ van\\ shows\\ through\\ the\\ net\\ \\(bright\\ (.*?)%\\ of\\ the\\ lump,\\ (.*?)%\\ bare\\)$",
-     "line": 5363,
+     "line": 5374,
      "kind": "plain",
      "in": "t_ghat_net"
     }
@@ -746,84 +753,84 @@
     {
      "id": "ghat_places/three_springs_each_with_its_pot_x_x",
      "regex": "^three\\ springs,\\ each\\ with\\ its\\ pot\\ \\((.*?),\\ (.*?)\\)$",
-     "line": 4822,
+     "line": 4833,
      "kind": "plain",
      "in": "t_ghat_places"
     },
     {
      "id": "ghat_places/wherever_it_dies_past_the_first_spring_a_spring_is_at_most_x",
      "regex": "^wherever\\ it\\ dies\\ past\\ the\\ first\\ spring,\\ a\\ spring\\ is\\ at\\ most\\ (.*?)\\ m\\ back\\ \\(limit\\ 80\\)$",
-     "line": 4830,
+     "line": 4841,
      "kind": "plain",
      "in": "t_ghat_places"
     },
     {
      "id": "ghat_places/dead_where_it_first_watches_the_first_spring_is_x_m_ahead",
      "regex": "^dead\\ where\\ it\\ first\\ watches,\\ the\\ first\\ spring\\ is\\ (.*?)\\ m\\ ahead$",
-     "line": 4832,
+     "line": 4843,
      "kind": "plain",
      "in": "t_ghat_places"
     },
     {
      "id": "ghat_places/spring_x_sits_on_the_bank_by_the_road",
      "regex": "^spring\\ (.*?)\\ sits\\ on\\ the\\ bank\\ by\\ the\\ road$",
-     "line": 4839,
+     "line": 4850,
      "kind": "plain",
      "in": "t_ghat_places"
     },
     {
      "id": "ghat_places/spring_x_its_pot_sits_on_its_stone_empty",
      "regex": "^spring\\ (.*?):\\ its\\ pot\\ sits\\ on\\ its\\ stone,\\ empty$",
-     "line": 4840,
+     "line": 4851,
      "kind": "plain",
      "in": "t_ghat_places"
     },
     {
      "id": "ghat_places/p1_picks_up_the_steel_pot_x",
      "regex": "^P1\\ picks\\ up\\ the\\ steel\\ pot\\ \\('(.*?)'\\)$",
-     "line": 4855,
+     "line": 4866,
      "kind": "plain",
      "in": "t_ghat_places"
     },
     {
      "id": "ghat_places/at_the_pipe_hold_to_fill_the_pot",
      "regex": "^at\\ the\\ pipe:\\ 'Hold\\ to\\ fill\\ the\\ pot'$",
-     "line": 4858,
+     "line": 4869,
      "kind": "plain",
      "in": "t_ghat_places"
     },
     {
      "id": "ghat_places/holding_e_fills_it_x_l",
      "regex": "^holding\\ E\\ fills\\ it\\ \\((.*?)\\ L\\)$",
-     "line": 4862,
+     "line": 4873,
      "kind": "plain",
      "in": "t_ghat_places"
     },
     {
      "id": "ghat_places/the_milestone_stands_before_the_bend_where_it_watches_sample",
      "regex": "^the\\ milestone\\ stands\\ before\\ the\\ bend\\ where\\ it\\ watches\\ \\(sample\\ (.*?),\\ bend\\ (.*?)\\)$",
-     "line": 4867,
+     "line": 4878,
      "kind": "plain",
      "in": "t_ghat_places"
     },
     {
      "id": "ghat_places/naresh_s_note_is_on_the_milestone",
      "regex": "^Naresh's\\ note\\ is\\ on\\ the\\ milestone$",
-     "line": 4872,
+     "line": 4883,
      "kind": "plain",
      "in": "t_ghat_places"
     },
     {
      "id": "ghat_places/e_reads_it_it_goes_into_the_journal",
      "regex": "^E\\ reads\\ it;\\ it\\ goes\\ into\\ the\\ journal$",
-     "line": 4882,
+     "line": 4893,
      "kind": "plain",
      "in": "t_ghat_places"
     },
     {
      "id": "ghat_places/his_words_stop_cover_up_don_t_breathe_never_open_the_cap_hot",
      "regex": "^his\\ words:\\ stop,\\ cover\\ up,\\ don't\\ breathe,\\ never\\ open\\ the\\ cap\\ hot$",
-     "line": 4883,
+     "line": 4894,
      "kind": "plain",
      "in": "t_ghat_places"
     }
@@ -850,91 +857,91 @@
     {
      "id": "ghat_jug/the_van_boils_dry_x_s",
      "regex": "^the\\ van\\ boils\\ dry\\ \\((.*?)\\ s\\)$",
-     "line": 4768,
+     "line": 4779,
      "kind": "plain",
      "in": "_ghat_to_boil"
     },
     {
      "id": "ghat_jug/the_jug_rode_up_the_ghat_in_its_place_on_the_rack_x_m_from_i",
      "regex": "^the\\ jug\\ rode\\ up\\ the\\ ghat\\ in\\ its\\ place\\ on\\ the\\ rack\\ \\((.*?)\\ m\\ from\\ its\\ slot\\)$",
-     "line": 4894,
+     "line": 4905,
      "kind": "plain",
      "in": "t_ghat_jug"
     },
     {
      "id": "ghat_jug/holding_your_breath_ctrl_b_never_touched_the_handbrake",
      "regex": "^holding\\ your\\ breath\\ \\(Ctrl\\ /\\ B\\)\\ never\\ touched\\ the\\ handbrake$",
-     "line": 4796,
+     "line": 4807,
      "kind": "plain",
      "in": "_hide_well"
     },
     {
      "id": "ghat_jug/it_went_all_round_the_van_before_it_gave_up_x_stops",
      "regex": "^it\\ went\\ all\\ round\\ the\\ van\\ before\\ it\\ gave\\ up\\ \\((.*?)\\ stops\\)$",
-     "line": 4800,
+     "line": 4811,
      "kind": "plain",
      "in": "_hide_well"
     },
     {
      "id": "ghat_jug/hidden_well_breath_held_at_the_windows_it_gives_up_x_given_a",
      "regex": "^hidden\\ well\\ \\(breath\\ held\\ at\\ the\\ windows\\),\\ it\\ gives\\ up\\ \\((.*?)\\ given\\ away\\)$",
-     "line": 4897,
+     "line": 4908,
      "kind": "plain",
      "in": "t_ghat_jug"
     },
     {
      "id": "ghat_jug/the_jug_is_on_the_rack",
      "regex": "^the\\ jug\\ is\\ on\\ the\\ rack$",
-     "line": 4902,
+     "line": 4913,
      "kind": "plain",
      "in": "t_ghat_jug"
     },
     {
      "id": "ghat_jug/the_net_comes_off",
      "regex": "^the\\ net\\ comes\\ off$",
-     "line": 4917,
+     "line": 4928,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_jug/out_beside_it_after_it_gave_up_nobody_is_taken",
      "regex": "^out\\ beside\\ it\\ after\\ it\\ gave\\ up:\\ nobody\\ is\\ taken$",
-     "line": 4919,
+     "line": 4930,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_jug/p1_holds_the_x",
      "regex": "^P1\\ holds\\ the\\ (.*?)$",
-     "line": 4942,
+     "line": 4953,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_jug/cool_now_it_pours_in_the_radiator_is_full_again_x",
      "regex": "^cool\\ now,\\ it\\ pours\\ in:\\ the\\ radiator\\ is\\ full\\ again\\ \\((.*?)%\\)$",
-     "line": 4987,
+     "line": 4998,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_jug/it_starts_x",
      "regex": "^it\\ starts\\ \\('(.*?)'\\)$",
-     "line": 4996,
+     "line": 5007,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_jug/the_objective_moves_on_over_the_pass_x",
      "regex": "^the\\ objective\\ moves\\ on,\\ over\\ the\\ pass\\ \\((.*?)\\)$",
-     "line": 4998,
+     "line": 5009,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_jug/over_the_pass_x_s_x_c",
      "regex": "^over\\ the\\ pass\\ \\((.*?)\\ s,\\ (.*?)\\ C\\)$",
-     "line": 5008,
+     "line": 5019,
      "kind": "plain",
      "in": "_fix_with"
     }
@@ -970,175 +977,175 @@
     {
      "id": "ghat_spring/the_van_boils_dry_x_s",
      "regex": "^the\\ van\\ boils\\ dry\\ \\((.*?)\\ s\\)$",
-     "line": 4768,
+     "line": 4779,
      "kind": "plain",
      "in": "_ghat_to_boil"
     },
     {
      "id": "ghat_spring/p1_held_their_breath_until_it_moved_on_nothing_given_away_x",
      "regex": "^P1\\ held\\ their\\ breath\\ until\\ it\\ moved\\ on:\\ nothing\\ given\\ away\\ \\((.*?)\\)$",
-     "line": 5040,
+     "line": 5051,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/p2_doesn_t_hold_their_breath_the_glass_fogs_it_noticed_its_s",
      "regex": "^P2\\ doesn't\\ hold\\ their\\ breath:\\ the\\ glass\\ fogs,\\ it\\ noticed\\ \\(its\\ search\\ starts\\ again\\)$",
-     "line": 5046,
+     "line": 5057,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/both_windows_visited_p1_prompt_x_held_x_p2_fogged_x",
      "regex": "^both\\ windows\\ visited\\ \\(P1\\ prompt\\ (.*?),\\ held\\ (.*?),\\ P2\\ fogged\\ (.*?)\\)$",
-     "line": 5048,
+     "line": 5059,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/quiet_at_last_it_gives_up_restarts_x",
      "regex": "^quiet\\ at\\ last,\\ it\\ gives\\ up\\ \\(restarts\\ (.*?)\\)$",
-     "line": 5053,
+     "line": 5064,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/it_boiled_away_enough_that_the_radiator_really_needs_water_x",
      "regex": "^it\\ boiled\\ away\\ enough\\ that\\ the\\ radiator\\ really\\ needs\\ water\\ \\((.*?)%\\ left\\)$",
-     "line": 5057,
+     "line": 5068,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/the_net_comes_off",
      "regex": "^the\\ net\\ comes\\ off$",
-     "line": 5067,
+     "line": 5078,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/at_the_bonnet_still_hissing_open_the_radiator_cap",
      "regex": "^at\\ the\\ bonnet,\\ still\\ hissing:\\ 'Open\\ the\\ radiator\\ cap'$",
-     "line": 5073,
+     "line": 5084,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/opening_the_hot_cap_whoosh_steam_coolant_lost_x_x",
      "regex": "^opening\\ the\\ hot\\ cap:\\ WHOOSH,\\ steam,\\ coolant\\ lost\\ \\((.*?)%\\ \\->\\ (.*?)%\\)$",
-     "line": 5078,
+     "line": 5089,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/a_white_screen_for_p1",
      "regex": "^a\\ white\\ screen\\ for\\ P1$",
-     "line": 5079,
+     "line": 5090,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/the_yelp_carries_it_turns_back_and_the_needle_climbs_again_x",
      "regex": "^the\\ yelp\\ carries:\\ it\\ turns\\ back,\\ and\\ the\\ needle\\ climbs\\ again\\ \\((.*?)\\)$",
-     "line": 5083,
+     "line": 5094,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/it_listens_before_it_comes_back_time_to_throw_the_net_on_and",
      "regex": "^it\\ listens\\ before\\ it\\ comes\\ back:\\ time\\ to\\ throw\\ the\\ net\\ on\\ and\\ get\\ in,\\ by\\ hand\\ \\(listened\\ (.*?)\\ s\\)$",
-     "line": 5112,
+     "line": 5123,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/holding_your_breath_ctrl_b_never_touched_the_handbrake",
      "regex": "^holding\\ your\\ breath\\ \\(Ctrl\\ /\\ B\\)\\ never\\ touched\\ the\\ handbrake$",
-     "line": 4796,
+     "line": 4807,
      "kind": "plain",
      "in": "_hide_well"
     },
     {
      "id": "ghat_spring/it_went_all_round_the_van_before_it_gave_up_x_stops",
      "regex": "^it\\ went\\ all\\ round\\ the\\ van\\ before\\ it\\ gave\\ up\\ \\((.*?)\\ stops\\)$",
-     "line": 4800,
+     "line": 4811,
      "kind": "plain",
      "in": "_hide_well"
     },
     {
      "id": "ghat_spring/hidden_again_well_it_gives_up_again",
      "regex": "^hidden\\ again,\\ well,\\ it\\ gives\\ up\\ again$",
-     "line": 5116,
+     "line": 5127,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/a_spring_is_x_m_back_down_the_road",
      "regex": "^a\\ spring\\ is\\ (.*?)\\ m\\ back\\ down\\ the\\ road$",
-     "line": 5132,
+     "line": 5143,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/p2_picks_up_the_pot",
      "regex": "^P2\\ picks\\ up\\ the\\ pot$",
-     "line": 5142,
+     "line": 5153,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/p2_fills_it_at_the_pipe_x_l",
      "regex": "^P2\\ fills\\ it\\ at\\ the\\ pipe\\ \\((.*?)\\ L\\)$",
-     "line": 5147,
+     "line": 5158,
      "kind": "plain",
      "in": "t_ghat_spring"
     },
     {
      "id": "ghat_spring/the_net_comes_off_2",
      "regex": "^the\\ net\\ comes\\ off$",
-     "line": 4917,
+     "line": 4928,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_spring/out_beside_it_after_it_gave_up_nobody_is_taken",
      "regex": "^out\\ beside\\ it\\ after\\ it\\ gave\\ up:\\ nobody\\ is\\ taken$",
-     "line": 4919,
+     "line": 4930,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_spring/p1_holds_the_x",
      "regex": "^P1\\ holds\\ the\\ (.*?)$",
-     "line": 4942,
+     "line": 4953,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_spring/cool_now_it_pours_in_the_radiator_is_full_again_x",
      "regex": "^cool\\ now,\\ it\\ pours\\ in:\\ the\\ radiator\\ is\\ full\\ again\\ \\((.*?)%\\)$",
-     "line": 4987,
+     "line": 4998,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_spring/it_starts_x",
      "regex": "^it\\ starts\\ \\('(.*?)'\\)$",
-     "line": 4996,
+     "line": 5007,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_spring/the_objective_moves_on_over_the_pass_x",
      "regex": "^the\\ objective\\ moves\\ on,\\ over\\ the\\ pass\\ \\((.*?)\\)$",
-     "line": 4998,
+     "line": 5009,
      "kind": "plain",
      "in": "_fix_with"
     },
     {
      "id": "ghat_spring/over_the_pass_x_s_x_c",
      "regex": "^over\\ the\\ pass\\ \\((.*?)\\ s,\\ (.*?)\\ C\\)$",
-     "line": 5008,
+     "line": 5019,
      "kind": "plain",
      "in": "_fix_with"
     }
@@ -1174,105 +1181,105 @@
     {
      "id": "ghat_marks/the_van_boils_dry_x_s",
      "regex": "^the\\ van\\ boils\\ dry\\ \\((.*?)\\ s\\)$",
-     "line": 4768,
+     "line": 4779,
      "kind": "plain",
      "in": "_ghat_to_boil"
     },
     {
      "id": "ghat_marks/a_clean_van_to_start_with",
      "regex": "^a\\ clean\\ van\\ to\\ start\\ with$",
-     "line": 5165,
+     "line": 5176,
      "kind": "plain",
      "in": "t_ghat_marks"
     },
     {
      "id": "ghat_marks/saved_mid_encounter_it_loads_back_before_the_bend_problem_no",
      "regex": "^saved\\ mid\\-encounter,\\ it\\ loads\\ back\\ before\\ the\\ bend,\\ Problem\\ not\\ there\\ yet$",
-     "line": 5176,
+     "line": 5187,
      "kind": "plain",
      "in": "t_ghat_marks"
     },
     {
      "id": "ghat_marks/the_van_as_it_was_before_cool_not_boiled_no_marks_the_encoun",
      "regex": "^the\\ van\\ as\\ it\\ was\\ before:\\ cool,\\ not\\ boiled,\\ no\\ marks,\\ the\\ encounter\\ to\\ come$",
-     "line": 5177,
+     "line": 5188,
      "kind": "plain",
      "in": "t_ghat_marks"
     },
     {
      "id": "ghat_marks/driven_up_again_it_boils_again_x_s",
      "regex": "^driven\\ up\\ again:\\ it\\ boils\\ again\\ \\((.*?)\\ s\\)$",
-     "line": 5193,
+     "line": 5204,
      "kind": "plain",
      "in": "t_ghat_marks"
     },
     {
      "id": "ghat_marks/its_round_leaves_a_mark_at_every_stop_two_hands_on_the_glass",
      "regex": "^its\\ round\\ leaves\\ a\\ mark\\ at\\ every\\ stop:\\ two\\ hands\\ on\\ the\\ glass,\\ a\\ hand\\ and\\ a\\ dent\\ on\\ the\\ bonnet,\\ scrapes\\ on\\ the\\ back$",
-     "line": 5203,
+     "line": 5214,
      "kind": "plain",
      "in": "t_ghat_marks"
     },
     {
      "id": "ghat_marks/every_mark_sits_on_the_surface_it_touched",
      "regex": "^every\\ mark\\ sits\\ on\\ the\\ surface\\ it\\ touched$",
-     "line": 5215,
+     "line": 5226,
      "kind": "plain",
      "in": "t_ghat_marks"
     },
     {
      "id": "ghat_marks/holding_your_breath_ctrl_b_never_touched_the_handbrake",
      "regex": "^holding\\ your\\ breath\\ \\(Ctrl\\ /\\ B\\)\\ never\\ touched\\ the\\ handbrake$",
-     "line": 4796,
+     "line": 4807,
      "kind": "plain",
      "in": "_hide_well"
     },
     {
      "id": "ghat_marks/it_went_all_round_the_van_before_it_gave_up_x_stops",
      "regex": "^it\\ went\\ all\\ round\\ the\\ van\\ before\\ it\\ gave\\ up\\ \\((.*?)\\ stops\\)$",
-     "line": 4800,
+     "line": 4811,
      "kind": "plain",
      "in": "_hide_well"
     },
     {
      "id": "ghat_marks/hidden_well_it_gives_up",
      "regex": "^hidden\\ well,\\ it\\ gives\\ up$",
-     "line": 5218,
+     "line": 5229,
      "kind": "plain",
      "in": "t_ghat_marks"
     },
     {
      "id": "ghat_marks/the_marks_are_saved_and_come_back_on_load_x",
      "regex": "^the\\ marks\\ are\\ saved\\ and\\ come\\ back\\ on\\ load\\ \\((.*?)\\)$",
-     "line": 5225,
+     "line": 5236,
      "kind": "plain",
      "in": "t_ghat_marks"
     },
     {
      "id": "ghat_marks/and_the_van_is_still_boiled_dry_the_encounter_was_over",
      "regex": "^\\.\\.\\.\\ and\\ the\\ van\\ is\\ still\\ boiled\\ dry\\ \\(the\\ encounter\\ was\\ over\\)$",
-     "line": 5226,
+     "line": 5237,
      "kind": "plain",
      "in": "t_ghat_marks"
     },
     {
      "id": "ghat_marks/the_finale_is_there",
      "regex": "^the\\ finale\\ is\\ there$",
-     "line": 5234,
+     "line": 5245,
      "kind": "plain",
      "in": "t_ghat_marks"
     },
     {
      "id": "ghat_marks/the_end_credits_a_camera_on_the_van",
      "regex": "^the\\ end\\ credits:\\ a\\ camera\\ on\\ the\\ van$",
-     "line": 5247,
+     "line": 5258,
      "kind": "plain",
      "in": "t_ghat_marks"
     },
     {
      "id": "ghat_marks/turning_slowly_round_it",
      "regex": "^\\.\\.\\.\\ turning\\ slowly\\ round\\ it$",
-     "line": 5248,
+     "line": 5259,
      "kind": "plain",
      "in": "t_ghat_marks"
     }

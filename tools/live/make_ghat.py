@@ -88,7 +88,7 @@ steps = [
      "do": [pad("A"), wait(1.0), {"do": "hold", "key": "X", "s": 0.3}, wait(1.0)],
      "expect": [{"name": "nav swung, engine on", "expr": "camper().nav_aside and camper().engine_on", "within": 6}]},
     {"name": "3 up the hill into the fog, stop at the old milestone", "max": 100,
-     "do": [{"do": "drive", "road": "ghat_road", "to": "poi:ghat_milestone", "kmh": 30, "max": 90},
+     "do": [{"do": "drive", "road": "ghat_road", "to": "expr:gh().road.point(199)", "kmh": 30, "max": 90},
             {"do": "hold", "key": "X", "s": 0.3}, wait(0.5)],     # (the drive ends parked: S or SPACE here released the handbrake)
      "expect": [{"name": "stopped by the milestone, parked", "expr": "camper().global_position.distance_to(boot.builder.poi['ghat_milestone']) < 18.0 and camper().parking_brake", "within": 95}]},
     {"name": "4 P1 out: Naresh's note on the milestone", "max": 40,
@@ -135,18 +135,19 @@ steps = [
     refill(17),
     pour(18),
     {"name": "19 the radiator full again: in, start up, on over the pass", "max": 90,
-     "do": [{"do": "call", "fn": "place_player", "args": ["p2", "expr:van_side(2.9, -1.8)", 0.0]}, wait(0.3)]
+     "do": [walk(2, "expr:van_side(3.6, -3.6)", 0.8, 20), pad("X"), wait(0.8),     # the empty pot down at the roadside (take 2: X at the door dropped it instead of sitting, P2 was left behind)
+            walk(2, "expr:van_side(2.9, -1.8)", 0.6, 10), wait(0.3)]
            + both_in()[0:3] + [{"do": "call", "fn": "_to_door", "args": ["p2", "expr:camper()", "passenger"]}, pad("X"), wait(0.8),
                               {"do": "hold", "key": "X", "s": 0.3}, wait(0.8),
                               {"do": "drive", "road": "ghat_road", "kmh": 30, "max": 60}],
-     "expect": [{"name": "over the pass, running", "expr": "boot.story.current()['id'] == 'to_tower' and camper().engine_on", "within": 85}]},
+     "expect": [{"name": "over the pass, running, both aboard", "expr": "boot.story.current()['id'] == 'to_tower' and camper().engine_on and p1().seat_role == 'driver' and p2().seat != null", "within": 85}]},
     {"name": "20 stopped past the pass: the marks it left on the van", "max": 40,
      "do": [{"do": "tap", "key": "E"}, wait(0.6),
             call("place_player", "p1", "expr:van_side(-2.7, -1.6)", 0.0)] + look(1, "expr:van_side(-1.15, -1.8, 1.85)", 3.0)
            + [call("place_player", "p1", "expr:van_side(-0.8, -5.8)", 0.0)] + look(1, "expr:van_side(0, -3.3, 1.66)", 3.0)
            + [call("place_player", "p1", "expr:van_side(0.6, 5.8)", 0.0)] + look(1, "expr:van_side(0, 3.0, 1.3)", 3.0),
      "expect": [{"name": "the marks are on the van", "expr": "camper().marks.size() >= 5", "within": 35}]},
-    {"name": "21 the end credits: a slow turn round the battered van", "max": 30,
+    {"name": "21 the end credits: a slow turn round the battered van", "max": 60,     # 30 s ran over under the recorder (take 2)
      "do": [call("show_credits"), wait(18.0)],
      "expect": []},
 ]

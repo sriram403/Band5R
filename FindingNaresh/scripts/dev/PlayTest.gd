@@ -4376,7 +4376,10 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 		if not c.boiled_dry:
 			ad.step(kmh)
 		else:
+			# the engine died: a driver brakes (2026-11-10: left to coast, the
+			# van stopped on the slope and rolled 190 m back down the ghat)
 			ad.release()
+			key(KEY_S, true)
 		var inter := c.attack.interested()
 		if seen_t < 0.0 and not inter:
 			heat_before = maxf(heat_before, c.attack.heat_added)
@@ -4407,7 +4410,9 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 		if c.boiled_dry and c.linear_velocity.length() < 0.3 and t - boil_t > 3.0:
 			break
 	ad.release()
-	await tap(KEY_SPACE)
+	if not c.parking_brake:
+		await tap(KEY_SPACE)
+	key(KEY_S, false)
 	check(heat_before == 0.0 and leak_before == 0.0, "%s: no heat or leak from it before it sees the van (%.2f C, %.1f L/min)" % [label, heat_before, leak_before])
 	var hp: int = g.hairpins[g.seen_hp()]
 	check(seen_t > 0.0 and absi(g.seen_index - hp) <= 25 and st.flags.has("first_attack"), "%s: it sees the van at hairpin %d (sample %d, apex %d)" % [label, g.seen_hp() + 1, g.seen_index, hp])
@@ -4435,11 +4440,25 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 	await shot("ghat_heat_" + label.replace(" ", "_"))
 	if not follow_on:
 		return
-	# it comes; the van tarped (setup, the tarp itself is L3's test), all quiet
+	# time to hide even if it was close when the van died (2026-11-10: it walked
+	# on and reached the van in seconds): set it 15 m behind (declared setup)
 	var t0 := Time.get_ticks_msec()
+	while c.linear_velocity.length() > 0.3 and Time.get_ticks_msec() - t0 < 20000:
+		await physics_frames(2)
+	var close_i := maxi(0, int(g.road.nearest(c.global_position.x, c.global_position.z)["index"]) - 7)
+	var close_at := g.road.point(close_i) + g.road.right(close_i) * 4.0
+	g.problem.global_position = Vector3(close_at.x, Landscape.ground(close_at.x, close_at.z) + 0.1, close_at.z)
+	g.problem.reset_physics_interpolation()
+	# (setup: trailing 15 m behind, still following, as the van comes to rest;
+	# a boiled van counts as stopped while it rolls, so it had set off already)
+	g._set_phase("follow")
+	var phase_set := g.phase
+	t0 = Time.get_ticks_msec()
 	while g.phase != "circle" and Time.get_ticks_msec() - t0 < 90000:
-		await wait(0.5)
-	log_line("it reached the van in %.0f s (phase %s)" % [(Time.get_ticks_msec() - t0) / 1000.0, g.phase])
+		await wait(0.25)
+	var warn_s := (Time.get_ticks_msec() - t0) / 1000.0
+	log_line("it reached the van in %.0f s (from 15 m, phase then %s, now %s)" % [warn_s, phase_set, g.phase])
+	check(phase_set == "follow" and warn_s >= 20.0, "%s: even from 15 m it stares first: %.0f s to hide before it reaches the van" % [label, warn_s])
 	check(g.phase == "circle" and c.attack.interested(), "%s: it comes up to the van and circles it, still interested" % label)
 	await shot("ghat_problem_at_van")
 	c.attack.set_tarp(true)
