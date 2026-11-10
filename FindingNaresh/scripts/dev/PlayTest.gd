@@ -22,6 +22,10 @@ var _done := {}                  ## scenario -> its failures, from an earlier ru
 ## No window and no GPU (`--headless`, e.g. CI or tools/run_test_headless.sh):
 ## screenshots are skipped and frame-rate checks are only logged.
 var headless := DisplayServer.get_name() == "headless"
+## Speed research P1c (2026-11-10, test code): `--nodraw` (after the --) switches the engine's
+## drawing off for the whole run (RenderingServer.render_loop_enabled = false; physics and scripts
+## run on) and back on only for the one frame a picture needs (shot / grab_p1). Off by default.
+var nodraw := OS.get_cmdline_user_args().has("--nodraw") and DisplayServer.get_name() != "headless"
 ## c1, the rig layer (research trial c1): the heartbeat and input receipts
 ## (dev/RigBeat.gd, watched from outside by tools/rig/rig_watch.py) and the
 ## referee's injection hooks (dev/RigInject.gd).
@@ -82,6 +86,8 @@ func _ready() -> void:
 		# the window sat mostly off screen until then, 2026-10-19).
 		if not _recording() and DisplayServer.window_is_focused():
 			_hand_focus_back(false)
+	if nodraw:
+		_nodraw_start.call_deferred()
 	_ready_ms = Time.get_ticks_msec()
 	rig = RigBeat.ensure(boot, progress_path)
 	inject = RigInject.from_args(boot)
@@ -195,6 +201,32 @@ static func send_window_behind() -> void:
 
 func _process(delta: float) -> void:
 	_frame_times.append(delta)
+	if nodraw and Engine.get_physics_frames() % 300 == 0:
+		print("[nodraw] physics frame %d: frames drawn %d" % [Engine.get_physics_frames(), Engine.get_frames_drawn()])
+	# P1c: the engine turned drawing back on after _ready (seen: 214 frames drawn by tick 275);
+	# hold it off every frame except while a picture waits for its frame
+	if nodraw and not _picture and RenderingServer.render_loop_enabled:
+		RenderingServer.render_loop_enabled = false
+		_nodraw_reasserts += 1
+		if _nodraw_reasserts <= 5:
+			print("[nodraw] drawing was back on at physics frame %d (frames drawn %d): off again" % [Engine.get_physics_frames(), Engine.get_frames_drawn()])
+
+
+var _picture := false            ## P1c: a picture is waiting for its drawn frame
+
+
+## P1c: setting render_loop_enabled = false in _ready read back false but the engine drew on
+## (2720 of 2781 frames, ghat_heat); after a drawn frame's on -> off it stopped (ghat_net). So:
+## one drawn frame, then off.
+func _nodraw_start() -> void:
+	await get_tree().process_frame
+	_picture = true
+	RenderingServer.render_loop_enabled = true
+	await RenderingServer.frame_post_draw
+	RenderingServer.render_loop_enabled = false
+	_picture = false
+	print("[test] nodraw: drawing off at physics frame %d (frames drawn %d); on only for the frame a picture needs" % [Engine.get_physics_frames(), Engine.get_frames_drawn()])
+var _nodraw_reasserts := 0
 
 
 # --- input injection -----------------------------------------------------------
@@ -286,10 +318,17 @@ func shot(tag: String) -> void:
 	if headless:
 		return      # nothing is drawn (and frame_post_draw never fires)
 	var _mo := mrec.open("shot:" + tag + "", 5.0) if mrec != null else ""
+	if nodraw:
+		_picture = true
+		RenderingServer.render_loop_enabled = true    # P1c: draw this one frame (drawn after this tick's scripts)
 	if mrec != null and mrec.fixture == "n5" and mrec.active():
 		RenderingServer.render_loop_enabled = false   # builder's N5 control only: the engine stops drawing, physics runs on
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
+	if nodraw:
+		RenderingServer.render_loop_enabled = false
+		_picture = false
+		print("[nodraw] shot %s: frames drawn %d, physics frames %d" % [tag, Engine.get_frames_drawn(), Engine.get_physics_frames()])
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://_shots"))
 	img.save_png("res://_shots/test_%s.png" % tag)
 	log_line("shot test_%s.png" % tag)
@@ -5137,8 +5176,15 @@ func t_ghat_marks() -> void:
 
 ## P1's half of the window as an image (after the next frame is drawn).
 func grab_p1() -> Image:
+	if nodraw:
+		_picture = true
+		RenderingServer.render_loop_enabled = true    # P1c: draw this one frame
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
+	if nodraw:
+		RenderingServer.render_loop_enabled = false
+		_picture = false
+		print("[nodraw] grab_p1: frames drawn %d, physics frames %d" % [Engine.get_frames_drawn(), Engine.get_physics_frames()])
 	var r := (boot.viewports[0].get_parent() as Control).get_global_rect()
 	return img.get_region(Rect2i(r))
 
