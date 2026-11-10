@@ -45,6 +45,12 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   after a drawn frame (set in `_ready` it reads false and keeps drawing: prove it by frames drawn, never by
   reading the setting). ghat_heat truly off: not yet measured (~4.5-5x guessed). **Pilots total ~7.4 game min.**
 
+- **R3 (2026-11-10, Stage 3 start):** building and qualifying a trial's tools (T1's differential, the T3/T4
+  builder's proofs of its own tools) is a one-time cost, like writing code: **qualification minutes**,
+  metered and reported apart from the benchmark score (as the pilots were). The score is the replay from
+  `speed-base` with the finished tools. The meter now logs both (`WALL` = R2's union, `proc` = summed).
+  Caps: T1 <= 45 wall game min (stop at 60); each GPT spec's build + proof <= 15.
+
 ## Next (Stage 3 proper)
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
@@ -60,3 +66,5 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
 | 2 round 1 audits | done (`audit_r1_gpt.md` possibly contaminated, R1; `audit_r1_claude.md`). Claude: 4 trials (speed-up on the game clock, plants one compile + early stop, first+last full run, discovery walk + safe resume); ~99 min at 1x, ~68 at 2x: the speed probe decides |
 | 2 round 2 | done: both sign the same top 4 (`top4.md`) |
 | 3 pilots | done: P1 1.24x (no-go as built), P1b headless 4.96x, P1c draw-only-at-shots 5.5x (go, one fix) |
+| 3 T1 + T2 build | running (Claude auditor, `MPG_speed_t1`, task `trial_T1_task.md`) |
+| 3 T3 + T4 specs | running (GPT, task `trial_T34_spec_task.md`); builder copy `MPG_speed_t34` (branch `speed-t34` from `speed-base`) ready |
