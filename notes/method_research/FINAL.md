@@ -142,3 +142,50 @@ FINAL.md fix: add "S1 did not meet its 10/10 PASS target" to the S1 result.
 FINAL.md fix: replace "a broken game is FAIL" in the v6 draft with "a failed check is FAIL; whether the game or test caused it remains unresolved".
 FINAL.md fix: replace "More checks, not more research, close that" with "Checks aimed at the four misses may close these gaps; prove each against its bug and the clean game".
 Next: close those four measured ramp gaps, including a player's view of the wheel, and prove each check catches its bug without rejecting the clean game.
+
+## Addendum: the method ported to #6, the ghat (2026-11-09/10, branch `g15`)
+First port to a second puzzle (port steps 1-8). `tools/method_run.sh ghat`, 7 scenarios, **124 required
+checks**, rules H1-H3 (`dev/GhatWatch.gd`), planted bugs in `core/Plant.gd` (off by default),
+`tools/method/prove_ghat.py`. Final clean run **PASS** (`20261110_192650_ghat_k3`): 7 / 7, 124 / 124, 0 FAILs.
+**27 of 27 planted bugs PROVED** (each check FAILS by name on its bug, passes on the clean game):
+
+| Plant | The check it must fail | |
+|---|---|---|
+| `heat_always` | no heat or leak from it before it sees the van + H1: | PROVED |
+| `hud_heat` | hot with it watching: no TEMP / COOL bars | PROVED |
+| `fog_short` | the fog lies all the way up to the pass | PROVED |
+| `seen_h2` | the heat alone boils it, the pass guard not needed | PROVED |
+| `keeps_interest` | once it gives up the heat and the leak stop | PROVED |
+| `lean_close` | its face stays outside the glass | PROVED |
+| `fast_turn` | it turns away slowly | PROVED |
+| `one_layer_net` | from outside nothing of the van shows through the net | PROVED |
+| `leave_sees` | out beside it after it gave up: nobody is taken | PROVED |
+| `no_breath_lock` | never touched the handbrake | PROVED |
+| `round_skip` | it went all round the van before it gave up | PROVED |
+| `no_fix` | cool now, it pours in: the radiator is full again | PROVED |
+| `free_coolant` | H3: | PROVED |
+| `needle_stuck` | H2: | PROVED |
+| `no_power` | over the pass | PROVED |
+| `seat_compare` | both windows visited | PROVED |
+| `cap_text` | Open the radiator cap | PROVED |
+| `endless_window` | a window gives you away only once | PROVED |
+| `marks_pile` | a clean van to start with | PROVED |
+| `marks_unsaved` | the marks are saved and come back on load | PROVED |
+| `stow_live` | the jug rode up the ghat in its place on the rack | PROVED |
+| `tail_flush` | the tail lights stand proud of the back doors | PROVED |
+| `hold_through` | P2 keeps holding a moment after: the net stays on | PROVED |
+| `no_listen` | it listens before it comes back | PROVED |
+| `round_through` | from the far side it walks round the van | PROVED |
+| `no_min_warn` | even from 15 m it stares first | PROVED |
+| `fog_sees_far` | in the fog it doesn't see someone 25 m off | PROVED |
+
+What the port taught (`notes/ROUGH_NOTES.md` 2026-11-09/10):
+- **The declared setup is where the game was untested.** The method's scenarios put the net on and seated
+  the players by code; the recorded walk, played with real inputs end to end, found six game holes they
+  could not: Problem stuck against the van, the net undone by a long hold, no time to hide when it was
+  close or after the hot cap, it saw people through the fog from 40 m, the jug left on the road.
+  **Port step 9 (proposed):** play the walk with real inputs before trusting a clean run.
+- A planted bug no scenario reaches proves nothing: check the scenario reaches the state first
+  (`endless_window`: no window was ever visited twice).
+- Shared helpers hold only checks every caller reaches (the freeze counts per scenario show it).
+- A "random" failure has a condition (the jug: was the van asleep?); log until the two cases differ.
