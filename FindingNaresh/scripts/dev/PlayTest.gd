@@ -4648,6 +4648,37 @@ func t_ghat_pot_bench() -> void:
 ## Test bench (2026-11-09): the jug on the rack was sometimes found 77 m from
 ## the van. Put it on the rack as the coolant test does, move the van as the
 ## test does, drive, and log where the jug really is at every step.
+## Bench (2026-11-10): does an item flung off the rack (the ramp's landing)
+## keep the throw now that a stowed item leaves the physics world? Fixed vs
+## the old live body (stow_live), the van parked, the throw as RampJump's.
+func t_fling_bench() -> void:
+	var g := await _ghat_start()
+	var c := camper()
+	for round in 2:
+		if round == 0:
+			Plant._names.erase("stow_live")
+		else:
+			Plant._names["stow_live"] = true
+		boot.dev_menu.van_jug(5.0)
+		await physics_frames(30)
+		var slot := c.storage_slots[2]
+		var it := c.stowed_item(slot)
+		var fwd := -c.global_transform.basis.z
+		it.unstow()
+		it.global_position = slot.global_position + Vector3.UP * 0.4
+		it.linear_velocity = fwd * 6.0 + Vector3.UP * 4.0
+		it._thrown = true
+		var p0 := it.global_position
+		for f in 6:
+			await physics_frames(1)
+			log_line("R%d frame %d: v %s (|v| %.2f), moved %.2f m, frozen %s, layer %d" % [round, f + 1, it.linear_velocity, it.linear_velocity.length(), it.global_position.distance_to(p0), it.freeze, it.collision_layer])
+		await wait(1.5)
+		var flat := Vector2(it.global_position.x - p0.x, it.global_position.z - p0.z).length()
+		log_line("R%d after 1.5 s: %.2f m out along the ground" % [round, flat])
+		check(flat > 3.0, "R%d (%s): the thrown item flies (%.2f m)" % [round, "fixed" if round == 0 else "old live body", flat])
+	Plant._names.erase("stow_live")
+
+
 func t_ghat_jug_bench() -> void:
 	# stowed on an awake van: R0 with the bug planted back (stow_live), R1 the
 	# fix; R2 the fix, stowed on a parked van
@@ -13148,7 +13179,12 @@ func t_ramp() -> void:
 	key(KEY_CTRL, true)
 	await place_player(q, behind + Vector3(0, 0.4, 0), 0.0)
 	await look_at_point(q, window_look)
-	await wait(0.4)
+	# jump when the offer shows, as a player would (2026-11-10: 0.4 s after
+	# being set down it wasn't up yet; the picture a moment later showed it)
+	var t_offer := Time.get_ticks_msec()
+	while not q.prompt_text.contains("Leg-up") and Time.get_ticks_msec() - t_offer < 3000:
+		await physics_frames(2)
+	log_line("the leg-up offered after %.2f s" % ((Time.get_ticks_msec() - t_offer) / 1000.0))
 	log_line("crate %.2f m from the wall's foot, P1 %.2f m up; P2: '%s'" % [crate.global_position.distance_to(under), p.global_position.y - under.y, q.prompt_text])
 	pad_axis(JOY_AXIS_LEFT_Y, -1.0)
 	pad_button(JOY_BUTTON_A, true)
