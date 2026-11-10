@@ -60,7 +60,9 @@ static func _mood(boot: Node) -> float:
 
 # --- gather ----------------------------------------------------------------------
 
-static func collect(boot: Node) -> Dictionary:
+## raw: the world exactly as it is, no rewind (a walk's save points, dev/LiveControl.gd:
+## a resume mid-encounter must start where the step started, not before the bend)
+static func collect(boot: Node, raw := false) -> Dictionary:
 	var c: Camper = boot.camper
 	var players := []
 	for p in boot.players:
@@ -122,7 +124,7 @@ static func collect(boot: Node) -> Dictionary:
 	}
 	# #6: a save in the middle of the ghat's encounter goes back before it
 	var gh := boot.get_tree().get_first_node_in_group("ghat") as Ghat
-	if gh != null:
+	if gh != null and not raw:
 		gh.adjust_save(out)
 	return out
 
