@@ -147,9 +147,7 @@ steps = [
            + [call("place_player", "p1", "expr:van_side(-0.8, -5.8)", 0.0)] + look(1, "expr:van_side(0, -3.3, 1.66)", 3.0)
            + [call("place_player", "p1", "expr:van_side(0.6, 5.8)", 0.0)] + look(1, "expr:van_side(0, 3.0, 1.3)", 3.0),
      "expect": [{"name": "the marks are on the van", "expr": "camper().marks.size() >= 5", "within": 35}]},
-    {"name": "21 the end credits: a slow turn round the battered van", "max": 60,     # 30 s ran over under the recorder (take 2)
-     "do": [call("show_credits"), wait(18.0)],
-     "expect": []},
+    # (no end credits here: they're the game's ending, not #6's; the user, 2026-11-10)
 ]
 
 # P2 on the pad (split screen), as the ramp's walk: without it the walk played

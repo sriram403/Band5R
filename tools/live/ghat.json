@@ -968,22 +968,6 @@
      "within": 35
     }
    ]
-  },
-  {
-   "name": "21 the end credits: a slow turn round the battered van",
-   "max": 60,
-   "do": [
-    {
-     "do": "call",
-     "fn": "show_credits",
-     "args": []
-    },
-    {
-     "do": "wait",
-     "s": 18.0
-    }
-   ],
-   "expect": []
   }
  ]
 }
