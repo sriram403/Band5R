@@ -51,7 +51,7 @@ const GYM_SCENARIOS := {"tyre": ["tyre"], "house": ["house"], "traffic": ["traff
 const SMOKE_GYM := ["mouse", "taps", "enter", "cockpit", "exit", "swap"]
 const SMOKE_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "audio", "dev", "mirrors", "map", "story", "power", "relay_kb", "climb", "look", "pad", "perf", "beach", "save"]
 const QUICK_GYM := ["gym", "mouse", "taps", "enter", "cockpit", "layout", "drive", "brake", "exit", "swap"]
-const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "windmill_fall", "fun", "solo", "waterworks", "power", "ramp", "ramp_edges", "ramp_wedge", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "climb", "carry", "look", "pad", "teleports", "puzzle_resets", "perf", "save"]
+const QUICK_WORLD := ["roadworks", "house_world", "traffic_world", "mood", "driveway", "audio", "dev", "mirrors", "map", "story", "windmill", "windmill_fall", "fun", "solo", "waterworks", "power", "ramp", "ramp_edges", "ramp_wedge", "ramp_load", "ghat", "ghat_menu", "tower", "maze", "relay", "relay_kb", "climb", "carry", "look", "pad", "teleports", "puzzle_resets", "perf", "save"]
 
 
 func _ready() -> void:
@@ -509,7 +509,7 @@ func _run() -> void:
 		_finish()
 		return
 	_read_progress()
-	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "ramp", "ramp_edges", "ramp_wedge", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "relay_views", "bino_zoom", "snowball", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
+	var all := ["audio", "fixes", "dev", "mirrors", "feedback", "map", "story", "windmill", "windmill_fall", "fun", "solo", "gate_bypass", "wm_look", "wm_look2", "waterworks", "power", "ramp", "ramp_edges", "ramp_wedge", "ramp_load", "ghat", "ghat_menu", "tower", "maze", "maze_frights", "maze_r3", "maze_van", "maze_views", "weather", "relay", "relay_kb", "relay_views", "bino_zoom", "snowball", "overview", "tour", "climb", "carry", "journey", "mouse", "foot", "taps", "enter", "cockpit", "layout", "park", "solid", "crash", "look", "pad", "drive", "brake", "lap", "exit", "swap", "perf", "beach", "photo", "roses", "evidence", "bessi_jumps", "shutter", "boat", "storm", "storm_road", "decoy", "saltpans", "swing", "tunnel", "mast", "home", "step_jumps", "save"]
 	if boot.gym != "":
 		all = GYM_SCENARIOS.get(boot.gym, ["gym"]).duplicate()
 	var selection := only
@@ -13624,6 +13624,41 @@ func ramp_drive_off(secs := 14.0) -> void:
 			mark_t = t
 	ad.release()
 	if mrec != null: mrec.close(_mo)
+
+
+## A load with the wheel in the hut (h1, 2026-11-10: a resumed walk found the
+## ramp lost track of its wheel after a load; a reset then left it lying there).
+## `tools/run_test.sh ramp_load` (plant: wheel_unlinked)
+func t_ramp_load() -> void:
+	var r := rj()
+	await ramp_start()
+	r.just_landed()
+	var c := camper()
+	if p1().seat == null:
+		p1().enter_seat(c, c.seat_nodes["driver"], "driver")
+	await physics_frames(5)
+	var d := SaveGame.collect(boot)
+	# as in a new session: the wheel isn't there until the load makes it again
+	# (freed at once, not queued: a queued node is still found by its name)
+	var old_w: Node = r.van_wheel
+	old_w.get_parent().remove_child(old_w)
+	old_w.free()
+	SaveGame.apply(boot, d)
+	await physics_frames(5)
+	var w = r.van_wheel
+	log_line("after the load: the ramp's wheel %s" % ("%s at %s" % [w.name, w.global_position] if w != null and is_instance_valid(w) else "none"))
+	check(w != null and is_instance_valid(w) and w.name == "VanWheel", "after a load the ramp knows its wheel in the hut")
+	await wait(1.5)
+	log_line("after the load P1 sits in '%s' at %s (van %s)" % [p1().seat_role, p1().global_position, c.global_position])
+	check(p1().seat != null and p1().seat_role == "driver", "saved in the driver's seat, still there after the load")
+	r.reset()
+	await physics_frames(5)
+	var left := 0
+	for n in boot.world.find_children("VanWheel*", "", true, false):
+		if not n.is_queued_for_deletion():
+			left += 1
+	log_line("after a reset: %d van wheel(s) left in the world" % left)
+	check(left == 0, "a reset after the load leaves no wheel behind")
 
 
 ## A van driven into the hut on its hub: it can always reverse out (a landing

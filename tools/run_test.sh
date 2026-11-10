@@ -29,6 +29,8 @@ RUNS="$MPG_DATA/runs"
 PROGRESS="$RUNS/progress.txt"
 mkdir -p "$RUNS"
 # The run's identity: the plan and $GYM. `resume` reuses the last one's.
+# one argument only: a second word was silently dropped (2026-11-10: "ramp_load save" ran 1 of 2)
+if [ $# -gt 1 ]; then echo "run_test.sh takes ONE argument: join scenarios with commas (got: $*)"; exit 2; fi
 if [ "$1" = "resume" ]; then
 	if [ ! -f "$RUNS/plan.txt" ] || [ -f "$RUNS/finished.txt" ]; then
 		echo "Nothing to resume: the last run finished (or there was none)."

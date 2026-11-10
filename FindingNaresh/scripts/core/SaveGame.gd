@@ -60,7 +60,9 @@ static func _mood(boot: Node) -> float:
 
 # --- gather ----------------------------------------------------------------------
 
-static func collect(boot: Node) -> Dictionary:
+## raw: the world exactly as it is, no rewind (a walk's save points, dev/LiveControl.gd:
+## a resume mid-encounter must start where the step started, not before the bend)
+static func collect(boot: Node, raw := false) -> Dictionary:
 	var c: Camper = boot.camper
 	var players := []
 	for p in boot.players:
@@ -122,7 +124,7 @@ static func collect(boot: Node) -> Dictionary:
 	}
 	# #6: a save in the middle of the ghat's encounter goes back before it
 	var gh := boot.get_tree().get_first_node_in_group("ghat") as Ghat
-	if gh != null:
+	if gh != null and not raw:
 		gh.adjust_save(out)
 	return out
 
@@ -252,6 +254,10 @@ static func apply(boot: Node, d: Dictionary) -> void:
 		it.reset_physics_interpolation()
 		if e.has("slot"):
 			it.stow(c.storage_slots[int(e["slot"])])
+	# the ramp's wheel in the hut was made again above: the puzzle must know it
+	# (it lost track: a reset after a load left the old wheel lying there)
+	if ramp and not Plant.on("wheel_unlinked"):
+		ramp.van_wheel = world.find_child("VanWheel", true, false) as SpareWheel
 
 	# fragments already picked up are gone
 	for f in boot.get_tree().get_nodes_in_group("memory_fragment"):

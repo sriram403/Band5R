@@ -39,6 +39,13 @@ extends RefCounted
 ## stays open and the report goes back. Every step starts with a save point
 ## (user://live/points/<walk>_<n>.json): "from" loads that step's save into a
 ## fresh game and plays on from there.
+## RESUME IS THE DEFAULT (the user, 2026-11-10): a failed run writes
+## points/<walk>_last_fail.json; tools/live.py --walk (and tools/play_walk.sh,
+## tools/record_walk.sh) then start from that step unless --fresh. A save
+## point is the game's save taken raw (no rewind mid-encounter) plus the live
+## part a game save leaves out: what's in hand, Naresh, the creatures, and the
+## script variables of the puzzle nodes in LIVE_GROUPS and their creature
+## (#6: Problem's phase, timers, suspicion), so a resume starts where the step did.
 
 var pt: PlayTest
 var dir := ""
@@ -363,6 +370,104 @@ func _failed(why: String) -> void:
 		_say("FAIL " + why)
 
 
+## --- a save point's live part (test only) -------------------------------------
+## The game's own save is for players: it rewinds a half-done encounter and
+## doesn't keep a creature's mind. A resumed walk needs the world as the step
+## found it, so a save point also keeps the script variables of the puzzle
+## nodes below (plain values only; a player reference as its index) and of the
+## creature they run.
+
+const LIVE_GROUPS := ["ghat"]
+const _PLAIN := [TYPE_BOOL, TYPE_INT, TYPE_FLOAT, TYPE_STRING, TYPE_STRING_NAME, TYPE_VECTOR2,
+	TYPE_VECTOR3, TYPE_TRANSFORM3D, TYPE_BASIS, TYPE_COLOR, TYPE_PACKED_VECTOR3_ARRAY, TYPE_PACKED_FLOAT32_ARRAY]
+
+
+func _plain(v) -> bool:
+	var t := typeof(v)
+	if t in _PLAIN or t == TYPE_NIL:
+		return true
+	if t == TYPE_ARRAY:
+		for x in v:
+			if not _plain(x):
+				return false
+		return true
+	if t == TYPE_DICTIONARY:
+		for k in v:
+			if not _plain(k) or not _plain(v[k]):
+				return false
+		return true
+	return false
+
+
+func _snap_vars(o: Object) -> Dictionary:
+	var out := {}
+	for p in o.get_property_list():
+		if not (int(p["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE):
+			continue
+		var v = o.get(p["name"])
+		if v is PlayerRig:
+			out[p["name"]] = "player:%d" % pt.boot.players.find(v)
+		elif v == null and int(p["type"]) == TYPE_OBJECT and String(p["class_name"]) == "PlayerRig":
+			out[p["name"]] = "player:-1"
+		elif typeof(v) != TYPE_OBJECT and _plain(v):
+			out[p["name"]] = var_to_str(v)
+	return out
+
+
+func _unsnap_vars(o: Object, d: Dictionary) -> void:
+	for k in d:
+		var s := String(d[k])
+		if s.begins_with("player:"):
+			var pi := int(s.substr(7))
+			o.set(k, pt.boot.players[pi] if pi >= 0 and pi < pt.boot.players.size() else null)
+		else:
+			o.set(k, str_to_var(s))
+
+
+func _snap_live(point: Dictionary) -> void:
+	var live := {}
+	for g in LIVE_GROUPS:
+		var n := pt.get_tree().get_first_node_in_group(g)
+		if n == null:
+			continue
+		var e := {"vars": _snap_vars(n)}
+		var cr = n.get("problem")
+		if cr is Creature and is_instance_valid(cr):
+			e["creature"] = {"xf": var_to_str((cr as Node3D).global_transform), "vars": _snap_vars(cr)}
+		live[g] = e
+	point["live_puzzles"] = live
+
+
+func _restore_live(point: Dictionary) -> void:
+	var live: Dictionary = point.get("live_puzzles", {})
+	for g in live:
+		var n := pt.get_tree().get_first_node_in_group(g)
+		if n == null:
+			continue
+		var e: Dictionary = live[g]
+		if n is Ghat:
+			var gh := n as Ghat
+			if e.has("creature") and (gh.problem == null or not is_instance_valid(gh.problem)):
+				gh._spawn_problem(gh.road.point(gh.hairpins[gh.seen_hp()]), pt.camper())
+			elif not e.has("creature") and gh.problem != null and is_instance_valid(gh.problem):
+				gh.problem.queue_free()
+				gh.problem = null
+				gh.attacker = null
+		_unsnap_vars(n, e["vars"])
+		if n is Ghat:
+			# the fog only reaches the mood when it changes: show it as restored
+			var mood := pt.get_tree().get_first_node_in_group("mood") as Mood
+			if mood != null:
+				mood.fog_boost = (n as Ghat).fog
+				mood.apply()
+		if e.has("creature"):
+			var cr = n.get("problem")
+			if cr is Creature:
+				_unsnap_vars(cr, e["creature"]["vars"])
+				(cr as Node3D).global_transform = str_to_var(String(e["creature"]["xf"]))
+				(cr as Node3D).reset_physics_interpolation()
+
+
 func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 	_walk_name = String(walk.get("name", "walk"))
 	_fail = ""
@@ -385,11 +490,23 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 	for c in walk.get("setup", []):
 		await _do(c)
 	if start > 0:
-		var pp := "%s/points/%s_%d.json" % [dir, _walk_name, start]
-		if not FileAccess.file_exists(pp):
-			return {"ok": false, "fail": "no save point for %s (run the walk once from the start)" % from, "log": []}
-		var point: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(pp))
+		# the point saved at this step's start: same index and the same step name
+		# (an edited walk shifts the indices: then the name finds it, or we say so)
+		var point := {}
+		for k in [start] + range(0, 80):
+			var pp := "%s/points/%s_%d.json" % [dir, _walk_name, k]
+			if not FileAccess.file_exists(pp):
+				continue
+			var d = JSON.parse_string(FileAccess.get_file_as_string(pp))
+			if typeof(d) == TYPE_DICTIONARY and String(d.get("live_step", from if k == start else "")) == from:
+				point = d
+				break
+		if point.is_empty():
+			return {"ok": false, "fail": "no save point for '%s' (play the walk once from the start: --fresh)" % from, "log": []}
 		SaveGame.apply(pt.boot, point)
+		# a puzzle's live state the game's own save leaves out or rewinds
+		# (#6: a save mid-encounter goes back before the bend; Problem isn't saved)
+		_restore_live(point)
 		# the creatures aren't in a game save: put them back where they were
 		# (after a resume they started elsewhere, which changed the situation)
 		var crs := pt.get_tree().get_nodes_in_group("creature")
@@ -419,8 +536,12 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 				nz.go_point = Vector3(float(ln["go"][0]), float(ln["go"][1]), float(ln["go"][2]))
 				nz.state = st0
 		await pt.wait(1.0)
-		_say("resumed at %s from its save point (Naresh %s %s, creatures %s)" % [from, Naresh.State.keys()[pt.boot.naresh.state],
-			_f3(pt.boot.naresh.global_position), str(was.slice(0, 2))])
+		# no Naresh in some puzzles (#6): the old line read his state and died on it
+		var nz2: Naresh = pt.boot.naresh
+		var nar := "none" if nz2 == null or not is_instance_valid(nz2) else "%s %s" % [Naresh.State.keys()[nz2.state], _f3(nz2.global_position)]
+		var gh2 := pt.get_tree().get_first_node_in_group("ghat") as Ghat
+		_say("resumed at %s from its save point (Naresh %s, creatures %s%s)" % [from, nar, str(was.slice(0, 2)),
+			"" if gh2 == null else ", ghat phase '%s', Problem %s" % [gh2.phase, "out" if gh2.problem != null else "none"]])
 	_watcher(ctx)
 	var i := start
 	while i < steps.size() and _fail == "":
@@ -430,7 +551,9 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 		var st: Dictionary = steps[i]
 		var nm := String(st.get("name", "step %d" % i))
 		var f := FileAccess.open("%s/points/%s_%d.json" % [dir, _walk_name, i], FileAccess.WRITE)
-		var point := SaveGame.collect(pt.boot)
+		var point := SaveGame.collect(pt.boot, true)
+		point["live_step"] = nm
+		_snap_live(point)
 		var crs: Array = []
 		for cr in pt.get_tree().get_nodes_in_group("creature"):
 			var cp: Vector3 = (cr as Node3D).global_position
@@ -473,7 +596,9 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 				await pt.wait(0.1)
 		if _fail != "":
 			break
-		_say("step %s (%.0f s)" % [nm, (Time.get_ticks_msec() - t0) / 1000.0])
+		# the frame: a recording at a fixed fps cuts a resumed take here (tools/record_walk.sh)
+		# frame = process frames (one per frame Movie Maker writes at --fixed-fps); drawn kept to compare
+		_say("step %s (%.0f s, frame %d, drawn %d)" % [nm, (Time.get_ticks_msec() - t0) / 1000.0, Engine.get_process_frames(), Engine.get_frames_drawn()])
 		ctx["step_until"] = Time.get_ticks_msec() + int(float(st.get("max", 300.0)) * 1000.0)
 		ctx["step_name"] = nm
 		for c in st.get("do", []):
@@ -511,7 +636,17 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 		await pt.shot("walk_fail")
 		shot = ProjectSettings.globalize_path("res://_shots/test_walk_fail.png")
 	_say("%s %s in %.0f s" % ["FAILED" if _fail != "" else "DONE", _walk_name, (Time.get_ticks_msec() - t0) / 1000.0])
-	return {"ok": _fail == "", "fail": _fail, "failed_step": String(steps[i].get("name", "")) if _fail != "" and i < steps.size() else "",
+	var failed_step := String(steps[mini(i, steps.size() - 1)].get("name", "")) if _fail != "" and steps.size() > 0 else ""
+	# where the next run starts by default (tools/live.py: resume from the last failed step)
+	var lf := "%s/points/%s_last_fail.json" % [dir, _walk_name]
+	if _fail != "":
+		var ff := FileAccess.open(lf, FileAccess.WRITE)
+		ff.store_string(JSON.stringify({"step": failed_step, "index": mini(i, steps.size() - 1), "fail": _fail,
+			"from": from, "at": Time.get_datetime_string_from_system()}))
+		ff.close()
+	elif FileAccess.file_exists(lf):
+		DirAccess.remove_absolute(lf)
+	return {"ok": _fail == "", "fail": _fail, "failed_step": failed_step,
 		"log": _log.duplicate(), "shot": shot}
 
 

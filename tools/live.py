@@ -6,6 +6,9 @@ Then, one step at a time:
     python tools/live.py '{"do": "state"}'
     python tools/live.py '[{"do": "menu", "tab": "Story", "row": "Nearly out of fuel"}, {"do": "shot", "name": "a"}]'
     python tools/live.py --quit
+A planned walk (a watched run): python tools/live.py --walk tools/live/<w>.json
+  resumes BY DEFAULT from the step its last run failed at (save points at
+  every step); --fresh starts from step 1; --from "<step>" picks one.
 It waits for the game's answer and prints it (results, messages, state,
 the screenshot's path). Commands are listed at the top of LiveControl.gd.
 """
@@ -55,6 +58,30 @@ def new_errors() -> list:
     return out[:12]
 
 
+def resume_step(walk: dict):
+    """The step the last run of this walk failed at, if it is still in the
+    walk; else None (start from the beginning)."""
+    name = walk.get("name", "walk")
+    lf = os.path.join(LIVE, "points", "%s_last_fail.json" % name)
+    if not os.path.exists(lf):
+        return None
+    try:
+        with open(lf, encoding="utf-8") as f:
+            last = json.load(f)
+    except (ValueError, OSError):
+        return None
+    step = last.get("step", "")
+    names = [s.get("name", "") for s in walk.get("steps", [])]
+    if step not in names:
+        print("RESUME: the last failed step '%s' is not in this walk any more: from the start" % step, flush=True)
+        return None
+    if names.index(step) == 0:
+        return None
+    print("RESUME from step '%s' (the last run failed there: %s). Start over: --fresh; "
+          "cause earlier: --from '<earlier step>'" % (step, last.get("fail", "")[:160]), flush=True)
+    return step
+
+
 def main() -> int:
     args = sys.argv[1:]
     timeout = 180.0
@@ -71,6 +98,10 @@ def main() -> int:
         i = args.index("--from")
         walk_from = args[i + 1]
         del args[i:i + 2]
+    fresh = False
+    if "--fresh" in args:
+        fresh = True
+        args.remove("--fresh")
     walk = None
     if "--walk" in args:
         i = args.index("--walk")
@@ -78,6 +109,11 @@ def main() -> int:
             walk = json.load(f)
         del args[i:i + 2]
         timeout = max(timeout, 3600.0)
+        # By default a walk resumes from the step its last run failed at (the
+        # user, 2026-11-10: a model restarted 10 trial plays from step 1 though
+        # the save points were there). --fresh starts over; --from picks a step.
+        if walk_from is None and not fresh:
+            walk_from = resume_step(walk)
     src = args[0] if args else "[]"
     if src.startswith("@"):          # a saved walk: tools/live/<name>.json
         with open(src[1:], encoding="utf-8") as f:
