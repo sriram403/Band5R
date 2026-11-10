@@ -151,6 +151,7 @@ const SEARCH_S := 25.0           ## s of quiet at the tarped van before it gives
 const LEAVE_SPEED := 1.0
 const PASS_GUARD := 25           ## samples (50 m) before the pass: interested, it boils there at the latest
 const STOP_S := 2.0              ## s stopped (engine off) before it comes
+const FOG_SIGHT := 15.0          ## m it can see anyone in the ghat's fog, as you can (the user, 2026-11-10: A)
 const MIN_WARN := 24.0           ## s from the van stopping to it reaching the van, at the least: time to hide (2026-11-10)
 const STATION_S := 3.5           ## s it stays at each stop round the van
 const POSED_STOPS := 4           ## stops of its round with a pose (bonnet, two windows, back)
@@ -697,6 +698,9 @@ func seen_hp() -> int:
 
 func _run_problem(van: Camper, delta: float) -> void:
 	phase_t += delta
+	# the fog cuts its sight as it cuts yours: from 40 m it saw two people at
+	# the net and ran them down (walk dry runs, 2026-11-10)
+	problem.sight_cap = FOG_SIGHT if fog > 0.5 and not Plant.on("fog_sees_far") else INF
 	# what it shows: eyes and whine with its interest, the head on the van
 	match phase:
 		"watch":

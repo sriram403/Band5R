@@ -73,6 +73,7 @@ var box_moved := false               ## it is watching a box move right now (tes
 var _box_notice := false             ## what it last noticed was a box
 var _item_ms := -99999               ## when and where the last item it heard landed
 var passive := false                 ## only walks its patrol and shows itself (a glimpse)
+var sight_cap := INF                ## the furthest it can see anyone now (fog: the ghat sets it)
 var dormant := false                 ## switched off (the Naresh gym's creature switch)
 var naresh_drawn := false            ## drifting towards Naresh right now (tests read this)
 var goal_now := Vector3.ZERO          ## where it's heading this frame (the live line shows it)
@@ -349,12 +350,12 @@ func _look(dt: float) -> void:
 			continue
 		var to := p.global_position - global_position
 		var d := to.length()
-		var reach: float = p.sight_range(light)
+		var reach: float = minf(p.sight_range(light), sight_cap)
 		# a box is a box, but a box that moves gets looked at from as far as
 		# it would see you standing ("that box moved")
 		var box_reach := 0.0
 		if p.in_box and Vector2(p.velocity.x, p.velocity.z).length() >= 0.3:
-			box_reach = float(PlayerRig.SIGHT_STAND[clampi(light, 0, 2)])
+			box_reach = minf(float(PlayerRig.SIGHT_STAND[clampi(light, 0, 2)]), sight_cap)
 		if d > maxf(maxf(reach, box_reach), CLOSE_SENSE):
 			continue
 		if d > CLOSE_SENSE:

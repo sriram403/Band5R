@@ -26,6 +26,7 @@ GROUPS = {
     "lean": ("ghat_looks", "lean_close", {"lean_close": ["its face stays outside the glass"]}),
     "net": ("ghat_net", "one_layer_net,tail_flush", {"one_layer_net": ["from outside nothing of the van shows through the net"],
                                                      "tail_flush": ["the tail lights stand proud of the back doors"]}),
+    "fog_sight": ("ghat_heat", "fog_sees_far,one_corner", {"fog_sees_far": ["in the fog it doesn't see someone 25 m off"]}),
     "warn": ("ghat_heat", "no_min_warn,one_corner", {"no_min_warn": ["even from 15 m it stares first"]}),
     "round": ("ghat_looks", "round_through", {"round_through": ["from the far side it walks round the van"]}),
     "hold": ("ghat_net", "hold_through", {"hold_through": ["P2 keeps holding a moment after: the net stays on"]}),

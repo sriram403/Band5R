@@ -4445,6 +4445,25 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 	var t0 := Time.get_ticks_msec()
 	while c.linear_velocity.length() > 0.3 and Time.get_ticks_msec() - t0 < 20000:
 		await physics_frames(2)
+	# the fog cuts its sight as it cuts yours (the user, 2026-11-10: A): as it
+	# walks up, P2 on the road 25 m in front of it, in plain view, isn't seen
+	var tc := Time.get_ticks_msec()
+	while g.phase != "come" and Time.get_ticks_msec() - tc < 40000:
+		await physics_frames(2)
+	var fog_top := -1.0
+	if g.phase == "come":
+		var q2 := p2()
+		q2.force_exit = true
+		await physics_frames(4)
+		var tov := c.global_position - g.problem.global_position
+		tov.y = 0.0
+		var stand := g.problem.global_position + tov.normalized() * 25.0
+		var top := await exposed(q2, Vector3(stand.x, Landscape.ground(stand.x, stand.z) + 0.3, stand.z), 2.0, false, g.problem)
+		log_line("in the fog, P2 25 m in front of it as it comes: suspicion %.2f, taken %d" % [top, get_tree().get_nodes_in_group("taken").size()])
+		fog_top = top if get_tree().get_nodes_in_group("taken").is_empty() else 9.0
+		q2.enter_seat(c, c.seat_nodes["passenger"], "passenger")
+		await physics_frames(4)
+	check(fog_top >= 0.0 and fog_top < 0.3, "%s: in the fog it doesn't see someone 25 m off (suspicion %.2f; -1 = it never came)" % [label, fog_top])
 	var close_i := maxi(0, int(g.road.nearest(c.global_position.x, c.global_position.z)["index"]) - 7)
 	var close_at := g.road.point(close_i) + g.road.right(close_i) * 4.0
 	g.problem.global_position = Vector3(close_at.x, Landscape.ground(close_at.x, close_at.z) + 0.1, close_at.z)
