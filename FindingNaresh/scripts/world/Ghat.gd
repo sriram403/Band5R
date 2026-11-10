@@ -311,7 +311,7 @@ func _direct() -> Dictionary:
 func _round_point(van: Camper, k: int) -> Vector3:
 	var lk: Vector3 = ROUND[k][0]
 	if Plant.on("lean_close") and absf(lk.x) > 2.5:
-		lk.x = signf(lk.x) * 2.3
+		lk.x = signf(lk.x) * 2.0
 	var p: Vector3 = van._body_root.global_transform * lk
 	p.y = Landscape.ground(p.x, p.z)
 	return p

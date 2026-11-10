@@ -699,3 +699,7 @@ same, `frozen.json` gained entries; not re-run.
 - The clean run: `ghat_heat`'s follow-on waited 55 s for the give-up, but with nobody holding their
   breath it takes ~3 rounds (by design now): the test hides well there; `ghat_looks` 66 deg/s: the walk
   away wasn't turn-capped (fixed in `Creature._move`).
+
+### L6 finishing (2026-11-10)
+- The stall drag deleted (measured useless: 32 m vs 36 m of coasting after a boil); plant `no_stall_drag` gone; window-lean plant moved to 2.0 m (at 2.3 m its face stayed 0.14 m outside the glass). Could break: where a boiled van rolls to a stop (`ghat_heat` "it comes to rest before the pass").
+- `ghat_heat`'s follow-on: nobody holds their breath any more; new check "sitting there breathing, a window gives you away only once: its second visit lingers" (plant `endless_window`, moved from `ghat_spring`, which never visits a window twice). Could break: the give-up takes ~3 rounds (wait 180 s).

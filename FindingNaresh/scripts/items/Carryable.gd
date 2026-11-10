@@ -215,6 +215,11 @@ func stow(slot: Node3D) -> void:
 	collision_mask = 0
 	reparent(slot, false)
 	transform = Transform3D.IDENTITY
+	# out of the physics world while it rides: stowed on an awake (moving) van,
+	# a frozen body kept writing its old place back over the node, and the jug
+	# stayed on the road while the van drove off (2026-11-10, jug bench)
+	if not Plant.on("stow_live"):
+		process_mode = Node.PROCESS_MODE_DISABLED
 	reset_physics_interpolation()
 
 
@@ -224,6 +229,7 @@ func unstow() -> void:
 	var world := stowed_in.get_tree().get_first_node_in_group("world_root")
 	var xf := global_transform
 	stowed_in = null
+	process_mode = Node.PROCESS_MODE_INHERIT
 	reparent(world if world else get_tree().current_scene, false)
 	global_transform = xf.translated(Vector3.UP * 0.2)
 	collision_layer = LAYER

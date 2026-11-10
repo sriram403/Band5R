@@ -111,7 +111,6 @@ var attack: VanAttack                ## creatures: their noises, their attack, t
 var heat_lockout := false          ## cut out from overheating; no restart until cool
 var boiled_dry := false            ## a Problem boiled the radiator: no restart until coolant (or water) goes in
 const COOLANT_RUN := 0.75          ## coolant it needs to run again after boiling dry
-const STALL_DRAG := 18.0           ## brake from a dead engine left in gear
 const TICK_FROM := 100.0           ## C from which the hot engine ticks
 var cap_blows := 0                 ## S2: times the hot cap blew steam (the ghat listens)
 var breath_lock: Node = null       ## S3: this seated player is holding their breath (crouch, not the handbrake)
@@ -333,7 +332,7 @@ func _build_body() -> void:
 		_headlight_nodes.append(sl)
 	for ts in [-1.0, 1.0]:
 		g.add_child(Build.box(Vector3(0.26, 0.14, 0.06), ToonMat.make(Color(0.75, 0.12, 0.14), 0.01, 0.3),
-			Vector3(ts * 0.88, 1.42, 2.96), Vector3.ZERO, "TailLight"))
+			Vector3(ts * 0.88, 1.42, 2.96 if Plant.on("tail_flush") else 2.985), Vector3.ZERO, "TailLightL" if ts < 0.0 else "TailLightR"))   # proud of the doors (coplanar at 2.96 they flickered, 2026-11-10)
 
 
 ## Two wiper arms on the outside of the windscreen, parked flat along its foot.
@@ -1109,10 +1108,6 @@ func _physics_process(delta: float) -> void:
 		b = BRAKE_FORCE * brake_in * lerpf(1.0, WET_BRAKE, wet)
 	if not engine_on or throttle_in < 0.01:
 		b += IDLE_DRAG
-	# boiled dry, the dead engine is still in gear: it drags the van to a stop
-	# (a jerk and a crawl, not a coast over the pass)
-	if boiled_dry and not engine_on and not Plant.on("no_stall_drag"):
-		b += STALL_DRAG
 	# Drive-away: pulling off (or reversing) with the engine running lets the
 	# handbrake off. Otherwise it holds, and nothing else does: no hidden
 	# auto-hold, so a van left with it off rolls down any slope.

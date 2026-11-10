@@ -18,13 +18,15 @@ OUT = os.path.join(ROOT, "appdata", "method", "prove_ghat.txt")
 # group: (scenarios, plants, {plant: [text the FAIL must contain, ...]})
 GROUPS = {
     "heat_always": ("ghat_heat", "heat_always,one_corner", {"heat_always": ["no heat or leak from it before it sees the van", "H1:"]}),
-    "stall_hud": ("ghat_heat", "no_stall_drag,hud_heat,one_flat", {"no_stall_drag": ["it comes to rest before the pass, in the fog"],
-                                                                     "hud_heat": ["hot with it watching: no TEMP / COOL bars"]}),
+    "stall_hud": ("ghat_heat", "hud_heat,one_flat", {"hud_heat": ["hot with it watching: no TEMP / COOL bars"]}),
     "fog_h2_keep": ("ghat_heat", "fog_short,seen_h2,keeps_interest,one_corner", {"fog_short": ["the fog lies all the way up to the pass"],
                                                                                    "seen_h2": ["the heat alone boils it, the pass guard not needed"],
                                                                                    "keeps_interest": ["once it gives up the heat and the leak stop"]}),
     "looks": ("ghat_looks", "lean_close,fast_turn", {"lean_close": ["its face stays outside the glass"], "fast_turn": ["it turns away slowly"]}),
-    "net": ("ghat_net", "one_layer_net", {"one_layer_net": ["from outside nothing of the van shows through the net"]}),
+    "lean": ("ghat_looks", "lean_close", {"lean_close": ["its face stays outside the glass"]}),
+    "net": ("ghat_net", "one_layer_net,tail_flush", {"one_layer_net": ["from outside nothing of the van shows through the net"],
+                                                     "tail_flush": ["the tail lights stand proud of the back doors"]}),
+    "stow": ("ghat_jug", "stow_live", {"stow_live": ["the jug rode up the ghat in its place on the rack"]}),
     "jug_a": ("ghat_jug", "leave_sees,no_breath_lock,round_skip", {"leave_sees": ["out beside it after it gave up: nobody is taken"],
                                                                      "no_breath_lock": ["never touched the handbrake"],
                                                                      "round_skip": ["it went all round the van before it gave up"]}),
@@ -32,7 +34,7 @@ GROUPS = {
                                                                  "free_coolant": ["H3:"], "needle_stuck": ["H2:"]}),
     "jug_c": ("ghat_jug", "no_power", {"no_power": ["over the pass"]}),
     "spring_a": ("ghat_spring", "seat_compare,cap_text", {"seat_compare": ["both windows visited"], "cap_text": ["Open the radiator cap"]}),
-    "spring_b": ("ghat_spring", "endless_window", {"endless_window": ["quiet at last, it gives up"]}),
+    "window": ("ghat_heat", "endless_window,one_corner", {"endless_window": ["a window gives you away only once"]}),
     "marks": ("ghat_looks,ghat_marks", "marks_pile,marks_unsaved", {"marks_pile": ["a clean van to start with"],
                                                                      "marks_unsaved": ["the marks are saved and come back on load"]}),
 }

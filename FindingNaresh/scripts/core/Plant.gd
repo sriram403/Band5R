@@ -7,11 +7,10 @@ extends RefCounted
 ## --method-fixture=<name>[,<name>...] (tools/method_run.sh FIXTURE=...). The
 ## game reads them only at the line each plant breaks; nothing judges by them.
 ##   heat_always     the van heats even when nothing is interested
-##   no_stall_drag   a boiled engine in gear doesn't drag the van to a stop
 ##   fog_short       the fog ends 40 m short of the pass (as before #6)
 ##   seen_h2         Problem watches from hairpin 2 (the user's first ask)
 ##   hud_heat        the TEMP / COOL bars and "ENGINE HOT" stay up with it watching
-##   lean_close      it leans in at the windows from 2.3 m: its face goes through the glass
+##   lean_close      it leans in at the windows from 2.0 m: its face goes through the glass
 ##   fast_turn       giving up, it sets off before it has turned away
 ##   round_skip      under the net it gives up without going round the van
 ##   one_layer_net   the net is one see-through layer (the glass shows through)
@@ -27,6 +26,8 @@ extends RefCounted
 ##   marks_pile      a jump back to the ghat keeps the old marks
 ##   needle_stuck    the dash's temperature needle stays put (GhatWatch H2)
 ##   free_coolant    coolant creeps up by itself during the encounter (GhatWatch H3)
+##   stow_live       a stowed item stays a live body (left behind by a van stowed while awake)
+##   tail_flush      the tail lights sit flush with the back doors (they flicker in and out)
 ## Not bugs, the planted runs' time savers (test only): one_flat / one_corner
 ## run ghat_heat at one driving profile.
 

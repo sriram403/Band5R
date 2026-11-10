@@ -4446,29 +4446,25 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 	var temp_tarp := c.temp
 	var temp_low := c.temp
 	t0 = Time.get_ticks_msec()
-	# hidden well (breath held at the windows); sitting there breathing, each
-	# window gives you away once and it takes rounds longer (ghat_spring)
-	var holding: PlayerRig = null
-	while not st.flags.has("first_attack_over") and Time.get_ticks_msec() - t0 < 120000:
+	# nobody holds their breath (holding it is ghat_jug's and ghat_spring's):
+	# each window gives you away once, the second visit only lingers, so the
+	# search still ends, a few rounds later (2026-11-10: with every visit
+	# restarting it, the search never ended; ghat_spring never saw a window twice)
+	var r0 := g.search_restarts
+	var visits := {}
+	var at_window: PlayerRig = null
+	while not st.flags.has("first_attack_over") and Time.get_ticks_msec() - t0 < 180000:
 		await physics_frames(3)
 		if g.phase == "circle":
 			temp_low = minf(temp_low, c.temp)
-		if holding == null and g.breath_p != null and g.breath_state == "wait":
-			holding = g.breath_p
-			if holding == p1():
-				key(KEY_CTRL, true)
-			else:
-				pad_button(JOY_BUTTON_B, true)
-		elif holding != null and g.breath_p != holding:
-			if holding == p1():
-				key(KEY_CTRL, false)
-			else:
-				pad_button(JOY_BUTTON_B, false)
-			holding = null
-	key(KEY_CTRL, false)
-	pad_button(JOY_BUTTON_B, false)
-	log_line("gave up after %.0f s under the tarp (restarts %d), coolant %.2f" % [(Time.get_ticks_msec() - t0) / 1000.0, g.search_restarts, c.coolant])
+		if g.breath_p != at_window:
+			at_window = g.breath_p
+			if at_window != null:
+				visits[at_window.seat_role] = int(visits.get(at_window.seat_role, 0)) + 1
+	var twice := visits.values().any(func(v): return int(v) >= 2)
+	log_line("gave up after %.0f s under the tarp (window visits %s, restarts %d, given away %d), coolant %.2f" % [(Time.get_ticks_msec() - t0) / 1000.0, str(visits), g.search_restarts - r0, g.breath_events, c.coolant])
 	check(st.flags.has("first_attack_over") and g.phase == "leave", "%s: under the tarp, kept quiet, it gives up" % label)
+	check(twice and g.search_restarts - r0 <= 2, "sitting there breathing, a window gives you away only once: its second visit lingers (visits %s, restarts %d)" % [str(visits), g.search_restarts - r0])
 	check(temp_low >= temp_tarp - 0.05, "%s: while it searched the needle never fell (%.1f, lowest %.1f C)" % [label, temp_tarp, temp_low])
 	await wait(1.5)
 	var tA := c.temp
@@ -4649,6 +4645,58 @@ func t_ghat_pot_bench() -> void:
 		await shot("ghat_bench_%d" % trip)
 
 
+## Test bench (2026-11-09): the jug on the rack was sometimes found 77 m from
+## the van. Put it on the rack as the coolant test does, move the van as the
+## test does, drive, and log where the jug really is at every step.
+func t_ghat_jug_bench() -> void:
+	# stowed on an awake van: R0 with the bug planted back (stow_live), R1 the
+	# fix; R2 the fix, stowed on a parked van
+	for round in 3:
+		if round == 0:
+			Plant._names["stow_live"] = true
+		else:
+			Plant._names.erase("stow_live")
+		var g := await _ghat_start()
+		var c := camper()
+		if round < 2:
+			c.freeze = false
+			c.sleeping = false
+		boot.dev_menu.van_jug(5.0)
+		await physics_frames(2)
+		var jug := c.stowed_item(c.storage_slots[2])
+		_jug_log("R%d after van_jug" % round, c, jug)
+		await van_to(g.road.point(g.hairpins[g.seen_hp()] - 35))
+		_jug_log("R%d after van_to" % round, c, jug)
+		var ad := AutoDriver.new(self, g.road, c)
+		var t := 0.0
+		var next := 0.0
+		while t < 8.0:
+			await get_tree().physics_frame
+			t += 1.0 / 60.0
+			ad.step(-1.0)
+			if t >= next:
+				next += 2.0
+				_jug_log("R%d driving %.0f s" % [round, t], c, jug)
+				if round < 2 and t > 3.0 and t < 5.0:
+					var sl: Vector3 = c.storage_slots[2].global_position
+					await obs_shot("jug_bench_rack_R%d" % round, c._body_root.global_transform * Vector3(2.2, 2.6, 8.5), sl)
+		ad.release()
+		var d := jug.global_position.distance_to(c.storage_slots[2].global_position) if jug != null else -1.0
+		check((jug != null and d < 0.1) != (round == 0), "R%d: %s (%.2f m from its slot)" % [round, "the bug back: the jug left behind" if round == 0 else "the jug rides in its slot", d])
+	Plant._names.erase("stow_live")
+
+
+func _jug_log(tag: String, c: Camper, jug: Carryable) -> void:
+	if jug == null:
+		log_line("%s: no jug on the rack" % tag)
+		return
+	var slot := c.storage_slots[2]
+	log_line("%s: jug %.1f m from the van, %.2f m from its slot; parent %s; frozen %s; physics pos %s vs node %s" % [tag,
+		jug.global_position.distance_to(c.global_position), jug.global_position.distance_to(slot.global_position),
+		jug.get_parent().name, jug.freeze, PhysicsServer3D.body_get_state(jug.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM).origin, jug.global_position])
+	log_line("    server mode %d, notify_transform %s, top_level %s, local %s, van frozen %s, van mode %d" % [PhysicsServer3D.body_get_mode(jug.get_rid()), jug.is_transform_notification_enabled(), jug.top_level, jug.position, c.freeze, PhysicsServer3D.body_get_mode(c.get_rid())])
+
+
 ## A required-work receipt for the method (#6's manifest lists them).
 func _work(id: String, ok: bool) -> void:
 	if mrec != null and mrec.active():
@@ -4664,6 +4712,10 @@ func _ghat_to_boil(jug_l: float) -> Ghat:
 	# (a deleted jug was found again by name by van_jug and stowed while dying:
 	# empty it instead, and let van_jug handle the rack)
 	if jug_l > 0.0:
+		# racked on an awake van, as right after you stop (2026-11-10: stowed
+		# like that, the jug stayed on the road while the van drove off)
+		c.freeze = false
+		c.sleeping = false
 		boot.dev_menu.van_jug(jug_l)
 	else:
 		for sl in c.storage_slots:
@@ -4806,6 +4858,9 @@ func t_ghat_places() -> void:
 func t_ghat_jug() -> void:
 	var g := await _ghat_to_boil(5.0)
 	var c := camper()
+	var rj := c.stowed_item(c.storage_slots[2])
+	var off := rj.global_position.distance_to(c.storage_slots[2].global_position) if rj != null else -1.0
+	check(rj != null and off < 0.1, "the jug rode up the ghat in its place on the rack (%.2f m from its slot)" % off)
 	await _ghat_hide(c)
 	var gave_up := await _hide_well(g, c, 150.0)
 	check(gave_up and g.breath_events == 0, "hidden well (breath held at the windows), it gives up (%d given away)" % g.breath_events)
@@ -5172,6 +5227,14 @@ func t_ghat_net() -> void:
 	await tap(KEY_X)                   # engine off again, parked
 	await wait(0.5)
 	check(not c.engine_on, "parked, engine off")
+	# the back of the van seen from outside: the tail lights stand proud of the
+	# doors (flush, they flickered in and out with the angle, 2026-11-10)
+	var door := c.find_child("DoorL", true, false) as Node3D
+	var proud := 1.0
+	var lights := c.find_children("TailLight*", "", true, false)
+	for l in lights:
+		proud = minf(proud, (l as Node3D).position.z - door.position.z)
+	check(lights.size() == 2 and proud > 0.01, "the tail lights stand proud of the back doors (%d lights, %.3f m)" % [lights.size(), proud])
 	# the view out before
 	mouse(Vector2(0, 40))
 	await wait(0.8)
