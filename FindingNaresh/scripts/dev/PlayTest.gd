@@ -5465,6 +5465,14 @@ func t_ghat_looks() -> void:
 				var side := cr.global_transform.basis.x
 				await obs_shot("ghat_look_stop%d_%s" % [g.stop_k, p], cr.global_position + side * 4.5 + Vector3.UP * 1.4, cr.global_position + Vector3.UP * 1.3)
 	log_line("round: stops %s, lean %.2f rad, crouch scale %.2f, sniffs %d" % [str(stops.keys()), leaned, crouched, cr.sniffs - sniffs0])
+	# qual round 2 (speed research, test-only diagnostic): no full round -> where is it, and a picture from above
+	if stops.size() < 4:
+		var bi := c._body_root.global_transform.affine_inverse()
+		log_line("ROUND DIAG: phase %s at_stop %s stop_k %d _stop_t %.2f stops_done %d state %s vel %.2f breath '%s' given %s; it at %s (van frame), its spot %s, dist %.2f m" % [
+			g.phase, g.at_stop, g.stop_k, g._stop_t, g.stops_done, cr.state, cr.velocity.length(), g.breath_state, str(g._windows_given.keys()),
+			str(bi * cr.global_position), str(bi * g._round_point(c, g.stop_k)), Vector2(cr.global_position.x - g._round_point(c, g.stop_k).x, cr.global_position.z - g._round_point(c, g.stop_k).z).length()])
+		await obs_shot("ghat_look_round_diag_top", c.global_position + Vector3(0.5, 14.0, 0.5), c.global_position)
+		await obs_shot("ghat_look_round_diag_side", cr.global_position + (cr.global_position - c.global_position).normalized() * 5.0 + Vector3.UP * 2.5, cr.global_position + Vector3.UP * 1.0)
 	check(stops.size() >= 4, "it goes round the van, stopping at the bonnet, both windows and the back (%d stops)" % stops.size())
 	check(leaned < -0.3, "at the windows and the bonnet it leans in (%.2f rad)" % leaned)
 	check(crouched < 0.7 and cr.sniffs > sniffs0, "at the back it crouches down and sniffs (%d sniffs)" % (cr.sniffs - sniffs0))
