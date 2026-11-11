@@ -11,6 +11,17 @@
             "statusMessage": "Testing triggers"
           }
         ]
+      },
+      {
+        "matcher": "mcp__t3-code__delegate_task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/tools/hooks/handoff_gate.py\" 2>/dev/null || true",
+            "timeout": 10,
+            "statusMessage": "Hand-off gate"
+          }
+        ]
       }
     ]
   }
