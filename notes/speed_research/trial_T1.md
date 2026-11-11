@@ -237,3 +237,14 @@ SPEED=fast EARLY=1 python tools/method/prove_ghat.py heat_always looks net jug_a
 EARLY=1 python tools/method/prove_ghat.py spring_a spring_b jug_b                      # the 1x proofs, early stop
 python tools/method/t1_diff.py <1x run dir> <fast run dir>                             # the differential
 ```
+
+## Fix round (2026-11-11, after GPT's audit `audit_T1_gpt.md`: 3 blockers + the hearing gap)
+
+Task: `MPG\notes\speed_research\trial_T1_fix_task.md` (read first; only its list read). Budget 12 wall game min.
+
+### Runs (expected cost written before each run; wall game min, my count; the meter decides)
+
+| # | Run | Expected | Wall | Watched | Result |
+|---|---|---:|---:|---|---|
+| F0 | `SPEED=fast GHAT=ghat_net,ghat_places GUARD_INJECT=<2 fake games> method_run.sh ghat` (both parts refused) | 0 | 0 (no Godot started) | inline | COMBINED TEST exit 3 (old code: exit 0) |
+| F1 | B2 pair: `late_close` + `T1_LAG=overrun_control:13`, ghat_net, fast lane a + 1x lane b at once | 0.8 | | Monitor | |

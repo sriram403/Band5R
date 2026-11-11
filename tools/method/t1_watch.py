@@ -11,7 +11,7 @@ import time
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 out, done = sys.argv[1], sys.argv[2]
 period = float(sys.argv[3]) if len(sys.argv) > 3 else 20.0
-KEY = re.compile(r"CONDITION|RESULT|SCRIPT ERROR|STOP|scenario (started|ended)|\[speed\]|SPEED=fast|refus|not launching|"
+KEY = re.compile(r"CONDITION|RESULT|COMBINED|overrun_control|T1_LAG|invocation|SCRIPT ERROR|STOP|scenario (started|ended)|\[speed\]|SPEED=fast|refus|not launching|"
                  r"Traceback|KILL|ERROR|\[nodraw\] off|FAIL ")
 files = {out: [0, None]}
 for lane in ("playtest", "playtest_b"):
