@@ -61,3 +61,14 @@ watched how, result), the differential table (check, 1x, fast, values), the plan
 scenario (fast + nodraw), frames-drawn proof, the negative control, T2's numbers, what is qualified and
 what stays 1x and why, "assumed -> reality -> fix" for every surprise, the final commands. Commit.
 **Reply:** 8 lines (qualified or not, speed, minutes used, plants matched, what stays 1x, game bugs seen).
+
+## RESUME (2026-11-11, referee): the first T1 child was cut by the API rate limit
+It got through: game-time deadlines, `SPEED=fast` routing, `--nodraw`, an overrun control, the import
+timing (row 0 of its run log). Its work is committed on `speed-t1` as `45dc00f` (WIP, not run or
+qualified). **Read `trial_T1.md` and `git show 45dc00f --stat` first, review that work critically (it was
+never run), then carry on from run 1 of its log.** Same rules and budget; **0.7 of the 45 qualification
+min are used.** No other game runs on the PC now (the T3/T4 builder starts after you).
+GPT's audit of this task (its T3 spec, two points to answer in your report):
+1. Old 1x plant verdicts (`prove_ghat_2026-11-09.txt`) count only where the source, the check and the
+   fixture match (exact check name, not a FAIL substring); else rerun that one at 1x.
+2. Prove the deadline-negative control at **1x as well as fast**.
