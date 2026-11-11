@@ -66,6 +66,7 @@ def reduce(tr, fz):
     # ---- checks (M9) with the reach policies (M10 departure "checks", M11 one try)
     req = fz["required"]
     ck = [c for c in tr["checks"] if c.get("scen") in req]
+    passed_ids = det.setdefault("passed_ids", set())     # qual round 2: manifest ids with a PASS (a proof's prerequisite)
     jump_missed = False
     missed_in = set()
     for scen, spec in req.items():
@@ -79,6 +80,7 @@ def reduce(tr, fz):
         seen = {m["id"]: c for m, c in pairs}
         for m, c in pairs:
             if c["ok"]:
+                passed_ids.add(m["id"])
                 continue
             if m["kind"] == "jump":
                 jump_missed = True
@@ -205,6 +207,8 @@ def report(tr, fz, out):
     vj = {"status": status, "code": code, "inv": tr.get("inv", ""), "part": tr.get("part", ""), "fixture": tr.get("fixture", ""),
           "asked": tr["asked"], "started": [s["scen"] for s in tr["started"]], "ended": [s["scen"] for s in tr["ended"]],
           "failed_ids": sorted({c["id"] for c in order if c["status"] == "FAIL" and c.get("id")}),
+          # qual round 2: the ids that PASSED (a proof's prerequisite, e.g. marks' looks prelude made its round)
+          "passed_ids": sorted(det.get("passed_ids", set()) - {c["id"] for c in order if c.get("id")}),
           "conditions": [{k: c.get(k) for k in ("status", "kind", "id", "scen", "text")} for c in order],
           "early_stop": bool(tr.get("early_stop")), "expect_ids": tr.get("expect_ids", []), "kill": tr.get("kill", []),
           "kill_ok": tr.get("kill_ok"), "godot_left_after": tr.get("godot_left_after"), "wrapper_rc": tr.get("wrapper_rc"),

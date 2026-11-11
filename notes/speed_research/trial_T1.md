@@ -419,3 +419,21 @@ SPEED=fast EARLY=1 python tools/method/prove_ghat.py heat_always looks net marks
 python tools/method/t1fix_controls.py        # the offline controls of blockers 1-3 (31 cases, no game)
 python tools/method/combine_parts.py appdata/method/inv/<INV>   # re-judge one invocation from its receipts
 ```
+
+## Qualification round 2 (2026-11-11, after GPT's re-check `audit_T1fix_gpt.md`; ruling R6)
+
+Task: `MPG\notes\speed_research\trial_T1_qual2_task.md` (read first; only its list read). Source `4a74146` + the
+tool changes below (game code and `core/Plant.gd` untouched). Budget 15 wall game min (stop at 18).
+
+### Tool changes (no game code)
+
+| File | Change |
+|---|---|
+| `tools/method/prove_ghat.py` | 6 solo groups (`solo_fast_turn`, `solo_leave_sees`, `solo_no_breath_lock`, `solo_round_skip`, `solo_marks_pile`, `solo_marks_unsaved`): each batched member alone, judged on its own exact ids. `PREREQ`: marks_pile counts only if the looks prelude's round check PASSED in the same run (no round = no marks on the van = "prerequisite not met (rerun, not a verdict)") |
+| `tools/method/method_verdict.py` | `verdict.json` also lists `passed_ids` (manifest ids with a PASS and no FAIL); nothing else changes |
+| `tools/method/t1fix_controls.py` | 3 new offline cases (7 rows): T1 run 9 (prelude made no round) -> marks_pile "prerequisite not met", marks_unsaved PROVED; the fast retry and the 1x run -> both PROVED. **38 / 38** |
+
+### Runs (cost written before each; wall game min, my count; the meter decides)
+
+| # | Run | Expected | Wall | Watched | Result |
+|---|---|---:|---:|---|---|

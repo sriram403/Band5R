@@ -50,7 +50,19 @@ GROUPS = {
     "spring_b": ("ghat_spring", "endless_window", {"endless_window": ["ghat_spring/quiet_at_last_it_gives_up_restarts_x"]}),
     "marks": ("ghat_looks,ghat_marks", "marks_pile,marks_unsaved", {"marks_pile": ["ghat_marks/a_clean_van_to_start_with"],
                                                                      "marks_unsaved": ["ghat_marks/the_marks_are_saved_and_come_back_on_load_x"]}),
+    # qual round 2 (D2, option A): each batched member alone, against its own exact ids
+    "solo_fast_turn": ("ghat_looks", "fast_turn", {"fast_turn": ["ghat_looks/it_turns_away_slowly_fastest_x_deg_s"]}),
+    "solo_leave_sees": ("ghat_jug", "leave_sees", {"leave_sees": ["ghat_jug/out_beside_it_after_it_gave_up_nobody_is_taken"]}),
+    "solo_no_breath_lock": ("ghat_jug", "no_breath_lock", {"no_breath_lock": ["ghat_jug/holding_your_breath_ctrl_b_never_touched_the_handbrake"]}),
+    "solo_round_skip": ("ghat_jug", "round_skip", {"round_skip": ["ghat_jug/it_went_all_round_the_van_before_it_gave_up_x_stops"]}),
+    "solo_marks_pile": ("ghat_looks,ghat_marks", "marks_pile", {"marks_pile": ["ghat_marks/a_clean_van_to_start_with"]}),
+    "solo_marks_unsaved": ("ghat_looks,ghat_marks", "marks_unsaved", {"marks_unsaved": ["ghat_marks/the_marks_are_saved_and_come_back_on_load_x"]}),
 }
+
+# qual round 2 (GPT: marks' looks prelude): ids that must have PASSED in the same run before a plant's
+# FAIL counts. marks_pile is caught only if the looks prelude left marks on the van (its round); a
+# prelude that made no round (T1 run 9) is "prerequisite not met", never a NOT PROVED or a PROVED.
+PREREQ = {"marks_pile": ["ghat_looks/it_goes_round_the_van_stopping_at_the_bonnet_both_windows_an"]}
 
 
 def rd(p):
@@ -97,8 +109,11 @@ def judge(invd, scen, plants, expect):
     have = set(vj.get("failed_ids", [])) if vj and not prob else set()
     for plant, ids in expect.items():
         miss = [x for x in ids if x not in have]
+        pre = [x for x in PREREQ.get(plant, []) if x not in set(vj.get("passed_ids", []) if vj else [])]
         if prob:
             rows[plant] = (False, prob)
+        elif pre:
+            rows[plant] = (False, "prerequisite not met (rerun, not a verdict): %s" % ", ".join(pre))
         elif miss:
             rows[plant] = (False, "its own id(s) not FAILed: %s" % ", ".join(miss))
         else:

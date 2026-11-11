@@ -271,6 +271,18 @@ def b3():
     r, o, _ = case("b3_game_not_gone", "heat_always", HEAT_F, lambda tr: tr.__setitem__("godot_left_after", [4242]))
     show("b3_game_not_gone", r, o, {"heat_always": "NOT PROVED"})
 
+    # qual round 2: marks_pile counts only if the looks prelude made its round (marks on the van at the
+    # F1 jump). T1 run 9: the prelude made 0 stops -> "prerequisite not met", not NOT PROVED / PROVED
+    M9, M11, M1X = ("20261111_105936_ghat_k3_marks_pile,marks_unsaved_fast", "20261111_111501_ghat_k3_marks_pile,marks_unsaved_fast_laneb",
+                    "20261111_110244_ghat_k3_marks_pile,marks_unsaved")
+    r, o, _ = case("q2_marks_prelude_no_round", "marks", M9)
+    show("q2_marks_prelude_no_round", r, o, {"marks_pile": "NOT PROVED", "marks_unsaved": "PROVED"})
+    rec("q2_marks_prelude_no_round:why", "prerequisite", "prerequisite" if r["marks_pile"][1].startswith("prerequisite not met") else "other", r["marks_pile"][1][:70])
+    r, o, _ = case("q2_marks_prelude_round_fast", "marks", M11)
+    show("q2_marks_prelude_round_fast", r, o, {"marks_pile": "PROVED", "marks_unsaved": "PROVED"})
+    r, o, _ = case("q2_marks_prelude_round_1x", "marks", M1X)
+    show("q2_marks_prelude_round_1x", r, o, {"marks_pile": "PROVED", "marks_unsaved": "PROVED"})
+
 
 OLD_TEXTS = {"heat_always": ["no heat or leak from it before it sees the van", "H1:"], "one_layer_net": ["from outside nothing of the van shows through the net"],
              "leave_sees": ["out beside it after it gave up: nobody is taken"], "no_breath_lock": ["never touched the handbrake"],
