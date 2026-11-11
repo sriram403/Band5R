@@ -250,4 +250,49 @@ Task: `MPG\notes\speed_research\trial_T1_fix_task.md` (read first; only its list
 | F1 | B2 pair: `late_close` + `T1_LAG=overrun_control:13`, ghat_net, fast lane a + 1x lane b at once | 0.8 | 0.8 | Monitor | **both STALLED by name, judged on CLOSE**: fast 10.50 game / 5.00 wall s (the game had already ended: caught in the end drain), 1x 10.50 / 10.41 |
 | F2+F3 | lane a: `on_time` + lag fast, then `late_close` fast no lag (natural); lane b: `on_time` + lag 1x | 1.0 | 1.1 | Monitor | on_time fast **PASS**, on_time 1x **PASS** (9.50 s, budget 10, read 13 s late); late_close fast natural **STALLED** (closed late 10.50 game / 5.00 wall s; it closed between two polls, never seen open past its deadline) |
 | F4 | `SPEED=fast GHAT=ghat_net,ghat_places GUARD_INJECT=<lane b busy>`: fast part runs, 1x part refused | 0.4 | 0.45 | Monitor | fast PASS, 1x REFUSED -> **COMBINED TEST, exit 3** (GPT's concrete path; the old block returned 0) |
-| F5 | lane a: `SPEED=fast EARLY=1 prove_ghat.py heat_always net` (exact ids, live); lane b: `GHAT=ghat_looks FIXTURE=lean_close` 1x (isolated, item 5) | 2.6 | | Monitor | |
+| F5 | lane a: `SPEED=fast EARLY=1 prove_ghat.py heat_always net` (exact ids, live); lane b: `GHAT=ghat_looks FIXTURE=lean_close` 1x (isolated, item 5) | 2.6 | 2.8 | Monitor | heat_always **PROVED** (own id + H1, early stop at 90.2 game s as in T1), one_layer_net **PROVED** (early stop); lean_close alone 1x: **caught, 0.14 m** |
+| F6 | lane a: `SPEED=fast GHAT=ghat_looks FIXTURE=lean_close` x3, then `SPEED=fast method_run.sh ghat` (the final fast part: heat, looks, net, marks); lane b: lean_close 1x #2 | 5.1 | | Monitor | |
+
+### Blocker 1: a requested part can vanish -> fixed, proved
+
+**Change.** `tools/method_run.sh`: every invocation gets its own id (`INV`, default time + pid; a reused id is
+refused) and receipt folder `appdata/method/inv/<INV>/`: `expected` (each requested part: scenarios + fixture),
+per part `.dir` (its run folder), `.rc` (its own exit, on every path incl. refusals), `.xrc` (exit seen from
+outside: no more `sed`-swallowed statuses), `.refused` (why). The shared `.last_fast` / `.last_1x` pointers are
+gone. New `tools/method/combine_parts.py` judges from the receipts only: a part is TEST (never PASS) when refused,
+missing, its folder from another invocation, its verdict not whole (RESULT first, Evidence naming that folder
+last), its scenarios or fixture not exactly the requested ones, or its exits disagree with its verdict; nothing
+requested or an unrequested part's receipt is TEST too. Combined PASS only when every requested part is PASS.
+Test-only `GUARD_INJECT` adds fake process lines so the **real** guard refuses without a game.
+
+**Controls.** Offline (`t1fix_controls.py b1`, copies of the archived final run 13's two parts bound to a made-up
+invocation): clean both parts PASS; first part missing, second part missing, both missing, wrong invocation,
+truncated verdict, coverage short, fixture differs, exit disagrees, nothing requested, unrequested part: all TEST
+(11 / 11). Live: F0 both refused at once (0 min) -> TEST exit 3; F4 fast part PASS + spring lane refused -> TEST
+exit 3; a reused `INV` refused. Concurrency: two invocations share nothing (own receipt folder, own run
+folders); that two lanes' *games* don't touch each other is still not proved (GPT's lane-isolation point, open).
+
+### Blocker 2: a late step that closes between polls -> fixed, proved
+
+**Change.** `tools/method/method_watch.py`: on CLOSE, `closed_late()` judges the step's game s (pf) AND wall s
+(the game's own stamps, so a late reader judges what a prompt one would) against its budget **before** dropping
+it: over on either -> `STALLED at <id>: closed late ...` (recorded even after a stop). When the wrapper exits the
+watcher makes **one more full pass** (every event judged), and a truncated last line in the event / heartbeat
+files is TEST. Test-only `T1_LAG=<step>:<s>`: after that step's OPEN the watcher stops reading for <s> s and
+skips judging until its next read (a delayed reader that can never see the step open past its deadline).
+`PlayTest.gd` (dev): fixtures `late_close` (10.5 game s vs 10) and `on_time` (9.5 vs 10) beside `overrun`.
+
+**Controls.** Offline (`b2`): OPEN + late CLOSE in one read -> STALLED (game-late fast, wall-late 1x); on-time
+pairs pass; **every real closed step in the 22 archived T1 runs (fast and 1x, clean and planted) judged by the
+new rule: none late** (closest 89 %: a 16 s wait of 18). Live (F1-F3, ghat_net host):
+
+| Fixture | Speed | Reader | Verdict |
+|---|---|---|---|
+| late_close | fast | 13 s late | **STALLED**, closed late 10.50 game / 5.00 wall s (the game had already ended: caught in the end drain) |
+| late_close | 1x | 13 s late | **STALLED**, closed late 10.50 game / 10.41 wall s |
+| late_close | fast | normal | **STALLED**, closed late 10.50 / 5.00 (closed between polls: never seen open late) |
+| on_time | fast | 13 s late | **PASS** |
+| on_time | 1x | 13 s late | **PASS** |
+
+The old watcher popped all three late cases without a judgement (code: CLOSE computed the length for reporting
+only); the original open-overrun control is judged by unchanged code (the open path) and was not rerun.
