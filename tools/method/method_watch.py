@@ -41,7 +41,7 @@ def alive(pid):
     return str(pid) in out
 
 
-def godot_pids(mark=None):
+def godot_pids(mark=None, games_only=False):
     """Godot processes; with `mark`, only those whose command line holds it (this copy's lane:
     another copy's game, or this copy's other lane, is never ours to count or kill)."""
     if mark is None:
@@ -60,6 +60,9 @@ def godot_pids(mark=None):
     for ln in out.splitlines():
         pid, _, cl = ln.partition("\t")
         if pid.strip().isdigit() and m in cl.replace("\\", "/").lower():
+            # T1: a game is 2 processes, the _console.exe wrapper and the game it starts
+            if games_only and "_console.exe" in cl.lower():
+                continue
             pids.append(int(pid))
     return pids
 
@@ -336,7 +339,7 @@ def main():
         if stop is not None and not tr["kill"] and now_m >= grace_until:
             pid = tr["pid"]
             if pid is None:
-                ps = godot_pids(mark)
+                ps = godot_pids(mark, games_only=True)
                 pid = ps[0] if len(ps) == 1 else None
             tr["detect_to_kill_start_s"] = round(now_m - stop_at_mono, 2)
             if pid:
@@ -379,10 +382,11 @@ def main():
     # whatever ended the run: no game may survive it
     wrapper_out.close()
     tr["wrapper_rc"] = wrapper.returncode
-    left = [p for p in godot_pids(mark)]
-    tr["godot_left_after"] = left
     if tr["pid"] and alive(tr["pid"]):
         kill(tr["pid"], tr["kill"], float(L["kill_verify_s"]))
+    # T1: counted after the last kill (was before it: listed processes the next line killed)
+    left = [p for p in godot_pids(mark)]
+    tr["godot_left_after"] = left
     if "don't compile" in open(os.path.join(out, "run_test.out"), encoding="utf-8", errors="replace").read():
         cond("TEST", "the scripts don't compile: nothing ran", t_start, "preflight", owner="TEST")
     tr["open_at_end"] = {k: v[0] for k, v in opens.items()}

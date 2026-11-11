@@ -79,7 +79,8 @@ PT="playtest${LANE:+_$LANE}"
 WROOT="$(cd "$ROOT" && pwd -W 2>/dev/null || pwd)"
 MARK="$WROOT/appdata/$PT/runs"
 GL=$(powershell.exe -NoProfile -NonInteractive -Command "Get-CimInstance Win32_Process -Filter \"Name like 'Godot%'\" | ForEach-Object { \"\$(\$_.ProcessId)\`t\$(\$_.CommandLine)\" }" 2>/dev/null | tr -d '\r')
-all_n=$(printf '%s\n' "$GL" | grep -c '[0-9]')
+# a game is 2 processes (the _console.exe wrapper and the game it starts): count games, not processes
+all_n=$(printf '%s\n' "$GL" | grep -vi '_console\.exe' | grep -c '[0-9]')
 mine=$(printf '%s\n' "$GL" | tr '\\' '/' | grep -ci "$(echo "$MARK" | tr '\\' '/')")
 if [ "$mine" -gt 0 ]; then
 	echo "a Godot of this copy is running in lane '${LANE:-a}': not launching"; printf '%s\n' "$GL"; exit 3
