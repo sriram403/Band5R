@@ -62,6 +62,14 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   layers, under the recording profile, counts as both the clean walk and the video.** A join without SAME
   doesn't; then a fresh take is needed. GPT's stricter rule is noted as its reservation for the signatures.
 
+- **Referee watch notes, T1 resumed (2026-11-11), to check at scoring:** fast suite of 6 PASS in 3.4 min (run 7);
+  overrun control STALLED on game time (fast); plants caught fast: heat_always (H1), lean_close (window glass),
+  one_layer_net (picture check), no_breath_lock. **Open: run `marks_pile,marks_unsaved` fast: `ghat_looks` FAILED
+  ("0 stops", no lean, no sniff) though no plant touches it; at 1x (proof 2026-11-09) looks passed in that group, so
+  `marks_pile` was never reached fast. A 1x-vs-fast difference (or the second game alongside): T1 must explain it
+  before "qualified".** Batched plants (lean_close+fast_turn; leave_sees+no_breath_lock+round_skip): each needs its
+  own check on record (GPT's attribution point). Two lanes ran at once in one copy (separate progress / shot dirs).
+
 ## Next (Stage 3 proper)
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
