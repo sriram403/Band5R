@@ -86,6 +86,10 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   count 1x and fast. **Meter: WALL 32.8 min, proc 55.0** (two lanes), inside 45. Rule slip: a game symptom written into
   the report file (the task said reply only): the replay copy will carry tools only, no trial reports.
 
+- **R1b insurance plants (2026-11-11, referee):** 2 written and **seen to break the game for real** (planted vs clean,
+  pictures and logs), kept only in `MPG_referee` (outside every child's reach); the current checks pass on both (blind).
+  They go into the replay copy's start in one orphan commit. Scored at the end with the 7 holes.
+
 ## Next (Stage 3 proper)
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
