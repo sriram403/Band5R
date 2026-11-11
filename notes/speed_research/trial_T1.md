@@ -358,8 +358,9 @@ creature in heat / looks / marks (no item sound counter was added; none is plann
 
 Bound: fast reads 0.13 every time (no spread in 4); 1x spreads 0.14-0.19 (0.05 m). Batched or alone makes no
 visible difference (1x 0.18 batched sits inside the alone spread), so fast_turn is not what moves it. **Fast is
-the stricter side in every pair** (fast <= 1x in all 6 planted and 3 clean samples: clean 0.33 / 0.34 fast vs
-0.35 / 0.40 / 0.35 at 1x): fast never PASSed where 1x FAILed here. So this plant proves at fast and is a coin
+the stricter side every time:** every fast sample (4 planted at 0.13, 2 clean at 0.33 / 0.34) is closer than
+every 1x sample of the same kind (3 planted at 0.14-0.19, 3 clean at 0.35 / 0.40 / 0.35): fast never PASSed
+where 1x FAILed here. So this plant proves at fast and is a coin
 toss at 1x. That does not prove equivalence: a fast run reads ~0.01-0.06 m closer, so a planted bug sitting a
 hair *inside* the glass at 1x would also be caught fast (safe direction), but a real fault that moves the face
 *out* at fast only is not excluded by these samples. Firming the plant (stop nearer than 2.3 m) is a
