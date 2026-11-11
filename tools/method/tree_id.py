@@ -6,7 +6,10 @@ binary's hash. Dirty and untracked bytes count (git add -A into the temp index);
 
 Groups (sha256 over the sorted "mode blob path" lines of the temp index):
   game   FindingNaresh/ minus scripts/dev/ (the game: scripts, scenes, assets, core/Plant.gd)
-  test   FindingNaresh/scripts/dev/ + tools/ (test code, walks, generators, manifest makers, plants' prover)
+  test   FindingNaresh/scripts/dev/ + tools/live/ (what PRODUCES a walk's actions: game-side test code, walks
+         and their generators). A point / gate evidence needs the same game + test + bin.
+  tools  tools/ minus tools/live/ (judges, wrappers, the client: recorded with every point and run, not
+         required equal for a resume: they don't change what the game does)
   full   everything below (game + test + the rest of the repo's inputs)
   bin    sha256 of tools/godot/Godot_*.exe (ignored by git, so hashed directly)
 
@@ -98,8 +101,9 @@ def bin_hash(root=ROOT):
 def identity(root=ROOT):
     lines = index_lines(root)
     game = [x for x in lines if x[0].startswith("FindingNaresh/") and not x[0].startswith("FindingNaresh/scripts/dev/")]
-    test = [x for x in lines if x[0].startswith("FindingNaresh/scripts/dev/") or x[0].startswith("tools/")]
-    return {"game": _h(game), "test": _h(test), "full": _h(lines), "bin": bin_hash(root),
+    test = [x for x in lines if x[0].startswith("FindingNaresh/scripts/dev/") or x[0].startswith("tools/live/")]
+    tools = [x for x in lines if x[0].startswith("tools/") and not x[0].startswith("tools/live/")]
+    return {"game": _h(game), "test": _h(test), "tools": _h(tools), "full": _h(lines), "bin": bin_hash(root),
             "head": _git(["rev-parse", "HEAD"], root=root).strip(), "files": len(lines)}
 
 

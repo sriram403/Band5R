@@ -25,12 +25,12 @@
    ]
   },
   {
-   "name": "2 P2 swings the nav; both sit still",
+   "name": "2 P1 swings the nav (N); both sit still",
    "max": 15,
    "do": [
     {
-     "do": "pad_tap",
-     "btn": "A"
+     "do": "tap",
+     "key": "N"
     },
     {
      "do": "wait",

@@ -358,8 +358,21 @@ def next_step(fresh_lines, resume_lines, step_name, cfg=None):
 
 
 # ---- identity -----------------------------------------------------------------------------------
+def _canon(v):
+    """Godot's JSON reads every number as a float (25 -> 25.0): compare numbers by value."""
+    if isinstance(v, bool) or v is None or isinstance(v, str):
+        return v
+    if isinstance(v, (int, float)):
+        return int(v) if float(v).is_integer() else float(v)
+    if isinstance(v, list):
+        return [_canon(x) for x in v]
+    if isinstance(v, dict):
+        return {k: _canon(x) for k, x in v.items()}
+    return v
+
+
 def steps_hash(steps):
-    return hashlib.sha256(json.dumps(steps, sort_keys=True).encode()).hexdigest()[:16]
+    return hashlib.sha256(json.dumps(_canon(steps), sort_keys=True).encode()).hexdigest()[:16]
 
 
 def identity_check(point_run, k, now_identity, now_walk, profile):
@@ -379,7 +392,7 @@ def identity_check(point_run, k, now_identity, now_walk, profile):
     except OSError:
         return why + ["the point's walk.json is missing"]
     os_, ns_ = old_walk.get("steps", []), now_walk.get("steps", [])
-    if steps_hash(os_[:k]) != steps_hash(ns_[:k]) or old_walk.get("setup") != now_walk.get("setup"):
+    if steps_hash(os_[:k]) != steps_hash(ns_[:k]) or steps_hash(old_walk.get("setup", [])) != steps_hash(now_walk.get("setup", [])):
         why.append("the steps before the point changed (its producer): play the real prefix")
     if k >= len(ns_) or k >= len(os_) or steps_hash(os_[k:k + 1]) != steps_hash(ns_[k:k + 1]):
         why.append("the resumed step changed: its fresh +3 s reference is for other actions")

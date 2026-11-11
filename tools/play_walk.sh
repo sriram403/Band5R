@@ -18,6 +18,8 @@ export LANE WALK_PROFILE=${WALK_PROFILE:-play}
 # NO_MAKE=1: play tools/live/<w>.json as it is (a hand-edited or planted variant)
 [ -n "$NO_MAKE" ] || python "tools/live/make_$w.py" >/dev/null || exit 1
 python tools/method/godot_guard.py "$LANE" || exit 3
+# T4 v2: the gate's identity / refusal check BEFORE a game is started (a refused point costs no launch)
+python tools/live.py --gate-check --walk "tools/live/$w.json" "$@" || exit 5
 export MPG_DATA="$(pwd -W)/appdata/playtest$sfx"
 live="appdata/playtest$sfx/FindingNaresh/live"
 mkdir -p "$live"

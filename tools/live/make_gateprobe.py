@@ -28,8 +28,8 @@ def save(name, steps):
 
 save("gateprobe", [
     ENTRY,
-    {"name": "2 P2 swings the nav; both sit still", "max": 15,
-     "do": [{"do": "pad_tap", "btn": "A"}, {"do": "wait", "s": 4.0}],
+    {"name": "2 P1 swings the nav (N); both sit still", "max": 15,
+     "do": [{"do": "tap", "key": "N"}, {"do": "wait", "s": 4.0}],
      "expect": [{"name": "nav swung", "expr": "camper().nav_aside", "within": 6}]},
     {"name": "3 the engine on (its sound)", "max": 15,
      "do": [{"do": "hold", "key": "X", "s": 0.3}, {"do": "wait", "s": 2.0}],

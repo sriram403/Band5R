@@ -119,7 +119,7 @@ def gate_identity(walk):
 def main() -> int:
     args = sys.argv[1:]
     ok, why = lane_ok()
-    if not ok:
+    if not ok and "--gate-check" not in args:
         print("REFUSED (lane): " + why, flush=True)
         return 6
     timeout = 180.0
@@ -136,6 +136,10 @@ def main() -> int:
         i = args.index("--from")
         walk_from = args[i + 1]
         del args[i:i + 2]
+    gate_check_only = False
+    if "--gate-check" in args:        # T4 v2: the gate's refusal before any launch (no game needed)
+        gate_check_only = True
+        args.remove("--gate-check")
     fresh = False
     if "--fresh" in args:
         fresh = True
@@ -183,6 +187,9 @@ def main() -> int:
                 print("REFUSED (gate, before any input): %s" % "; ".join(why), flush=True)
                 print("  -> play the real prefix: --fresh (the ghat's only real producer is step 1, F1 Puzzles)", flush=True)
                 return 5
+        if gate_check_only:
+            print("GATE CHECK: %s" % ("resume from %s (%s) admitted to gate evaluation" % (point_id, walk_from) if walk_from else "fresh walk"), flush=True)
+            return 0
     src = args[0] if args else "[]"
     if src.startswith("@"):          # a saved walk: tools/live/<name>.json
         with open(src[1:], encoding="utf-8") as f:

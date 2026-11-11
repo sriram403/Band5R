@@ -61,6 +61,8 @@ json.dump(w, open(sys.argv[3], "w", encoding="utf-8"), indent=1)
 EOF
 	walkjson="$live/gateonly_$w.json"
 fi
+# T4 v2: the gate's identity / refusal check BEFORE a game is started (a refused point costs no launch)
+python tools/live.py --gate-check --walk "$walkjson" "${args[@]}" || { echo "TAKE PART REFUSED before launch: record a fresh take: tools/record_walk.sh $w --fresh"; exit 5; }
 n=$(ls "$parts"/part*.json 2>/dev/null | wc -l)
 k=$((n + 1))
 tag="part$k"; [ -n "$GATE_ONLY" ] && tag="gate$(date +%H%M%S)"
