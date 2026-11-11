@@ -90,6 +90,15 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   pictures and logs), kept only in `MPG_referee` (outside every child's reach); the current checks pass on both (blind).
   They go into the replay copy's start in one orphan commit. Scored at the end with the 7 holes.
 
+- **GPT's audit of T1 (2026-11-11, `audit_T1_gpt.md`): ACCEPT WITH CONDITIONS.** Verified: 119 clean verdicts match, the
+  suite ~4.4 vs 18.7 min, 8 / 9 plants. **Three blocking false-PASS paths (code-read, real):** (1) a refused / missing lane
+  (e.g. spring refused by the guard) leaves the combined command PASS on the other lane alone; (2) a step that overruns
+  and CLOSES between watcher polls is never judged against its budget (fast makes it likelier); (3) plant proofs match
+  FAIL substrings and pick run folders by glob: identity printed, not enforced. Also: lean_close unresolved, ghat_places
+  has no plant, lane isolation and split order unproven, nodraw re-arm interleaving untested. **`SPEED=fast` is not
+  used in an accepted replay until (1)-(3) pass with their own planted controls.** Who fixes: decided after the Claude
+  audit of the specs (blockers 1 and 3 overlap T3's receipts / attribution).
+
 ## Next (Stage 3 proper)
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
@@ -105,7 +114,7 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
 | 2 round 1 audits | done (`audit_r1_gpt.md` possibly contaminated, R1; `audit_r1_claude.md`). Claude: 4 trials (speed-up on the game clock, plants one compile + early stop, first+last full run, discovery walk + safe resume); ~99 min at 1x, ~68 at 2x: the speed probe decides |
 | 2 round 2 | done: both sign the same top 4 (`top4.md`) |
 | 3 pilots | done: P1 1.24x (no-go as built), P1b headless 4.96x, P1c draw-only-at-shots 5.5x (go, one fix) |
-| 3 T1 + T2 build | done, QUALIFIED (6 fast, suite 4.4 vs 18.7 min); `speed-t1` `5f468c2`; GPT audits it next |
+| 3 T1 + T2 build | done, QUALIFIED (6 fast, suite 4.4 vs 18.7 min); `speed-t1` `5f468c2`; GPT: ACCEPT WITH CONDITIONS (3 blockers) |
 | 3 T3 + T4 specs | done (GPT): `trial_T3_spec.md` (discovery, selection map, receipts, **the replay playbook**: ~99 min 1x / ~62 fast, ~54 with two games), `trial_T4_spec.md` (sections, the 3-layer gate, the video); qualification 9/6 + 14 min. GPT on T1: old 1x plant verdicts need matching identities; the deadline control at 1x too |
 | 3 T3 + T4 specs audit | waits for T1: the Claude auditor audits GPT's specs (`audit_specs_claude_task.md`), GPT answers, disputes to the user |
 | 3 T3 + T4 build | first builder cut by the rate limit before any work; waits for the agreed specs (the hand-off gate blocks it until `AUDITED:` is in its task file) |
