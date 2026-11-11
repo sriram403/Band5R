@@ -329,12 +329,23 @@ def step_block(walk_log_lines, step_name):
     return out
 
 
+EXTERNAL_BREAK = ("FAIL deliberate break", "FAIL the client saw in the log")
+
+
 def next_step(fresh_lines, resume_lines, step_name, cfg=None):
+    """The resumed step's outcomes (PASS / FAIL lines) must be the fresh run's. A fresh run broken
+    from outside inside that step (a deliberate test break, the client's abort) is compared up to
+    its break: its outcomes before the break must open the resume's; the break line itself is not
+    an outcome. A fresh step with no outcome and no break is not evidence."""
     cfg = cfg or inv()
     a = [x for x in step_block(fresh_lines, step_name) if x.startswith(("PASS", "FAIL"))]
     b = [x for x in step_block(resume_lines, step_name) if x.startswith(("PASS", "FAIL"))]
     why = []
-    if not a:
+    broken = [x for x in a if x.startswith(EXTERNAL_BREAK)]
+    if broken:
+        a = a[:a.index(broken[0])]
+        b = b[:len(a)]
+    elif not a:
         why.append("the fresh run has no outcome for step '%s'" % step_name)
     if [_strip_times(x) for x in a] != [_strip_times(x) for x in b]:
         why.append("step outcomes differ: fresh %s / resume %s" % (a, b))

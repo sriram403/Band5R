@@ -361,6 +361,16 @@ func _do(c: Dictionary) -> Dictionary:
 	return r
 
 
+## T4 control only (WALK_FAIL_AT): a deliberate break s game seconds into a step, as a take broken
+## by something outside the game would be (the join verifier's demo needs a failed part).
+func _break_after(nm: String, s: float) -> void:
+	var g0 := PlayTest.gms()
+	while PlayTest.gms() - g0 < int(s * 1000.0):
+		await pt.get_tree().physics_frame
+	if _fail == "":
+		_failed("deliberate break (test-only control) %.1f game s into '%s'" % [s, nm])
+
+
 func _spawn_helper(fn: String, args: Array) -> void:
 	pt.helpers_running += 1
 	await pt.callv(fn, args)
@@ -417,6 +427,13 @@ func _say(line: String) -> void:
 	f.seek_end()
 	f.store_line(line)
 	f.close()
+	if _run != "":
+		# T4 v2: the run's own copy (walk.log is replaced by the next walk; the gate reads this one)
+		var rp := "%s/points/%s/walk.log" % [dir, _run]
+		var g := FileAccess.open(rp, FileAccess.READ_WRITE if FileAccess.file_exists(rp) else FileAccess.WRITE)
+		g.seek_end()
+		g.store_line(line)
+		g.close()
 
 
 func _release() -> void:
@@ -576,6 +593,7 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 		return {"ok": false, "fail": "points folder %s exists already (a run ID is used once)" % _run, "log": []}
 	DirAccess.make_dir_recursive_absolute(rdir)
 	var identity: Dictionary = msg.get("identity", {})
+	_json_out(rdir + "/walk.json", walk)
 	_json_out(rdir + "/run.json", {"run": _run, "walk": _walk_name, "identity": identity, "from": from,
 		"from_point": String(msg.get("from_point", "")), "pid": OS.get_process_id(), "recording": Engine.get_write_movie_path()})
 	for old in ["walk.log", "abort"]:
@@ -732,6 +750,9 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 		# the frame: a recording at a fixed fps cuts a resumed take here (tools/record_walk.sh)
 		_say("step %s (%.0f s, frame %d)" % [nm, pt.el_ms(t0) / 1000.0, Engine.get_frames_drawn()])
 		_t3_sample("%s/%d.t3.json" % [rdir, i], i, nm, PlayTest.gms(), _log.size() - 1, _trace_msgs.size(), pt.input_trace.size())
+		var fa: Dictionary = msg.get("fail_at", {})
+		if not fa.is_empty() and int(fa.get("step", -1)) == i:
+			_break_after(nm, float(fa.get("s", 0.0)))
 		ctx["step_from"] = pt.clk()
 		ctx["step_max_ms"] = int(float(st.get("max", 300.0)) * 1000.0)
 		ctx["step_name"] = nm

@@ -353,6 +353,15 @@ func cancel_probe_bot(max_s: float, checks: bool) -> void:
 	key(KEY_CTRL, false)
 
 
+## T4 control: the cancel probe's state in one line (the live client reads it with eval).
+func probe_state() -> String:
+	return "ctrl=%s blocked=%d sends=%d helpers=%d gate_closed=%s gen=%d" % [Input.is_physical_key_pressed(KEY_CTRL), blocked_sends, input_sends, helpers_running, input_gate, walk_gen]
+
+
+func ctrl_held() -> bool:
+	return Input.is_physical_key_pressed(KEY_CTRL)
+
+
 func key(k: Key, down: bool) -> void:
 	if not _gate_send("key", k, 1.0 if down else 0.0):
 		return

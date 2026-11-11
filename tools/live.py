@@ -204,6 +204,9 @@ def main() -> int:
         msg = {"id": cid, "cmds": cmds, "quit": quit_after}
         if walk is not None:
             msg = {"id": cid, "walk": walk, "from": walk_from or "", "from_point": point_id, "run": run_id, "identity": ident}
+            if os.environ.get("WALK_FAIL_AT"):           # test-only control: "<step index>:<game s>"
+                st_, s_ = os.environ["WALK_FAIL_AT"].split(":")
+                msg["fail_at"] = {"step": int(st_), "s": float(s_)}
             if os.environ.get("GATE_PERTURB"):           # test-only control: "van:0.2"
                 w_, dx_ = os.environ["GATE_PERTURB"].split(":")
                 msg["perturb"] = {"what": w_, "dx": float(dx_)}
