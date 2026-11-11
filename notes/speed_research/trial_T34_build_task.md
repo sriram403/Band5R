@@ -43,6 +43,10 @@ thing, say so). GPT writes no code and runs no game; you do both.
 - Each new guard is proved against its planted failure AND passes clean (the specs' tables). A control that
   passes when it should fail stops that tool's qualification.
 
+## Checkpoints (audit fix F05)
+Commit locally after every finished sub-step (a WIP commit with: state, next action, tests outstanding), so a cut
+child loses nothing; a WIP commit is never "qualified".
+
 ## Write
 `MPG_speed_t34\notes\speed_research\trial_T4_build.md` and `trial_T3_build.md` (the specs' "required
 builder report": files, commits, every deviation, every control pair with expected/actual, commands,

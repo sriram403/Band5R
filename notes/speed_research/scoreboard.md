@@ -55,11 +55,14 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   the brief's 20 counted day 2's removal of `no_stall_drag`). The replay keeps all 21; a row leaves only if the
   replay removes the thing it plants, with the reason written. Final = 21 (or 20 with that reason) + one per
   hole found + the referee's exam rows. Shortcut flags (`one_flat`, `one_corner`) are not bugs.
-- **R5 (2026-11-10, a disagreement between GPT's T4 spec and `top4.md`):** GPT's spec wants a separate
+- **R5 (2026-11-10, WITHDRAWN 2026-11-11: DISPUTED, with the user), a disagreement between GPT's T4 spec and `top4.md`):** GPT's spec wants a separate
   uninterrupted fresh walk even when every join of a take passed the 3-layer gate. `top4.md` (signed by both)
   says a step resumed from a point that FAILS the gate doesn't count, so one that passes it does. Ruling, by the
   signed text and the user's choice A (joined takes are fine): **a joined take where every join is SAME on all 3
-  layers, under the recording profile, counts as both the clean walk and the video.** A join without SAME
+  layers, under the recording profile, counts as both the clean walk and the video.**
+  **Withdrawn (2026-11-11):** the compliance audit showed the user's A covered the *video* only; the referee
+  stretched it to "no unbroken clean walk needed". The point is DISPUTED (GPT: an unbroken fresh walk too,
+  ~+10 game min; Claude: not yet audited) and goes to the user as A / B. A join without SAME
   doesn't; then a fresh take is needed. GPT's stricter rule is noted as its reservation for the signatures.
 
 - **Referee watch notes, T1 resumed (2026-11-11), to check at scoring:** fast suite of 6 PASS in 3.4 min (run 7);
@@ -85,6 +88,7 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
 | 2 round 1 audits | done (`audit_r1_gpt.md` possibly contaminated, R1; `audit_r1_claude.md`). Claude: 4 trials (speed-up on the game clock, plants one compile + early stop, first+last full run, discovery walk + safe resume); ~99 min at 1x, ~68 at 2x: the speed probe decides |
 | 2 round 2 | done: both sign the same top 4 (`top4.md`) |
 | 3 pilots | done: P1 1.24x (no-go as built), P1b headless 4.96x, P1c draw-only-at-shots 5.5x (go, one fix) |
-| 3 T1 + T2 build | running (Claude auditor, `MPG_speed_t1`, task `trial_T1_task.md`) |
+| 3 T1 + T2 build | first child cut by the rate limit (WIP `45dc00f`); resumed 2026-11-11 10:40, running |
 | 3 T3 + T4 specs | done (GPT): `trial_T3_spec.md` (discovery, selection map, receipts, **the replay playbook**: ~99 min 1x / ~62 fast, ~54 with two games), `trial_T4_spec.md` (sections, the 3-layer gate, the video); qualification 9/6 + 14 min. GPT on T1: old 1x plant verdicts need matching identities; the deadline control at 1x too |
-| 3 T3 + T4 build | running (Claude builder, `MPG_speed_t34`, task `trial_T34_build_task.md`) |
+| 3 T3 + T4 specs audit | waits for T1: the Claude auditor audits GPT's specs (`audit_specs_claude_task.md`), GPT answers, disputes to the user |
+| 3 T3 + T4 build | first builder cut by the rate limit before any work; waits for the agreed specs (the hand-off gate blocks it until `AUDITED:` is in its task file) |
