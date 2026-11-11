@@ -485,7 +485,7 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 				start = k
 		if start < 0:
 			return {"ok": false, "fail": "no step named " + from, "log": []}
-	var t0 := Time.get_ticks_msec()
+	var t0 := pt.clk()
 	var ctx := {"watches": [], "passed": {}, "allow": [], "running": true}
 	for c in walk.get("setup", []):
 		await _do(c)
@@ -590,15 +590,16 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 					_failed("%s needs '%s', which no step expects" % [nm, need])
 					break
 				ctx["watches"].append({"name": need, "expr": String(plan.get("expr", "true")), "step": nm,
-					"until": Time.get_ticks_msec() + int(float(plan.get("within", 5.0)) * 1000.0), "from": Time.get_ticks_msec()})
+					"within_ms": int(float(plan.get("within", 5.0)) * 1000.0), "from": pt.clk()})
 				_say("armed '%s' again (resumed past the step that set it)" % need)
 			while not ctx["passed"].has(need) and _fail == "":
 				await pt.wait(0.1)
 		if _fail != "":
 			break
 		# the frame: a recording at a fixed fps cuts a resumed take here (tools/record_walk.sh)
-		_say("step %s (%.0f s, frame %d)" % [nm, (Time.get_ticks_msec() - t0) / 1000.0, Engine.get_frames_drawn()])
-		ctx["step_until"] = Time.get_ticks_msec() + int(float(st.get("max", 300.0)) * 1000.0)
+		_say("step %s (%.0f s, frame %d)" % [nm, pt.el_ms(t0) / 1000.0, Engine.get_frames_drawn()])
+		ctx["step_from"] = pt.clk()
+		ctx["step_max_ms"] = int(float(st.get("max", 300.0)) * 1000.0)
 		ctx["step_name"] = nm
 		for c in st.get("do", []):
 			if _fail != "":
@@ -611,15 +612,15 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 				break
 			var within := float(e.get("within", 5.0))
 			var w := {"name": String(e.get("name", nm)), "expr": String(e.get("expr", "true")), "step": nm,
-				"until": Time.get_ticks_msec() + int(within * 1000.0), "from": Time.get_ticks_msec()}
+				"within_ms": int(within * 1000.0), "from": pt.clk()}
 			if bool(e.get("watch", false)):
 				ctx["watches"].append(w)
 				continue
 			while _fail == "" and not ctx["passed"].has(w["name"]):
 				if bool(_eval(w["expr"])):
 					ctx["passed"][w["name"]] = true
-					_say("PASS %s (%.1f s)" % [w["name"], (Time.get_ticks_msec() - w["from"]) / 1000.0])
-				elif Time.get_ticks_msec() > w["until"]:
+					_say("PASS %s (%.1f s)" % [w["name"], pt.el_ms(w["from"]) / 1000.0])
+				elif pt.el_ms(w["from"]) > int(w["within_ms"]):
 					_failed("%s: expected '%s' (%s) within %.0f s" % [nm, w["name"], w["expr"], within])
 				else:
 					await pt.wait(0.1)
@@ -634,7 +635,7 @@ func _run_walk(walk: Dictionary, from: String) -> Dictionary:
 	if _fail != "":
 		await pt.shot("walk_fail")
 		shot = ProjectSettings.globalize_path("res://_shots/test_walk_fail.png")
-	_say("%s %s in %.0f s" % ["FAILED" if _fail != "" else "DONE", _walk_name, (Time.get_ticks_msec() - t0) / 1000.0])
+	_say("%s %s in %.0f s" % ["FAILED" if _fail != "" else "DONE", _walk_name, pt.el_ms(t0) / 1000.0])
 	var failed_step := String(steps[mini(i, steps.size() - 1)].get("name", "")) if _fail != "" and steps.size() > 0 else ""
 	# where the next run starts by default (tools/live.py: resume from the last failed step)
 	var lf := "%s/points/%s_last_fail.json" % [dir, _walk_name]
@@ -672,15 +673,15 @@ func _watcher(ctx: Dictionary) -> void:
 		var has_n := n != null and is_instance_valid(n)
 		var allow: Array = ctx["allow"]
 		var watches: Array = ctx["watches"]
-		if ctx.has("step_until") and Time.get_ticks_msec() > int(ctx["step_until"]):
+		if ctx.has("step_from") and pt.el_ms(ctx["step_from"]) > int(ctx["step_max_ms"]):
 			_failed("step %s took longer than its limit" % ctx["step_name"])
 			break
 		for w in watches.duplicate():
 			if bool(_eval(w["expr"])):
 				ctx["passed"][w["name"]] = true
 				watches.erase(w)
-				_say("PASS %s (%.1f s, watched)" % [w["name"], (Time.get_ticks_msec() - w["from"]) / 1000.0])
-			elif Time.get_ticks_msec() > w["until"]:
+				_say("PASS %s (%.1f s, watched)" % [w["name"], pt.el_ms(w["from"]) / 1000.0])
+			elif pt.el_ms(w["from"]) > int(w["within_ms"]):
 				_failed("%s: expected '%s' (%s) in time (watched)" % [w["step"], w["name"], w["expr"]])
 		# the van: someone driving with the throttle down, and it doesn't move
 		# for 5 s = stuck (the skill's "nothing that should move stands still")

@@ -93,7 +93,7 @@ def reduce(tr, fz):
                               "begin": float(c["unix"]), "kind": "reach", "owner": "UNRESOLVED"})
             else:
                 conds.append({"status": "FAIL", "text": "check failed: '%s' (%s), owner=UNRESOLVED" % (c["text"], m["id"]),
-                              "begin": float(c["unix"]), "kind": "check", "owner": "UNRESOLVED"})
+                              "begin": float(c["unix"]), "kind": "check", "owner": "UNRESOLVED", "pf": c.get("pf")})
         missing = [m["id"] for m in man if m["id"] not in seen]
         det["checks_%s" % scen] = (len(seen), len(man))
         if missing and scen in started:
@@ -135,7 +135,11 @@ def reduce(tr, fz):
     elif order:
         if pol["headline"] == "earliest":
             t0 = float(order[0]["begin"])
-            near = [c for c in order if float(c["begin"]) - t0 <= float(fz["limits"]["headline_tie_s"])]
+            p0 = order[0].get("pf")
+            tie = float(fz["limits"]["headline_tie_s"])
+            # T1: the tie window is game s when both conditions carry a physics frame (fast runs)
+            near = [c for c in order if ((float(c["pf"]) - float(p0)) / 60.0 if p0 is not None and c.get("pf") is not None
+                                         else float(c["begin"]) - t0) <= tie]
             head = sorted(near, key=lambda c: (TIE_RANK[c["status"]], float(c["begin"])))[0]
         else:
             raise SystemExit("headline policy '%s' not built" % pol["headline"])
@@ -143,8 +147,9 @@ def reduce(tr, fz):
     return status, head, order, det
 
 
-def fmt_t(tr, u):
-    return "%+.1fs" % (float(u) - float(tr["t_start"]))
+def fmt_t(tr, u, pf=None):
+    s = "%+.1fs" % (float(u) - float(tr["t_start"]))
+    return s + (" game %.1fs" % (float(pf) / 60.0) if pf is not None else "")
 
 
 def report(tr, fz, out):
@@ -156,7 +161,7 @@ def report(tr, fz, out):
     if head is None:
         L.append("RESULT: PASS (exit 0): %s profile %s" % (tr["plan"], prof))
     else:
-        L.append("RESULT: %s (exit %d): %s [began %s]" % (status, code, head["text"], fmt_t(tr, head["begin"])))
+        L.append("RESULT: %s (exit %d): %s [began %s]" % (status, code, head["text"], fmt_t(tr, head["begin"], head.get("pf"))))
     L.append("  asked %d (%s) / started %d / ended %d (%s); wall %.0f s; beats %d; game pid %s" % (
         len(tr["asked"]), ",".join(tr["asked"]), len(tr["started"]), len(tr["ended"]), ",".join(s["scen"] for s in tr["ended"]), tr.get("wall_s", 0), tr["beats"], tr.get("pid")))
     if tr.get("launch") and tr.get("first_beat"):
@@ -166,7 +171,7 @@ def report(tr, fz, out):
         for c in order:
             mark = "  <== headline" if c is head else ""
             dt = (" detected %s" % fmt_t(tr, c["detected"])) if c.get("detected") else ""
-            L.append("    %-11s %s%s  %s%s" % (c["status"], fmt_t(tr, c["begin"]), dt, c["text"], mark))
+            L.append("    %-11s %s%s  %s%s" % (c["status"], fmt_t(tr, c["begin"], c.get("pf")), dt, c["text"], mark))
     for x in det["lines"]:
         L.append(x)
     for k, v in det.items():
@@ -186,7 +191,7 @@ def report(tr, fz, out):
     if tr.get("kill"):
         L.append("  stop: kill started %.2f s after detection; shutdown %.2f s; %s" % (tr.get("detect_to_kill_start_s", -1), tr.get("shutdown_s", -1), "; ".join(tr["kill"])))
     if "stall_detect_after_deadline_s" in tr:
-        L.append("  stall detected %.2f s after its deadline (%.2f s after the step opened)" % (tr["stall_detect_after_deadline_s"], tr["stall_detect_after_open_s"]))
+        L.append("  stall detected %.2f s after its deadline (%.2f wall s after the step opened, %s game s)" % (tr["stall_detect_after_deadline_s"], tr["stall_detect_after_open_s"], tr.get("stall_game_open_s", "?")))
     L.append("  godot processes left after the run: %s" % (tr.get("godot_left_after") or "none"))
     sc = fz.get("scope_ghat", fz["scope"]) if tr["plan"].startswith("ghat") else fz["scope"]
     L.append("  Scope: %s, profile %s. Claims: %s" % (tr["plan"], prof, sc["claims"]))

@@ -29,7 +29,7 @@ DIR="$(dirname "$0")"
 . "$DIR/test_plan.sh"
 # Save/load scenarios must never overwrite a player's own slots. Godot still
 # writes only inside MPG/appdata, in a separate play-test profile.
-export MPG_DATA="$(cd "$DIR/.." && pwd -W 2>/dev/null || pwd)/appdata/playtest"
+export MPG_DATA="$(cd "$DIR/.." && pwd -W 2>/dev/null || pwd)/appdata/playtest${LANE:+_$LANE}"
 RUNS="$MPG_DATA/runs"
 PROGRESS="$RUNS/progress.txt"
 mkdir -p "$RUNS"

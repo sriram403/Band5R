@@ -5,6 +5,7 @@ then reads its verdict: every expected check (or rule) must be named in a FAIL
 condition, or the proof fails. Groups only combine plants that can't mask each
 other. The clean run (no fixture) is separate: tools/method_run.sh ghat.
 Usage: python tools/method/prove_ghat.py [group ...]   (no names: all)
+       EARLY=1 SPEED=fast python tools/method/prove_ghat.py looks   (T1 / T2, speed research)
 Output: appdata/method/prove_ghat.txt (one line per plant), plus each run's folder.
 """
 import glob
@@ -41,6 +42,10 @@ GROUPS = {
 def run(name):
     scen, plants, expect = GROUPS[name]
     env = dict(os.environ, GHAT=scen, FIXTURE=plants)
+    # T2 (2026-11-10): EARLY=1 stops the run once every expected FAIL of the group is on record
+    # (the verdict says "EARLY STOP ... the rest not run"; never a PASS). SPEED=fast passes through.
+    if os.environ.get("EARLY"):
+        env["EXPECT_FAIL"] = "|".join(x for texts in expect.values() for x in texts)
     before = set(glob.glob(os.path.join(ROOT, "appdata", "method", "runs", "*")))
     print("== %s: %s with %s" % (name, scen, plants), flush=True)
     subprocess.run(["bash", os.path.join(ROOT, "tools", "method_run.sh"), "ghat"], cwd=ROOT, env=env)
