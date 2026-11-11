@@ -233,11 +233,16 @@ func nodraw_off(why: String) -> void:
 	_picture = true
 	RenderingServer.render_loop_enabled = true
 	await RenderingServer.frame_post_draw
+	# T1 (2026-11-11): read the frame back before switching off. Every switch-off that stuck (P1c:
+	# shot / grab_p1, which read the picture) did this; every one that didn't (P1c's early toggles,
+	# T1 run 6's nodraw_off) didn't, and the engine drew every tick with the flag false.
+	get_viewport().get_texture().get_image()
 	RenderingServer.render_loop_enabled = false
 	_picture = false
 	_nd_armed = true
 	_nd_drawn0 = Engine.get_frames_drawn() + 1
-	print("[nodraw] off (%s) at physics frame %d, frames drawn %d" % [why, Engine.get_physics_frames(), Engine.get_frames_drawn()])
+	if why != "drawing was back on" or _nd_rearms <= 3 or _nd_rearms % 50 == 0:
+		print("[nodraw] off (%s) at physics frame %d, frames drawn %d (re-arms so far %d)" % [why, Engine.get_physics_frames(), Engine.get_frames_drawn(), _nd_rearms])
 
 
 ## After a picture's one drawn frame: off again, counted.

@@ -39,7 +39,7 @@ while True:
         for ln in data.splitlines():
             if re.search(r"t=\s*\d+s scen=", ln):
                 last_status = ln.strip()
-            elif KEY.search(ln) and "speed research" not in ln:
+            elif KEY.search(ln) and "speed research" not in ln and "p_elem->_root" not in ln:
                 print("%5.0fs %s%s" % (time.time() - t0, tag, ln.strip()[:260]), flush=True)
     if time.time() - last_emit >= period and last_status:
         print("%5.0fs status: %s" % (time.time() - t0, last_status[:200]), flush=True)
