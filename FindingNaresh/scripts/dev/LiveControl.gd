@@ -791,6 +791,11 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 func _end_walk(steps: Array, i: int, from: String, t0: Vector2i) -> Dictionary:
 	_release()
 	pt.release_everything()
+	# T4 v2 (found by the cancel control, run A): the releases are queued input events; until they
+	# are flushed the old presses still read as held (CTRL was "held" at the picture). Flush, then
+	# check and take the picture.
+	Input.flush_buffered_events()
+	await pt.get_tree().physics_frame
 	var held_at_shot: Array = []
 	for k in GateObs.KEYS:
 		if Input.is_physical_key_pressed(k):
