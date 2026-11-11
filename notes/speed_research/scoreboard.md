@@ -101,6 +101,16 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   used in an accepted replay until (1)-(3) pass with their own planted controls.** Who fixes: decided after the Claude
   audit of the specs (blockers 1 and 3 overlap T3's receipts / attribution).
 
+- **T1 fix round scored (2026-11-11, referee; GPT re-check pending):** blockers (1) missing lane, (2) late-closing step,
+  (3) exact plant identity: **fixed and proved** (31 offline controls `t1fix_controls.py`, 4 cases where the old rule said a
+  wrong PROVED; live: both lanes refused -> TEST, fast PASS + spring refused -> TEST (was 0); late close STALLED fast, 1x and
+  with a delayed watcher; on time PASS both). **Hearing gap: ghat_jug + ghat_places run 1x under `SPEED=fast`** (game hearing
+  on the wall clock; the suite ~7.2 wall min, an estimate, vs 18.7). lean_close alone: fast 3 / 3 caught at 0.13 m; 1x a coin
+  toss (0.14 caught, 0.18 / 0.19 missed): fast reads closer every time: a steady speed difference, unexplained (fast is the
+  stricter side here, but not proved equal). Final clean fast run vs 1x: 87 / 87 verdicts; **3 values outside T1's own
+  tolerances, unexplained** (fuel 1.06 L, engine ticks +17.7 %, sniffs 1 vs 2). Open: lane isolation, split order, batch
+  causality (D2). **Meter: T1 WALL 43.7 of 45 min, proc 70.0.**
+
 ## Next (Stage 3 proper)
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
