@@ -437,3 +437,5 @@ tool changes below (game code and `core/Plant.gd` untouched). Budget 15 wall gam
 
 | # | Run | Expected | Wall | Watched | Result |
 |---|---|---:|---:|---|---|
+| Q1 | open overrun (`FIXTURE=overrun`, ghat_net host) on the final source: lane a `SPEED=_fast`, lane b 1x (20 s later) | 0.7 | 0.75 | Monitor | **both STALLED at `overrun_control#2`**: fast 10.33 game / 5.40 wall s (game clock fired); 1x 9.90 game / 10.04 wall s (wall clock fired). Drained, kill verified, no Godot left. `120734_ghat_k3_overrun_fast`, `120754_ghat_k3_overrun_laneb`. Total 0.75 |
+| Q2 | lane a: `SPEED=_fast EARLY=1 prove_ghat.py solo_fast_turn solo_leave_sees solo_no_breath_lock solo_round_skip solo_marks_pile solo_marks_unsaved` (6 launches); lane b (25 s later): `LANE=b GHAT=ghat_heat FIXTURE=one_corner` 1x x2 | 5.6 | | Monitor | |
