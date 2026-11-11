@@ -247,4 +247,6 @@ Task: `MPG\notes\speed_research\trial_T1_fix_task.md` (read first; only its list
 | # | Run | Expected | Wall | Watched | Result |
 |---|---|---:|---:|---|---|
 | F0 | `SPEED=fast GHAT=ghat_net,ghat_places GUARD_INJECT=<2 fake games> method_run.sh ghat` (both parts refused) | 0 | 0 (no Godot started) | inline | COMBINED TEST exit 3 (old code: exit 0) |
-| F1 | B2 pair: `late_close` + `T1_LAG=overrun_control:13`, ghat_net, fast lane a + 1x lane b at once | 0.8 | | Monitor | |
+| F1 | B2 pair: `late_close` + `T1_LAG=overrun_control:13`, ghat_net, fast lane a + 1x lane b at once | 0.8 | 0.8 | Monitor | **both STALLED by name, judged on CLOSE**: fast 10.50 game / 5.00 wall s (the game had already ended: caught in the end drain), 1x 10.50 / 10.41 |
+| F2+F3 | lane a: `on_time` + lag fast, then `late_close` fast no lag (natural); lane b: `on_time` + lag 1x | 1.0 | 1.1 | Monitor | on_time fast **PASS**, on_time 1x **PASS** (9.50 s, budget 10, read 13 s late); late_close fast natural **STALLED** (closed late 10.50 game / 5.00 wall s; it closed between two polls, never seen open past its deadline) |
+| F4 | `SPEED=fast GHAT=ghat_net,ghat_places GUARD_INJECT=<lane b busy>`: fast part runs, 1x part refused | 0.4 | | Monitor | |

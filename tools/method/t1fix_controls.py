@@ -163,6 +163,120 @@ def b2():
     rec("b2_archived_steps_no_false_stall", "none late", "none late" if not any(w[2] for w in worst) else "LATE", "%d runs" % len(worst))
 
 
+def b3():
+    print("== blocker 3: a plant is PROVED only by its own exact ids in its own run (prove_ghat.judge)")
+    import prove_ghat
+    import method_watch
+    G = prove_ghat.GROUPS
+
+    def case(name, group, src, mutate=None, inv_override=None, judge_as=None):
+        scen, plants, expect = G[judge_as or group]
+        base = fresh(name)
+        inv = "ctl_" + name
+        invd = os.path.join(base, inv)
+        os.makedirs(invd)
+        rd = os.path.join(base, "run")
+        shutil.copytree(os.path.join(RUNS, src), rd, ignore=shutil.ignore_patterns("shots", "*.png", "seg_1.log"))
+        info = open(os.path.join(rd, "run_info.txt"), encoding="utf-8").read()
+        open(os.path.join(rd, "run_info.txt"), "w", encoding="utf-8").write("inv %s part fast\n%s" % (inv_override or inv, info))
+        tr = json.load(open(os.path.join(rd, "trace.json"), encoding="utf-8"))
+        for c in tr["conditions"]:
+            if c.get("kind") == "rule" and "id" not in c:
+                m = re.match(r"^(H\d+):", c["text"])
+                if m:
+                    c["id"] = m.group(1)
+        tr["inv"], tr["part"] = inv_override or inv, "fast"
+        tr["fixture"] = re.search(r"fixture '([^']*)'", info).group(1)
+        if mutate:
+            mutate(tr)
+        json.dump(tr, open(os.path.join(rd, "trace.json"), "w", encoding="utf-8"), indent=1)
+        import method_verdict
+        import io
+        import contextlib
+        with contextlib.redirect_stdout(io.StringIO()):
+            method_verdict.report(tr, FZ, rd)
+        with open(os.path.join(invd, "expected"), "w") as f:
+            f.write("fast\t%s\t%s\n" % (scen, plants))
+        open(os.path.join(invd, "fast.dir"), "w").write(rd)
+        prob, d, rows = prove_ghat.judge(invd, scen, plants, expect)
+        # what the OLD rule (substring in a FAIL line of verdict.txt) would have said
+        v = open(os.path.join(rd, "verdict.txt"), encoding="utf-8").read()
+        fails = [ln for ln in v.splitlines() if ln.strip().startswith(("FAIL", "RESULT: FAIL"))]
+        old = {p: all(any(t in ln for ln in fails) for t in OLD_TEXTS[p]) for p in rows if p in OLD_TEXTS}
+        return rows, old, tr
+
+    def flip(scen, idpart, ok):
+        def f(tr):
+            for c in tr["checks"]:
+                if c.get("scen") == scen and idpart in re.sub(r"[^a-z0-9]+", "_", c["text"].lower()):
+                    c["ok"] = ok
+        return f
+
+    def show(name, rows, old, want):
+        for p, (ok, why) in rows.items():
+            w = want.get(p)
+            if w is None:
+                continue
+            rec("%s:%s" % (name, p), w, "PROVED" if ok else "NOT PROVED", "old rule: %s; %s" % (
+                ("PROVED" if old.get(p) else "NOT PROVED") if p in old else "-", why[:90]))
+
+    HEAT_F, JUG_F, NET_F, HEAT_E = ("20261111_105546_ghat_k3_heat_always,one_corner_fast", "20261111_105826_ghat_k3_leave_sees,no_breath_lock,round_skip_fast",
+                                    "20261111_105802_ghat_k3_one_layer_net_fast", "20261111_111507_ghat_k3_heat_always,one_corner_fast")
+    # positives (the archived T1 runs, judged by the new rule)
+    r, o, _ = case("b3_heat_clean_proof", "heat_always", HEAT_F)
+    show("b3_heat_clean_proof", r, o, {"heat_always": "PROVED"})
+    r, o, _ = case("b3_jug_batch_clean_proof", "jug_a", JUG_F)
+    show("b3_jug_batch_clean_proof", r, o, {p: "PROVED" for p in G["jug_a"][2]})
+    r, o, _ = case("b3_heat_early_clean_proof", "heat_always", HEAT_E)
+    show("b3_heat_early_clean_proof", r, o, {"heat_always": "PROVED"})
+    # one expected FAIL missing (H1 never fired)
+    r, o, _ = case("b3_one_expected_missing", "heat_always", HEAT_F,
+                   lambda tr: tr.__setitem__("conditions", [c for c in tr["conditions"] if c.get("id") != "H1"]))
+    show("b3_one_expected_missing", r, o, {"heat_always": "NOT PROVED"})
+    # a similarly named wrong check: "over the pass" (jug_c's old text) is also in the objective check;
+    # the objective check fails, the plant's own over-the-pass check passes
+    def wrong(tr):
+        # in this plant run both pass checks ran (the _fix_with helper) and both FAILed downstream: make
+        # the objective one FAIL and the plant's own over-the-pass one PASS
+        for c in tr["checks"]:
+            sl = re.sub(r"[^a-z0-9]+", "_", c["text"].lower())
+            if c.get("scen") == "ghat_jug" and sl.startswith("the_objective_moves_on_over_the_pass"):
+                c["ok"] = False
+            elif c.get("scen") == "ghat_jug" and sl.startswith("over_the_pass_"):
+                c["ok"] = True
+    def jug_c_fixture(tr):
+        wrong(tr)
+        tr["fixture"] = "no_power"
+    r, o, tr = case("b3_similar_named_wrong_check", "jug_c", JUG_F, jug_c_fixture)
+    # the copy's run_info still names the jug_a plants: rebind it for this case (fixture is not the point here)
+    rdir = os.path.join(CTL, "b3_similar_named_wrong_check", "run")
+    ri = open(os.path.join(rdir, "run_info.txt"), encoding="utf-8").read().replace("leave_sees,no_breath_lock,round_skip", "no_power")
+    open(os.path.join(rdir, "run_info.txt"), "w", encoding="utf-8").write(ri)
+    show("b3_similar_named_wrong_check", r, o, {"no_power": "NOT PROVED"})
+    # the wrong run's evidence: (a) another invocation's run folder; (b) a run with other plants
+    r, o, _ = case("b3_wrong_invocation", "heat_always", HEAT_F, inv_override="prove_heat_always_someone_else")
+    show("b3_wrong_invocation", r, o, {"heat_always": "NOT PROVED"})
+    r, o, _ = case("b3_other_plants_run", "net", HEAT_F, judge_as="net")
+    show("b3_other_plants_run", r, o, {"one_layer_net": "NOT PROVED"})
+    # a batch member whose own check is absent (round_skip's check passed): the others still prove
+    r, o, _ = case("b3_batch_member_absent", "jug_a", JUG_F, flip("ghat_jug", "it_went_all_round_the_van", True))
+    show("b3_batch_member_absent", r, o, {"leave_sees": "PROVED", "no_breath_lock": "PROVED", "round_skip": "NOT PROVED"})
+    # an early stop before every expected id was on record (H1 removed from an early-stopped run)
+    r, o, tr = case("b3_early_stop_short", "heat_always", HEAT_E,
+                    lambda tr: (tr.__setitem__("conditions", [c for c in tr["conditions"] if c.get("id") != "H1"]), tr.__setitem__("early_stop", True)))
+    show("b3_early_stop_short", r, o, {"heat_always": "NOT PROVED"})
+    done, have = method_watch.expected_on_record(tr, FZ, G["heat_always"][2]["heat_always"])
+    rec("b3_watch_early_stop_trigger_without_H1", "no stop", "stop" if done else "no stop", "ids on record: %s" % sorted(have)[:3])
+    # the game not checked gone
+    r, o, _ = case("b3_game_not_gone", "heat_always", HEAT_F, lambda tr: tr.__setitem__("godot_left_after", [4242]))
+    show("b3_game_not_gone", r, o, {"heat_always": "NOT PROVED"})
+
+
+OLD_TEXTS = {"heat_always": ["no heat or leak from it before it sees the van", "H1:"], "one_layer_net": ["from outside nothing of the van shows through the net"],
+             "leave_sees": ["out beside it after it gave up: nobody is taken"], "no_breath_lock": ["never touched the handbrake"],
+             "round_skip": ["it went all round the van before it gave up"], "no_power": ["over the pass"]}
+
+
 if __name__ == "__main__":
     want = sys.argv[1:] or ["b1", "b2", "b3"]
     for w in want:
