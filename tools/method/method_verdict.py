@@ -93,7 +93,7 @@ def reduce(tr, fz):
                               "begin": float(c["unix"]), "kind": "reach", "owner": "UNRESOLVED"})
             else:
                 conds.append({"status": "FAIL", "text": "check failed: '%s' (%s), owner=UNRESOLVED" % (c["text"], m["id"]),
-                              "begin": float(c["unix"]), "kind": "check", "owner": "UNRESOLVED", "pf": c.get("pf")})
+                              "begin": float(c["unix"]), "kind": "check", "owner": "UNRESOLVED", "pf": c.get("pf"), "id": m["id"], "scen": scen})
         missing = [m["id"] for m in man if m["id"] not in seen]
         det["checks_%s" % scen] = (len(seen), len(man))
         if missing and scen in started:
@@ -200,6 +200,17 @@ def report(tr, fz, out):
     L.append("  Evidence: %s" % out)
     txt = "\n".join(L)
     print(txt, flush=True)
+    # fix round (GPT's blocker 3): the structured verdict a proof is judged from (exact ids and the
+    # run's identity), written before verdict.txt; verdict.txt's last line (Evidence) seals both
+    vj = {"status": status, "code": code, "inv": tr.get("inv", ""), "part": tr.get("part", ""), "fixture": tr.get("fixture", ""),
+          "asked": tr["asked"], "started": [s["scen"] for s in tr["started"]], "ended": [s["scen"] for s in tr["ended"]],
+          "failed_ids": sorted({c["id"] for c in order if c["status"] == "FAIL" and c.get("id")}),
+          "conditions": [{k: c.get(k) for k in ("status", "kind", "id", "scen", "text")} for c in order],
+          "early_stop": bool(tr.get("early_stop")), "expect_ids": tr.get("expect_ids", []), "kill": tr.get("kill", []),
+          "kill_ok": tr.get("kill_ok"), "godot_left_after": tr.get("godot_left_after"), "wrapper_rc": tr.get("wrapper_rc"),
+          "drained": tr.get("drained"), "closed_late": tr.get("closed_late", []), "evidence": out}
+    with open(os.path.join(out, "verdict.json"), "w", encoding="utf-8") as f:
+        json.dump(vj, f, indent=1)
     with open(os.path.join(out, "verdict.txt"), "w", encoding="utf-8") as f:
         f.write(txt + "\n")
     return code

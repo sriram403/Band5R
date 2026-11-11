@@ -122,6 +122,47 @@ def b1():
     rec("b1_unrequested_part", "TEST", got, out[-1].strip()[:110])
 
 
+def b2():
+    print("== blocker 2: a step that closes late between polls (method_watch.closed_late)")
+    import method_watch
+    # synthetic: OPEN and a late CLOSE read in ONE batch (the step is never seen open past its deadline)
+    o = ("overrun_control", 0.0, 1000.0, 10.0, 600)
+    for case, close, want in (("b2_closed_late_game_fast", {"pf": 600 + 631, "unix": 1002.3}, True),     # 10.52 game s, 2.3 wall s
+                              ("b2_closed_late_wall_1x", {"pf": 600 + 597, "unix": 1010.4}, True),       # 9.95 game s, 10.4 wall s
+                              ("b2_closed_on_time_fast", {"pf": 600 + 570, "unix": 1002.1}, False),
+                              ("b2_closed_on_time_1x", {"pf": 600 + 570, "unix": 1009.6}, False)):
+        late, g, w = method_watch.closed_late(o, close)
+        rec(case, "STALLED" if want else "pass", "STALLED" if late else "pass", "%.2f game s, %.2f wall s, budget 10" % (g, w))
+    # the archived runs: every real step that closed, judged by the new rule (a false STALL here would
+    # turn a clean run red). Clean fast x2, clean 1x x2, the plant runs x14.
+    worst = []
+    for run in sorted(os.listdir(RUNS)):
+        p = os.path.join(RUNS, run, "method_events.txt")
+        if not run.startswith("20261111") or not os.path.exists(p):
+            continue
+        opens, late, n, top = {}, [], 0, (0.0, "")
+        for ln in open(p, encoding="utf-8", errors="replace"):
+            try:
+                e = json.loads(ln)
+            except ValueError:
+                continue
+            if e.get("ev") == "OPEN":
+                opens[e["id"]] = (e["step"], 0.0, float(e["unix"]), float(e["secs"]), int(e.get("pf", 0)))
+            elif e.get("ev") == "CLOSE" and e["id"] in opens:
+                o = opens.pop(e["id"])
+                lt, g, w = method_watch.closed_late(o, e)
+                n += 1
+                r = max(g, w) / o[3]
+                if r > top[0]:
+                    top = (r, "%s %.1f/%.1f s (game %.1f, wall %.1f)" % (e["id"], max(g, w), o[3], g, w))
+                if lt and not o[0].startswith("overrun_control"):
+                    late.append(e["id"])
+        clean = "_k3_fast" in run or run.endswith("_k3_laneb") or run.endswith("_1x_laneb")
+        worst.append((run, n, late, top))
+        print("     %-58s %3d closed steps, late: %-14s closest: %.0f%% %s" % (run, n, late or "none", 100 * top[0], top[1]))
+    rec("b2_archived_steps_no_false_stall", "none late", "none late" if not any(w[2] for w in worst) else "LATE", "%d runs" % len(worst))
+
+
 if __name__ == "__main__":
     want = sys.argv[1:] or ["b1", "b2", "b3"]
     for w in want:

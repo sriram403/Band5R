@@ -83,11 +83,47 @@ def kill(pid, log, lim):
     return False
 
 
+def closed_late(o, e):
+    """Fix round (GPT's blocker 2): a step that CLOSED is judged against its budget on both clocks
+    before it is dropped. o = the OPEN (step, deadline_mono, open_unix, secs, open_pf); e = the CLOSE
+    event. -> (late?, game s, wall s). Wall s from the game's own stamps (same PC clock), so a reader
+    that polls late judges exactly what one polling at once would have judged."""
+    game = (int(e.get("pf", 0)) - o[4]) / 60.0
+    wall = float(e.get("unix", o[2])) - o[2]
+    return (game > o[3] or wall > o[3]), game, wall
+
+
+def expected_on_record(tr, fz, expect_ids):
+    """Fix round (GPT's blocker 3): the exact ids (manifest check ids, rule ids) that FAILed so far,
+    and whether every expected id is among them. Checks are mapped to their manifest ids the same way
+    the verdict does (method_verdict.match_checks, per scenario, in order); rules by the FIRE's id."""
+    have = set()
+    req = fz["required"]
+    for scen in {c.get("scen") for c in tr["checks"]}:
+        man = req.get(scen, {}).get("checks", [])
+        if not man:
+            continue
+        pairs, _ = method_verdict.match_checks([c for c in tr["checks"] if c.get("scen") == scen], man)
+        for m, c in pairs:
+            if not c.get("ok") and m.get("kind", "plain") not in ("jump", "departure"):
+                have.add(m["id"])
+    for c in tr["conditions"]:
+        if c["status"] == "FAIL" and c.get("id"):
+            have.add(c["id"])
+    return all(x in have for x in expect_ids), have
+
+
 class Tail:
     """Reads only complete new lines of a growing file."""
 
     def __init__(self, path):
         self.path, self.off = path, 0
+
+    def leftover(self):
+        """bytes after the last complete line (a truncated last line)"""
+        if not os.path.exists(self.path):
+            return 0
+        return max(0, os.path.getsize(self.path) - self.off)
 
     def lines(self):
         if not os.path.exists(self.path):
@@ -129,14 +165,26 @@ def main():
     tr = {"plan": plan, "args": extra, "t_start": t_start, "asked": [s for s in plan.split(",") if s],
           "started": [], "ended": [], "conditions": [], "checks": [], "work": [], "attempts": [], "windows": [],
           "g3b": [], "rules": {}, "preflight": [], "lips": [], "script_errors": [], "kill": [], "beats": 0,
-          "launch": None, "first_beat": None, "opens_max": {}, "step_secs": {}, "pid": None}
+          "launch": None, "first_beat": None, "opens_max": {}, "step_secs": {}, "pid": None,
+          "inv": os.environ.get("INV", ""), "part": os.environ.get("PART", ""),
+          "fixture": (re.search(r"--method-fixture=(\S+)", extra).group(1) if "--method-fixture=" in extra else ""),
+          "closed_late": [], "drained": False}
     opens = {}                  # id -> (step, deadline_mono, open_wall, secs, open_pf)
     pf_now = 0                  # the newest physics frame seen (beats and events)
     fast = bool(os.environ.get("FAST"))
     # T2 early stop: EXPECT_FAIL="text|text" (a plant proof's expected FAILs). Once every one is on
     # record as a failed check or a FAIL condition, the run stops: "detection complete, rest not run".
-    expect = [x for x in os.environ.get("EXPECT_FAIL", "").split("|") if x]
-    failed_texts = []
+    # fix round (blocker 3): EXPECT_IDS="<manifest check id>|<rule id>" exact ids only (no substrings)
+    expect = [x for x in os.environ.get("EXPECT_IDS", "").split("|") if x]
+    if os.environ.get("EXPECT_FAIL"):
+        print("EXPECT_FAIL (substrings) is retired: use EXPECT_IDS (exact ids)", flush=True)
+        sys.exit(3)
+    tr["expect_ids"] = expect
+    # fix-round control only (off by default): T1_LAG="<step>:<s>" -- after reading that step's OPEN,
+    # the watcher stops reading for <s> wall s once (a delayed reader: the step is never seen open
+    # past its deadline; its CLOSE arrives in a later read)
+    lag_step, _, lag_s = os.environ.get("T1_LAG", "").partition(":")
+    lag_done = False
     last_beat = pf = wf = None
     pf_at = wf_at = None
     beat = {}
@@ -147,6 +195,7 @@ def main():
     last_say = 0.0
     last_step = ""
     seg_size, seg_grow = 0, time.monotonic()
+    drained = False
 
     def cond(status, text, begin, kind, owner="UNRESOLVED", stop_now=False, grace=0.0):
         nonlocal stop, stop_at_mono, grace_until
@@ -248,6 +297,7 @@ def main():
                 elif kind == "quit":
                     last_beat = None
         # ---- the method's events
+        relisten = False
         for ln in evs.lines():
             try:
                 e = json.loads(ln)
@@ -261,10 +311,25 @@ def main():
                 lag = max(0.0, now_w - float(e["unix"]))
                 opens[e["id"]] = (e["step"], now_m - lag + float(e["secs"]), float(e["unix"]), float(e["secs"]), int(e.get("pf", 0)))
                 last_step = e["id"]
+                if lag_step and e["step"] == lag_step and not lag_done:
+                    lag_done = True
+                    say("T1_LAG control: not reading for %s wall s after the OPEN of %s" % (lag_s, e["id"]))
+                    time.sleep(float(lag_s))
+                    relisten = True
             elif k == "CLOSE":
                 o = opens.pop(e["id"], None)
                 if o is not None:
-                    dur = (int(e.get("pf", 0)) - o[4]) / 60.0       # game s (T1)
+                    late, dur, wdur = closed_late(o, e)
+                    if late:
+                        # judged before it is dropped; recorded even after a stop (never lost)
+                        tr["closed_late"].append({"id": e["id"], "game_s": round(dur, 2), "wall_s": round(wdur, 2), "secs": o[3]})
+                        cond("INCOMPLETE", "STALLED at %s: closed late, %.2f game s (%.2f wall s) against a deadline of %.1f s, %s (owner=UNRESOLVED)"
+                             % (e["id"], dur, wdur, o[3], "game clock" if dur > o[3] else "wall clock"), o[2], "stall",
+                             stop_now=True)["pf"] = o[4]
+                        if "stall_game_open_s" not in tr:
+                            tr["stall_detect_after_deadline_s"] = round(dur - o[3], 2)
+                            tr["stall_detect_after_open_s"] = round(now_w - o[2], 2)
+                            tr["stall_game_open_s"] = round(dur, 2)
                     st = o[0].split(":")[0]
                     tr["step_secs"].setdefault(st, []).append(round(dur, 2))
                     m = tr["opens_max"].get(st)
@@ -272,8 +337,6 @@ def main():
                         tr["opens_max"][st] = [round(dur, 2), o[3]]     # the instance closest to its deadline
             elif k == "CHECK":
                 tr["checks"].append(e)
-                if not e.get("ok"):
-                    failed_texts.append("check failed: '%s'" % e.get("text", ""))
             elif k == "WORK":
                 tr["work"].append(e)
             elif k == "ATTEMPT":
@@ -288,7 +351,8 @@ def main():
             elif k == "ABSENT":
                 cond("FAIL", "%s missing (%s), owner=UNRESOLVED" % (e.get("object"), e.get("why")), float(e["unix"]), "absent")
             elif k == "FIRE":
-                cond("FAIL", "%s: %s, owner=UNRESOLVED" % (e.get("rule"), e.get("text")), float(e["unix"]), "rule")["pf"] = int(e.get("pf", pf_now))
+                c = cond("FAIL", "%s: %s, owner=UNRESOLVED" % (e.get("rule"), e.get("text")), float(e["unix"]), "rule")
+                c["pf"], c["id"] = int(e.get("pf", pf_now)), e.get("rule")
             elif k == "WINDOW":
                 tr["windows"].append(e)
             elif k == "G3B":
@@ -301,10 +365,12 @@ def main():
                 tr["rules"][e.get("scen_end")] = e
             elif k == "PLAN_BAD":
                 cond("TEST", "malformed plan: %s" % e.get("what"), float(e["unix"]), "preflight", owner="TEST", stop_now=True)
+        if relisten:
+            continue        # the delayed reader's next read comes before any judging (T1_LAG control)
         # ---- T2: every expected FAIL on record -> stop early (never a PASS: the ledger says what didn't run)
-        if expect and stop is None:
-            have = failed_texts + [c["text"] for c in tr["conditions"] if c["status"] == "FAIL"]
-            if all(any(x in h for h in have) for x in expect):
+        if expect and stop is None and not drained:
+            done, _have = expected_on_record(tr, fz, expect)
+            if done:
                 cond("INCOMPLETE", "EARLY STOP (T2): every expected FAIL is on record (%s); detection complete, the rest not run"
                      % " + ".join(expect), now_w, "early", stop_now=True, grace=1.0)
                 tr["early_stop"] = True
@@ -363,9 +429,14 @@ def main():
             say("t=%3.0fs scen=%s pf=%s paused=%s beat_age=%s log %d B (grew %.0f s ago) open=%d last=%s" % (
                 now_m - t_start_mono, beat.get("scen"), beat.get("pf"), beat.get("paused"),
                 ("%.1fs" % (now_m - last_beat)) if last_beat else "-", sz, now_m - seg_grow, len(opens), last_step))
-        # ---- the end
+        # ---- the end: once the wrapper has exited, one more full pass reads (and judges) every
+        # event the game wrote before it went (fix round: drain all events at the end)
         if wrapper.poll() is not None:
-            break
+            if drained:
+                break
+            drained = True
+            tr["drained"] = True
+            continue
         if tr["kill"] and now_m - stop_at_mono > 15.0:
             say("wrapper still running 15 s after the stop: terminating it")
             subprocess.run(["taskkill", "/F", "/T", "/PID", str(wrapper.pid)], capture_output=True)
@@ -373,6 +444,10 @@ def main():
                 wrapper.wait(5)
             except subprocess.TimeoutExpired:
                 tr["kill"].append("wrapper %d did not exit" % wrapper.pid)
+            if not drained:
+                drained = True
+                tr["drained"] = True
+                continue
             break
         cap_s = float(L.get("whole_run_cap_ghat_s", L["whole_run_cap_s"])) if plan.startswith("ghat") else float(L["whole_run_cap_s"])
         if time.monotonic() - t_start_mono > cap_s and stop is None:
@@ -389,6 +464,10 @@ def main():
     tr["godot_left_after"] = left
     if "don't compile" in open(os.path.join(out, "run_test.out"), encoding="utf-8", errors="replace").read():
         cond("TEST", "the scripts don't compile: nothing ran", t_start, "preflight", owner="TEST")
+    # fix round: a last line the game never finished is evidence lost: never a PASS
+    for t, nm in ((evs, "method_events.txt"), (rig, "rig.txt")):
+        if t.leftover():
+            cond("TEST", "%s ends in a truncated line (%d bytes not read)" % (nm, t.leftover()), time.time(), "event")
     tr["open_at_end"] = {k: v[0] for k, v in opens.items()}
     tr["last_step"] = last_step
     tr["last_beat_step"] = beat.get("step", "")

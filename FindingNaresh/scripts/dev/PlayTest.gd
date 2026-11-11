@@ -669,11 +669,16 @@ func _run() -> void:
 		# T1's deadline-negative control (test-only fixture, off by default): one step overruns its
 		# 10 game s budget by 5 game s. The method must call it STALLED (by name) at any speed; fast it
 		# takes ~3 wall s, so a wall-clock judge would let it through.
-		if mrec != null and mrec.fixture.split(",").has("overrun") and mrec.active():
+		# Fix round (GPT's blocker 2): late_close runs it 10.5 game s (just over, then it CLOSES: the
+		# method must judge the closed step, STALLED); on_time 9.5 game s (must pass).
+		var _fx: PackedStringArray = mrec.fixture.split(",") if mrec != null else PackedStringArray()
+		var _ov := 15.0 if _fx.has("overrun") else (10.5 if _fx.has("late_close") else (9.5 if _fx.has("on_time") else 0.0))
+		if _ov > 0.0 and mrec.active():
 			var _oc := mrec.open("overrun_control", 10.0)
-			for _i in 15 * 60:
+			for _i in int(_ov * 60.0):
 				await get_tree().physics_frame
 			mrec.close(_oc)
+			print("[overrun_control] %s: closed after %.2f game s (budget 10)" % [mrec.fixture, _ov])
 		await call("t_" + s)
 		if mrec != null:
 			mrec.close(_ep)
