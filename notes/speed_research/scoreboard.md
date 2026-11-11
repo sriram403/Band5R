@@ -73,6 +73,19 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   before "qualified".** Batched plants (lean_close+fast_turn; leave_sees+no_breath_lock+round_skip): each needs its
   own check on record (GPT's attribution point). Two lanes ran at once in one copy (separate progress / shot dirs).
 
+- **T1 + T2 scored (2026-11-11, referee; GPT's audit of it pending, so not final):** QUALIFIED, `SPEED=fast` for
+  heat, looks, net, places, jug, marks (fast + nodraw, 4.6-4.9x); spring, the `free_coolant` proof and the recorded walk
+  stay 1x. Clean 119 / 119 checks same verdict fast vs 1x, pictures matched. **Whole 7-scenario suite: 4.4 wall min,
+  PASS, vs 18.7 at 1x** (spring 1x beside the fast lane). Plants: 8 / 9 same exact check id fast and 1x, every 1x rerun
+  on this source (GPT's point 1); **`lean_close` is marginal** (0.13 m fast caught, 0.18 m at 1x not caught, limit 0.15,
+  1x spread 0.05 m): its proof is a coin toss at either speed (a finding for the replay: firm up the plant or the
+  limit). Deadline control STALLED by name fast AND 1x (GPT's point 2). Early stop: ~30 s fast, 2-4 min 1x saved.
+  Import 6-8 s: skipping it doesn't matter (T2's import idea dropped). Deadlines: `el_ms` = the larger of game and
+  wall time (never looser on either clock). One fast ghat_looks run (1 of 4) FAILed with no round, not reproduced (0 of 3
+  at 1x): unexplained, fails loudly (never a false PASS). Engine error `self_list.h:46` x7-8 per scenario switch, same
+  count 1x and fast. **Meter: WALL 32.8 min, proc 55.0** (two lanes), inside 45. Rule slip: a game symptom written into
+  the report file (the task said reply only): the replay copy will carry tools only, no trial reports.
+
 ## Next (Stage 3 proper)
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
@@ -88,7 +101,7 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
 | 2 round 1 audits | done (`audit_r1_gpt.md` possibly contaminated, R1; `audit_r1_claude.md`). Claude: 4 trials (speed-up on the game clock, plants one compile + early stop, first+last full run, discovery walk + safe resume); ~99 min at 1x, ~68 at 2x: the speed probe decides |
 | 2 round 2 | done: both sign the same top 4 (`top4.md`) |
 | 3 pilots | done: P1 1.24x (no-go as built), P1b headless 4.96x, P1c draw-only-at-shots 5.5x (go, one fix) |
-| 3 T1 + T2 build | first child cut by the rate limit (WIP `45dc00f`); resumed 2026-11-11 10:40, running |
+| 3 T1 + T2 build | done, QUALIFIED (6 fast, suite 4.4 vs 18.7 min); `speed-t1` `5f468c2`; GPT audits it next |
 | 3 T3 + T4 specs | done (GPT): `trial_T3_spec.md` (discovery, selection map, receipts, **the replay playbook**: ~99 min 1x / ~62 fast, ~54 with two games), `trial_T4_spec.md` (sections, the 3-layer gate, the video); qualification 9/6 + 14 min. GPT on T1: old 1x plant verdicts need matching identities; the deadline control at 1x too |
 | 3 T3 + T4 specs audit | waits for T1: the Claude auditor audits GPT's specs (`audit_specs_claude_task.md`), GPT answers, disputes to the user |
 | 3 T3 + T4 build | first builder cut by the rate limit before any work; waits for the agreed specs (the hand-off gate blocks it until `AUDITED:` is in its task file) |
