@@ -111,6 +111,15 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   tolerances, unexplained** (fuel 1.06 L, engine ticks +17.7 %, sniffs 1 vs 2). Open: lane isolation, split order, batch
   causality (D2). **Meter: T1 WALL 43.7 of 45 min, proc 70.0.**
 
+- **GPT's re-check of the fix round (`audit_T1fix_gpt.md`):** condition 1 CLOSED; 2 and 3 partly (the late-close and
+  exact-identity repairs CLOSED; the original open-overrun not rerun on the final source; batch causality not shown).
+  Fast counts in an accepted replay for **net** now, **marks** conditionally (its looks prelude), **heat / looks only as
+  exploratory** until the 3 values (fuel, engine ticks, sniffs) and lean_close's fast/1x gap are bounded; jug / places 1x.
+- **R6 (2026-11-11, referee's pick, told to the user):** one more capped T1 qualification round (`trial_T1_qual2_task.md`,
+  <= 15 wall game min, apart from the score) to close what's left, because without it heat / looks / marks' final PASS runs
+  at 1x (~+12 game min on the replay's final suite: likely over 75). It runs beside the builder: two Claude children at
+  once, also the test the compliance audit asked for (F04: is the rate limit about parallel children at all?).
+
 ## Next (Stage 3 proper)
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
