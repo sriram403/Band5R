@@ -10,6 +10,7 @@ Output: appdata/method/prove_ghat.txt (one line per plant), plus each run's fold
 """
 import glob
 import os
+import re
 import subprocess
 import sys
 
@@ -50,12 +51,20 @@ def run(name):
     print("== %s: %s with %s" % (name, scen, plants), flush=True)
     subprocess.run(["bash", os.path.join(ROOT, "tools", "method_run.sh"), "ghat"], cwd=ROOT, env=env)
     new = sorted(set(glob.glob(os.path.join(ROOT, "appdata", "method", "runs", "*"))) - before)
+    # T1: a second game of this copy (another lane) can make a run folder meanwhile: take ours only
+    new = [d for d in new if ("_k3_" + plants) in os.path.basename(d)]
     verdict = open(os.path.join(new[-1], "verdict.txt"), encoding="utf-8").read() if new else ""
     fails = [ln for ln in verdict.splitlines() if ln.strip().startswith(("FAIL", "RESULT: FAIL"))]
     rows = []
     for plant, texts in expect.items():
         ok = all(any(t in ln for ln in fails) for t in texts)
-        rows.append("%-15s %-12s %s  (%s)  run %s" % (plant, "PROVED" if ok else "NOT PROVED", " + ".join(texts), verdict.splitlines()[0] if verdict else "no verdict", os.path.basename(new[-1]) if new else "-"))
+        # T1 (GPT's audit): name the exact check / rule each expected text matched, not just "a FAIL"
+        ids = []
+        for t in texts:
+            hit = [ln for ln in fails if t in ln]
+            m = re.search(r"\((ghat_[a-z_]+/[^)]+)\)", hit[0]) if hit else None
+            ids.append(m.group(1) if m else (re.sub(r"\s+", " ", hit[0].strip())[:60] if hit else "-"))
+        rows.append("%-15s %-12s %s  [%s]  (%s)  run %s" % (plant, "PROVED" if ok else "NOT PROVED", " + ".join(texts), " + ".join(ids), verdict.splitlines()[0] if verdict else "no verdict", os.path.basename(new[-1]) if new else "-"))
     with open(OUT, "a", encoding="utf-8") as f:
         for r in rows:
             f.write(r + "\n")
