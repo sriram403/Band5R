@@ -268,6 +268,11 @@ func clk() -> Vector2i:
 
 
 func el_ms(t0: Vector2i) -> int:
+	# T4 v2 (recording profile): Movie Maker runs the game slower than real time (68-87 %), so the
+	# wall clock runs ahead of the recorded world; a recorded walk's deadlines are on the game clock
+	# (the clock the video plays at). Elsewhere the larger of the two, as T1 made it.
+	if _recording():
+		return gms() - t0.y
 	return maxi(Time.get_ticks_msec() - t0.x, gms() - t0.y)
 
 
@@ -282,7 +287,75 @@ func wall_s(t0: Vector2i) -> float:
 
 # --- input injection -----------------------------------------------------------
 
+# --- T4 v2: first-failure cancellation (test only) ---------------------------------
+## A walk's first FAIL bumps the generation and closes the input gate: helpers check the
+## generation after every await and before every send (walk_breath_bot), and the gate drops any
+## press a helper still sends (an old-style helper that never checks). Releases always go through.
+var walk_gen := 0
+var input_gate := false          ## true = closed: presses are dropped and counted
+var blocked_sends := 0           ## presses dropped by the closed gate
+var input_sends := 0             ## presses that went through (all input kinds)
+var input_trace: Array = []      ## [game ms, kind, code, value] of every input sent (the trajectory gate reads it)
+var helpers_running := 0         ## spawned helpers still running (LiveControl counts them)
+
+
+func cancel_inputs(why: String) -> void:
+	walk_gen += 1
+	input_gate = true
+	print("[cancel] gen %d: %s (inputs closed, everything released)" % [walk_gen, why])
+	release_everything()
+
+
+func open_inputs() -> void:
+	input_gate = false
+
+
+## Every key, pad button, axis and mouse button up (the gate lets releases through).
+func release_everything() -> void:
+	for k in [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SHIFT, KEY_SPACE, KEY_CTRL, KEY_E, KEY_X, KEY_F, KEY_L, KEY_R, KEY_C, KEY_ESCAPE, KEY_H, KEY_Q, KEY_TAB]:
+		if Input.is_physical_key_pressed(k):
+			key(k, false)
+	for b in range(JOY_BUTTON_SDL_MAX):
+		if Input.is_joy_button_pressed(0, b):
+			pad_button(b as JoyButton, false)
+	for a in range(JOY_AXIS_SDL_MAX):
+		if absf(Input.get_joy_axis(0, a as JoyAxis)) > 0.0:
+			pad_axis(a as JoyAxis, 0.0)
+	for m in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
+		if Input.is_mouse_button_pressed(m):
+			mouse_button(m, false)
+
+
+## false = the gate dropped it (counted); true = send it (and trace it).
+func _gate_send(kind: String, code: int, v: float) -> bool:
+	if input_gate and v != 0.0:
+		blocked_sends += 1
+		return false
+	input_sends += 1
+	input_trace.append([gms(), kind, code, snappedf(v, 0.001)])
+	if input_trace.size() > 4000:
+		input_trace = input_trace.slice(2000)
+	return true
+
+
+## T4 control helper (test only): presses CTRL (P1's breath key) and holds it, pressing again every
+## 2 ticks if it was let go, for max_s game s. checks=true: the walk_breath_bot pattern after the
+## fix (stops when the generation moves); false: the old pattern (never checks: only the gate stops it).
+func cancel_probe_bot(max_s: float, checks: bool) -> void:
+	var gen := walk_gen
+	var t0 := clk()
+	while el_ms(t0) < max_s * 1000.0:
+		await physics_frames(2)
+		if checks and gen != walk_gen:
+			return
+		if not Input.is_physical_key_pressed(KEY_CTRL):
+			key(KEY_CTRL, true)
+	key(KEY_CTRL, false)
+
+
 func key(k: Key, down: bool) -> void:
+	if not _gate_send("key", k, 1.0 if down else 0.0):
+		return
 	var e := InputEventKey.new()
 	e.keycode = k
 	e.physical_keycode = k
@@ -315,6 +388,8 @@ func hold_physics(k: Key, seconds: float) -> void:
 
 
 func mouse(rel: Vector2) -> void:
+	if not _gate_send("mouse_move", 0, 1.0):
+		return
 	var e := InputEventMouseMotion.new()
 	e.relative = rel
 	e.screen_relative = rel
@@ -1165,6 +1240,8 @@ func t_look() -> void:
 ## screen, walk, look, use the doors and drive with the triggers, and neither
 ## player's input may move the other.
 func pad_axis(axis: JoyAxis, v: float) -> void:
+	if not _gate_send("axis", axis, v):
+		return
 	var e := InputEventJoypadMotion.new()
 	e.device = 0
 	e.axis = axis
@@ -1175,6 +1252,8 @@ func pad_axis(axis: JoyAxis, v: float) -> void:
 
 
 func pad_button(b: JoyButton, down: bool) -> void:
+	if not _gate_send("button", b, 1.0 if down else 0.0):
+		return
 	var e := InputEventJoypadButton.new()
 	e.device = 0
 	e.button_index = b
@@ -3162,6 +3241,8 @@ func t_house_world() -> void:
 
 
 func mouse_button(b: MouseButton, down: bool) -> void:
+	if not _gate_send("mouse", b, 1.0 if down else 0.0):
+		return
 	var e := InputEventMouseButton.new()
 	e.button_index = b
 	e.pressed = down
@@ -4690,8 +4771,11 @@ func walk_breath_bot(max_s: float) -> void:
 	var g := gh()
 	var t0 := clk()
 	var holding: PlayerRig = null
+	var gen := walk_gen              # T4 v2: a walk's first FAIL moves it: stop, send nothing more
 	while g.phase != "leave" and el_ms(t0) < max_s * 1000.0:
 		await physics_frames(2)
+		if gen != walk_gen:
+			break
 		if holding == null and g.breath_p != null and g.breath_state == "wait":
 			holding = g.breath_p
 			if holding == p1():
