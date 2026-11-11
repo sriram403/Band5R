@@ -62,7 +62,9 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   layers, under the recording profile, counts as both the clean walk and the video.**
   **Withdrawn (2026-11-11):** the compliance audit showed the user's A covered the *video* only; the referee
   stretched it to "no unbroken clean walk needed". The point is DISPUTED (GPT: an unbroken fresh walk too,
-  ~+10 game min; Claude: not yet audited) and goes to the user as A / B. A join without SAME
+  ~+10 game min; Claude: not yet audited) and goes to the user as A / B.
+  **The user decided (2026-11-11): A.** A joined take where every join passes the 3-layer gate (SAME), under the
+  recording profile, counts as the clean walk and the video. A join without SAME doesn't: then a fresh take. A join without SAME
   doesn't; then a fresh take is needed. GPT's stricter rule is noted as its reservation for the signatures.
 
 - **Referee watch notes, T1 resumed (2026-11-11), to check at scoring:** fast suite of 6 PASS in 3.4 min (run 7);
