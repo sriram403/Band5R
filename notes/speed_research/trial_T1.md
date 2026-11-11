@@ -251,7 +251,9 @@ Task: `MPG\notes\speed_research\trial_T1_fix_task.md` (read first; only its list
 | F2+F3 | lane a: `on_time` + lag fast, then `late_close` fast no lag (natural); lane b: `on_time` + lag 1x | 1.0 | 1.1 | Monitor | on_time fast **PASS**, on_time 1x **PASS** (9.50 s, budget 10, read 13 s late); late_close fast natural **STALLED** (closed late 10.50 game / 5.00 wall s; it closed between two polls, never seen open past its deadline) |
 | F4 | `SPEED=fast GHAT=ghat_net,ghat_places GUARD_INJECT=<lane b busy>`: fast part runs, 1x part refused | 0.4 | 0.45 | Monitor | fast PASS, 1x REFUSED -> **COMBINED TEST, exit 3** (GPT's concrete path; the old block returned 0) |
 | F5 | lane a: `SPEED=fast EARLY=1 prove_ghat.py heat_always net` (exact ids, live); lane b: `GHAT=ghat_looks FIXTURE=lean_close` 1x (isolated, item 5) | 2.6 | 2.8 | Monitor | heat_always **PROVED** (own id + H1, early stop at 90.2 game s as in T1), one_layer_net **PROVED** (early stop); lean_close alone 1x: **caught, 0.14 m** |
-| F6 | lane a: `SPEED=fast GHAT=ghat_looks FIXTURE=lean_close` x3, then `SPEED=fast method_run.sh ghat` (the final fast part: heat, looks, net, marks); lane b: lean_close 1x #2 | 5.1 | | Monitor | |
+| F6 | lane a: `SPEED=fast GHAT=ghat_looks FIXTURE=lean_close` x3, then `SPEED=fast GHAT=ghat_heat,ghat_looks,ghat_net,ghat_marks method_run.sh ghat` (the final fast part); lane b: lean_close 1x #2 | 5.1 | 6.0 | Monitor | lean_close fast 0.13 / 0.13 / 0.13 m (caught x3), 1x 0.19 m (**missed**); clean fast **PASS 4 / 4** (heat 4.84x, looks 4.77x, net 3.06x, marks 4.89x; no late step, drained, none left) |
+
+**Fix-round total: ~11.2 wall game min of 12** (my count: F1 0.8, F2+F3 1.1, F4 0.45, F5 2.8, F6 6.0; F0 and the reused-id refusal 0; lanes overlapped counted once). F6 ran 0.9 min over its estimate (3 lean runs ~1 min each with boot). Stopped there: no run after F6.
 
 ### Blocker 1: a requested part can vanish -> fixed, proved
 
@@ -296,3 +298,123 @@ new rule: none late** (closest 89 %: a 16 s wait of 18). Live (F1-F3, ghat_net h
 
 The old watcher popped all three late cases without a judgement (code: CLOSE computed the length for reporting
 only); the original open-overrun control is judged by unchanged code (the open path) and was not rerun.
+
+### Blocker 3: exact plant identity -> fixed, proved
+
+**Change.** `prove_ghat.py` now names each plant's **own exact ids** (manifest check ids, rule ids such as `H1`),
+never text. Each group runs under its own invocation (`INV=prove_<group>_<time>_<pid>`) and is judged only from
+that invocation's receipt: exactly one requested part; its run folder bound to the invocation (run_info first
+line); a **sealed** verdict (`verdict.json`, new, written by `method_verdict.py` before `verdict.txt`, whose
+Evidence line closes it; both bound to the same invocation and part); scenarios exactly the group's, fixture
+exactly the group's plant set; not a PASS; the game checked gone (no Godot of the lane left, kill verified,
+wrapper exited). Then a plant is PROVED only if all its own ids are in the run's FAILed ids
+(`verdict.json failed_ids`, mapped check -> manifest id by the verdict's own matcher), so a batched plant whose
+own check is absent is NOT PROVED whatever else failed. Early stop (`EXPECT_IDS`, exact; the old substring
+`EXPECT_FAIL` is refused) triggers only when every expected id of the group has FAILed, and PROVED rechecks
+that. No glob, no "last folder", no substrings. Found on the way: jug_c's old text "over the pass" matched two
+checks (the objective's too); its own id is now `ghat_jug/over_the_pass_x_s_x_c`.
+
+**Controls.** Offline (`b3`, archived T1 plant runs regenerated through the new verdict; "old rule" = the
+substring rule on the same verdict): positives heat_always (full and early-stopped) and the jug_a batch PROVED
+(old: PROVED); **one expected FAIL missing** (H1 removed) NOT PROVED; **similarly named wrong check** (the
+objective "... over the pass" FAILs, the plant's own over-the-pass check passes) NOT PROVED (**old: PROVED**);
+**wrong run's evidence** (another invocation's folder) NOT PROVED (**old: PROVED**); a run of other plants NOT
+PROVED; **batch member's own check absent** (round_skip's check passes) round_skip NOT PROVED, its two
+neighbours PROVED; early stop before H1 was on record NOT PROVED, and the watcher's trigger does not fire
+without H1; game not checked gone NOT PROVED (**old: PROVED**). 15 / 15. Live (F5, fast, early stop):
+heat_always PROVED on its own id + H1 (stopped at 90.2 game s, as T1), one_layer_net PROVED.
+
+Not done: GPT's causal-attribution point for batches (does one plant change who is taken, etc.). Exact ids make
+each member need its own check, but a batch member's FAIL could still be caused by a neighbour. Where that
+can't be argued, prove members alone (lean_close below is the one that showed it).
+
+### The hearing gap -> decision (b): ghat_jug and ghat_places run 1x under `SPEED=fast`
+
+**Why (b), not (a).** The code decides it, no run needed: `Hearing.gd` stamps sounds in wall ms (kept 2000 wall
+ms), `Creature.gd` treats an item sound within **1500 wall ms** and 4 m of the last as a bounce (no suspicion
+added, though it still notices), `Carryable.gd` drops knocks within **150 wall ms** of the last. At ~4.7x the
+bounce window covers ~7 game s and the debounce ~0.7 game s, so two item sounds 1.5-7 game s apart give a
+different reaction fast than at 1x, by arithmetic. Option (a) could only measure that difference, not remove it
+(and two sounds *within* 1.5 s agree at both speeds, so testing only that pair would prove the wrong thing).
+ghat_jug and ghat_places both drop items (`p.drop_held()` in each), so both are exposed; heat, looks, net and
+marks call no drop and throw nothing (searched); spring was already 1x. **Cost: 0 qualification min.** Replay
+cost (estimate from run 8's per-scenario times, not measured as a suite): the 1x lane becomes spring 233 +
+jug 175 + places 9 game s + boot ~ 7.2 min; the fast lane heat + looks + net + marks ~ 151 wall s + boot
+~ 2.9 min; **the suite ~7.2 wall min instead of 4.4** (two games at once), still vs 18.7 at 1x.
+Change: `FAST_OK` in `tools/method_run.sh`. Not bounded: whether driving makes loose items knock near the
+creature in heat / looks / marks (no item sound counter was added; none is planned by a scenario there).
+
+### Item 5: lean_close and ghat_places
+
+**lean_close, isolated (no fast_turn beside it).** The glass check's closest face gap, limit > 0.15 m:
+
+| Run | Speed | Gap | Caught? |
+|---|---|---:|---|
+| T1 run 9 (batch with fast_turn) | fast | 0.13 | yes |
+| T1 run 10 (batch with fast_turn) | 1x | 0.18 | no |
+| F6 x3 (alone) | fast | 0.13, 0.13, 0.13 | yes x3 |
+| F5 (alone) | 1x | 0.14 | yes |
+| F6 (alone) | 1x | 0.19 | no |
+
+Bound: fast reads 0.13 every time (no spread in 4); 1x spreads 0.14-0.19 (0.05 m). Batched or alone makes no
+visible difference (1x 0.18 batched sits inside the alone spread), so fast_turn is not what moves it. **Fast is
+the stricter side in every pair** (fast <= 1x in all 6 planted and 3 clean samples: clean 0.33 / 0.34 fast vs
+0.35 / 0.40 / 0.35 at 1x): fast never PASSed where 1x FAILed here. So this plant proves at fast and is a coin
+toss at 1x. That does not prove equivalence: a fast run reads ~0.01-0.06 m closer, so a planted bug sitting a
+hair *inside* the glass at 1x would also be caught fast (safe direction), but a real fault that moves the face
+*out* at fast only is not excluded by these samples. Firming the plant (stop nearer than 2.3 m) is a
+`core/Plant.gd` change, off-limits here: the builder's / the user's call.
+
+**ghat_places' negative control: none.** No plant for ghat_places exists in `core/Plant.gd`'s inventory and
+Plant.gd is off-limits, so none could be added. It no longer matters for speed: places now runs 1x under
+`SPEED=fast` (the hearing decision), so its fast status is withdrawn rather than resting on the clean
+differential alone.
+
+### The final source, clean, fast (F6) vs 1x (T1 run 8)
+
+`t1_diff.py` -> `appdata/t1fix/diff_clean_final.txt`: **87 / 87 checks same verdict** (heat 19, looks 16, net 10,
+marks 17 required, all ran); no late step, events drained, no Godot left. Pictures not compared this round (no
+budget; the drawing code is unchanged since T1's side-by-side). **Three values fall outside T1's stated
+tolerances** (both runs PASS): heat fuel after it gives up 62.17 L (1x) vs 61.11 (fast), 1.06 L against +-0.5;
+looks engine ticks 526 vs 619 (+17.7 % against +-10 %; per game second +6 %, as this fast looks ran 137.1 game s
+vs 123.8); looks sniffs at the back 2 vs 1. **Unexplained** (no minutes left): either the tolerances were never
+calibrated (GPT's point: no multi-run 1x spread exists) or fast shifts these values. Until a 1x-vs-1x spread is
+measured, heat and looks stay fast on verdict agreement only, not on value equivalence.
+
+### Status after the fix round
+
+| Item | State |
+|---|---|
+| Blocker 1 (a part vanishes) | **fixed + proved**: 11 / 11 offline, 2 live refusals + reused id; combined PASS only with every requested part PASS |
+| Blocker 2 (late close between polls) | **fixed + proved**: STALLED fast and 1x with a delayed reader, fast with a natural one; on-time passes both; 0 false STALLs over 22 archived runs and the live clean run |
+| Blocker 3 (plant identity) | **fixed + proved**: 15 / 15 offline (4 where the old rule said PROVED wrongly), 2 live proofs on exact ids |
+| Hearing gap | **(b)**: ghat_jug + ghat_places 1x under `SPEED=fast`; 0 min; suite ~7.2 wall min (estimate) |
+| `SPEED=fast` set | heat, looks, net, marks (4) fast + nodraw; places, jug, spring, `free_coolant` proofs, the recorded walk 1x |
+| Still open (GPT) | batch causal attribution in general; lane isolation and split order unproven (serial is the safe default); nodraw re-arm interleaving; value tolerances uncalibrated (3 broken above); the no-round looks run unexplained; the original open-overrun control not rerun on this source (its code path is unchanged) |
+
+### Assumed -> reality -> fix (fix round)
+
+- **Assumed:** a python heredoc in bash keeps `\t` / `\n` as typed. **Reality:** the edits to `method_run.sh`
+  came out with real tabs / newlines inside `printf` strings. **Fix:** the Edit tool for shell files. **Habit:**
+  patch shell scripts with exact-string edits, then `sh -n`.
+- **Assumed:** the receipt path from the shell (`/d/...`) reads the same in Windows python. **Reality:** it would
+  not have (`/d/mine` is not `D:/mine`). **Fix:** `pwd -W` before writing receipts. Caught before the first run.
+- **Assumed:** a delayed reader is just a sleep. **Reality:** after a 13 s sleep the old open-path judge (wall
+  deadline passed) fires before the CLOSE is read, so the control would pass for the wrong reason. **Fix:** the
+  lag skips judging until the next read. **Habit:** ask which code path a control really exercises.
+- **Assumed:** my "similarly named wrong check" control was strong. **Reality:** twice wrong: first my flips
+  overrode each other (both checks passed, nothing to catch), then a plant run had *really* FAILed the plant's
+  own check downstream, so PROVED was right. The 15 / 15 hid the first, the second showed as BAD. **Fix:** set
+  each check by its exact start, and print what the old rule says beside the new one. **Habit:** a negative
+  control must show the old rule being fooled, or it proves nothing.
+- **Assumed:** F6 ~5.1 min. **Reality:** 6.0 (three separate launches each pay boot + import). **Habit:** price
+  a repeat as N launches, not N x scenario.
+
+### Final commands (fix round)
+
+```sh
+SPEED=fast tools/method_run.sh ghat          # heat, looks, net, marks fast (lane a); places, jug, spring 1x (lane b); one COMBINED RESULT
+SPEED=fast EARLY=1 python tools/method/prove_ghat.py heat_always looks net marks   # exact-id proofs, early stop (jug / spring groups route to 1x)
+python tools/method/t1fix_controls.py        # the offline controls of blockers 1-3 (31 cases, no game)
+python tools/method/combine_parts.py appdata/method/inv/<INV>   # re-judge one invocation from its receipts
+```
