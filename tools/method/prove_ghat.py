@@ -57,7 +57,35 @@ GROUPS = {
     "solo_round_skip": ("ghat_jug", "round_skip", {"round_skip": ["ghat_jug/it_went_all_round_the_van_before_it_gave_up_x_stops"]}),
     "solo_marks_pile": ("ghat_looks,ghat_marks", "marks_pile", {"marks_pile": ["ghat_marks/a_clean_van_to_start_with"]}),
     "solo_marks_unsaved": ("ghat_looks,ghat_marks", "marks_unsaved", {"marks_unsaved": ["ghat_marks/the_marks_are_saved_and_come_back_on_load_x"]}),
+    # F8 (fix round, D2 A): a solo group for every other member of a multi-plant group; each keeps its parent
+    # group's scenario and time-saver flag (one_flat / one_corner: not bugs, R4) and its own exact ids
+    "solo_no_stall_drag": ("ghat_heat", "no_stall_drag,one_flat", {"no_stall_drag": ["ghat_heat/x_it_comes_to_rest_before_the_pass_in_the_fog_sample_x_of_x_"]}),
+    "solo_hud_heat": ("ghat_heat", "hud_heat,one_flat", {"hud_heat": ["ghat_heat/x_hot_with_it_watching_no_temp_cool_bars_no_engine_hot_banne"]}),
+    "solo_fog_short": ("ghat_heat", "fog_short,one_corner", {"fog_short": ["ghat_heat/x_the_fog_lies_all_the_way_up_to_the_pass_to_sample_x_of_x"]}),
+    "solo_seen_h2": ("ghat_heat", "seen_h2,one_corner", {"seen_h2": ["ghat_heat/x_the_heat_alone_boils_it_the_pass_guard_not_needed"]}),
+    "solo_keeps_interest": ("ghat_heat", "keeps_interest,one_corner", {"keeps_interest": ["ghat_heat/x_once_it_gives_up_the_heat_and_the_leak_stop_x_x_c_fuel_x_x"]}),
+    "solo_lean_close": ("ghat_looks", "lean_close", {"lean_close": ["ghat_looks/leaning_in_at_a_window_its_face_stays_outside_the_glass_clos"]}),
+    "solo_no_fix": ("ghat_jug", "no_fix", {"no_fix": ["ghat_jug/cool_now_it_pours_in_the_radiator_is_full_again_x"]}),
+    "solo_free_coolant": ("ghat_jug", "free_coolant", {"free_coolant": ["H3"]}),
+    "solo_needle_stuck": ("ghat_jug", "needle_stuck", {"needle_stuck": ["H2"]}),
+    "solo_seat_compare": ("ghat_spring", "seat_compare", {"seat_compare": ["ghat_spring/both_windows_visited_p1_prompt_x_held_x_p2_fogged_x"]}),
+    "solo_cap_text": ("ghat_spring", "cap_text", {"cap_text": ["ghat_spring/at_the_bonnet_still_hissing_open_the_radiator_cap"]}),
 }
+
+# R4: time savers, not bugs (a group with one plant + these is still ONE plant: "alone" for D2 A)
+SHORTCUTS = ("one_flat", "one_corner")
+
+
+def behavioural(plants):
+    return [p for p in plants.split(",") if p and p not in SHORTCUTS]
+
+
+# F8: the exact proof matrix, one group per plant row (every row proved alone, D2 A). The batch groups above
+# stay for diagnosis; they never certify a member by themselves.
+MATRIX = ["heat_always", "solo_no_stall_drag", "solo_hud_heat", "solo_fog_short", "solo_seen_h2", "solo_keeps_interest",
+          "solo_lean_close", "solo_fast_turn", "net", "solo_leave_sees", "solo_no_breath_lock", "solo_round_skip",
+          "solo_no_fix", "solo_free_coolant", "solo_needle_stuck", "jug_c", "solo_seat_compare", "solo_cap_text",
+          "spring_b", "solo_marks_pile", "solo_marks_unsaved"]
 
 # qual round 2 (GPT: marks' looks prelude): ids that must have PASSED in the same run before a plant's
 # FAIL counts. marks_pile is caught only if the looks prelude left marks on the van (its round); a

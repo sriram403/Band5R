@@ -92,14 +92,26 @@ launch, its file unchanged since, no file standing for two pictures, and a line 
 
 ## 6. The plant matrix (same frozen tree)
 
+One group per plant row, each plant alone (the 21 rows; `prove_ghat.MATRIX`). Routing is automatic
+(`tools/method/route.py`): heat / net groups fast, the rest 1x; every group is one part.
+
 ```sh
-SPEED=fast EARLY=1 python tools/method/prove_ghat.py <group> [<group> ...]   # groups: see GROUPS in prove_ghat.py
-#   a multi-plant group needs each member proved alone too (the solo_* groups) before it is certified
+SPEED=fast EARLY=1 python tools/method/prove_ghat.py heat_always solo_no_stall_drag solo_hud_heat solo_fog_short solo_seen_h2 solo_keeps_interest
+SPEED=fast EARLY=1 python tools/method/prove_ghat.py solo_lean_close solo_fast_turn net
+SPEED=fast EARLY=1 python tools/method/prove_ghat.py solo_leave_sees solo_no_breath_lock solo_round_skip solo_no_fix solo_free_coolant solo_needle_stuck jug_c
+SPEED=fast EARLY=1 python tools/method/prove_ghat.py solo_seat_compare solo_cap_text spring_b solo_marks_pile solo_marks_unsaved
+#   each prints its invocation: prove_<group>_<time>_<pid>; a "prerequisite not met" row is rerun, not a verdict
 python tools/method/t3_gate.py proof appdata/method/inv/<final INV> appdata/method/inv/prove_<group>_<time>_<pid> [...]
+python tools/method/t3_gate.py matrix appdata/method/inv/<final INV> appdata/frozen_tree.json appdata/method/inv/prove_* 
+#   every plant row of the game: CERTIFIED / NOT CERTIFIED / NOT DONE; complete only at N / N CERTIFIED
 ```
 
-New holes: add the plant to `core/Plant.gd` and a group to `prove_ghat.py` (its own exact check ids), then the same.
-The final suite and the plant runs never share a run: a planted run is never clean-suite evidence.
+- **New holes and new checks go in BEFORE the freeze** (section 5). For a new plant: add it to
+  `core/Plant.gd`, add a solo group (its own exact check ids) to `prove_ghat.py` GROUPS and MATRIX. Then
+  freeze, run the final suite, then the matrix.
+- Anything changed after the freeze: `matrix` refuses. Refreeze, then a new final suite, then the proofs
+  again.
+- The final suite and the plant runs never share a run: a planted run is never clean-suite evidence.
 
 ## 7. The recorded walk (1600x900, Movie Maker 25 fps, sound): one unbroken fresh take
 

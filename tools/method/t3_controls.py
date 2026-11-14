@@ -444,6 +444,42 @@ def g_obs():
     rec("obs no real producer / input -> GAP", "1 gaps", "%d gaps" % bad, out[-1])
 
 
+# ---- proof matrix reconciliation (F8) -------------------------------------------------------------
+def g_matrix():
+    import prove_ghat
+    ids = [x for g in prove_ghat.MATRIX for v in prove_ghat.GROUPS[g][2].values() for x in v]
+    fz = clean_final("formatrix", passed=[x for x in ids if "/" in x])
+    frozen = os.path.join(CTL, "frozen_matrix.json")
+    wr(frozen, TREE)
+    def proofs(skip=(), extra=()):
+        out = []
+        for n, g in enumerate([g for g in prove_ghat.MATRIX if g not in skip] + list(extra)):
+            scen, plants, expect = prove_ghat.GROUPS[g]
+            out.append(prove_inv(g, scen, plants, [x for v in expect.values() for x in v], passed=[t3_gate.PRELUDE_ID],
+                                 name="prove_%s_20261114_14%04d_%d" % (g, n, 500 + n)))
+        return out
+    now = dict(TREE)
+    full = proofs()
+    probs, out = t3_gate.matrix(fz, frozen, full, now=now)
+    done = sum(1 for _, st, _ in out if st == "CERTIFIED")
+    rec("matrix clean: 21 rows, each proved alone on the frozen tree", "21/21 complete", "%d/%d %s" % (done, len(out), "complete" if not probs and done == len(out) else "incomplete"), probs)
+    probs, out = t3_gate.matrix(fz, frozen, proofs(skip=("solo_cap_text",)), now=now)
+    miss = [p for p, st, _ in out if st != "CERTIFIED"]
+    rec("matrix one row's proof not given (cap_text)", "NOT DONE cap_text", "NOT DONE " + ",".join(miss) if miss else "complete", [w for p, _, w in out if p in miss])
+    probs, out = t3_gate.matrix(fz, frozen, proofs(skip=("solo_leave_sees", "solo_no_breath_lock", "solo_round_skip"), extra=("jug_a",)), now=now)
+    nc = sorted(p for p, st, _ in out if st == "NOT CERTIFIED")
+    rec("matrix jug_a proved only as a batch", "3 NOT CERTIFIED", "%d NOT CERTIFIED" % len(nc), nc)
+    probs, out = t3_gate.matrix(fz, frozen, full, now=dict(TREE, test="t_new_check"))
+    rec("matrix a check added after the freeze (test tree changed)", "PROBLEM", "PROBLEM" if probs else "none", probs)
+    root = fresh("matrix_root")
+    names = t3_gate.plant_rows() + ["new_hole"]
+    wr(os.path.join(root, "FindingNaresh", "scripts", "x.gd"), "\n".join('if Plant.on("%s"): pass' % n for n in names) + "\n")
+    probs, out = t3_gate.matrix(fz, frozen, full, root=root, now=now)
+    st = dict((p, s) for p, s, _ in out)
+    rec("matrix a new plant (new_hole) with no matrix group", "NOT DONE", st.get("new_hole", "absent"), [w for p, _, w in out if p == "new_hole"])
+    rec("matrix the game's plant rows (R4)", "21", str(len(t3_gate.plant_rows())), t3_gate.plant_rows())
+
+
 # ---- sentinel workload (F5) ----------------------------------------------------------------------
 def g_sentinel():
     sw = os.path.join(HERE, "sentinel_workers.py")
@@ -467,7 +503,7 @@ def g_sentinel():
 
 
 GROUPS = {"ident": g_ident, "manifest": g_manifest, "final": g_final, "proof": g_proof, "obs": g_obs,
-          "sentinel": g_sentinel}
+          "sentinel": g_sentinel, "matrix": g_matrix}
 
 
 def main(a):

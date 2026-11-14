@@ -17,6 +17,11 @@
       ids, its invocation's input tree equals the final suite's (unchanged during both), its own
       manifest ids PASSED in the clean final run (its rule ids not FAILed there), and (D2 A) it was
       proved ALONE: a member of a multi-plant group needs a single-plant proof of its own.
+  python tools/method/t3_gate.py matrix <final inv dir> <frozen tree.json> <prove inv dir> [...]
+      F8 reconciliation: every plant row (Plant.on in the game: R4's 21 + any new one) against the proofs
+      given: CERTIFIED / NOT CERTIFIED (why) / NOT DONE (no proof, or no matrix group). Refused while the
+      inputs differ from the frozen tree (new checks / plants go in before the freeze, else refreeze + a
+      new final + the proofs again) or the final is not accepted on it. Exit 0 only with every row CERTIFIED.
   python tools/method/t3_gate.py obstable <table.md> [manifest.json]
       The design-to-observation table: every row needs an observation (a manifest check id, or
       "picture:"/"video:" with what to look at); an empty one is a GAP, an unknown check id is UNKNOWN.
@@ -195,7 +200,8 @@ def proof(final_invd, prove_invds):
             if t and ftree and t != ftree:
                 w.append("%s: another input tree than the clean final (%s)" % (inv, ", ".join(k for k in TREE_KEYS if t[k] != ftree[k])))
         judged.append((inv, g, res, w))
-        if len(expect) == 1:
+        # F8: "alone" = ONE behavioural plant in the run (time-saver flags one_flat / one_corner aren't bugs)
+        if len(expect) == 1 and len(prove_ghat.behavioural(plants)) == 1:
             for pl, (ok, _) in res.items():
                 if ok and not w:
                     proved_alone.add(pl)
@@ -216,11 +222,62 @@ def proof(final_invd, prove_invds):
                 r.append("its check(s) did not PASS in the clean final: %s" % notpass)
             if rulefail:
                 r.append("its rule(s) FAILed in the clean final: %s" % rulefail)
-            if len(expect) > 1 and pl not in proved_alone:
+            if (len(expect) > 1 or len(prove_ghat.behavioural(plants)) > 1) and pl not in proved_alone:
                 r.append("proved only in a batch (%s): causality not established; prove it alone (D2 A)" % g)
             key = "%s (%s)" % (pl, inv)
             rows[key] = (not r, "; ".join(r) if r else "CERTIFIED: own ids %s FAILed alone, PASS in the clean final, same tree" % " + ".join(ids))
     return rows
+
+
+ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+PLANT_ON = re.compile(r'Plant\.on\("([a-z_0-9]+)"\)')
+
+
+def plant_rows(root=ROOT):
+    """F8: every plant the game can switch on (Plant.on("...") in FindingNaresh/scripts), time savers out."""
+    names = []
+    for dp, _, fs in os.walk(os.path.join(root, "FindingNaresh", "scripts")):
+        for f in sorted(fs):
+            if f.endswith(".gd"):
+                for n in PLANT_ON.findall(rd(os.path.join(dp, f)) or ""):
+                    if n not in prove_ghat.SHORTCUTS and n not in names:
+                        names.append(n)
+    return sorted(names)
+
+
+def matrix(final_invd, frozen, prove_invds, root=ROOT, now=None):
+    """F8 reconciliation: every plant row (the 21 of R4 + any new Plant.on) against the proofs given.
+    -> (problems, [(plant, status, why)]); complete only when no problem and every row CERTIFIED."""
+    import tree_id
+    probs = []
+    fz = rj(frozen) or {}
+    if not fz:
+        probs.append("no frozen tree %s" % frozen)
+    now = now or tree_id.identity(root)
+    changed = [k for k in TREE_KEYS if now.get(k) != fz.get(k)]
+    if fz and changed:
+        probs.append("the inputs changed since the freeze (%s): a new check / plant goes in BEFORE the freeze; now: refreeze, "
+                     "a new final suite, then the proofs again" % ", ".join(changed))
+    fw, _ = final(final_invd, frozen)
+    if fw:
+        probs.append("the final suite is not accepted on the frozen tree: " + "; ".join(fw))
+    certs = proof(final_invd, prove_invds) if prove_invds else {}
+    out = []
+    owners = {}
+    for g in prove_ghat.MATRIX:
+        for pl in prove_ghat.GROUPS[g][2]:
+            owners[pl] = g
+    for pl in plant_rows(root):
+        mine = [(k, ok, w) for k, (ok, w) in certs.items() if k.split(" ", 1)[0] == pl]
+        if pl not in owners:
+            out.append((pl, "NOT DONE", "no matrix group for this plant: add a solo group to prove_ghat.py GROUPS + MATRIX before the freeze"))
+        elif any(ok for _, ok, _ in mine):
+            out.append((pl, "CERTIFIED", next(k for k, ok, _ in mine if ok)))
+        elif mine:
+            out.append((pl, "NOT CERTIFIED", " | ".join(w for _, _, w in mine)[:300]))
+        else:
+            out.append((pl, "NOT DONE", "no proof given (run: prove_ghat.py %s)" % owners[pl]))
+    return probs, out
 
 
 ROW = re.compile(r"^\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*$")
@@ -272,6 +329,15 @@ def main(a):
         for k, (ok, why) in rows.items():
             print("%-14s %s  %s" % ("CERTIFIED" if ok else "NOT CERTIFIED", k, why))
         return 0 if rows and all(ok for ok, _ in rows.values()) else 1
+    if a[0] == "matrix":
+        probs, out = matrix(a[1], a[2], a[3:])
+        for p in probs:
+            print("PROBLEM  " + p)
+        for pl, st, w in out:
+            print("%-14s %-16s %s" % (st, pl, w))
+        done = sum(1 for _, st, _ in out if st == "CERTIFIED")
+        print("plant matrix: %d / %d rows CERTIFIED%s" % (done, len(out), "" if not probs else ", %d problem(s)" % len(probs)))
+        return 0 if not probs and out and done == len(out) else 1
     if a[0] == "obstable":
         out, bad = obstable(a[1], a[2] if len(a) > 2 else None)
         print("\n".join(out))
