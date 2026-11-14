@@ -15,15 +15,14 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 > D:\mine\Agentics\Skills\AGENTS.md. Then follow "Next steps" in the hand-off, one at a time, and report to the user short and plain,
 > A / B with your pick.
 
-## LIVE (2026-11-14 14:20, new referee thread)
-Steps 1-3 done: builder RESUME 2 finished (R4 PASS, recording 52 % real time idle, meter +2.9); audits: Claude ACCEPT w/ 7
-conditions, GPT REJECT (projection ~105-118 > 75). Ruling **R7** (scoreboard): fresh takes only; one fix round
-(`trial_T34_fix_build_task.md`, F1-F11, 5 game min) **running** as T3 child "Speed T34 fix round". **D5: the user chose A** (run the replay anyway, report the overrun).
-**ETA (the user wants it in every update, 14:22):** if A ~21:00-21:30 tonight (fix round ~15:45, re-audit ~16:15,
-replay copy ~16:40, replay ~19:30, scoring + signatures ~21:00); if B ~15:45.
-Step 5 prep done (14:30): `MPG_referee/Ghat_X1X2_planted.gd` = speed-base Ghat.gd + exactly the X1 / X2 lines (diff, CR ignored);
-speed-t34's game code = speed-base's (diff empty outside `scripts/dev`). The replay copy drops `notes/speed_research/` except REPLAY_USAGE.
-Next when the fix round replies: a short re-audit by both (conditions closed?), then steps 4-5.
+## LIVE (2026-11-14 14:55, new referee thread)
+Steps 1-5 done. Builder resume 2 + fix round (F1-F11) done (builder total ~19 game min); audits + re-audits: both GO WITH
+CONDITIONS (all in `REPLAY_TASK.md` rulings 1-8); D5: the user chose **A** (run, report the overrun; hard stop 150).
+**Step 6 RUNNING since 14:55:** the replay runner (T3 child "Speed REPLAY runner") in `MPG_speed_replay` (`f9418c5`, sealed:
+one commit, own repo); meter `MPG_referee/meter_replay.log` (background meter restarts every 2 h: ADD the sessions' WALL);
+watch = scratchpad `watch_replay.sh` (starts/ends, verdicts, walk results, every 10 game min, load).
+**ETA (the user wants it in every update):** replay done ~18:30-19:00, scoring + final + signatures ~20:00-20:30.
+Next: step 7 (score: S1-S7 + X1, X2 vs `MPG_referee/speed_secret.md`; plants PROVED; minutes vs 75 / 225).
 
 ## Where it stands (one paragraph)
 Stages 1-2 done (top 4 signed). Stage 3: **T1 + T2 (fast tests) QUALIFIED** after 3 rounds and 3 GPT audits: the final table
