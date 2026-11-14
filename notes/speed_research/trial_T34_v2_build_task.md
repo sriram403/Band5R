@@ -38,3 +38,12 @@ one thing -> stop, write where you got. Every new guard: its planted failure is 
 every deviation, each control pair expected / actual, commands, minutes per run, what stayed UNQUALIFIED), and a short
 **`REPLAY_USAGE.md`** in the same folder: the exact commands a replay runner uses, start to finish, with no trial results in
 it (the referee hands only that file to the blind replay). **Reply:** 10 lines.
+
+## RESUME (2026-11-14, referee): the first v2 builder was cut by the API rate limit (2026-11-11 ~12:30)
+Done and committed on `speed-t34` (last `f83221c`, your report so far saved there): speed-t1 merged (`4a74146`), the T4 core
+(input-cancel gate, immutable points + observer, the 3-layer gate `walkgate.py` with D3 two resumes, `gate_inventory.json`,
+lanes + misroute refusal, `record_walk.sh` rec25 + parts + gate, `join_check.py`, probe walks), cancel control A2 PASS,
+R3 refused (right outcome, wrong reason: see your report), 2 fixes after it. **Next was C1** (a rec25 take broken mid-step).
+Not done: the rest of T4's live controls, the offline controls, all of T3, `REPLAY_USAGE.md`. **Game minutes: 4.6 of 20 used.**
+Read `notes/speed_research/trial_T4_build.md` and `git log -8` first; review what's there before continuing. **First `git merge
+speed-t1` again** (T1's round 2 added tools since `4a74146`: solo plant groups, `passed_ids`, the fast-acceptance table).
