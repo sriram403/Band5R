@@ -120,6 +120,15 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   at 1x (~+12 game min on the replay's final suite: likely over 75). It runs beside the builder: two Claude children at
   once, also the test the compliance audit asked for (F04: is the rate limit about parallel children at all?).
 
+- **T1 round 2 scored (2026-11-14, referee; GPT check pending):** Q1 open overrun STALLED fast + 1x on the final source;
+  the 6 batched plants each FAIL their own check alone (marks_pile needs its looks prelude to make its round: `passed_ids`
+  prerequisite); fuel inside 1x spread (tolerance +-1.4 L, 3 runs a side); engine ticks were a wrong comparison (counter never
+  reset); sniffs 1 / 2 are the game's own unseeded random (~20 % at any speed); **lean_close / the glass check: a real speed
+  shift (fast 0.01-0.07 m closer every time): stays 1x.** No-round in 2 / 14 fast looks runs, 0 / 5 at 1x, unexplained:
+  such runs rerun at 1x. **Final table: fast PASS accepted for net, heat, marks (if its looks prelude made its round);
+  looks exploratory fast, 1x for an accepted PASS; jug, places, spring, free_coolant, the recorded walk 1x.** Suite serial
+  ~11.8 vs 18.7 min (estimate). Meter: T1 total 56.1 (round 2 ~12.1 of 15). Open: a firmer lean_close plant (`core/Plant.gd`).
+
 ## Next (Stage 3 proper)
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
