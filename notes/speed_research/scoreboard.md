@@ -158,6 +158,17 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   over 75, so the replay waits for the user's A / B (asked 2026-11-14).
   **The user decided (2026-11-14 ~14:25): A** (run the replay anyway and report the overrun against 75 and the baseline 225).
 
+- **T34 fix round scored (2026-11-14 14:20-14:45, referee; re-audit pending):** F1-F11 committed (`c449993`..`fd4ae18`); offline T3
+  123 / 123, T4 85 / 85; each new guard refused its planted case BY that guard and passed its clean case (F2: 8 identity controls now
+  go BAD with the check off; F6 marks without its looks prelude refused, marks now in the 1x lane after looks; F7 9 stale / missing
+  / duplicated picture cases refused; F8 21 / 21 rows reconciled, batch-only and post-freeze refused; F9 16 test-only flags refused;
+  F10 6 more call forms followed). Sound evidence saved (21 dB). **F5 bench: 40 / 40 N taps registered, 20 of them while a second
+  game came up: dropped taps NOT confirmed**; lane b's 2 / 4 came from walks played back to back in one game (state carried over:
+  test side). Meter this round: WALL 1.9 (builder total ~19 of 25). Unqualified: any live use of the new final / proof / picture
+  gates; the cost of marks at 1x and the 21 solo proofs; a long recording's speed.
+- **R8 (2026-11-14, referee):** R7 (b) is lifted by the bench: walks and recordings may run beside ONE other game; **every walk or
+  recording starts in a new game process** (never two walks back to back in one game: state carries over).
+
 ## Next (Stage 3 proper)
 **2026-11-14 13:40: stopped at the user's request; the referee's next steps are in `MPG
 otes\SPEED_REFEREE_HANDOFF.md`.**
