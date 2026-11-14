@@ -25,9 +25,11 @@ under `appdata/`. Exit codes: 0 PASS / accepted, 1 FAIL / refused, 2 INCOMPLETE,
 
 ```sh
 python tools/method/t3_controls.py          # input identity, manifest traversal, final / proof gates, obs table
-python tools/method/t1fix_controls.py       # T1's receipt / deadline / proof judges
 tools/method/live_session.sh import         # compile check of the game + test scripts (headless, ~0.2 min)
 ```
+
+`t1fix_controls.py` is not a step here: its fixtures are T1's archived run folders, which are not in this
+copy (T1's judges were qualified in T1's own copy).
 
 ## 1. Before discovery
 
