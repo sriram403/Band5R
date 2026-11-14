@@ -30,3 +30,11 @@ wait if 2 run). Before each run write its cost and running total; watch every ru
 ## Write
 A "Qualification round 2" section in `MPG_speed_t1\notes\speed_research\trial_T1.md`, ending with a table: scenario ->
 fast PASS accepted / exploratory only / 1x, with the reason. **Reply:** 8 lines.
+
+## RESUME (2026-11-14, referee): the round-2 child was cut by the API rate limit (2026-11-11 ~12:30)
+Done and committed on `speed-t1` (last `c880e3d`): Q1 (open overrun STALLED fast + 1x), Q2 (the 6 batched plants alone; the
+marks prelude prerequisite, `passed_ids`; 38 / 38 offline), Q3 (the round diagnostic). Not done: Q4 (the second diagnostic)
+and the end of item 3 (1x-vs-1x spread vs the 3 values + lean_close) and **the final table** (scenario -> fast PASS accepted /
+exploratory only / 1x). **About 2.6 game min are left of this round's 15 (meter: T1 at 56.1 of 58.7).** Read `trial_T1.md`'s
+"Qualification round 2" section and `git log -6` first. Prefer finishing from the archived runs (0 game min); run Q4 only if
+it fits and decides something. Then the table, commit, reply.
