@@ -37,7 +37,8 @@ def rec(case, want, got, note=""):
 def fresh(*p):
     d = os.path.join(CTL, *p)
     if os.path.isdir(d):
-        shutil.rmtree(d)
+        import stat
+        shutil.rmtree(d, onerror=lambda f, p, e: (os.chmod(p, stat.S_IWRITE), f(p)))   # git objects are read-only
     os.makedirs(d)
     return d
 
