@@ -140,6 +140,9 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   failure refused, clean passes) stand. **The scored replay runs with GTA closed** (the baseline day had no such load).
 
 ## Next (Stage 3 proper)
+**2026-11-14 13:40: stopped at the user's request; the referee's next steps are in `MPG
+otes\SPEED_REFEREE_HANDOFF.md`.**
+
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
    + a plant each (the clean/plant verdicts must match 1x); ghat_spring / `free_coolant` stay 1x.
@@ -157,4 +160,4 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
 | 3 T1 + T2 build | done, QUALIFIED (6 fast, suite 4.4 vs 18.7 min); `speed-t1` `5f468c2`; GPT: ACCEPT WITH CONDITIONS (3 blockers) |
 | 3 T3 + T4 specs | done (GPT): `trial_T3_spec.md` (discovery, selection map, receipts, **the replay playbook**: ~99 min 1x / ~62 fast, ~54 with two games), `trial_T4_spec.md` (sections, the 3-layer gate, the video); qualification 9/6 + 14 min. GPT on T1: old 1x plant verdicts need matching identities; the deadline control at 1x too |
 | 3 T3 + T4 specs audit | waits for T1: the Claude auditor audits GPT's specs (`audit_specs_claude_task.md`), GPT answers, disputes to the user |
-| 3 T3 + T4 build | first builder cut by the rate limit before any work; waits for the agreed specs (the hand-off gate blocks it until `AUDITED:` is in its task file) |
+| 3 T3 + T4 build | v2 mostly built (`speed-t34` `ec8dbcf`, ~14 of 20 min): T4 core + 83 offline controls, T3 checker + 49 controls, REPLAY_USAGE draft; stopped 2026-11-14 (GTA load); resume per the hand-off |

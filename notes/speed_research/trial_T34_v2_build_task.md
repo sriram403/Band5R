@@ -47,3 +47,11 @@ R3 refused (right outcome, wrong reason: see your report), 2 fixes after it. **N
 Not done: the rest of T4's live controls, the offline controls, all of T3, `REPLAY_USAGE.md`. **Game minutes: 4.6 of 20 used.**
 Read `notes/speed_research/trial_T4_build.md` and `git log -8` first; review what's there before continuing. **First `git merge
 speed-t1` again** (T1's round 2 added tools since `4a74146`: solo plant groups, `passed_ids`, the fast-acceptance table).
+
+## RESUME 2 (2026-11-14 13:40, referee): stopped at the user's request (GTA 5 on the PC skewed timings)
+Last commit `ec8dbcf` (the referee committed your reports + the REPLAY_USAGE draft as they were). **Game minutes: ~14 of 20
+used, ~6 left.** First check the PC is idle (no GTA). Then: `git merge speed-t1` (round 2 added solo plant groups, `passed_ids`,
+the fast table at `709028b`); rerun R4 (lane sentinel, the CR fix); **re-measure recording speed and two-lane throughput** (the
+34 % and the R2 numbers were taken with GTA at 96 % CPU: not usable); write the two report sections your table refers to but
+that don't exist ("Resume 2026-11-14": why no point of the probe walk passes the gate, incl. the parked van's stale 0.148 m/s;
+"Live gate session G"); finish `REPLAY_USAGE.md` (commands only: no results, no game symptoms). Then reply.
