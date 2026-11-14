@@ -156,6 +156,7 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   the dropped-tap bench (F5) says otherwise. (c) One fix round (`trial_T34_fix_build_task.md`) closes the union of both audits'
   conditions; its game cap **5 min** (builder total cap 25), qualification minutes apart from the score. (d) D5: the projection is
   over 75, so the replay waits for the user's A / B (asked 2026-11-14).
+  **The user decided (2026-11-14 ~14:25): A** (run the replay anyway and report the overrun against 75 and the baseline 225).
 
 ## Next (Stage 3 proper)
 **2026-11-14 13:40: stopped at the user's request; the referee's next steps are in `MPG
