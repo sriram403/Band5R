@@ -16,6 +16,9 @@ the current call path is not re-entered), and every call SITE counts (a helper c
 gives its checks twice: id, id_2, ...). A check() that can't be parsed, or a dynamic call
 (call("..." + x), callv(var), Callable(self, var)) in a traversed function that isn't listed in
 DYNAMIC_OK with a reason, stops the manifest (exit != 0): nothing is silently dropped.
+F10 (fix round): also followed: self.<local>(...) and self.<local> as a value, and the literal target of
+call("<local>") / callv("<local>", ...) / call_deferred("<local>") / Callable(self, "<local>") (bare or on
+self; obj.call("x") is another object's and is not followed). A variable target stays refused.
 """
 import json
 import os
@@ -29,6 +32,9 @@ CHECK = re.compile(r'\bcheck\((.*),\s*"((?:[^"\\]|\\.)*)"(\s*%.*)?\)\s*$')
 CALL = re.compile(r"(?<![\w.])([A-Za-z_][A-Za-z0-9_]*)\s*\(")
 VALUE_REF = re.compile(r"(?:[=,(]|\breturn)\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?=[,)]|$)")
 DYNAMIC = re.compile(r"(?<![\w])(?:call|callv|call_deferred)\(\s*(?!\))|Callable\(\s*self\s*,\s*(?!\")")
+SELF_REF = re.compile(r"\bself\.([A-Za-z_][A-Za-z0-9_]*)")
+LIT_CALL = re.compile(r'(?<![\w.])(?:self\.)?(?:call|callv|call_deferred)\(\s*"([A-Za-z_][A-Za-z0-9_]*)"\s*[,)]')
+LIT_CALLABLE = re.compile(r'\bCallable\(\s*self\s*,\s*"([A-Za-z_][A-Za-z0-9_]*)"\s*\)')
 DYNAMIC_OK = {}      # "function": "why its dynamic call can't reach a check" (none needed for the ghat: see the controls)
 OLD = os.environ.get("MANIFEST_OLD") == "1"   # the pre-fix traversal (for the diff / controls only)
 HELPERS = ("_ghat", "_fix_with", "_hide_well")
@@ -99,9 +105,15 @@ def manifest(scen, src, funcs):
                     if c.startswith(HELPERS) and c != name:
                         walk(c, path)
                 continue
-            if DYNAMIC.search(code) and name not in DYNAMIC_OK and not re.search(r'(?:call|callv)\(\s*""\s*[,)]', code.replace(" ", "")) :
+            # F10: a call with a literal local target is followed below, not "dynamic": judge what is left
+            dyn = STRS.sub('""', LIT_CALLABLE.sub("", LIT_CALL.sub("", line.split(" #")[0])))
+            if DYNAMIC.search(dyn) and name not in DYNAMIC_OK:
                 raise SystemExit("dynamic call at line %d in %s (not in DYNAMIC_OK): %s" % (first + 1, name, line))
-            for c in CALL.findall(code) + VALUE_REF.findall(code):
+            # F10 (fix round): also self.<local>(...) / self.<local> as a value, and a literal target of
+            # call("<local>") / callv("<local>", ...) / call_deferred("<local>") / Callable(self, "<local>")
+            # (bare or on self only: obj.call("x") is another object's). Dynamic targets stay refused above.
+            raw = line.split(" #")[0]
+            for c in CALL.findall(code) + VALUE_REF.findall(code) + SELF_REF.findall(code) + LIT_CALL.findall(raw) + LIT_CALLABLE.findall(raw):
                 if c != "check" and c in funcs:
                     walk(c, path | {name})
 

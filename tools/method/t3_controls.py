@@ -133,6 +133,24 @@ def g_manifest():
     dyn = 'func t_ghat_x():\n\tcall("hel" + "per")\n\nfunc helper():\n\tcheck(true, "dynamic")\n'
     ids, err = man(dyn)
     rec("manifest dynamic call -> refused", "REFUSED", "REFUSED" if ids is None else "ACCEPTED", err)
+    # F10: self.<local>, literal call / callv / call_deferred / Callable(self, "<local>") targets are followed
+    for nm, line in (("self.helper()", '\tself.helper()'), ("self.helper as a value", '\tvar f = self.helper\n\tf.call()'),
+                     ('call("helper")', '\tcall("helper")'), ('callv("helper", [])', '\tcallv("helper", [])'),
+                     ('self.call_deferred("helper")', '\tself.call_deferred("helper")'),
+                     ('Callable(self, "helper").call()', '\tCallable(self, "helper").call()')):
+        src = 'func t_ghat_x():\n%s\n\nfunc helper():\n\tcheck(true, "reached through %s")\n' % (line, nm.replace('"', "'"))
+        ids, err = man(src)
+        old, _ = man(src, old=True)
+        rec("manifest F10 %s: helper's check included" % nm, "1 rows", "%d rows" % len(ids or []), "new %s | old %s %s" % (ids, old, err))
+    src = 'func t_ghat_x():\n\tboot.call("helper")\n\nfunc helper():\n\tcheck(true, "another object")\n'
+    ids, err = man(src)
+    rec("manifest F10 boot.call(\"helper\") (another object's) not followed", "0 rows", "%d rows" % len(ids or []), ids or err)
+    src = 'func t_ghat_x():\n\tvar nm = "hel" + "per"\n\tcallv(nm, [])\n\nfunc helper():\n\tcheck(true, "dynamic")\n'
+    ids, err = man(src)
+    rec("manifest F10 callv(<variable>) still refused", "REFUSED", "REFUSED" if ids is None else "ACCEPTED", err)
+    src = 'func t_ghat_x():\n\tCallable(self, nm).call()\n\nfunc helper():\n\tcheck(true, "dynamic")\n'
+    ids, err = man(src)
+    rec("manifest F10 Callable(self, <variable>) still refused", "REFUSED", "REFUSED" if ids is None else "ACCEPTED", err)
     cmt = 'func t_ghat_x():\n\t# check(true, "commented out")\n\tcheck(true, "real")\n'
     ids, err = man(cmt)
     rec("manifest commented-out check not counted", "1 rows", "%d rows" % len(ids or []), ids or err)
