@@ -169,6 +169,17 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
 - **R8 (2026-11-14, referee):** R7 (b) is lifted by the bench: walks and recordings may run beside ONE other game; **every walk or
   recording starts in a new game process** (never two walks back to back in one game: state carries over).
 
+- **Re-audits of the fix round (2026-11-14 ~15:00):** Claude `reaudit_T34_claude.md` **GO WITH CONDITIONS** (controls 123 / 123,
+  85 / 85; all 7 of its conditions closed; new: the take's identity vs the frozen tree, an old ghat.mp4 left on disk, the usage still
+  says "alone", the sentinel plays walks back to back, retakes `--fresh`). GPT `reaudit_T34_gpt.md` **GO WITH CONDITIONS** (D5 = A
+  overrides the 75 stop; rebuild the picture inventory and open the PNGs right before each acceptance check: cached hashes are a
+  false-PASS path otherwise; clean inputs; check marks-after-looks on the first suite). Projection **~116-129 game min** serial.
+  All conditions are runner instructions: in `REPLAY_TASK.md` rulings 1-8.
+- **The replay copy (2026-11-14 ~15:10):** `MPG_speed_replay`, ONE commit `f9418c5` in a new repo (no shared history) = speed-t34
+  `fd4ae18`'s tree minus every trial report / pilot / evidence + the brief + `REPLAY_TASK.md` + usage patches (step 0 without the
+  qualification controls; rulings win) + X1 / X2 (Ghat.gd = base + 2 lines) + 3 symptom comments scrubbed; game code = speed-base.
+  Hard stop 150 wall game min. Meter `MPG_referee/meter_replay.log`.
+
 ## Next (Stage 3 proper)
 **2026-11-14 13:40: stopped at the user's request; the referee's next steps are in `MPG
 otes\SPEED_REFEREE_HANDOFF.md`.**
