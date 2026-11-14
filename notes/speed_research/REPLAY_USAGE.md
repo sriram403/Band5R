@@ -51,17 +51,17 @@ ROLE=discovery SPEED=fast GHAT=<remaining scenarios, comma separated> tools/meth
 python tools/method/combine_parts.py appdata/method/inv/<INV>     # re-judge one invocation from its receipts
 ```
 
-## 3. The walk (discovery, repair, tail)
+## 3. The walk (discovery, repair, tail): fresh takes only
 
 ```sh
 tools/play_walk.sh ghat --fresh            # the real walk from its only real entry (step 1)
-tools/play_walk.sh ghat                    # after a fix: tries to resume at the failed step THROUGH THE GATE
-#   "REFUSED (gate, before any input)" (exit 5, no game started) -> play the real prefix: --fresh
-#   a resume only counts if the gate says SAME (layers 1+2 right after the restore, layer 3 at +3 game s)
-LANE=b tools/play_walk.sh ghat --fresh     # the same in lane b
 ```
 
-A repaired walk must reach its end through real producer paths before the recording.
+- **Every try is fresh** (`--fresh`), including after a fix: the repair's prefix is played for real. Budget a
+  fresh prefix for every repair in the ledger.
+- The resume gate stays on. A resume (`tools/play_walk.sh ghat` without `--fresh`) is refused before any
+  input (exit 5, no game started); don't use it. Then play `--fresh`.
+- A repaired walk must reach its end through real producer paths before the recording.
 
 ## 4. Repair rounds
 
@@ -94,21 +94,22 @@ python tools/method/t3_gate.py proof appdata/method/inv/<final INV> appdata/meth
 New holes: add the plant to `core/Plant.gd` and a group to `prove_ghat.py` (its own exact check ids), then the same.
 The final suite and the plant runs never share a run: a planted run is never clean-suite evidence.
 
-## 7. The recorded walk (1600x900, Movie Maker 25 fps, sound)
+## 7. The recorded walk (1600x900, Movie Maker 25 fps, sound): one unbroken fresh take
 
 ```sh
-tools/record_walk.sh ghat --fresh          # -> appdata/videos/ghat.mp4 (+ ghat.parts/, framemap_rec25.json)
-# a take that FAILED: fix, then
-tools/record_walk.sh ghat                  # resumes through the gate; refused -> tools/record_walk.sh ghat --fresh
-GATE_ONLY=1 tools/record_walk.sh ghat      # the second recorded resume receipt of a resumed point (2 needed)
-python tools/method/join_check.py verify appdata/videos/ghat.parts appdata/videos/framemap_rec25.json
-python tools/method/join_check.py join   appdata/videos/ghat.parts appdata/videos/ghat.mp4 appdata/videos/framemap_rec25.json
-#   joins.txt: MM:SS.mmm -> step, part, gate; joins_frames/: the frame either side of each join (look at them)
-python tools/method/join_check.py sound appdata/videos/ghat.mp4 <a quiet second> <the second a known sound starts>
+tools/record_walk.sh ghat --fresh          # -> appdata/videos/ghat.mp4 (one part, no join)
+# a take that FAILED: keep it, fix, then a NEW fresh take (--fresh deletes ghat.parts/):
+mv appdata/videos/ghat.parts appdata/videos/ghat.failed_<n>
+tools/record_walk.sh ghat --fresh
+python tools/method/join_check.py sound appdata/videos/ghat.mp4 <a quiet second> <the second a known sound starts>   | tee appdata/videos/ghat.sound.txt      # keep the SOUND: line
 ```
 
-Then watch the whole video with sound after the games have exited; note the time of every required moment,
-every join and both views. Anything missing stays INCOMPLETE.
+- **The clean walk and the video are ONE unbroken fresh take** that ends DONE. A failed take never becomes
+  part of the video.
+- No resumed or joined take. The gate stays on and refuses a resume (exit 5). The ghat walk has no
+  frame marker, so a cut could not be verified anyway.
+- Then watch the whole video with sound after the games have exited. Note the time of every required
+  moment and both views. Anything missing stays INCOMPLETE.
 
 ## 8. Two games at once (optional)
 
