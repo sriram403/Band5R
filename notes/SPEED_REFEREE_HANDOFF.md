@@ -15,10 +15,12 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 > D:\mine\Agentics\Skills\AGENTS.md. Then follow "Next steps" in the hand-off, one at a time, and report to the user short and plain,
 > A / B with your pick.
 
-## LIVE (2026-11-14 14:00, new referee thread)
-Step 1 done (GTA closed, no Godot, CPU 10-60 % from a browser). **Step 2 running:** the builder resumed (RESUME 2) as a T3
-child "Speed T34 builder, resume 2"; the meter (`MPG_referee/meter_T34.log`) and a verdict watch are on `MPG_speed_t34`.
-Next when it replies: step 3 (audit the build).
+## LIVE (2026-11-14 14:20, new referee thread)
+Steps 1-3 done: builder RESUME 2 finished (R4 PASS, recording 52 % real time idle, meter +2.9); audits: Claude ACCEPT w/ 7
+conditions, GPT REJECT (projection ~105-118 > 75). Ruling **R7** (scoreboard): fresh takes only; one fix round
+(`trial_T34_fix_build_task.md`, F1-F11, 5 game min) **running** as T3 child "Speed T34 fix round". **D5 asked to the user**
+(A run the replay anyway and report the overrun / B stop and write up): the replay waits for the answer.
+Next when the fix round replies: a short re-audit by both (conditions closed?), then steps 4-5.
 
 ## Where it stands (one paragraph)
 Stages 1-2 done (top 4 signed). Stage 3: **T1 + T2 (fast tests) QUALIFIED** after 3 rounds and 3 GPT audits: the final table
