@@ -165,24 +165,10 @@ def main() -> int:
         k, prun = -1, ""
         if walk_from:
             # T4 v2: refuse an unusable point BEFORE any input is sent
-            names = [s.get("name", "") for s in walk.get("steps", [])]
-            k = names.index(walk_from) if walk_from in names else -1
-            prun = os.path.join(LIVE, "points", point_id.rsplit("/", 1)[0]) if "/" in point_id else ""
-            why = []
-            if k < 0:
-                why.append("no step '%s' in this walk" % walk_from)
-            elif not point_id or not os.path.exists(os.path.join(LIVE, "points", point_id + ".json")):
-                why.append("no point ID for '%s' (%r)" % (walk_from, point_id))
-            elif int(point_id.rsplit("/", 1)[1]) != k:
-                why.append("point %s is not step %d" % (point_id, k))
-            else:
-                why += walkgate.identity_check(prun, k, ident, walk, ident["profile"])
-                pobs = walkgate.load(os.path.join(prun, "%d.obs.json" % k))
-                ref = walkgate.refusal(pobs) + walkgate.layer1(pobs)
-                if ref and os.environ.get("GATE_PROBE") == "1":
-                    print("GATE PROBE (test only): the point would be refused (%s); restoring anyway to show layer 2" % "; ".join(ref), flush=True)
-                else:
-                    why += ref
+            why, k, prun, probe_note = walkgate.admit(os.path.join(LIVE, "points"), walk, walk_from, point_id, ident,
+                                                      probe=os.environ.get("GATE_PROBE") == "1")
+            if probe_note:
+                print("GATE PROBE (test only): the point would be refused (%s); restoring anyway to show layer 2" % probe_note, flush=True)
             if why:
                 print("REFUSED (gate, before any input): %s" % "; ".join(why), flush=True)
                 print("  -> play the real prefix: --fresh (the ghat's only real producer is step 1, F1 Puzzles)", flush=True)

@@ -54,6 +54,12 @@ NUM = r"[-+]?(?:\d+\.?\d*(?:[eE][-+]?\d+)?|inf|nan)"
 
 
 def nums(s):
+    """The numbers of a value. Only INSIDE the brackets of a typed value: the type name itself has a
+    digit (Vector3, Transform3D), which the first version read as a number (found by t4_controls:
+    every velocity / transform check was silently skipped or 'not a transform')."""
+    s = str(s)
+    if "(" in s and s.rstrip().endswith(")"):
+        s = s[s.index("(") + 1:s.rstrip().rindex(")")]
     return [float(x) for x in re.findall(NUM, s.replace("inf_neg", "-inf"))]
 
 
@@ -154,7 +160,8 @@ def refusal(obs, cfg=None):
         why.append("engine on (no van engine adapter: refused)")
     lv = nums(f.get("van.@lv", ""))
     if len(lv) == 3 and math.sqrt(sum(x * x for x in lv)) > 0.1:
-        why.append("van moving %.2f m/s (> 0.1)" % math.sqrt(sum(x * x for x in lv)))
+        why.append("van moving %.2f m/s (> 0.1)%s" % (math.sqrt(sum(x * x for x in lv)),
+                   " (frozen on the handbrake: a stale STORED velocity, which the restore zeroes: lost physics state)" if f.get("van.@freeze") == "true" else ""))
     if "static.Hearing.recent" in f:
         rec = json.loads(f["static.Hearing.recent"]) if f["static.Hearing.recent"].startswith("[") else []
         heard = _heard_ids(f)
@@ -380,8 +387,8 @@ def identity_check(point_run, k, now_identity, now_walk, profile):
     why = []
     rj = load(os.path.join(point_run, "run.json"))
     pid = rj.get("identity") or {}
-    if pid.get("schema") != SCHEMA:
-        why.append("schema %s != %s" % (pid.get("schema"), SCHEMA))
+    if pid.get("schema") != SCHEMA or now_identity.get("schema") != SCHEMA:
+        why.append("schema: point %s, now %s, gate %s" % (pid.get("schema"), now_identity.get("schema"), SCHEMA))
     for key in ("game", "test", "bin"):
         if pid.get(key) != now_identity.get(key):
             why.append("%s hash %s != now %s" % (key, pid.get(key), now_identity.get(key)))
@@ -397,6 +404,34 @@ def identity_check(point_run, k, now_identity, now_walk, profile):
     if k >= len(ns_) or k >= len(os_) or steps_hash(os_[k:k + 1]) != steps_hash(ns_[k:k + 1]):
         why.append("the resumed step changed: its fresh +3 s reference is for other actions")
     return why
+
+
+def admit(points_dir, walk, walk_from, point_id, ident, probe=False):
+    """The check before any launch / input (tools/live.py): -> (why, k, point_run_dir, probe_note).
+    why == [] admits the point to gate EVALUATION only (layers 2 + 3 still decide; SAME needs RESUMES)."""
+    names = [s.get("name", "") for s in walk.get("steps", [])]
+    k = names.index(walk_from) if walk_from in names else -1
+    prun = os.path.join(points_dir, point_id.rsplit("/", 1)[0]) if "/" in point_id else ""
+    why, note = [], ""
+    if k < 0:
+        why.append("no step '%s' in this walk" % walk_from)
+    elif not point_id or not os.path.exists(os.path.join(points_dir, point_id + ".json")):
+        why.append("no point ID for '%s' (%r)" % (walk_from, point_id))
+    elif not point_id.rsplit("/", 1)[1].isdigit() or int(point_id.rsplit("/", 1)[1]) != k:
+        why.append("point %s is not step %d" % (point_id, k))
+    else:
+        why += identity_check(prun, k, ident, walk, ident.get("profile"))
+        op = os.path.join(prun, "%d.obs.json" % k)
+        if not os.path.exists(op):
+            why.append("the point's observation %s is missing" % op)
+        else:
+            pobs = load(op)
+            ref = refusal(pobs) + layer1(pobs)
+            if ref and probe:
+                note = "; ".join(ref)
+            else:
+                why += ref
+    return why, k, prun, note
 
 
 # ---- receipts -----------------------------------------------------------------------------------
