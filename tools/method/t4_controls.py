@@ -83,16 +83,28 @@ def g_ident():
                      ("schema", "t4v2-gate-0"), ("profile", "rec25")):
         i2 = dict(idn)
         i2[key] = val
-        why, *_ = wg.admit(pts, walk, step, pid, i2)
+        # F2: the identity check alone (the real point 1 is refused anyway for its stale van velocity, so
+        # going through admit() could not show the identity check missing)
+        why = wg.identity_check(SRC, 1, i2, walk, i2["profile"])
         rec("ident %s changed" % key, "REFUSED", v(why), why)
     w2 = copy.deepcopy(walk)
     w2["steps"][0]["do"][1]["s"] = 3.5
-    why, *_ = wg.admit(pts, w2, step, pid, idn)
+    why = wg.identity_check(SRC, 1, idn, w2, idn["profile"])
     rec("ident producer step (before the point) changed", "REFUSED", v(why), why)
     w3 = copy.deepcopy(walk)
     w3["steps"][1]["do"][1]["s"] = 4.5
-    why, *_ = wg.admit(pts, w3, step, pid, idn)
+    why = wg.identity_check(SRC, 1, idn, w3, idn["profile"])
     rec("ident resumed step changed (its fresh reference stale)", "REFUSED", v(why), why)
+    # F2: the same changes through admit() on the quiet point (velocity zeroed): admit refuses them by identity alone
+    qrun = copyrun("ident_quiet")
+    json.dump(quiet(), open(os.path.join(qrun, "1.obs.json"), "w", encoding="utf-8"))
+    qpts = os.path.dirname(qrun)
+    why, *_ = wg.admit(qpts, walk, step, pid, idn)
+    rec("ident admit clean: quiet point 1, nothing changed", "ADMIT", v(why), why)
+    i2 = dict(idn)
+    i2["game"] = "0000old0game0000"
+    why, *_ = wg.admit(qpts, walk, step, pid, i2)
+    rec("ident admit: quiet point 1, game changed", "REFUSED", v(why), why)
     w4 = copy.deepcopy(walk)
     w4["steps"][3]["do"][1]["s"] = 9.0
     why = wg.identity_check(SRC, 1, idn, w4, idn["profile"])
