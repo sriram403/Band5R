@@ -31,6 +31,8 @@ sys.path.insert(0, HERE)
 import walkgate  # noqa: E402
 
 FPS = 25
+# test-only (the join mechanics control, t4_controls.py `join`): verify everything but the gate verdict
+WAIVED = os.environ.get("JOIN_GATE_WAIVED") == "1"
 
 
 def sh(args):
@@ -191,7 +193,9 @@ def verify(pdir, fmap=None, walk=None):
                         why.append("gate run %s unreadable" % ln)
             b = walkgate.boundary(os.path.join(os.path.dirname(nxt["run_dir"]), prun), int(pidx), runs)
             nxt["_gate"] = b
-            if b["verdict"] != "SAME":
+            if b["verdict"] != "SAME" and WAIVED:
+                print("TEST ONLY (JOIN_GATE_WAIVED=1): join part %d -> %d gate %s ignored: this is a mechanics control, never a video or a clean walk" % (p["k"], nxt["k"], b["verdict"]))
+            elif b["verdict"] != "SAME":
                 why.append("join part %d -> %d at '%s': gate %s (%s)" % (p["k"], nxt["k"], nxt["from"], b["verdict"],
                            "; ".join("%s: %s" % (r["resume_run"], r["failed_layers"]) for r in b["resumes"])))
         else:
@@ -207,6 +211,8 @@ def verify(pdir, fmap=None, walk=None):
         b = (b_frame + off) if b_frame is not None else None
         if b is not None and b <= a:
             why.append("part %d: empty or reversed range %s..%s" % (p["k"], a, b))
+        if p["duration"] is not None and a / FPS > p["duration"] - 1.0 / FPS:
+            why.append("part %d: cut start frame %d at or past its end (%.2f s)" % (p["k"], a, p["duration"]))
         if b is not None and p["duration"] is not None and b / FPS > p["duration"] + 0.04:
             why.append("part %d: cut %d past its end (%.2f s)" % (p["k"], b, p["duration"]))
         cuts.append({"k": p["k"], "mp4": p["mp4"], "from_frame": a, "to_frame": b, "run": p["run"],
@@ -225,6 +231,9 @@ def mmss(t):
 
 
 def join(pdir, out, fmap=None):
+    if WAIVED and "TESTONLY" not in os.path.basename(out):
+        print("JOIN REFUSED: JOIN_GATE_WAIVED=1 (a test-only control) needs an output named *TESTONLY*")
+        return 1
     pj = walkgate.load(os.path.join(pdir, "part1.json"))
     wj = os.path.join(pj["run_dir"], "walk.json")
     walk = walkgate.load(wj) if os.path.exists(wj) else None

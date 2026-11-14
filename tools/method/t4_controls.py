@@ -1,10 +1,10 @@
 """T4 v2 offline controls (no game): every gate / join guard refuses its planted failure AND passes its
 clean case. Source evidence is real: a gateprobe run's points (default: A3, appdata/.../points/
 gateprobe_20261111_122158_4980; point 1 = stopped, engine off; point 4 = engine on) and, for the
-`pair` and `join` groups, a recorded take's parts (appdata/videos/gateprobe.parts). Mutations are made on
+`join` group, the control take of t4_join_controls.py (two real rec25 takes). Mutations are made on
 copies under appdata/t4ctl/ (the evidence itself is never changed).
 
-  python tools/method/t4_controls.py [ident inv refuse hear work child l2 l3 pair join ...]
+  python tools/method/t4_controls.py [ident inv refuse hear work child l2 l3 join ...]
 Each case prints want / got; exit 1 if any case disagrees.
 """
 import copy
@@ -16,12 +16,11 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import walkgate as wg  # noqa: E402
-import join_check as jc  # noqa: E402
+import t4_join_controls  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 LIVE = os.path.join(ROOT, "appdata", "playtest", "FindingNaresh", "live")
 SRC = os.environ.get("T4_SRC_RUN", os.path.join(LIVE, "points", "gateprobe_20261111_122158_4980"))
-PARTS = os.environ.get("T4_PARTS", os.path.join(ROOT, "appdata", "videos", "gateprobe.parts"))
 CTL = os.path.join(ROOT, "appdata", "t4ctl")
 RESULTS = []
 
@@ -304,145 +303,8 @@ def g_l3():
     rec("l3 no fresh reference", "DIFFERENT", d(wg.layer3(None, f)), wg.layer3(None, f))
 
 
-# ---- a real resume pair + boundary (needs the recorded take) -----------------------------------
-def _parts():
-    if not os.path.exists(os.path.join(PARTS, "part2.json")):
-        print("SKIP: no recorded take with a resumed part at %s" % PARTS)
-        return None
-    return [wg.load(os.path.join(PARTS, "part%d.json" % k)) for k in (1, 2)]
-
-
-def g_pair():
-    ps = _parts()
-    if not ps:
-        rec("pair needs the recorded take", "present", "absent")
-        return
-    p2 = ps[1]
-    prun = os.path.join(os.path.dirname(p2["run_dir"]), p2["from_point"].rsplit("/", 1)[0])
-    k = int(p2["from_point"].rsplit("/", 1)[1])
-    r = wg.judge_resume(prun, k, p2["run_dir"])
-    rec("pair real resume (part 2) judged on all layers", "SAME", r["verdict"], r["failed_layers"])
-    runs = [p2["run_dir"]]
-    gr = os.path.join(PARTS, "gate_runs")
-    if os.path.exists(gr):
-        runs += [x for x in open(gr, encoding="utf-8").read().split() if wg.load(os.path.join(x, "run.json")).get("from_point") == p2["from_point"]]
-    b1 = wg.boundary(prun, k, runs[:1])
-    rec("pair one resume only -> not qualified (D3 A)", "NOT SAME", "SAME" if b1["verdict"] == "SAME" else "NOT SAME", b1["verdict"])
-    if len(runs) >= 2:
-        b2 = wg.boundary(prun, k, runs[:2])
-        rec("pair two SAME resumes -> boundary SAME", "SAME", b2["verdict"], [x["failed_layers"] for x in b2["resumes"]])
-    # two identically WRONG resumes: both copies of a real resume with the same wrong discrete
-    c = os.path.join(CTL, "pair_wrong")
-    if os.path.isdir(c):
-        shutil.rmtree(c)
-    wr = []
-    for i in (1, 2):
-        dst = os.path.join(c, "%s_w%d" % (os.path.basename(p2["run_dir"]), i))
-        shutil.copytree(p2["run_dir"], dst)
-        tp = os.path.join(dst, "%d.t3.json" % k)
-        t = wg.load(tp)
-        t["obs"]["fields"]["van.nav_aside"] = "false" if t["obs"]["fields"].get("van.nav_aside") == "true" else "true"
-        json.dump(t, open(tp, "w", encoding="utf-8"))
-        wr.append(dst)
-    bw = wg.boundary(prun, k, wr)
-    rec("pair two identically wrong resumes (agree with each other)", "DIFFERENT", bw["verdict"], [x["layer3"][:1] for x in bw["resumes"]])
-    rro = wg.load(os.path.join(p2["run_dir"], "%d.restored.obs.json" % k))
-    po = wg.load(os.path.join(prun, "%d.obs.json" % k))
-    for f, val, nm in (("van.engine_on", "true", "engine"), ("van.@lv", "Vector3(0.03, 0, 0)", "velocity"),
-                       ("ghat.phase_t", "1.5", "clock")):
-        b = copy.deepcopy(rro)
-        b["fields"][f] = val
-        l = wg.layer2(po, b)
-        rec("pair real restored obs, %s mutated" % nm, "DIFFERENT", d(l), [x[0] for x in l])
-
-
-# ---- join verifier -----------------------------------------------------------------------------
-def _jcopy(case):
-    dst = os.path.join(CTL, case, "gateprobe.parts")
-    if os.path.isdir(os.path.dirname(dst)):
-        shutil.rmtree(os.path.dirname(dst))
-    shutil.copytree(PARTS, dst, ignore=shutil.ignore_patterns("trim", "joins_frames"))
-    return dst
-
-
-def _verify(pdir):
-    fm = os.path.join(os.path.dirname(PARTS), "framemap_rec25.json")
-    p1 = wg.load(os.path.join(pdir, "part1.json"))
-    walk = wg.load(os.path.join(p1["run_dir"], "walk.json"))
-    why, _ = jc.verify(pdir, fm, walk)
-    return why
-
-
-def _edit(pdir, k, fn):
-    p = os.path.join(pdir, "part%d.json" % k)
-    j = wg.load(p)
-    fn(j)
-    json.dump(j, open(p, "w", encoding="utf-8"), indent=1)
-
-
-def g_join():
-    if not _parts():
-        rec("join needs the recorded take", "present", "absent")
-        return
-    c = _jcopy("join_clean")
-    w = _verify(c)
-    rec("join clean take (2 parts, gate SAME x2, framemap proved)", "ADMIT", v(w), w)
-    c = _jcopy("join_absent")
-    os.remove(os.path.join(c, "part2.json"))
-    w = _verify(c)
-    rec("join part 2 absent (part 1 ends FAILED)", "REFUSED", v(w), w)
-    c = _jcopy("join_video_absent")
-    _edit(c, 2, lambda j: j.update(mp4=j["mp4"] + ".missing"))
-    w = _verify(c)
-    rec("join part 2's video absent", "REFUSED", v(w), w)
-    c = _jcopy("join_wrong_game")
-    _edit(c, 2, lambda j: j["identity"].update(game="0000old0game0000"))
-    w = _verify(c)
-    rec("join part 2 from another game hash", "REFUSED", v(w), w)
-    c = _jcopy("join_wrong_profile")
-    _edit(c, 1, lambda j: j["identity"].update(profile="play"))
-    _edit(c, 2, lambda j: j["identity"].update(profile="play"))
-    w = _verify(c)
-    rec("join both parts at the 60-fps play profile", "REFUSED", v(w), w)
-    c = _jcopy("join_bad_range")
-    _edit(c, 1, lambda j: j.update(failed_step="no such step"))
-    w = _verify(c)
-    rec("join resumed step != part 1's failed step", "REFUSED", v(w), w)
-    c = _jcopy("join_reversed")
-    _edit(c, 1, lambda j: j.update(steps=[[s[0], 10 ** 9] if i == len(j["steps"]) - 1 else s for i, s in enumerate(j["steps"])]))
-    w = _verify(c)
-    rec("join cut range reversed / past the part's end", "REFUSED", v(w), w)
-    c = _jcopy("join_dup")
-    _edit(c, 2, lambda j: j.update(steps=j["steps"] + [j["steps"][-1]]))
-    w = _verify(c)
-    rec("join a step played twice in the kept ranges", "REFUSED", v(w), w)
-    c = _jcopy("join_nomap")
-    os.rename(os.path.join(os.path.dirname(PARTS), "framemap_rec25.json"), os.path.join(CTL, "fm.bak"))
-    try:
-        w = _verify(c)
-    finally:
-        os.rename(os.path.join(CTL, "fm.bak"), os.path.join(os.path.dirname(PARTS), "framemap_rec25.json"))
-    rec("join no drawn-frame -> movie-frame proof", "REFUSED", v(w), w)
-    c = _jcopy("join_one_gate")
-    if os.path.exists(os.path.join(c, "gate_runs")):
-        os.remove(os.path.join(c, "gate_runs"))
-    w = _verify(c)
-    rec("join only one resume receipt (D3 A needs 2)", "REFUSED", v(w), w)
-    pert = os.path.join(PARTS, "perturb_runs")
-    if os.path.exists(pert):
-        c = _jcopy("join_perturbed_receipt")
-        with open(os.path.join(c, "gate_runs"), "a", encoding="utf-8") as f:
-            f.write(open(pert, encoding="utf-8").read())
-        w = _verify(c)
-        rec("join + the live +0.2 m perturbed receipt", "REFUSED", v(w), w)
-    c = _jcopy("join_bytes")
-    _edit(c, 2, lambda j: j.update(sha="0" * 16))
-    w = _verify(c)
-    rec("join part 2's video bytes changed since recorded", "REFUSED", v(w), w)
-
-
 GROUPS = {"ident": g_ident, "inv": g_inv, "refuse": g_refuse, "hear": g_hear, "work": g_work, "child": g_child,
-          "l2": g_l2, "l3": g_l3, "pair": g_pair, "join": g_join}
+          "l2": g_l2, "l3": g_l3, "join": lambda: t4_join_controls.g_join(rec)}
 
 
 def main(a):
