@@ -65,3 +65,33 @@ idle rerun above passed every check.
   ~11.8 min serial on the new routing; nothing in the T3 allowance pays for it).
 - The referee finish gate is a process sentence (REPLAY_USAGE: the referee judges the seven holes and the exam); no tool.
 - T1's open items are not touched (lane isolation of *suites* beyond this sentinel, nodraw interleaving, lean_close plant).
+
+## Fix round (2026-11-14, `trial_T34_fix_build_task.md`)
+
+Corrections to the sections above:
+- **R4: lane b's worker walks were 2 ok of 4.** The line "lane b played 4 walks as its workload the whole time" left
+  that out. The sentinel did not judge its workload; since F5 it does, and that same log is refused.
+- **Routing (Deviations, first two bullets) is superseded by F6.** Marks now runs in the 1x part after looks. The
+  "gap of the matrix check" is closed by F6's prelude rule.
+
+| Item | Commit | What | Control pair (planted refused / clean passed) |
+|---|---|---|---|
+| F5 (sentinel) | `db81a62` | `tools/method/sentinel_workers.py`; `lane_sentinel.sh` checks "lane b's worker walks" (every walk `RESULT: ok`, at least one) before it can print SENTINEL PASS | R4's real `sentinel_b_walk.log` (2 of 4) REFUSED; that log with only its ok walks ACCEPTED; a log with no walk REFUSED |
+| F6 | `4c6179e` | `tools/method/route.py`: SPEED=fast routing (fast = heat, net; **marks in the 1x part with looks**, plan order: looks before marks in one process); `method_run.sh` uses it. `t3_gate final` refuses a marks PASS unless its part ran looks before marks, the run asked that order, and the looks round id is in `passed_ids` | refused, each by the prelude rule alone: marks split from looks (the old routing); looks made no round; marks before looks. Clean (marks after looks, round PASSED) ACCEPTED. `solo_marks_pile` under SPEED=fast: old routing = 2 parts -> NOT PROVED by `prove_ghat.judge`; F6 routing = 1 part -> PROVED |
+| F7 | `4caff50` | pictures: `PlayTest.shot()` -> `_capture_row` writes one row per picture into `<shots>/captures.jsonl` (scenario, tag, file, drawn / physics frame, game ms, unix time, sha256, last check); `method_run.sh` empties it at the launch, copies shots with their times (`cp -p`), runs `captures.py inventory` -> `capture_inventory.json` (the launch time, every row, the copied file's sha / mtime, earlier captures of a tag marked superseded). `t3_gate final` requires, per part: the inventory (written after the launch), every required picture (`captures.py required`: literal `shot` / `obs_shot` at the top level of the scenario's own function) and every logged one present, captured after the launch, its file's bytes = the captured ones, no one file standing for two pictures, and a line in `<inv>/inspection.md` (`<scenario>/<tag>: what it shows`) | refused, each by the picture rule alone: a required picture never captured; captured but its file missing; older than the launch; bytes replaced; one file for two pictures; no inventory; inventory older than the launch; a logged picture without an inspection line; no inspection file. Clean ACCEPTED. Live smoke (0.28 game min): 2 rows, sha256 = the files, `captures.check` passes them |
+| F8 | `2d9b2ee` | 11 new solo groups in `prove_ghat.py` (every member of every multi-plant group now has one; parent's scenario and time-saver flag, own exact ids: checked equal to the parent's); "alone" = one behavioural plant (`one_flat` / `one_corner` don't count, R4); `prove_ghat.MATRIX` = the 21 rows, listed command by command in REPLAY_USAGE; `t3_gate.py matrix <final> <frozen> <proofs...>` lists every `Plant.on` row of the game as CERTIFIED / NOT CERTIFIED / NOT DONE and refuses when the inputs changed since the freeze | clean: 21 / 21 CERTIFIED, complete. Refused: one row's proof missing (cap_text NOT DONE); jug_a proved only as a batch (3 NOT CERTIFIED); a check added after the freeze (PROBLEM: refreeze + new final); a new plant with no group (NOT DONE). The game's rows = 21 |
+| F9 | `24f5a31` | `tools/method/seal.py`: the test-only flags (GATE_PROBE, GATE_L2_CONTINUE, GATE_NOABORT, GATE_PERTURB, GATE_RESUMES, JOIN_GATE_WAIVED, WALK_FAIL_AT, NO_MAKE, GUARD_INJECT, T1_LAG, MANIFEST_OLD, MANIFEST_SRC, EXPECT_FAIL, FAST_OK_OVERRIDE, FAST; SPEED other than "" / fast). `method_run.sh` (ROLE=final / proof), `prove_ghat.py` and `record_walk.sh ghat` refuse before any launch and write `seal.json`; `t3_gate final` / `proof` require a sealed receipt | every flag REFUSED (16 cases), clean environment SEALED (3 roles), a discovery run not sealed (allowed). Gate: a receipt that found GATE_RESUMES REFUSED (by the seal rule alone), no receipt REFUSED, clean ACCEPTED; a proof whose receipt found JOIN_GATE_WAIVED NOT certified, clean CERTIFIED. Live, no game started: `method_run.sh` ROLE=final + GATE_PROBE exit 3 (no run folder); `prove_ghat.py` + T1_LAG exit 3; `record_walk.sh ghat` + GATE_NOABORT exit 3 |
+| F10 | `33e06ba` | manifest traversal: also `self.<local>()`, `self.<local>` as a value, and the literal target of `call` / `callv` / `call_deferred` / `Callable(self, "<local>")` (bare or on self; `obj.call("x")` is another object's) | followed (old traversal: 0 rows each): self.helper(), self.helper as a value, call("helper"), callv("helper", []), self.call_deferred("helper"), Callable(self, "helper").call(). Not followed: boot.call("helper"). Still refused: callv(<variable>), Callable(self, <variable>). Real PlayTest.gd: the same 116 ids |
+
+`python tools/method/t3_controls.py`: **123 / 123** (49 in the build; the F10 commit message says 125, a slip: 123 is the
+count). `t4_controls.py`: 85 / 85.
+
+Budget effect of F6 (estimate, not measured): marks leaves the fast lane for the 1x lane: with T1's fast marks
+~4.6x, the 1x lane grows by about marks' 1x time (~3.3 game min) minus its fast share (~0.7). F8's matrix is 21
+launches, each with its own boot, instead of 11 batch groups: more minutes. Neither was measured here (no live suite
+this round, as the task says).
+
+**UNQUALIFIED after the fix round (T3):** the final checker, proof gate, matrix, picture and seal rules on a live
+final suite and live proofs (offline receipts + one live picture smoke + three live refusals only); the statically
+required pictures were never seen in a live final run (a wrong one refuses the final, it can't pass a missing one);
+F6's routing and F8's 21 solo launches have no measured cost; the observation table's completeness review stays human.

@@ -6,6 +6,7 @@ under `appdata/`. Exit codes: 0 PASS / accepted, 1 FAIL / refused, 2 INCOMPLETE,
 
 ## Rules that every step follows
 
+- **Walks and the recording run alone** (no second game beside them). Two games only for suites / proofs (section 8).
 - **At most 2 games on the PC.** Every launcher runs the guard; check by hand with
   `python tools/method/godot_guard.py [b]`. A second game is lane b: put `LANE=b` before the command.
 - **Before every launch** write its expected wall minutes and the running total in your budget ledger.
@@ -27,8 +28,9 @@ under `appdata/`. Exit codes: 0 PASS / accepted, 1 FAIL / refused, 2 INCOMPLETE,
 ## 0. Self-checks (no game)
 
 ```sh
-python tools/method/t3_controls.py          # input identity, manifest traversal, final / proof gates, obs table
-tools/method/live_session.sh import         # compile check of the game + test scripts (headless, ~0.2 min)
+python tools/method/t3_controls.py          # identity, manifest, final / proof / matrix gates, pictures, seal, sentinel, obs table
+python tools/method/t4_controls.py          # the walk gate, refusals, joins (no game)
+tools/method/live_session.sh import         # compile check of the game + test scripts (headless, a short game process)
 ```
 
 `t1fix_controls.py` is not a step here: its fixtures are T1's archived run folders, which are not in this
@@ -136,10 +138,12 @@ python tools/method/join_check.py sound appdata/videos/ghat.mp4 <a quiet second>
 ## 8. Two games at once (optional)
 
 ```sh
-tools/method/lane_sentinel.sh              # 2 games: misroutes refused, quit A leaves B running (prints SENTINEL PASS)
+tools/method/lane_sentinel.sh              # 2 games: misroutes refused, quit A leaves B running, B's walks all ok (-> SENTINEL PASS)
 LANE=b <any launcher>                      # lane b's folders: appdata/playtest_b, FindingNaresh/_shots_b, appdata/videos_b
 tools/method/stop_lane.sh [b]              # stop one lane's game, verified; other lanes untouched
 ```
 
 Never a recording + a fast proof + a 1x proof at the same time. Count overlap savings only from measured
 lifetimes (union vs sum).
+
+The referee judges the holes and the exam; the runner reports PASS / FAIL per step only.
