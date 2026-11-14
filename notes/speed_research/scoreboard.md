@@ -139,6 +139,24 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   "measured under load": not usable for the replay budget until re-measured with GTA closed. Correctness results (planted
   failure refused, clean passes) stand. **The scored replay runs with GTA closed** (the baseline day had no such load).
 
+- **T3 + T4 v2 builder, RESUME 2 scored (2026-11-14 14:00-14:07, referee; PC idle, CPU 38-52 %):** R4 lane sentinel PASS (misroutes
+  refused both ways, quit A leaves B alive); recording re-measured: **52 % of real time overall, 62-70 % in the walk, the same
+  beside a second game** (the GTA figures 34-39 % were a third too slow); two lanes 1.5x on that pair. Meter this resume: WALL 2.9
+  (builder total ~17 of 20). Offline T3 49 / 49, T4 83 / 83 (rerun by the Claude auditor).
+- **Audits of the build (2026-11-14):** Claude (`audit_T34_claude.md`): **ACCEPT WITH 7 CONDITIONS** (~3 game min): 7 identity controls
+  can't fail (they start from an already-refused point); step 0's `t1fix_controls.py` crashes in this copy; "sound PASS" unsaved;
+  no frame marker on the real ghat walk, so a joined take can't be verified; the gate refuses partly for no-effect reasons (a frozen
+  van's stale stored velocity, a 1 s cooling offset, float noise on far sleeping items); dropped key presses in lane b (2 / 4 walks)
+  unguarded. GPT (`audit_T34_gpt.md`): **REJECT as a ready <= 75 replay**: marks loses its looks prelude in the default split;
+  picture freshness not enforced; solo proof groups incomplete; test-only flags unsealed; **projection ~105-118 game min serial**
+  (no demonstrated <= 75 plan). Both: fresh takes only; the useful guards (identity, refusal, cancel, recording) stand.
+- **R7 (2026-11-14, referee):** (a) the replay is **fresh takes only**: the gate stays on and refuses; its strictness classes
+  (Claude C5) are a finding for after the research, not fixed now (0 game min); so the clean walk + video = one unbroken fresh take
+  (D1's joined take stays allowed but unusable on this walk). (b) Walks and recordings run with no second game beside them until
+  the dropped-tap bench (F5) says otherwise. (c) One fix round (`trial_T34_fix_build_task.md`) closes the union of both audits'
+  conditions; its game cap **5 min** (builder total cap 25), qualification minutes apart from the score. (d) D5: the projection is
+  over 75, so the replay waits for the user's A / B (asked 2026-11-14).
+
 ## Next (Stage 3 proper)
 **2026-11-14 13:40: stopped at the user's request; the referee's next steps are in `MPG
 otes\SPEED_REFEREE_HANDOFF.md`.**
