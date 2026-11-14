@@ -19,6 +19,9 @@ under `appdata/`. Exit codes: 0 PASS / accepted, 1 FAIL / refused, 2 INCOMPLETE,
   `appdata/playtest[_b]/FindingNaresh/live/walk.log`. Off plan: stop that lane at once with
   `tools/method/stop_lane.sh [b]` (verified exit), look at the picture, write one notes line.
 - **No rerun-until-green**, no check weakened, no plant row removed. 2-3 failed fixes of one thing: a bench.
+- **Acceptance runs carry no test-only flag.** The final suite (`ROLE=final`), the proofs and the recorded
+  walk refuse before launching when one is set (exit 3; list in `tools/method/seal.py`). Clear them first:
+  `unset GATE_PROBE GATE_L2_CONTINUE GATE_NOABORT GATE_PERTURB GATE_RESUMES JOIN_GATE_WAIVED WALK_FAIL_AT NO_MAKE GUARD_INJECT T1_LAG MANIFEST_OLD MANIFEST_SRC EXPECT_FAIL FAST_OK_OVERRIDE FAST`
 - Shut games down before long reasoning or edits.
 
 ## 0. Self-checks (no game)

@@ -50,6 +50,10 @@ case " $* " in
 		rm -rf "$parts"/*; args+=(--fresh)
 	   fi ;;
 esac
+# F9 (fix round): the recorded walk (ghat) is an acceptance run: test-only flags refused before any launch
+if [ "$w" = "ghat" ]; then
+	python tools/method/seal.py record "$parts/seal.json" || exit 3
+fi
 if [ -n "$GATE_ONLY" ]; then
 	# the walk up to and including the resumed step only (its end, then stop)
 	python - "$walkjson" "$(cat "$parts/gate_step")" "$live/gateonly_$w.json" <<'EOF'

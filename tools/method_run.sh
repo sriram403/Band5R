@@ -37,6 +37,9 @@ if [ -z "$PART" ]; then
 	mkdir "$INVD" 2>/dev/null || { echo "invocation id '$INV' already used ($INVD): not launching"; exit 3; }
 	export INV
 	echo "invocation $INV -> $INVD"
+	# F9 (fix round): an acceptance run (ROLE=final / proof) refuses test-only flags, before anything launches;
+	# the invocation's seal.json is what t3_gate.py final / proof require
+	python "$DIR/method/seal.py" "${ROLE:-diag}" "$INVD/seal.json" || { echo "refused: test-only flags (seal.py)" > "$INVD/seal.refused"; exit 3; }
 fi
 INVD="$STATE/inv/$INV"
 # ---- T1: SPEED=fast splits a ghat plan into its fast part and its 1x part

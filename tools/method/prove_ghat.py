@@ -169,5 +169,10 @@ def run(name):
 
 
 if __name__ == "__main__":
+    import seal          # F9: a proof is an acceptance run: refuse test-only flags before any launch
+    bad = seal.found("proof")
+    if bad:
+        print("REFUSED: proofs with test-only flags set: %s (unset them)" % ", ".join(bad))
+        sys.exit(3)
     for g in (sys.argv[1:] or list(GROUPS)):
         run(g)

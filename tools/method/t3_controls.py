@@ -21,6 +21,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import captures  # noqa: E402
+import seal  # noqa: E402
 import t3_gate  # noqa: E402
 import tree_id  # noqa: E402
 
@@ -224,6 +225,7 @@ def clean_final(name, fast=FAST, slow=SLOW, prelude=True, **kw):
     if slow:
         part(invd, inv, "1x", slow, passed=pre(slow), **skw)
     inspect_all(invd)
+    seal.seal(kw.get("role", "final"), os.path.join(invd, "seal.json"), env={})     # F9: clean env
     return invd
 
 
@@ -357,6 +359,7 @@ def prove_inv(group, scen, plants, failed, passed=(), tree=None, n=1, name=None)
     inv = name or "prove_%s_20261114_1200%02d_%d" % (group, n, 100 + n)
     invd = fresh("final", "inv", inv)
     part(invd, inv, "single", scen, fixture=plants, status="FAIL", failed=failed, passed=passed, role="proof", tree=tree)
+    seal.seal("proof", os.path.join(invd, "seal.json"), env={})        # F9: as method_run.sh writes it (clean env)
     return invd
 
 
@@ -480,6 +483,52 @@ def g_matrix():
     rec("matrix the game's plant rows (R4)", "21", str(len(t3_gate.plant_rows())), t3_gate.plant_rows())
 
 
+# ---- test-only flags sealed out of acceptance runs (F9) ------------------------------------------
+def g_seal():
+    for role in ("final", "proof", "record"):
+        rec("seal %s, clean environment" % role, "SEALED", "SEALED" if not seal.found(role, {"SPEED": "fast" if role != "record" else ""}) else "REFUSED")
+    for k in seal.FLAGS:
+        rec("seal final with %s set" % k, "REFUSED", "REFUSED" if seal.found("final", {k: "1"}) else "SEALED")
+    rec("seal final with SPEED=_fast (a part's internal speed)", "REFUSED", "REFUSED" if seal.found("final", {"SPEED": "_fast"}) else "SEALED")
+    rec("seal record with GATE_PROBE set", "REFUSED", "REFUSED" if seal.found("record", {"GATE_PROBE": "1"}) else "SEALED")
+    rec("seal a discovery run with GATE_PROBE (not an acceptance run)", "not sealed, allowed",
+        "not sealed, allowed" if not seal.seal("discovery", None, {"GATE_PROBE": "1"}) else "refused")
+    # the gate side: an acceptance invocation needs a sealed receipt
+    invd = clean_final("seal_flagged")
+    seal.seal("final", os.path.join(invd, "seal.json"), env={"GATE_RESUMES": "1"})
+    v, w = fin(invd)
+    rec("seal final suite whose receipt found GATE_RESUMES", "REFUSED", v, w)
+    rec("seal ... refused BY the seal rule alone", "seal only", "seal only" if w and all("seal" in x for x in w) else "other", w)
+    invd = clean_final("seal_none")
+    os.remove(os.path.join(invd, "seal.json"))
+    rec("seal final suite with no seal receipt", "REFUSED", *fin(invd))
+    rec("seal final suite, sealed receipt (clean)", "ACCEPTED", *fin(clean_final("seal_clean")))
+    import prove_ghat
+    fz = clean_final("seal_forproof", passed=[NET_ID])
+    pr = prove_inv("net", "ghat_net", "one_layer_net", [NET_ID], n=41)
+    seal.seal("proof", os.path.join(pr, "seal.json"), env={"JOIN_GATE_WAIVED": "1"})
+    rows = t3_gate.proof(fz, [pr])
+    rec("seal a proof whose receipt found JOIN_GATE_WAIVED", "NOT", "CERTIFIED" if all(ok for ok, _ in rows.values()) else "NOT", list(rows.values())[0][1])
+    pr = prove_inv("net", "ghat_net", "one_layer_net", [NET_ID], n=42)
+    rows = t3_gate.proof(fz, [pr])
+    rec("seal a proof, sealed receipt (clean)", "CERTIFIED", "CERTIFIED" if all(ok for ok, _ in rows.values()) else "NOT", list(rows.values())[0][1])
+    # the launchers refuse BEFORE any game (no Godot started: exit 3 and no run folder)
+    inv = "ctl_seal_%d" % os.getpid()
+    env = dict(os.environ, ROLE="final", SPEED="fast", INV=inv, GATE_PROBE="1")
+    r = subprocess.run(["bash", os.path.join(ROOT, "tools", "method_run.sh"), "ghat"], cwd=ROOT, env=env, capture_output=True, text=True)
+    ivd = os.path.join(ROOT, "appdata", "method", "inv", inv)
+    nodir = not any(f.endswith(".dir") for f in os.listdir(ivd)) if os.path.isdir(ivd) else False
+    rec("seal method_run.sh ROLE=final + GATE_PROBE=1 (refused before launch)", "exit 3, no run",
+        "exit %d, %s" % (r.returncode, "no run" if nodir else "a run"), (r.stdout + r.stderr).strip().splitlines()[-1:] )
+    shutil.rmtree(ivd, ignore_errors=True)
+    env = dict(os.environ, T1_LAG="x:1")
+    r = subprocess.run([sys.executable, os.path.join(HERE, "prove_ghat.py"), "net"], cwd=ROOT, env=env, capture_output=True, text=True)
+    rec("seal prove_ghat.py with T1_LAG set (refused before launch)", "exit 3", "exit %d" % r.returncode, r.stdout.strip()[-120:])
+    env = dict(os.environ, GATE_NOABORT="1")
+    r = subprocess.run(["bash", os.path.join(ROOT, "tools", "record_walk.sh"), "ghat", "--fresh"], cwd=ROOT, env=env, capture_output=True, text=True)
+    rec("seal record_walk.sh ghat with GATE_NOABORT set (refused before launch)", "exit 3", "exit %d" % r.returncode, r.stdout.strip().splitlines()[-1:])
+
+
 # ---- sentinel workload (F5) ----------------------------------------------------------------------
 def g_sentinel():
     sw = os.path.join(HERE, "sentinel_workers.py")
@@ -503,7 +552,7 @@ def g_sentinel():
 
 
 GROUPS = {"ident": g_ident, "manifest": g_manifest, "final": g_final, "proof": g_proof, "obs": g_obs,
-          "sentinel": g_sentinel, "matrix": g_matrix}
+          "sentinel": g_sentinel, "matrix": g_matrix, "seal": g_seal}
 
 
 def main(a):

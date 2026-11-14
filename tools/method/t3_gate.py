@@ -101,12 +101,23 @@ def marks_prelude(scens, vj, lab):
     return []
 
 
+def sealed(invd, role):
+    """F9: the invocation's seal receipt (tools/method/seal.py, written by method_run.sh before any launch)."""
+    s = rj(os.path.join(invd, "seal.json"))
+    if not s:
+        return ["no seal receipt (seal.json): test-only flags not checked for this %s run" % role]
+    if s.get("role") != role or not s.get("sealed"):
+        return ["seal receipt: role %s, sealed %s, test-only flags %s (an acceptance %s run needs none)" % (s.get("role"), s.get("sealed"), s.get("found"), role)]
+    return []
+
+
 def final(invd, frozen=None):
     why = []
     inv = os.path.basename(os.path.normpath(invd))
     worst, lines = combine_parts.combine(invd)
     if worst != "PASS":
         why.append("combined result %s: %s" % (worst, " | ".join(x.strip() for x in lines[1:])[:400]))
+    why += sealed(invd, "final")
     parts = parts_of(invd)
     # F7: the runner's inspection file, one line per required picture: `<scenario>/<tag>: what it shows`
     ip = os.path.join(invd, "inspection.md")
@@ -194,7 +205,7 @@ def proof(final_invd, prove_invds):
             continue
         scen, plants, expect = prove_ghat.GROUPS[g]
         prob, d, res = prove_ghat.judge(pd, scen, plants, expect)
-        w = []
+        w = sealed(pd, "proof")
         if d:
             t = tree_of(d, w, inv)
             if t and ftree and t != ftree:
