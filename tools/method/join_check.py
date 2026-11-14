@@ -286,7 +286,29 @@ def join(pdir, out, fmap=None):
     return 0
 
 
+def mean_db(video, start, dur):
+    r = sh(["ffmpeg", "-v", "info", "-ss", "%.3f" % start, "-t", "%.3f" % dur, "-i", video, "-vn", "-af", "volumedetect", "-f", "null", "-"])
+    m = re.search(r"mean_volume: (-?[\d.]+|-inf) dB", r.stderr)
+    return float(m.group(1)) if m and m.group(1) != "-inf" else -200.0
+
+
+def sound(video, quiet_s, loud_s, dur=1.5, need_db=10.0):
+    """The known captured sound, decoded: the window after a known sound's start (loud_s) must be at
+    least need_db louder than a quiet window (quiet_s). A missing audio stream fails."""
+    r = sh(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=codec_name,sample_rate,channels", "-of", "csv=p=0", video])
+    if not r.stdout.strip():
+        print("SOUND: FAIL, no audio stream in %s" % video)
+        return 1
+    q, l = mean_db(video, float(quiet_s), dur), mean_db(video, float(loud_s), dur)
+    ok = l - q >= need_db
+    print("SOUND: %s, audio %s; quiet window %.2f s: %.1f dB, known sound window %.2f s: %.1f dB (%.1f dB louder, need %.0f)"
+          % ("PASS" if ok else "FAIL", r.stdout.strip(), float(quiet_s), q, float(loud_s), l, l - q, need_db))
+    return 0 if ok else 1
+
+
 def main(a):
+    if a[0] == "sound":
+        return sound(a[1], a[2], a[3])
     if a[0] == "framemap":
         return framemap(a[1], a[2], a[3], a[4])
     if a[0] == "part":
