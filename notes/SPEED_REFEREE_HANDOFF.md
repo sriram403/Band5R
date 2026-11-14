@@ -15,6 +15,11 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 > D:\mine\Agentics\Skills\AGENTS.md. Then follow "Next steps" in the hand-off, one at a time, and report to the user short and plain,
 > A / B with your pick.
 
+## LIVE (2026-11-14 14:00, new referee thread)
+Step 1 done (GTA closed, no Godot, CPU 10-60 % from a browser). **Step 2 running:** the builder resumed (RESUME 2) as a T3
+child "Speed T34 builder, resume 2"; the meter (`MPG_referee/meter_T34.log`) and a verdict watch are on `MPG_speed_t34`.
+Next when it replies: step 3 (audit the build).
+
 ## Where it stands (one paragraph)
 Stages 1-2 done (top 4 signed). Stage 3: **T1 + T2 (fast tests) QUALIFIED** after 3 rounds and 3 GPT audits: the final table
 (fast PASS counts for net, heat, marks-if-its-looks-prelude-made-its-round; looks fast = exploratory, 1x for an accepted PASS;
