@@ -134,6 +134,11 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   same-run looks prelude PASS. Still open, all v2 pieces the builder is building: input sealing (exact source identity), split
   order equivalence, picture freshness. **T1 counts as qualified for the replay once the builder's v2 closes those three.**
 
+- **Measurement caveat (2026-11-14 ~13:30, referee):** the user is playing GTA 5 on this PC (CPU 96 %, GTA most of it) and runs
+  another thread. Every TIMING the builder measured since ~13:00 (recording at 34 % of real-time speed, two-lane throughput) is
+  "measured under load": not usable for the replay budget until re-measured with GTA closed. Correctness results (planted
+  failure refused, clean passes) stand. **The scored replay runs with GTA closed** (the baseline day had no such load).
+
 ## Next (Stage 3 proper)
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
