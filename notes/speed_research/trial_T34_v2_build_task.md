@@ -55,3 +55,6 @@ the fast table at `709028b`); rerun R4 (lane sentinel, the CR fix); **re-measure
 34 % and the R2 numbers were taken with GTA at 96 % CPU: not usable); write the two report sections your table refers to but
 that don't exist ("Resume 2026-11-14": why no point of the probe walk passes the gate, incl. the parked van's stale 0.148 m/s;
 "Live gate session G"); finish `REPLAY_USAGE.md` (commands only: no results, no game symptoms). Then reply.
+Resumed by the new referee thread 2026-11-14 (after GTA closed): the PC was checked (no GTA, no Godot; CPU 10-60 %, a web
+browser). **Write the CPU load (`(Get-CimInstance Win32_Processor).LoadPercentage`, sampled during the run) beside every
+timing you report.** The referee's meter and verdict watch are on this copy. Remember: commit after each sub-step.
