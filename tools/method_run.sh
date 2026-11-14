@@ -43,7 +43,9 @@ INVD="$STATE/inv/$INV"
 # fix round (the hearing gap): ghat_jug and ghat_places drop items near the creature, and the game's
 # hearing reads the wall clock (Hearing.gd, Creature.gd item bounce 1500 wall ms, Carryable.gd 150 ms
 # knock debounce): fast changes what it hears. Both stay 1x.
-FAST_OK="ghat_heat ghat_looks ghat_net ghat_marks"
+# T3 v2 (2026-11-14): T1 qualification round 2's final table: ghat_looks' glass check stays 1x for an
+# accepted PASS (a steady speed shift), so looks runs in the 1x part; FAST_OK_OVERRIDE for diagnostics only.
+FAST_OK="${FAST_OK_OVERRIDE:-ghat_heat ghat_net ghat_marks}"
 if [ "$SPEED" = "fast" ] && [ "$WHAT" = "ghat" ] && [ -z "$PART" ]; then
 	ALL="${GHAT:-ghat_heat,ghat_looks,ghat_net,ghat_places,ghat_jug,ghat_spring,ghat_marks}"
 	FP=""; SP=""
@@ -120,6 +122,11 @@ mkdir -p "$OUT/shots"
 touch "$OUT/launch_mark"
 (cd "$OUT" && pwd -W 2>/dev/null || pwd) > "$INVD/$PART.dir"
 { echo "inv $INV part $PART"; echo "run $ID plan $PLAN profile $K fixture '${FIXTURE}' speed '${SPEED:-1x}' lane '${LANE:-a}' at $(date '+%F %T')"; echo "head $(git -C "$ROOT" rev-parse HEAD)"; git -C "$ROOT" status --porcelain; } > "$OUT/run_info.txt"
+# ---- T3 v2 run metadata (2026-11-14): role (ROLE=discovery|repair|final|proof|diag, default diag), the
+# input tree identity before and after (tools/method/tree_id.py: game + test + tools + bin, dirty bytes
+# included), the namespace, start / end and the verified exit. tools/method/t3_gate.py reads run_meta.json.
+python "$DIR/method/tree_id.py" stamp "$OUT/tree_pre.json" > /dev/null
+T_START=$(date '+%F %T')
 echo "method: $PLAN, profile $K, speed ${SPEED:-1x}, lane ${LANE:-a} -> $OUT"
 echo "expected ~3-4 min (ramp,c2_more; c2_more alone ~2 min incl. the ~40 s compile); maximum: the phase deadlines + kill, cap 600 s"
 GARGS="--method-profile=$K"
@@ -141,4 +148,14 @@ for f in seg_1.log rig.txt method_events.txt c2.txt summary.txt compile.log; do
 	[ -f "$RUNS/$f" ] && cp "$RUNS/$f" "$OUT/"
 done
 find "$ROOT/$SHOTS" -maxdepth 1 \( -name 'test_*.png' -o -name 'c2_*.png' \) -newer "$OUT/launch_mark" -exec cp {} "$OUT/shots/" \; 2>/dev/null
+python "$DIR/method/tree_id.py" stamp "$OUT/tree_post.json" > /dev/null
+left=$(LANE= python "$DIR/method/godot_guard.py" --pids "$LANE" | tr '\n' ' ')
+python - "$OUT/run_meta.json" <<EOF
+import json, sys
+json.dump({"inv": "$INV", "part": "$PART", "run": "$ID", "plan": "$PLAN", "profile": "$K", "fixture": "$FIXTURE",
+           "speed": "${SPEED:-1x}", "lane": "${LANE:-a}", "role": "${ROLE:-diag}", "namespace": {"data": "appdata/$PT",
+           "shots": "$SHOTS", "runs": "appdata/method/runs/$ID", "receipt": "appdata/method/inv/$INV"},
+           "start": "$T_START", "end": "$(date '+%F %T')", "rc": "${rc:-3}", "godot_left_in_lane": "$left".strip()},
+          open(sys.argv[1], "w", encoding="utf-8"), indent=1)
+EOF
 finish "${rc:-3}"

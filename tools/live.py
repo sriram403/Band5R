@@ -200,6 +200,8 @@ def main() -> int:
             if os.environ.get("WALK_FAIL_AT"):           # test-only control: "<step index>:<game s>"
                 st_, s_ = os.environ["WALK_FAIL_AT"].split(":")
                 msg["fail_at"] = {"step": int(st_), "s": float(s_)}
+            if os.environ.get("GATE_L2_CONTINUE") == "1":    # test-only control: past a layer 1+2 DIFFERENT
+                msg["l2_continue"] = True
             if os.environ.get("GATE_PERTURB"):           # test-only control: "van:0.2"
                 w_, dx_ = os.environ["GATE_PERTURB"].split(":")
                 msg["perturb"] = {"what": w_, "dx": float(dx_)}

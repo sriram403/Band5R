@@ -7,8 +7,18 @@ every check() there with a stable id (scenario/slug), its regex and line.
 A check in a helper used by several scenarios is required in each.
 Usage: python tools/method/make_ghat_manifest.py ghat_heat [ghat_looks ...]
        (no names: every #6 scenario) > out.json
+       MANIFEST_SRC=<file.gd> : another source (the offline controls' tiny sources)
+
+T3 v2 traversal fix (2026-11-14): the old walk followed only calls of names starting "_" AND with one
+of HELPERS' prefixes, each function once. Now: every call of a function DEFINED in the source (any
+name; also a bare function name passed as a value, e.g. a callback), cycle-safe (a function already on
+the current call path is not re-entered), and every call SITE counts (a helper called from 2 places
+gives its checks twice: id, id_2, ...). A check() that can't be parsed, or a dynamic call
+(call("..." + x), callv(var), Callable(self, var)) in a traversed function that isn't listed in
+DYNAMIC_OK with a reason, stops the manifest (exit != 0): nothing is silently dropped.
 """
 import json
+import os
 import re
 import sys
 
@@ -16,8 +26,14 @@ ROOT = __file__.replace("\\", "/").rsplit("/tools/", 1)[0]
 SRC = ROOT + "/FindingNaresh/scripts/dev/PlayTest.gd"
 FMT = re.compile(r"%[-+ 0#]*[0-9]*(?:\.[0-9]+)?[sdifxXcov]")
 CHECK = re.compile(r'\bcheck\((.*),\s*"((?:[^"\\]|\\.)*)"(\s*%.*)?\)\s*$')
-CALL = re.compile(r"\b(_[a-z0-9_]+)\(")
+CALL = re.compile(r"(?<![\w.])([A-Za-z_][A-Za-z0-9_]*)\s*\(")
+VALUE_REF = re.compile(r"(?:[=,(]|\breturn)\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?=[,)]|$)")
+DYNAMIC = re.compile(r"(?<![\w])(?:call|callv|call_deferred)\(\s*(?!\))|Callable\(\s*self\s*,\s*(?!\")")
+DYNAMIC_OK = {}      # "function": "why its dynamic call can't reach a check" (none needed for the ghat: see the controls)
+OLD = os.environ.get("MANIFEST_OLD") == "1"   # the pre-fix traversal (for the diff / controls only)
 HELPERS = ("_ghat", "_fix_with", "_hide_well")
+STRS = re.compile(r'"(?:[^"\\]|\\.)*"')
+OLD_CALL = re.compile(r"\b(_[a-z0-9_]+)\(")
 SCENARIOS = ["ghat_heat", "ghat_looks", "ghat_net", "ghat_places", "ghat_jug", "ghat_spring", "ghat_marks"]
 
 
@@ -48,8 +64,10 @@ def functions(src):
 def manifest(scen, src, funcs):
     out, seen, visited = [], {}, set()
 
-    def walk(name):
-        if name in visited or name not in funcs:
+    def walk(name, path):
+        if name not in funcs or name in path:          # not local, or a cycle on this call path
+            return
+        if OLD and name in visited:
             return
         visited.add(name)
         a, b = funcs[name]
@@ -63,6 +81,9 @@ def manifest(scen, src, funcs):
                     i += 1
                     line += " " + src[i].strip()
             i += 1
+            if line.startswith("#") and not OLD:
+                continue
+            code = STRS.sub('""', line.split(" #")[0])
             m = CHECK.search(line)
             if m:
                 text = m.group(2)
@@ -73,11 +94,18 @@ def manifest(scen, src, funcs):
                 out.append({"id": "%s/%s" % (scen, sid), "regex": regex(text), "line": first + 1, "kind": "plain", "in": name})
             elif re.search(r"\bcheck\(", line) and not line.startswith("#"):
                 raise SystemExit("unparsed check at line %d: %s" % (first + 1, line))
-            for c in CALL.findall(line):
-                if c.startswith(HELPERS) and c != name:
-                    walk(c)
+            if OLD:
+                for c in OLD_CALL.findall(line):
+                    if c.startswith(HELPERS) and c != name:
+                        walk(c, path)
+                continue
+            if DYNAMIC.search(code) and name not in DYNAMIC_OK and not re.search(r'(?:call|callv)\(\s*""\s*[,)]', code.replace(" ", "")) :
+                raise SystemExit("dynamic call at line %d in %s (not in DYNAMIC_OK): %s" % (first + 1, name, line))
+            for c in CALL.findall(code) + VALUE_REF.findall(code):
+                if c != "check" and c in funcs:
+                    walk(c, path | {name})
 
-    walk("t_" + scen)
+    walk("t_" + scen, frozenset())
     return out
 
 

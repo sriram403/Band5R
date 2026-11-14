@@ -671,7 +671,11 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 		while not FileAccess.file_exists(String(gate["l2"])) and pt.el_ms(vwait) < 30000:
 			await pt.wait(0.1)
 		var v = JSON.parse_string(FileAccess.get_file_as_string(String(gate["l2"]))) if FileAccess.file_exists(String(gate["l2"])) else null
-		if typeof(v) != TYPE_DICTIONARY or String(v.get("verdict", "")) != "SAME":
+		if typeof(v) == TYPE_DICTIONARY and String(v.get("verdict", "")) != "SAME" and bool(msg.get("l2_continue", false)):
+			# test-only control (GATE_L2_CONTINUE): go on past a layer 1+2 DIFFERENT so layer 3 can be shown live;
+			# the receipt keeps the DIFFERENT (such a run never counts as a resume)
+			_say("gate control (TEST ONLY): layer 1+2 %s, continuing to show layer 3" % String(v.get("verdict", "")))
+		elif typeof(v) != TYPE_DICTIONARY or String(v.get("verdict", "")) != "SAME":
 			_failed("gate: %s before any input (%s)" % ["no layer 1+2 verdict in 30 s" if typeof(v) != TYPE_DICTIONARY else "layer 1+2 " + String(v.get("verdict", "?")),
 				"" if typeof(v) != TYPE_DICTIONARY else String(v.get("why", "")).substr(0, 200)])
 		else:
