@@ -42,7 +42,11 @@ is the one `method_run.sh` / `method_verdict.py` write (`run_info.txt` first lin
 | # | Run | Expected | Wall | Watched | Result |
 |---|---|---:|---:|---|---|
 | R2 (shared, charged to T4) | `lane_sentinel.sh`: lane b plain game + lane a rec25 take | 2.2 | 2.67 union | Monitor | misroute b -> a folder **refused (6)**, a -> b folder **refused (6)**, lane b's own command answered (0), two distinct pids; after lane a's targeted stop: lane a gone, **lane b same pid alive, heartbeat 7369 -> 7555**; lane b stopped, verified gone. The tool printed SENTINEL FAIL on its own bug (a Windows `\r` in a pid comparison; the printed values were equal): fixed, then R4 |
-| R4 | `lane_sentinel.sh` again (fixed; lane b walking the whole time) | 2.8 | (see below) | Monitor | (see below) |
+| R4 | `lane_sentinel.sh` again (fixed; lane b walking the whole time), 2026-11-14 14:03, PC idle (CPU 52 % avg with both games) | 2.8 | 2.0 union (3.0 summed) | Monitor every 3 s + CPU sampler | **SENTINEL PASS** (`appdata/t34/R4.out`): lane b's own command answered (0); misroute b -> a folder **refused (6)**, a -> b folder **refused (6)**; two distinct pids (15912 / 8908); lane a's take DONE and its targeted stop left lane a gone; **lane b same pid alive, heartbeat 4773 -> 4956 in 3 s**; lane b played 4 walks as its workload the whole time; lane b stopped, verified gone. Lane b held 59.7 physics frames/s beside the recording (60.0 alone after) |
+
+An earlier R4 attempt (13:32, under GTA) is void: its log stops mid-check at 13:34:53 (no "lane b walks" or stop lines), which matches the referee's stop at
+the user's request at ~13:35 killing lane b and the script; its "lane b still running: BAD" is read as that kill. The
+idle rerun above passed every check.
 
 ## Deviations and what I had to change
 

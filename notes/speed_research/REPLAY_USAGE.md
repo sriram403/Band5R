@@ -10,6 +10,10 @@ under `appdata/`. Exit codes: 0 PASS / accepted, 1 FAIL / refused, 2 INCOMPLETE,
   `python tools/method/godot_guard.py [b]`. A second game is lane b: put `LANE=b` before the command.
 - **Before every launch** write its expected wall minutes and the running total in your budget ledger.
   Stop the replay as INCOMPLETE when the projection passes 75 wall game minutes.
+- **CPU load beside every timing.** Close other heavy programs first. While a run lives, sample the load
+  (stop it by creating the stop file):
+  `powershell.exe -NoProfile -File tools/method/cpu_sampler.ps1 -Out appdata/<run>_cpu.tsv -Stop appdata/<run>_cpu.stop -HbB appdata/playtest_b/FindingNaresh/live/heartbeat.json &`
+  then `touch appdata/<run>_cpu.stop`. Write the average and the range beside each timing.
 - **Watch every run while it runs** (every few seconds): walks print their lines; suites write
   `appdata/method/runs/<run>/console.txt`; a walk's own log is
   `appdata/playtest[_b]/FindingNaresh/live/walk.log`. Off plan: stop that lane at once with
