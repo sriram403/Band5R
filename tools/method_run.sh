@@ -155,7 +155,8 @@ import json, sys
 json.dump({"inv": "$INV", "part": "$PART", "run": "$ID", "plan": "$PLAN", "profile": "$K", "fixture": "$FIXTURE",
            "speed": "${SPEED:-1x}", "lane": "${LANE:-a}", "role": "${ROLE:-diag}", "namespace": {"data": "appdata/$PT",
            "shots": "$SHOTS", "runs": "appdata/method/runs/$ID", "receipt": "appdata/method/inv/$INV"},
-           "start": "$T_START", "end": "$(date '+%F %T')", "rc": "${rc:-3}", "godot_left_in_lane": "$left".strip()},
+           "start": "$T_START", "end": "$(date '+%F %T')", "rc": "${rc:-3}", "godot_left_in_lane": "$left".strip(),
+           "from_point": "$FROM_POINT", "ghat_env": "$GHAT", "early_stop_ids": "$EXPECT_IDS"},
           open(sys.argv[1], "w", encoding="utf-8"), indent=1)
 EOF
 finish "${rc:-3}"

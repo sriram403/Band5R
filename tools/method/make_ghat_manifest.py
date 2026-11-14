@@ -110,7 +110,7 @@ def manifest(scen, src, funcs):
 
 
 if __name__ == "__main__":
-    src = open(SRC, encoding="utf-8").read().split("\n")
+    src = open(os.environ.get("MANIFEST_SRC", SRC), encoding="utf-8").read().split("\n")
     funcs = functions(src)
     names = sys.argv[1:] or SCENARIOS
     print(json.dumps({n: manifest(n, src, funcs) for n in names}, indent=1))

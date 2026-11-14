@@ -124,7 +124,7 @@ def judge(invd, scen, plants, expect):
 def run(name):
     scen, plants, expect = GROUPS[name]
     inv = "prove_%s_%s_%d" % (name, time.strftime("%Y%m%d_%H%M%S"), os.getpid())
-    env = dict(os.environ, GHAT=scen, FIXTURE=plants, INV=inv)
+    env = dict(os.environ, GHAT=scen, FIXTURE=plants, INV=inv, ROLE="proof")   # T3 v2: run_meta role
     env.pop("EXPECT_FAIL", None)
     # T2: EARLY=1 stops the run once every expected id of the group has FAILed (exact ids)
     if os.environ.get("EARLY"):
