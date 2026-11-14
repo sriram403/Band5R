@@ -8,7 +8,7 @@
 #   REFUSED (instance.json: lane / pid); the corrected commands are answered by their own lane's pid
 # 4 lane a's take ends with its own targeted stop (stop_lane.sh a): lane b's game still alive and its
 #   heartbeat (physics frames) still advancing; then lane b stopped, both verified gone
-# Prints SENTINEL PASS only when every check holds.
+# Prints SENTINEL PASS only when every check holds, lane b's worker walks included (F5, fix round).
 cd "$(dirname "$0")/../.."
 w=${1:-gateprobe}
 L=appdata/t34/sentinel.log
@@ -51,7 +51,9 @@ f1=$(python -c "import json;print(json.load(open('$LB/heartbeat.json'))['physics
 sleep 3
 f2=$(python -c "import json;print(json.load(open('$LB/heartbeat.json'))['physics_frames'])")
 check yes "$([ "$f2" -gt "$f1" ] && echo yes || echo no)" "lane b heartbeat advancing after lane a stopped ($f1 -> $f2)"
-wait $wb; say "lane b walks: $(grep -c '^RESULT: ok' appdata/t34/sentinel_b_walk.log) ok of $(grep -c '^RESULT' appdata/t34/sentinel_b_walk.log)"
+wait $wb
+# F5 (fix round): the workload is judged too: every lane b walk must end ok (no PASS over failed workers)
+wk=$(python tools/method/sentinel_workers.py appdata/t34/sentinel_b_walk.log); check 0 $? "lane b's worker walks ($wk)"
 say "5 stop lane b"
 tools/method/stop_lane.sh b | tee -a "$L"
 check "" "$(python tools/method/godot_guard.py --pids b | tr -d '\r' | tr '\n' ' ')" "lane b gone (verified)"

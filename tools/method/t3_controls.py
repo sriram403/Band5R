@@ -9,7 +9,8 @@ Groups:
             under appdata/t3ctl/ (no archived T1 runs live in this copy)
   proof     t3_gate.py proof on the same kind of receipts
   obs       t3_gate.py obstable on a small table
-  python tools/method/t3_controls.py [ident manifest final proof obs]
+  sentinel  sentinel_workers.py (lane_sentinel.sh's workload judge) on R4's real lane b log and its pair
+  python tools/method/t3_controls.py [ident manifest final proof obs sentinel ...]
 """
 import json
 import os
@@ -301,7 +302,30 @@ def g_obs():
     rec("obs no real producer / input -> GAP", "1 gaps", "%d gaps" % bad, out[-1])
 
 
-GROUPS = {"ident": g_ident, "manifest": g_manifest, "final": g_final, "proof": g_proof, "obs": g_obs}
+# ---- sentinel workload (F5) ----------------------------------------------------------------------
+def g_sentinel():
+    sw = os.path.join(HERE, "sentinel_workers.py")
+    real = os.path.join(ROOT, "appdata", "t34", "sentinel_b_walk.log")
+    run = lambda p: subprocess.run([sys.executable, sw, p], capture_output=True, text=True)
+    d = fresh("sentinel")
+    if os.path.exists(real):
+        r = run(real)
+        rec("sentinel R4's real lane b log (2 of 4 walks failed)", "REFUSED", "ACCEPTED" if r.returncode == 0 else "REFUSED", r.stdout.strip())
+        # the clean pair: the same log with only its ok walks (every RESULT line ok)
+        txt = open(real, encoding="utf-8", errors="replace").read().replace(chr(13), "")
+        keep = [ln for ln in txt.split(chr(10)) if not ln.startswith("RESULT") or ln.startswith("RESULT: ok")]
+        wr(os.path.join(d, "clean.log"), chr(10).join(keep))
+        r = run(os.path.join(d, "clean.log"))
+        rec("sentinel the same log, failed walks' RESULT lines removed", "ACCEPTED", "ACCEPTED" if r.returncode == 0 else "REFUSED", r.stdout.strip())
+    else:
+        rec("sentinel R4's real lane b log present", "present", "missing", real)
+    wr(os.path.join(d, "none.log"), "lane b never played a walk" + chr(10))
+    r = run(os.path.join(d, "none.log"))
+    rec("sentinel no worker walk at all", "REFUSED", "ACCEPTED" if r.returncode == 0 else "REFUSED", r.stdout.strip())
+
+
+GROUPS = {"ident": g_ident, "manifest": g_manifest, "final": g_final, "proof": g_proof, "obs": g_obs,
+          "sentinel": g_sentinel}
 
 
 def main(a):

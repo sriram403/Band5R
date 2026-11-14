@@ -104,7 +104,16 @@ func _ready() -> void:
 var _ready_ms := 0
 
 
+## F5 bench (speed research fix round, test only): every focus change of this window, logged.
+var focus_log: Array = []        ## [game ms, physics frame, "app_out" | "app_in" | "win_out" | "win_in"]
+
+
 func _notification(what: int) -> void:
+	var fk := {NOTIFICATION_APPLICATION_FOCUS_OUT: "app_out", NOTIFICATION_APPLICATION_FOCUS_IN: "app_in",
+		NOTIFICATION_WM_WINDOW_FOCUS_OUT: "win_out", NOTIFICATION_WM_WINDOW_FOCUS_IN: "win_in"}
+	if fk.has(what):
+		focus_log.append([gms(), Engine.get_physics_frames(), fk[what]])
+		print("[focus] %s at %d ms, physics frame %d" % [fk[what], gms(), Engine.get_physics_frames()])
 	var quiet := not OS.get_cmdline_user_args().has("--show") and not _recording()
 	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		if quiet:
@@ -394,6 +403,37 @@ func hold_physics(k: Key, seconds: float) -> void:
 	key(k, false)
 	await physics_frames(3)  # let the release land (a pour lets go of the can)
 	if mrec != null: mrec.close(_mo)
+
+
+## F5 bench (test only): n taps of N (P1's nav swing), each judged by its effect: nav_aside must
+## flip once per tap. Logs every tap with the focus changes since the bench began.
+## -> "tag: <ok> ok, <dropped> no flip, <double> ... focus changes <k>"
+var bench_lines: Array = []
+
+
+func tap_bench(n: int, tag: String, gap_s := 0.8) -> String:
+	var c := camper()
+	var f0 := focus_log.size()
+	var ok := 0
+	var bad := 0
+	for i in n:
+		var before: bool = c.nav_aside
+		var fb := focus_log.size()
+		await tap(KEY_N)
+		await physics_frames(3)
+		var flipped: bool = c.nav_aside != before
+		if flipped:
+			ok += 1
+		else:
+			bad += 1
+		var ln := "[tapbench] %s tap %d %s (focus changes during it %d, nav %s -> %s)" % [tag, i + 1, "flip" if flipped else "NO FLIP", focus_log.size() - fb, before, c.nav_aside]
+		print(ln)
+		bench_lines.append(ln)
+		await wait(gap_s)
+	var r := "%s: %d / %d flipped, %d no flip; focus changes %d %s" % [tag, ok, n, bad, focus_log.size() - f0, str(focus_log.slice(f0))]
+	print("[tapbench] " + r)
+	bench_lines.append(r)
+	return r
 
 
 func mouse(rel: Vector2) -> void:
