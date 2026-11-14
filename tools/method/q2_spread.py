@@ -2,7 +2,7 @@
 
 Usage: python tools/method/q2_spread.py   (prints one row per run per value; 0 game min)
 Values: heat fuel once it gives up (per profile), looks engine ticks + looks game length, sniffs at the
-back, the looks round's stops, the closest face-to-glass gap, the cornering profile's search.
+back, the looks round's stops, the closest face-to-glass gap.
 """
 import json
 import os
@@ -24,14 +24,7 @@ def info(d):
     txt = open(p, encoding="utf-8").read() if os.path.exists(p) else ""
     m = re.search(r"fixture '([^']*)' speed '([^']*)'", txt)
     fx, sp = (m.group(1), m.group(2)) if m else ("", "")
-    if not m:
-        m2 = re.search(r"plan (\S+)", txt)
     return fx or "clean", ("fast" if "fast" in sp else "1x")
-
-
-def scen_len(ev, scen):
-    t = [e.get("gt") for e in ev if e.get("scen") == scen and isinstance(e.get("gt"), (int, float))]
-    return (max(t) - min(t)) if t else None
 
 
 for name in sorted(os.listdir(RUNS)):
@@ -56,6 +49,4 @@ for name in sorted(os.listdir(RUNS)):
             if m:
                 out.append("%s=%s%s" % (k, "/".join(m.groups()), "" if e.get("ok") else "(FAIL)"))
     if out:
-        lk = scen_len(ev, "ghat_looks")
-        print("%-48s %-4s %-28s %s%s" % (name[:48], sp, fx[:28], " ".join(out),
-                                         " looks_game_s=%.1f" % lk if lk else ""))
+        print("%-48s %-4s %-28s %s" % (name[:48], sp, fx[:28], " ".join(out)))

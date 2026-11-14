@@ -441,3 +441,80 @@ tool changes below (game code and `core/Plant.gd` untouched). Budget 15 wall gam
 | Q2 | lane a: `SPEED=_fast EARLY=1 prove_ghat.py solo_fast_turn solo_leave_sees solo_no_breath_lock solo_round_skip solo_marks_pile solo_marks_unsaved` (6 launches); lane b (25 s later): `LANE=b GHAT=ghat_heat FIXTURE=one_corner` 1x x2 | 5.6 | 7.75 | Monitor | lane a: **all 5 batched members alone PROVED on their own id** except marks_pile: **its looks prelude made no round again** (0 stops) -> "prerequisite not met (rerun, not a verdict)" (the gate built above, working live). Lane b: 1x cornering search 55 s, fuel 60.79 L (run 1) and see the heat table (run 2); both INCOMPLETE only for the 3-profile check `one_corner` skips. Total 8.5 |
 | Q3 | diagnostic (test-only `ROUND DIAG` log + 2 pictures, only when the looks round fails): `SPEED=_fast GHAT=ghat_looks,ghat_marks FIXTURE=marks_pile EXPECT_IDS=<looks round id>`, lane a and lane b (20 s later), both fast | 1.6 | 1.6 | Monitor | lane b **refused by the guard** (the other trial's game was running: 2 on the PC); lane a: round made (`[6, 0, 2, 4]`), so no diagnostic; marks_pile caught: judged as `solo_marks_pile` from its receipt -> **PROVED** (`121856_ghat_k3_marks_pile_fast`). Total 10.1 |
 | Q4 | the same diagnostic again (lane a; lane b if the PC allows) | 1.6 | 2.0 | Monitor (logged 2026-11-14 from its receipts: the first child was cut by the rate limit while it ran) | lane b **refused by the guard** again (2 Godot on the PC; `inv/q4_diag_b/single.refused`); lane a: round made (`[6, 0, 2, 4]`), so no diagnostic; marks_pile caught, judged as `solo_marks_pile` from its receipt -> **PROVED** (`122125_ghat_k3_marks_pile_fast`, launch -> verdict 121 s, drained, no Godot left). Total 12.1 (my count; the referee's meter: 56.1 of 58.7, ~2.6 left). **No further game run this round** |
+
+### Item 3: the 3 values outside tolerance + lean_close (0 game min: archived runs + the game's own code)
+
+`python tools/method/q2_spread.py` reads every archived run (`appdata/t1fix/q2_spread.txt`, 22 rows). No new 1x run
+was added: each value below is settled by the archive plus the code that produces it, and the ~2.6 min left would
+buy one 1x looks run (n = 2), which GPT already called too thin.
+
+| Value | 1x samples | Fast samples | What produces it (code) | Ruling |
+|---|---|---|---|---|
+| Heat fuel once it gives up (cornering) | 62.17 (clean), 60.79, 62.15 (`one_corner`, Q2 lane b): **range 1.38 L**, n = 3 | 61.87, 61.19, 61.11: range 0.76, n = 3 | Absolute fuel = driving + idling during the search; the search length varies run to run (Q2: 55 s at 1x). The leak itself reads **2.0 L in all 6**, and "the leak stops" (before == after) holds exactly in all 6 | **Inside normal 1x variation**: every fast value lies inside the 1x range; means 61.70 (1x) vs 61.39 (fast), 0.31 L apart, under a quarter of the 1x spread. T1's +-0.5 L was never calibrated (1x alone breaks it by 1.38). Revised tolerance: **+-1.4 L between any two runs** (the measured 1x range, n = 3; widen only on a new 1x sample, never on a fast one). Thresholds unchanged: leak <= cap 17.5 L, the leak stops exactly |
+| Looks engine ticks | 526 (clean) | 551, 612, 619 (clean): fast alone spreads 12 % | `Camper.hot_ticks` is **never reset** (one `+= 1`, no other assignment): it counts every hot tick **since boot**, so in a full run it carries all three heat profiles' hot time (which varies with their searches) into the looks check. It is not a looks measure | **Not a speed shift; the wrong measure.** Looks' own count (runs where looks runs first after boot, i.e. every plant run): **1x 26, 26, 25, 26 (n = 4); fast 26 x 11**. Revised gate: compare looks' own ticks, **+-1 tick** (or the per-scenario delta); the cumulative count gets no tolerance. Threshold unchanged: tick interval halves (1.10 -> 0.16 s in every run, both speeds) and > 5 ticks |
+| Sniffs at the back | 2 x 5 | 2 x 10, **1 x 2** (`111501`, `115124`), n = 12 with a round | `Creature.gd`: once crouched (> 0.7, reached 0.40 game s into the stop), the first sniff comes 0.4 s later, the next after `randf_range(1.4, 2.4)` (unseeded: different every run, both speeds). The test ends the round when the last stop has stood 3.0 s (`STATION_S - 0.5`), and the back is the last stop in all 17 rounds (`[6, 0, 2, 4]`). Second sniff at 2.2-3.2 s -> **2 sniffs with p = 0.8, 1 with p = 0.2, at any speed** (all game time) | **Inside normal variation, by the code.** Fast 2 / 12 ones vs the predicted 0.2; 1x 0 / 5 has p = 0.8^5 = 0.33 by chance. Revised tolerance: **sniffs in {1, 2}**. Threshold unchanged: crouch scale < 0.7 and >= 1 sniff |
+| lean_close glass gap (planted) | 0.14, 0.18, 0.19 | 0.13 x 4 | the face position at the window, sampled every 2 physics frames; the pose itself is game time (`_physics_process -> _show`) | **A speed-dependent shift** (cause not isolated): every fast sample sits below every 1x sample of the same kind, planted (0.13 vs 0.14-0.19) and clean (fast 0.33-0.34, n = 8; 1x 0.35, 0.40, n = 2). Fast is the stricter side in all 12 fast samples, but that is not equivalence. **The glass check stays 1x for an accepted PASS** (GPT's ruling stands); firming the plant is a `core/Plant.gd` change for the builder / the user |
+
+### Item 4: marks' looks prelude (0 game min)
+
+**marks' result does not depend on the looks differences.** Three arguments, each checked:
+
+1. **Clean path: the jump clears it.** marks starts with F1 -> Puzzles -> 6; `Ghat.reset()` sets the van's marks
+   to `[]` (only the `marks_pile` plant skips that), and marks' own "the van as it was before: cool, not boiled, no
+   marks" check proves the cleared state in every run. Ticks and sniffs feed nothing marks reads: the counters
+   are test-read only, and a mark is left by `_leave_mark` when a stop's `STATION_S` ends, whatever was sniffed.
+2. **Measured: same texts.** `t1_diff.py` on ghat_marks, 1x `105521` vs each fast clean run (`105109`, `111720`,
+   `115124`): **17 / 17 same verdict, every text identical** except "the van boils dry" 25 vs 26 s (once).
+   `115124` is the run with 1 sniff and 619 ticks, so the looks differences were present and marks did not move.
+3. **Plant path: gated, then proved alone.** marks_pile is caught only if the prelude left marks (its round). The
+   `PREREQ` gate makes a prelude with no round "prerequisite not met (rerun, not a verdict)", never a PASS or a
+   PROVED (offline 38 / 38; live in Q2). With a round, marks_pile alone PROVED twice (Q3 `121856`, Q4 `122125`),
+   marks_unsaved alone once (`121506`), and the batch at 1x (`110244`) and fast (`111501`).
+
+**Open: the prelude's no-round FAIL.** 0 stops in 2 of 14 fast looks preludes (`105936`, `121248`), 0 of 5 at 1x,
+both in marks_pile runs (chance of both landing there: 10 / 91 = 0.11, so not pinned on the plant). The test-only
+`ROUND DIAG` (log + 2 pictures, fires only on a missing round) ran twice and the round was made both times, so it
+is **unexplained**. It cannot hide a fault: looks' own round check FAILs in the same run (looks runs before marks
+in the fast lane) and the plant gate refuses the proof. But per GPT a fast FAIL is investigated, not discarded:
+**in the replay, a fast looks / marks run with no round is rerun at 1x** and the fast FAIL reported, not dropped.
+
+### Final table (qualification round 2)
+
+Shared gates from GPT's re-check still apply to every "accepted" row and were **not** closed here: serial isolated
+lanes (overlap unproven), the final tool / game / test bytes sealed and the affected qualification rerun on them,
+the required pictures looked at.
+
+| Scenario / path | Status | Reason |
+|---|---|---|
+| ghat_net | **fast PASS accepted** | 10 / 10 same verdicts (final clean diff); one_layer_net PROVED on its exact id (fast); nothing of it was open in round 2 |
+| ghat_heat | **fast PASS accepted** | 19 / 19 same verdicts; fuel inside the 1x spread (revised +-1.4 L, thresholds unchanged); heat_always PROVED on its own id + H1 (`one_corner` is a speed fixture, not a plant). Q1: the open overrun STALLED at both speeds on the final tools |
+| ghat_marks | **fast PASS accepted, only with its looks prelude's round PASSed in the same run** | item 4: cleared by the jump, 17 / 17 identical texts across the looks differences; marks_pile (gated) and marks_unsaved PROVED alone. A prelude with no round -> rerun at 1x |
+| ghat_looks, all checks but the glass | fast **exploratory only** in practice | ticks (looks' own: 25-26 at both speeds) and sniffs (random {1, 2} by the code) are explained, and fast_turn PROVED alone; but these checks share one run with the glass check, so an accepted looks PASS needs that 1x run anyway; plus the unexplained fast-only no-round |
+| ghat_looks glass check (lean / lean_close) | **1x** | a steady speed-dependent shift (fast reads 0.01-0.07 m closer, 12 / 12 fast samples); the plant is a coin toss at 1x (0.14-0.19 vs limit 0.15): firm it in `core/Plant.gd` (builder / the user) |
+| ghat_jug | **1x** | hearing windows in wall ms (fix round (b)); leave_sees, no_breath_lock, round_skip PROVED alone at fast = proofs of those checks only |
+| ghat_places | **1x** | hearing (b); no plant exists |
+| ghat_spring, `free_coolant` proofs, the recorded walk | **1x** | unchanged from T1 |
+| the 6 batched plants alone (D2 option A) | **PROVED alone, fast** (fast_turn, leave_sees, no_breath_lock, round_skip, marks_pile, marks_unsaved) | each FAILed its own exact id with no neighbour; jug's three prove the checks only, a jug PASS itself stays 1x |
+
+**Replay cost of this table:** looks moves to the 1x lane (~124 game s at 1x instead of ~26 wall s fast), so the
+1x lane is spring + jug + places + looks ~ 9.3 wall min and the fast lane heat + net + marks ~ 2.5 (estimates from
+run 8's per-scenario times, not a measured suite). Serial (GPT): ~11.8 wall min vs 18.7 at 1x.
+
+### What's left (not done in round 2)
+
+- The no-round looks prelude: unexplained (2 / 14 fast, 0 / 5 1x); the diagnostic is in place and fires on the
+  next one.
+- A firmer lean_close plant (`core/Plant.gd`, off-limits here).
+- GPT's shared gates: lane isolation / split order, sealed bytes, nodraw re-arm interleaving, pictures.
+- Fuel's +-1.4 L rests on n = 3 at 1x; any later 1x clean run adds to it.
+
+### Assumed -> reality -> fix (round 2)
+
+- **Assumed:** the looks "engine ticks" value measures looks. **Reality:** `hot_ticks` is never reset, so the
+  number in a full run is mostly heat's three profiles; the +17.7 % was heat's search lengths showing through.
+  **Fix:** compare looks' own count (plant runs, looks first). **Habit:** before calling a value gap a speed
+  shift, read where the counter is zeroed.
+- **Assumed:** 1 sniff vs 2 needs more runs. **Reality:** the code gives the odds (p = 0.2 for 1) at any speed.
+  **Habit:** a count with `randf` in its path gets its tolerance from the code, not from samples.
+- **Assumed (resume):** Q4 still to run. **Reality:** it ran before the cut (receipt `q4_diag_a`); the meter had
+  it. **Habit:** after a cut, read the receipts folder before launching anything.
