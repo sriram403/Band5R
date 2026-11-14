@@ -129,6 +129,11 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   looks exploratory fast, 1x for an accepted PASS; jug, places, spring, free_coolant, the recorded walk 1x.** Suite serial
   ~11.8 vs 18.7 min (estimate). Meter: T1 total 56.1 (round 2 ~12.1 of 15). Open: a firmer lean_close plant (`core/Plant.gd`).
 
+- **GPT's check of T1 round 2 (`audit_T1q2_gpt.md`): ACCEPT WITH CONDITIONS.** Its conditions 2 and 3 CLOSED (open overrun on the
+  final source; solo attribution); 38 / 38 offline. The fast table is accepted for the replay with looks 1x and marks only with its
+  same-run looks prelude PASS. Still open, all v2 pieces the builder is building: input sealing (exact source identity), split
+  order equivalence, picture freshness. **T1 counts as qualified for the replay once the builder's v2 closes those three.**
+
 ## Next (Stage 3 proper)
 1. T1 build (Claude, `MPG_speed_t1`): test deadlines on game time (P1's 19 reads) + `--nodraw` after each
    scenario's setup, proved per scenario by frames drawn ~= shots; the 1x-vs-fast differential on all 7
