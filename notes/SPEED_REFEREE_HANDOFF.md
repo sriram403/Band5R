@@ -20,6 +20,8 @@ Steps 1-3 done: builder RESUME 2 finished (R4 PASS, recording 52 % real time idl
 conditions, GPT REJECT (projection ~105-118 > 75). Ruling **R7** (scoreboard): fresh takes only; one fix round
 (`trial_T34_fix_build_task.md`, F1-F11, 5 game min) **running** as T3 child "Speed T34 fix round". **D5 asked to the user**
 (A run the replay anyway and report the overrun / B stop and write up): the replay waits for the answer.
+**ETA (the user wants it in every update, 14:22):** if A ~21:00-21:30 tonight (fix round ~15:45, re-audit ~16:15,
+replay copy ~16:40, replay ~19:30, scoring + signatures ~21:00); if B ~15:45.
 Next when the fix round replies: a short re-audit by both (conditions closed?), then steps 4-5.
 
 ## Where it stands (one paragraph)
