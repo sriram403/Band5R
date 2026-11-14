@@ -14,7 +14,7 @@ L=appdata/t34/sentinel.log
 : > "$L"
 say() { echo "== $(date +%H:%M:%S) $*" | tee -a "$L"; }
 fail=0
-check() { if [ "$1" = "$2" ]; then say "ok   $3 ($1)"; else say "BAD  $3 (want $1, got $2)"; fail=1; fi; }
+check() { if [ "$1" = "$(printf %s "$2" | tr -d '\r')" ]; then say "ok   $3 ($1)"; else say "BAD  $3 (want $1, got $2)"; fail=1; fi; }
 LA="appdata/playtest/FindingNaresh/live"
 LB="appdata/playtest_b/FindingNaresh/live"
 say "1 start lane b"
@@ -38,9 +38,9 @@ say "4 waiting for lane a's take to end (its own targeted stop)"
 while kill -0 $ra 2>/dev/null; do sleep 2; grep -E "^step |^DONE|^FAILED|lifetime" appdata/t34/sentinel_a_rec.log | tail -1 | sed 's/^/   a: /'; done
 wait $ra; say "lane a record_walk exit $?"
 sleep 1
-left_a=$(python tools/method/godot_guard.py --pids "" | tr '\n' ' ')
+left_a=$(python tools/method/godot_guard.py --pids "" | tr -d '\r' | tr '\n' ' ')
 check "" "$left_a" "lane a gone after its targeted stop"
-alive_b=$(python tools/method/godot_guard.py --pids b | tr '\n' ' ')
+alive_b=$(python tools/method/godot_guard.py --pids b | tr -d '\r' | tr '\n' ' ')
 check "$pidb " "$alive_b" "lane b still running (same pid)"
 f1=$(python -c "import json;print(json.load(open('$LB/heartbeat.json'))['physics_frames'])")
 sleep 3
@@ -49,7 +49,7 @@ check yes "$([ "$f2" -gt "$f1" ] && echo yes || echo no)" "lane b heartbeat adva
 wait $wb; say "lane b walk: $(grep -E '^RESULT' appdata/t34/sentinel_b_walk.log | head -1)"
 say "5 stop lane b"
 tools/method/stop_lane.sh b | tee -a "$L"
-check "" "$(python tools/method/godot_guard.py --pids b | tr '\n' ' ')" "lane b gone (verified)"
+check "" "$(python tools/method/godot_guard.py --pids b | tr -d '\r' | tr '\n' ' ')" "lane b gone (verified)"
 say "speed alone vs beside: $(grep -o 'recorded in [^)]*)' appdata/live_run.log | tail -1)"
 [ $fail = 0 ] && say "SENTINEL PASS" || say "SENTINEL FAIL"
 exit $fail
