@@ -44,7 +44,8 @@ python tools/method/t3_gate.py obstable <your table.md> appdata/manifest.json   
 
 ```sh
 ROLE=discovery SPEED=fast tools/method_run.sh ghat
-#   fast part (lane a): ghat_heat, ghat_net, ghat_marks; 1x part (lane b): looks, places, jug, spring
+#   fast part (lane a): ghat_heat, ghat_net; 1x part (lane b): looks, places, jug, spring, marks (marks after
+#   its looks prelude, same process)
 #   one COMBINED RESULT; receipts in appdata/method/inv/<INV>/ (the INV is printed first)
 # after a STALL / TEST / health stop: look at the picture + log, write one notes line, then the rest:
 ROLE=discovery SPEED=fast GHAT=<remaining scenarios, comma separated> tools/method_run.sh ghat
@@ -81,7 +82,7 @@ python tools/method/t3_gate.py final appdata/method/inv/<final INV> appdata/froz
 
 `final` accepts only: one invocation, all seven each once, k3, no fixture, ROLE=final, no restored point,
 no early stop, the input tree unchanged during every part and equal to the frozen one, games verified gone,
-fast only for heat / net / marks.
+fast only for heat / net, and ghat_marks only in the same run after its looks prelude, whose round PASSED.
 
 ## 6. The plant matrix (same frozen tree)
 

@@ -171,19 +171,22 @@ def part(invd, inv, part, scens, fixture="", status="PASS", passed=(), failed=()
     return d
 
 
-FAST = "ghat_heat,ghat_net,ghat_marks"
-SLOW = "ghat_looks,ghat_places,ghat_jug,ghat_spring"
+# F6 (fix round): the default routing (tools/method/route.py): marks in the 1x part, after looks
+FAST = "ghat_heat,ghat_net"
+SLOW = "ghat_looks,ghat_places,ghat_jug,ghat_spring,ghat_marks"
 
 
-def clean_final(name, fast=FAST, slow=SLOW, **kw):
+def clean_final(name, fast=FAST, slow=SLOW, prelude=True, **kw):
+    """prelude: the looks round id PASSED in the part that has marks (F6)."""
     inv = "final_%s" % name
     invd = fresh("final", "inv", inv)
     fkw = {k: v for k, v in kw.items() if not k.startswith("s_")}
     skw = {k[2:]: v for k, v in kw.items() if k.startswith("s_")}
+    pre = lambda sc: tuple(kw.get("passed", ())) + ((t3_gate.PRELUDE_ID,) if prelude and "ghat_marks" in sc else ())
     if fast:
-        part(invd, inv, "fast", fast, passed=kw.get("passed", ()), **{k: v for k, v in fkw.items() if k != "passed"})
+        part(invd, inv, "fast", fast, passed=pre(fast), **{k: v for k, v in fkw.items() if k != "passed"})
     if slow:
-        part(invd, inv, "1x", slow, passed=kw.get("passed", ()), **skw)
+        part(invd, inv, "1x", slow, passed=pre(slow), **skw)
     return invd
 
 
@@ -203,7 +206,17 @@ def g_final():
     rec("final early-stop run", "REFUSED", *fin(clean_final("early", early=True)))
     rec("final inputs mutated mid-run (tree pre != post)", "REFUSED", *fin(clean_final("mut", s_tree_post=dict(TREE, game="g2"))))
     rec("final parts on different trees", "REFUSED", *fin(clean_final("trees", s_tree=dict(TREE, test="t2"))))
-    rec("final looks run fast (not qualified fast)", "REFUSED", *fin(clean_final("route", fast=FAST + ",ghat_looks", slow="ghat_places,ghat_jug,ghat_spring")))
+    rec("final looks run fast (not qualified fast)", "REFUSED", *fin(clean_final("route", fast=FAST + ",ghat_looks", slow="ghat_places,ghat_jug,ghat_spring,ghat_marks")))
+    # F6: marks' looks prelude (same run, before marks, its round PASSED)
+    v, w = fin(clean_final("m_split", fast="ghat_heat,ghat_net,ghat_marks", slow="ghat_looks,ghat_places,ghat_jug,ghat_spring"))
+    rec("final F6 marks split from looks (the old routing), marks PASS", "REFUSED", v, w)
+    rec("final F6 ... refused BY the prelude rule alone", "prelude only", "prelude only" if w and all("prelude" in x for x in w) else "other", w)
+    v, w = fin(clean_final("m_noround", prelude=False))
+    rec("final F6 marks after looks, looks made no round (id not PASSED)", "REFUSED", v, w)
+    rec("final F6 ... refused BY the prelude rule alone", "prelude only", "prelude only" if w and all("prelude" in x for x in w) else "other", w)
+    v, w = fin(clean_final("m_order", slow="ghat_marks,ghat_looks,ghat_places,ghat_jug,ghat_spring"))
+    rec("final F6 marks BEFORE looks in the same part", "REFUSED", v, w)
+    rec("final F6 clean: marks after looks, round PASSED, same part", "ACCEPTED", *fin(clean_final("m_clean")))
     rec("final profile k1", "REFUSED", *fin(clean_final("k1", profile="k1", s_profile="k1")))
     rec("final a game left in the lane", "REFUSED", *fin(clean_final("left", meta={"godot_left_in_lane": "1234"})))
     invd = clean_final("fail")
@@ -280,6 +293,22 @@ def g_proof():
     rec("proof game not checked gone", "NOT", "CERTIFIED" if all(ok for ok, _ in rows.values()) else "NOT", list(rows.values())[0][1])
     rows = t3_gate.proof(clean_final("forproof_six", slow="ghat_looks,ghat_places,ghat_jug", passed=allpass), [net])
     rec("proof against a clean suite that is not accepted (six)", "NOT", "CERTIFIED" if all(ok for ok, _ in rows.values()) else "NOT", list(rows.values())[0][1])
+    # F6: the marks plant proof under SPEED=fast fits prove_ghat's one-part judge (route.py decides the parts)
+    import route
+    import prove_ghat
+    scen, plants, expect = prove_ghat.GROUPS["solo_marks_pile"]
+    for nm, env, want in (("old routing (marks fast, looks 1x)", {"FAST_OK_OVERRIDE": "ghat_heat ghat_net ghat_marks"}, "NOT PROVED"),
+                          ("F6 routing (looks + marks one 1x part)", {}, "PROVED")):
+        fp, sp = route.route(scen, plants, env)
+        inv = "prove_solo_marks_pile_20261114_1300%02d_%d" % (len(nm), 300 + len(nm))
+        invd = fresh("final", "inv", inv)
+        for pn, sc in (("fast", fp), ("1x", sp)):
+            if sc:
+                part(invd, inv, pn, ",".join(sc), fixture=plants, status="FAIL", failed=expect["marks_pile"],
+                     passed=[t3_gate.PRELUDE_ID], role="proof")
+        prob, _, res = prove_ghat.judge(invd, scen, plants, expect)
+        got = "PROVED" if res["marks_pile"][0] else "NOT PROVED"
+        rec("proof F6 solo_marks_pile, SPEED=fast, %s" % nm, want, got, prob or res["marks_pile"][1])
 
 
 # ---- observation table --------------------------------------------------------------------------

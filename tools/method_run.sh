@@ -45,15 +45,14 @@ INVD="$STATE/inv/$INV"
 # knock debounce): fast changes what it hears. Both stay 1x.
 # T3 v2 (2026-11-14): T1 qualification round 2's final table: ghat_looks' glass check stays 1x for an
 # accepted PASS (a steady speed shift), so looks runs in the 1x part; FAST_OK_OVERRIDE for diagnostics only.
-FAST_OK="${FAST_OK_OVERRIDE:-ghat_heat ghat_net ghat_marks}"
+# F6 (fix round): ghat_marks runs in the 1x part with ghat_looks (its prelude, same process, after looks);
+# the routing lives in tools/method/route.py (offline controls in t3_controls.py).
 if [ "$SPEED" = "fast" ] && [ "$WHAT" = "ghat" ] && [ -z "$PART" ]; then
 	ALL="${GHAT:-ghat_heat,ghat_looks,ghat_net,ghat_places,ghat_jug,ghat_spring,ghat_marks}"
-	FP=""; SP=""
-	for s in $(echo "$ALL" | tr ',' ' '); do
-		case " $FAST_OK " in *" $s "*) FP="$FP${FP:+,}$s" ;; *) SP="$SP${SP:+,}$s" ;; esac
-	done
+	RT=$(python "$DIR/method/route.py" "$ALL" "$FIXTURE" | tr -d '\r') || { echo "SPEED=fast: routing failed"; exit 3; }
+	FP=$(printf '%s\n' "$RT" | sed -n 's/^fast\t//p'); SP=$(printf '%s\n' "$RT" | sed -n 's/^1x\t//p')
 	case ",$FIXTURE," in *,free_coolant,*)
-		echo "SPEED=fast: FIXTURE has free_coolant (its plant reads the wall clock): all at 1x"; SP="$ALL"; FP="" ;; esac
+		echo "SPEED=fast: FIXTURE has free_coolant (its plant reads the wall clock): all at 1x" ;; esac
 	echo "SPEED=fast: fast + nodraw: ${FP:-none} | 1x: ${SP:-none}${SP:+ (game-code wall clocks: Camper cap window, hearing, free_coolant)}"
 	[ -n "$FP" ] && printf '%s\t%s\t%s\n' fast "$FP" "$FIXTURE" >> "$INVD/expected"
 	[ -n "$SP" ] && printf '%s\t%s\t%s\n' 1x "$SP" "$FIXTURE" >> "$INVD/expected"

@@ -5,7 +5,8 @@
       suite in ONE invocation: combine_parts PASS; the requested parts together = exactly the seven
       scenarios, each once; profile k3; no fixture; no restored point (FROM_POINT) and no early stop;
       every part's input tree the same before and after its run and across parts (and = the frozen tree
-      if given); every part's game checked gone; fast parts only on the qualified routing (FAST_ACCEPTED).
+      if given); every part's game checked gone; fast parts only on the qualified routing (FAST_ACCEPTED);
+      ghat_marks only after its looks prelude in the same run, the prelude's round PASSED (F6).
       Missing required checks / work / rules are the verdict's job (its PASS already needs them).
   python tools/method/t3_gate.py proof <final inv dir> <prove inv dir> [...]
       Proof compatibility: a plant is CERTIFIED only if prove_ghat's own judge says PROVED on its exact
@@ -71,6 +72,25 @@ def tree_of(run_dir, why, label):
     return {k: pre.get(k) for k in TREE_KEYS}
 
 
+# F6 (fix round): marks' PASS counts only with its looks prelude in the SAME run (one process), before
+# marks, and that prelude's round PASSED (T1 round 2: no round -> no marks on the van to clear).
+PRELUDE_ID = prove_ghat.PREREQ["marks_pile"][0]
+
+
+def marks_prelude(scens, vj, lab):
+    sc = [s for s in scens.split(",") if s]
+    if "ghat_marks" not in sc:
+        return []
+    asked = vj.get("asked") or []
+    if "ghat_looks" not in sc or sc.index("ghat_looks") > sc.index("ghat_marks"):
+        return ["%s: ghat_marks without its looks prelude before it in the same run (%s)" % (lab, ",".join(sc))]
+    if asked != sc:
+        return ["%s: the run asked %s, the part %s (the prelude order is not on record)" % (lab, asked, sc)]
+    if PRELUDE_ID not in set(vj.get("passed_ids", [])):
+        return ["%s: ghat_marks' looks prelude made no round in this run (%s not PASSED): marks' PASS not counted" % (lab, PRELUDE_ID)]
+    return []
+
+
 def final(invd, frozen=None):
     why = []
     inv = os.path.basename(os.path.normpath(invd))
@@ -115,6 +135,7 @@ def final(invd, frozen=None):
             why.append("%s: the verdict records an early stop" % lab)
         if vj.get("godot_left_after"):
             why.append("%s: Godot left after the run: %s" % (lab, vj.get("godot_left_after")))
+        why += marks_prelude(sc, vj, lab)
         t = tree_of(d, why, lab)
         if t:
             trees[part] = t
