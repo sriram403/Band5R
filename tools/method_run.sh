@@ -140,13 +140,17 @@ if [ "$SPEED" = "_fast" ]; then
 	GARGS="$GARGS --nodraw"
 fi
 export LANE INV PART FIXTURE
+rm -f "$ROOT/$SHOTS/captures.jsonl"     # F7: this run's capture log starts empty (PlayTest.shot() appends)
 python -u "$DIR/method/method_watch.py" "$WROOT" "$PLAN" "$(cd "$OUT" && pwd -W 2>/dev/null || pwd)" "$GARGS" 2>&1 | tee "$OUT/console.txt"
 rc=$(sed -n 's/^RESULT: [A-Z ]* (exit \([0-9]\)).*/\1/p' "$OUT/verdict.txt" 2>/dev/null | head -1)
 RUNS="$ROOT/appdata/$PT/runs"
 for f in seg_1.log rig.txt method_events.txt c2.txt summary.txt compile.log; do
 	[ -f "$RUNS/$f" ] && cp "$RUNS/$f" "$OUT/"
 done
-find "$ROOT/$SHOTS" -maxdepth 1 \( -name 'test_*.png' -o -name 'c2_*.png' \) -newer "$OUT/launch_mark" -exec cp {} "$OUT/shots/" \; 2>/dev/null
+find "$ROOT/$SHOTS" -maxdepth 1 \( -name 'test_*.png' -o -name 'c2_*.png' \) -newer "$OUT/launch_mark" -exec cp -p {} "$OUT/shots/" \; 2>/dev/null
+# F7: the game's capture log + the run's capture inventory (t3_gate.py final reads it)
+[ -f "$ROOT/$SHOTS/captures.jsonl" ] && cp -p "$ROOT/$SHOTS/captures.jsonl" "$OUT/captures.jsonl"
+python "$DIR/method/captures.py" inventory "$OUT"
 python "$DIR/method/tree_id.py" stamp "$OUT/tree_post.json" > /dev/null
 left=$(LANE= python "$DIR/method/godot_guard.py" --pids "$LANE" | tr '\n' ' ')
 python - "$OUT/run_meta.json" <<EOF

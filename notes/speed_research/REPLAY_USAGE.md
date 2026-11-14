@@ -77,12 +77,18 @@ ROLE=repair SPEED=fast tools/method_run.sh ghat
 ```sh
 python tools/method/tree_id.py stamp appdata/frozen_tree.json     # game + test + tools + Godot binary
 ROLE=final SPEED=fast tools/method_run.sh ghat                    # no FIXTURE, no GHAT, no EXPECT_IDS
+# look at every picture of the run (appdata/method/runs/<run>/shots/, listed in capture_inventory.json),
+# then write appdata/method/inv/<final INV>/inspection.md, one line per picture:
+#   - <scenario>/<tag>: what it shows
+python tools/method/captures.py required                          # the pictures every scenario must have
 python tools/method/t3_gate.py final appdata/method/inv/<final INV> appdata/frozen_tree.json
 ```
 
 `final` accepts only: one invocation, all seven each once, k3, no fixture, ROLE=final, no restored point,
 no early stop, the input tree unchanged during every part and equal to the frozen one, games verified gone,
 fast only for heat / net, and ghat_marks only in the same run after its looks prelude, whose round PASSED.
+Pictures: every required and every logged picture in the run's capture inventory, captured after the
+launch, its file unchanged since, no file standing for two pictures, and a line for it in `inspection.md`.
 
 ## 6. The plant matrix (same frozen tree)
 

@@ -20,6 +20,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import captures  # noqa: E402
 import t3_gate  # noqa: E402
 import tree_id  # noqa: E402
 
@@ -164,11 +165,46 @@ def part(invd, inv, part, scens, fixture="", status="PASS", passed=(), failed=()
          "rc": str(code), "godot_left_in_lane": "", "from_point": "", "ghat_env": scens, "early_stop_ids": ""}
     m.update(meta or {})
     wr(os.path.join(d, "run_meta.json"), m)
+    pictures(d, scens)
     with open(os.path.join(invd, "expected"), "a", encoding="utf-8", newline="\n") as f:
         f.write("%s\t%s\t%s\n" % (part, scens, fixture))
     wr(os.path.join(invd, part + ".dir"), d + "\n")
     wr(os.path.join(invd, part + ".rc"), "%d\n" % code)
     return d
+
+
+def pictures(d, scens):
+    """F7: a run's pictures the way method_run.sh leaves them: launch_mark, shots/test_<tag>.png (each its own
+    bytes), the game's captures.jsonl (one row per picture, written after the launch), capture_inventory.json."""
+    import time
+    lm = os.path.join(d, "launch_mark")
+    wr(lm, "")
+    t0 = time.time() - 600
+    os.utime(lm, (t0, t0))                      # the launch: 10 min ago
+    os.makedirs(os.path.join(d, "shots"), exist_ok=True)
+    rows = []
+    for s in scens.split(","):
+        for k, tag in enumerate(captures.required(s) + (["ghat_extra_%s" % s] if s == "ghat_heat" else [])):
+            f = os.path.join(d, "shots", "test_%s.png" % tag)
+            with open(f, "wb") as fh:
+                fh.write(("PNG %s %s %s" % (d, s, tag)).encode())
+            rows.append({"scenario": s, "tag": tag, "file": "test_%s.png" % tag, "frame": 100 + k, "physics_frame": 100 + k,
+                         "game_ms": 1000 * k, "unix": t0 + 60 + k, "sha256": captures.sha(f), "last_check": "x"})
+    with open(os.path.join(d, "captures.jsonl"), "w", encoding="utf-8", newline="\n") as fh:
+        for r in rows:
+            fh.write(json.dumps(r) + "\n")
+    captures.inventory(d)
+
+
+def inspect_all(invd, skip=()):
+    lines = []
+    for ln in open(os.path.join(invd, "expected"), encoding="utf-8"):
+        f = ln.rstrip("\n").split("\t")
+        for s in f[1].split(","):
+            for t in captures.required(s) + (["ghat_extra_%s" % s] if s == "ghat_heat" else []):
+                if "%s/%s" % (s, t) not in skip:
+                    lines.append("- %s/%s: the view as the step describes it, looked at" % (s, t))
+    wr(os.path.join(invd, "inspection.md"), "# inspection\n" + "\n".join(lines) + "\n")
 
 
 # F6 (fix round): the default routing (tools/method/route.py): marks in the 1x part, after looks
@@ -187,6 +223,7 @@ def clean_final(name, fast=FAST, slow=SLOW, prelude=True, **kw):
         part(invd, inv, "fast", fast, passed=pre(fast), **{k: v for k, v in fkw.items() if k != "passed"})
     if slow:
         part(invd, inv, "1x", slow, passed=pre(slow), **skw)
+    inspect_all(invd)
     return invd
 
 
@@ -217,6 +254,82 @@ def g_final():
     v, w = fin(clean_final("m_order", slow="ghat_marks,ghat_looks,ghat_places,ghat_jug,ghat_spring"))
     rec("final F6 marks BEFORE looks in the same part", "REFUSED", v, w)
     rec("final F6 clean: marks after looks, round PASSED, same part", "ACCEPTED", *fin(clean_final("m_clean")))
+    g_pictures()
+
+
+def _pic_case(name, mutate, partname="1x"):
+    """A clean final whose one part's picture evidence is changed by mutate(run dir, rows) -> rows."""
+    invd = clean_final(name)
+    d = open(os.path.join(invd, partname + ".dir")).read().strip()
+    rows = [json.loads(x) for x in open(os.path.join(d, "captures.jsonl"), encoding="utf-8") if x.strip()]
+    rows = mutate(d, rows)
+    if rows is not None:
+        with open(os.path.join(d, "captures.jsonl"), "w", encoding="utf-8", newline="\n") as fh:
+            for r in rows:
+                fh.write(json.dumps(r) + "\n")
+        captures.inventory(d)
+    v, w = fin(invd)
+    return v, w
+
+
+def _pic_only(w):
+    return "pictures only" if w and all(("picture" in x or "inventory" in x or "inspection" in x) for x in w) else "other"
+
+
+def g_pictures():
+    """F7: picture evidence (capture inventory + the runner's inspection file)."""
+    net_in = "ghat_net/ghat_net_inside"
+    def drop_row(d, rows):
+        return [r for r in rows if r["tag"] != "ghat_net_inside"]
+    def drop_file(d, rows):
+        os.remove(os.path.join(d, "shots", "test_ghat_net_inside.png"))
+        return rows
+    def stale(d, rows):
+        lm = os.path.getmtime(os.path.join(d, "launch_mark"))
+        f = os.path.join(d, "shots", "test_ghat_net_inside.png")
+        os.utime(f, (lm - 3600, lm - 3600))
+        for r in rows:
+            if r["tag"] == "ghat_net_inside":
+                r["unix"] = lm - 3600
+        return rows
+    def replaced(d, rows):
+        with open(os.path.join(d, "shots", "test_ghat_net_inside.png"), "wb") as fh:
+            fh.write(b"PNG another picture")
+        return rows
+    def dup(d, rows):
+        src = os.path.join(d, "shots", "test_ghat_net_before.png")
+        shutil.copy2(src, os.path.join(d, "shots", "test_ghat_net_inside.png"))
+        for r in rows:
+            if r["tag"] == "ghat_net_inside":
+                r["sha256"] = captures.sha(src)
+        return rows
+    def noinv(d, rows):
+        os.remove(os.path.join(d, "capture_inventory.json"))
+        return None
+    def oldinv(d, rows):
+        lm = os.path.getmtime(os.path.join(d, "launch_mark"))
+        os.utime(os.path.join(d, "capture_inventory.json"), (lm - 60, lm - 60))
+        return None
+    for nm, mut, pn in (("a required picture never captured (" + net_in + ")", drop_row, "fast"),
+                        ("captured but its file not in the run's shots", drop_file, "fast"),
+                        ("a picture older than the launch (stale)", stale, "fast"),
+                        ("the file's bytes replaced after capture", replaced, "fast"),
+                        ("one file standing for two pictures (duplicated)", dup, "fast"),
+                        ("no capture inventory", noinv, "fast"),
+                        ("inventory written before the launch", oldinv, "fast")):
+        v, w = _pic_case("pic_" + mut.__name__, mut, pn)
+        rec("final F7 %s" % nm, "REFUSED", v, w)
+        rec("final F7 ... refused BY the picture rule alone", "pictures only", _pic_only(w), w)
+    invd = clean_final("pic_noinspect_line")
+    inspect_all(invd, skip=("ghat_heat/ghat_extra_ghat_heat",))
+    v, w = fin(invd)
+    rec("final F7 a logged picture with no inspection line", "REFUSED", v, w)
+    rec("final F7 ... refused BY the picture rule alone", "pictures only", _pic_only(w), w)
+    invd = clean_final("pic_noinspect")
+    os.remove(os.path.join(invd, "inspection.md"))
+    v, w = fin(invd)
+    rec("final F7 no inspection file", "REFUSED", v, w)
+    rec("final F7 clean: every picture present, fresh, unique, inspected", "ACCEPTED", *fin(clean_final("pic_clean")))
     rec("final profile k1", "REFUSED", *fin(clean_final("k1", profile="k1", s_profile="k1")))
     rec("final a game left in the lane", "REFUSED", *fin(clean_final("left", meta={"godot_left_in_lane": "1234"})))
     invd = clean_final("fail")

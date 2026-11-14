@@ -6,7 +6,11 @@
       scenarios, each once; profile k3; no fixture; no restored point (FROM_POINT) and no early stop;
       every part's input tree the same before and after its run and across parts (and = the frozen tree
       if given); every part's game checked gone; fast parts only on the qualified routing (FAST_ACCEPTED);
-      ghat_marks only after its looks prelude in the same run, the prelude's round PASSED (F6).
+      ghat_marks only after its looks prelude in the same run, the prelude's round PASSED (F6);
+      pictures (F7, tools/method/captures.py): every required picture of every part in its capture
+      inventory, captured and written after the launch, its file's bytes = the captured ones, no file
+      standing for two pictures, and a line for it in <inv dir>/inspection.md (`<scenario>/<tag>: what
+      it shows`, written by the runner after looking at it).
       Missing required checks / work / rules are the verdict's job (its PASS already needs them).
   python tools/method/t3_gate.py proof <final inv dir> <prove inv dir> [...]
       Proof compatibility: a plant is CERTIFIED only if prove_ghat's own judge says PROVED on its exact
@@ -26,6 +30,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import captures  # noqa: E402
 import combine_parts  # noqa: E402
 import prove_ghat  # noqa: E402
 
@@ -98,6 +103,11 @@ def final(invd, frozen=None):
     if worst != "PASS":
         why.append("combined result %s: %s" % (worst, " | ".join(x.strip() for x in lines[1:])[:400]))
     parts = parts_of(invd)
+    # F7: the runner's inspection file, one line per required picture: `<scenario>/<tag>: what it shows`
+    ip = os.path.join(invd, "inspection.md")
+    insp = captures.inspection(ip)
+    if not os.path.exists(ip):
+        why.append("no inspection file %s (one line per required picture: `<scenario>/<tag>: what it shows`)" % ip)
     scen = [s for _, sc, _ in parts for s in sc.split(",") if s]
     if sorted(scen) != sorted(SEVEN) or len(scen) != len(set(scen)):
         why.append("requested %s: the final suite is exactly the seven scenarios, each once (a subset or a GHAT= continuation is diagnostic)" % scen)
@@ -136,6 +146,7 @@ def final(invd, frozen=None):
         if vj.get("godot_left_after"):
             why.append("%s: Godot left after the run: %s" % (lab, vj.get("godot_left_after")))
         why += marks_prelude(sc, vj, lab)
+        why += captures.check(d, [s for s in sc.split(",") if s], insp, lab)
         t = tree_of(d, why, lab)
         if t:
             trees[part] = t

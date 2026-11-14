@@ -482,6 +482,7 @@ func log_line(s: String) -> void:
 
 
 func check(ok: bool, what: String) -> void:
+	_last_check = what
 	log_line(("PASS  " if ok else "FAIL  ") + what)
 	if mrec != null:
 		mrec.check(what, ok)
@@ -505,7 +506,29 @@ func shot(tag: String) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(shots_dir))
 	img.save_png(shots_dir + "/test_%s.png" % tag)
 	log_line("shot test_%s.png" % tag)
+	_capture_row(tag)
 	if mrec != null: mrec.close(_mo)
+
+
+## F7 (speed research fix round, test only): one row per picture in <shots_dir>/captures.jsonl, written
+## right after the file: scenario, tag, drawn / physics frame, game ms, unix time, the file's sha256 and
+## the last check before it. tools/method/captures.py turns it into the run's capture inventory.
+var _last_check := ""
+
+
+func _capture_row(tag: String) -> void:
+	var f := shots_dir + "/test_%s.png" % tag
+	var row := {"scenario": RigBeat.scen, "tag": tag, "file": "test_%s.png" % tag, "frame": Engine.get_frames_drawn(),
+		"physics_frame": Engine.get_physics_frames(), "game_ms": gms(), "unix": Time.get_unix_time_from_system(),
+		"sha256": FileAccess.get_sha256(f), "last_check": _last_check}
+	var p := shots_dir + "/captures.jsonl"
+	var fa := FileAccess.open(p, FileAccess.READ_WRITE) if FileAccess.file_exists(p) else FileAccess.open(p, FileAccess.WRITE)
+	if fa == null:
+		push_warning("captures.jsonl: %s" % FileAccess.get_open_error())
+		return
+	fa.seek_end()
+	fa.store_line(JSON.stringify(row))
+	fa.close()
 
 
 # --- helpers -------------------------------------------------------------------
