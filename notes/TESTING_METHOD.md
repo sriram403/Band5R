@@ -203,6 +203,9 @@ marks every change **TO PROVE** until its own planted control passes. The tools 
    clear it.
 6. **Resume:** fresh takes for acceptance now. Qualify one resume point (the parked van's stale stored speed ignored, the
    engine / nav / hearing saved, the settle second lined up: the user's choice, 2026-11-17), proved SAME and a perturbed
-   DIFFERENT, before any saving is counted.
+   DIFFERENT, before any saving is counted. **DONE for ghat point 13 (2026-11-17, `speed_research/resume_fix_result.md`):**
+   the rv1 restore (bit-exact bytes, local poses, clocks and frame stamps as ages, the paused hold + final + release
+   checks, seed-v1, stick input flushed per tick), 2 SAME receipts, X1 / X2 DIFFERENT, REPAIR to DONE: ~4 of ~6.4 min
+   saved per repair there. Each further point needs its own 2 receipts; engine-on and held-item points stay refused.
 7. **Never tell a blind runner how many holes exist** (it stopped at the count).
 

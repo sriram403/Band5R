@@ -817,3 +817,8 @@ happened, the fix, and the habit to keep.
   ~4 physics ticks later. The 5 cm bound (frozen before the trials) was never run on two fresh runs. Fix built
   (unproved): walk inputs flushed in the tick they are sent. Habit (the testing skill's §1, again): run the judge on the
   reference first (fresh vs fresh) before reading a DIFFERENT as the candidate's fault; note fps beside every pose compare.
+- **2026-11-17 (resume fix), flushing every test press broke the F1 menu.** Assumed: `Input.flush_buffered_events()` after
+  each injected key / button / stick event is harmless. Reality: the F1 key then opened the dev menu inside the physics
+  tick: engine error `p_elem->_root` (self_list.h) at step 1; the watch stopped the run in 3 s. Fix: flush stick movement
+  only (the input whose delay mattered). Then F3 + R1 + R2: SAME on every layer. Habit: a change to how inputs are
+  delivered is a change to every walk: run its first steps watched before the long run, and keep it as narrow as the cause.

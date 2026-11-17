@@ -741,4 +741,7 @@ Task: `notes/speed_research/merge_tools_task.md`. `speed-t34` (`fd4ae18`) merged
 - **Could break:** every walk's input timing (inputs now land a tick or two earlier: deadlines are generous, but walks
   tuned to the old lag could shift); old points (no rv1 record) keep the T4 refusals; points need `testcode` in identity.
 - **Tests:** `tools/method/rv1_controls.py` 83/83, `t4_controls.py` 85/85, mutation check (each guard off -> 2-9 BAD);
-  live: F2 + R1 + R2 on ghat point 13 (layer 1+2 SAME x2, layer 3 DIFFERENT by fresh-run jitter); the flush change unproved.
+  live: F2 + R1 + R2 on ghat point 13 (layer 1+2 SAME x2, layer 3 DIFFERENT by fresh-run jitter); then after GPT's results
+  audit (release check, exceptions by identity, coverage, client identity; controls 106/106) and the stick-only flush
+  (`3053aa1`): F3 + R1 + R2 **SAME on every layer**, X1 / X2 DIFFERENT, REPAIR of main's walk to DONE
+  (`speed_research/resume_fix_result.md`). Not run: other walks under the new stick flush (walk timings shift by a tick).

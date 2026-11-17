@@ -15,7 +15,10 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 > D:\mine\Agentics\Skills\AGENTS.md. Then follow "Next steps" in the hand-off, one at a time, and report to the user short and plain,
 > A / B with your pick.
 
-## LIVE (2026-11-17 ~20:35): RESEARCH DONE, TOOLS IN MAIN (local)
+## LIVE (2026-11-17 ~22:00): RESUME FIXED ON ONE POINT (branch `resume`, MPG_dev, not merged)
+`notes/speed_research/resume_fix_result.md`: ghat point 13 qualified SAME (2 receipts), controls DIFFERENT, REPAIR to DONE, ~4 min saved per repair there. GPT audited the design and the results (all changes taken). Waiting: the user's merge A / B; GPT's audit of the final chain.
+
+## (before) LIVE (2026-11-17 ~20:35): RESEARCH DONE, TOOLS IN MAIN (local)
 FINAL: `speed_research/FINAL.md`; `TESTING_METHOD.md` v7; skill two-model-research v3 (library `dc8d35b`, not pushed).
 **Tools merged into main locally** (`a6e754d`, from `speedtools` in MPG_dev): suite 7/7 PASS (124 checks), heat_always + no_breath_lock
 caught by their own ids, offline 124/124 + 85/85; game code untouched; ~14 game min. **Not pushed: waiting on the user's OK.**
