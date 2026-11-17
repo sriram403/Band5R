@@ -18,8 +18,10 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 ## LIVE (2026-11-17 ~20:40): THE RESEARCH IS DONE
 FINAL: `speed_research/FINAL.md`; score `replay_score.md` (+ both signers' corrections); signatures `sign_claude.md`, `sign_gpt.md`
 (both SIGN WITH RESERVATIONS); `notes/TESTING_METHOD.md` v7 written (KEEP + 7 CHANGE items, each TO PROVE).
-**Waiting on the user:** (1) merge the research tools into `main` (A / B); (2) the skill library edit (two-model-research example 2
-result + lessons) (A / B). Then: fix resume (the user chose A).
+The user (2026-11-17 ~20:50): (1) **A** merge the tools into main: RUNNING as T3 child "Merge speed tools into main (MPG_dev)"
+(`merge_tools_task.md`, branch `speedtools` in MPG_dev; 8 conflicts; meter `MPG_referee/meter_merge.log`); the referee merges into main
+after checking, **no push without the user's OK**; (2) **A** skill edit: DONE (two-model-research v3, library commit `dc8d35b`, not
+pushed). Then: fix resume (the user chose A). ETA merge ~22:00.
 
 ## Where it stands (one paragraph)
 Stages 1-2 done (top 4 signed). Stage 3: **T1 + T2 (fast tests) QUALIFIED** after 3 rounds and 3 GPT audits: the final table
