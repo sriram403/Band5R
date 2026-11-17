@@ -38,7 +38,7 @@ static func observe(pt: PlayTest, extra: Dictionary = {}) -> Dictionary:
 		f["van.@av"] = var_to_str(c.angular_velocity)
 		f["van.@sleeping"] = var_to_str(c.sleeping)
 		f["van.@freeze"] = var_to_str(c.freeze)
-		f["van.@exceptions"] = var_to_str(c.get_collision_exceptions().size())
+		f["van.@exceptions"] = _exc(c, pt)
 		if c.attack != null:
 			_vars(f, "van.attack.", c.attack, pt)
 	for i in b.players.size():
@@ -50,7 +50,7 @@ static func observe(pt: PlayTest, extra: Dictionary = {}) -> Dictionary:
 		var col := p.get_node_or_null("Collider") as CollisionShape3D
 		f["p%d.@capsule" % (i + 1)] = "none" if col == null or not (col.shape is CapsuleShape3D) else "%s:%s:%s" % [
 			var_to_str((col.shape as CapsuleShape3D).height), var_to_str(col.position), col.disabled]
-		f["p%d.@exceptions" % (i + 1)] = var_to_str(p.get_collision_exceptions().size())
+		f["p%d.@exceptions" % (i + 1)] = _exc(p, pt)
 		f["p%d.@layers" % (i + 1)] = "%d:%d" % [p.collision_layer, p.collision_mask]
 	var items: Array = []
 	for n in pt.get_tree().get_nodes_in_group("carryable"):
@@ -69,7 +69,7 @@ static func observe(pt: PlayTest, extra: Dictionary = {}) -> Dictionary:
 		f[k + "@freeze"] = "%s:%d" % [rb.freeze, int(rb.freeze_mode)]
 		f[k + "@parent"] = _ref(rb.get_parent(), pt)
 		f[k + "@layers"] = "%d:%d:%d" % [rb.collision_layer, rb.collision_mask, int(rb.process_mode)]
-		f[k + "@exceptions"] = var_to_str(rb.get_collision_exceptions().size())
+		f[k + "@exceptions"] = _exc(rb, pt)
 	var mood := pt.get_tree().get_first_node_in_group("mood") as Mood
 	if mood != null:
 		f["mood.@value"] = var_to_str(mood.value)
@@ -109,6 +109,15 @@ static func observe(pt: PlayTest, extra: Dictionary = {}) -> Dictionary:
 	return {"fields": f, "meta": {"wall_ms": wall0, "game_ms": PlayTest.gms(),
 		"physics_frames": pf0, "frames_drawn": Engine.get_frames_drawn(),
 		"pid": OS.get_process_id(), "recording": Engine.get_write_movie_path() != ""}}
+
+
+## Which bodies it ignores, by identity (GPT results audit #3: a count hides a swapped body).
+static func _exc(b: PhysicsBody3D, pt: PlayTest) -> String:
+	var out: Array = []
+	for e in b.get_collision_exceptions():
+		out.append(_ref(e, pt))
+	out.sort()
+	return "[" + ", ".join(out) + "]"
 
 
 ## Auto-named nodes ("@Node3D@123") get a per-process number: volatile process metadata.

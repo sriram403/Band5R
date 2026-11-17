@@ -58,6 +58,8 @@ extends RefCounted
 
 const GateObs := preload("res://scripts/dev/GateObs.gd")
 const ResumeV1 := preload("res://scripts/dev/ResumeV1.gd")
+## fields a resume re-applies from the point's record at release (wall / frame stamps, the hearing queue's times)
+var _rx_stamps := RegEx.create_from_string(r"^(problem\._item_ms|item\[.*\]\._last_hit_t|van\._cap_t|static\.Hearing\.recent|van\.attack\._(last_pull|hold_start|done_f)|p[12]\._climb_since)$")
 
 var pt: PlayTest
 var dir := ""
@@ -118,6 +120,7 @@ func run() -> void:
 		_last_id = int(data["id"])
 		if data.has("walk"):
 			var rep: Dictionary = await _run_walk(data["walk"], String(data.get("from", "")), data)
+			pt.flush_inputs = false      # walks only (GPT results audit #2): later commands keep the old timing
 			_messages.clear()
 			rep["id"] = _last_id
 			rep["state"] = state()
@@ -568,8 +571,16 @@ func _json_out(path: String, d: Dictionary) -> void:
 
 ## The +3 game s sample of a step (layer 3's evidence): taken while the step's actions run.
 func _t3_sample(path: String, idx: int, step: String, gms0: int, log0: int, msg0: int, in0: int) -> void:
+	var ticks: Array = []
 	while PlayTest.gms() - gms0 < 3000:
 		await pt.get_tree().physics_frame
+		if ticks.size() < 12:
+			var row: Array = [PlayTest.gms() - gms0, Engine.get_frames_drawn(), snappedf(Input.get_joy_axis(0, JOY_AXIS_LEFT_Y), 0.001)]
+			for pl in pt.boot.players:
+				var p3: Vector3 = (pl as Node3D).global_position
+				var v3: Vector3 = (pl as CharacterBody3D).velocity
+				row.append([snappedf(p3.x, 0.0001), snappedf(p3.y, 0.0001), snappedf(p3.z, 0.0001), snappedf(v3.length(), 0.001), (pl as CharacterBody3D).is_on_floor()])
+			ticks.append(row)
 	var obs := GateObs.observe(pt)
 	var msgs: Array = []
 	for m in _trace_msgs.slice(msg0):
@@ -581,7 +592,7 @@ func _t3_sample(path: String, idx: int, step: String, gms0: int, log0: int, msg0
 	for ln in _log.slice(log0):
 		lines.append(String(ln))
 	_json_out(path, {"index": idx, "step": step, "at_game_ms": PlayTest.gms() - gms0, "obs": obs,
-		"lines": lines, "messages": msgs, "inputs": ins, "failed_before": _fail})
+		"lines": lines, "messages": msgs, "inputs": ins, "failed_before": _fail, "ticks": ticks})
 
 
 ## A gate verdict file written by the client (tools/live.py); waits on the wall clock, also while paused.
@@ -715,7 +726,8 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 		if rv1 and _fail == "":
 			# the final pre-input check (GPT audit #1): the world as it will start the step must still equal the point
 			rv.apply_clock(point, drop)
-			_json_out("%s/%d.final.obs.json" % [rdir, start], GateObs.observe(pt, {"test.@open_watches": "[]", "test.@needs": "[]"}))
+			var fobs := GateObs.observe(pt, {"test.@open_watches": "[]", "test.@needs": "[]"})
+			_json_out("%s/%d.final.obs.json" % [rdir, start], fobs)
 			var vf = await _gate_verdict("%s/%d.l2f.json" % [rdir, start])
 			if typeof(vf) != TYPE_DICTIONARY or String(vf.get("verdict", "")) != "SAME":
 				if not bool(msg.get("l2_continue", false)):
@@ -723,11 +735,28 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 						"" if typeof(vf) != TYPE_DICTIONARY else String(vf.get("why", "")).substr(0, 200)])
 			else:
 				_say("gate: final pre-input check SAME (%s)" % String(gate["point"]))
-			# test-only control (layer 3): move an actor after the final check, just before the step
+			rv.apply_clock(point, drop)
+			# the release check (GPT results audit #3): no await from here to the step's first input, so compare
+			# NOW, in this tick, with the observation the client approved (clock / frame stamps re-applied from the
+			# point, so they are left out); anything else that moved during the wait for the verdict fails it
+			var rel := GateObs.observe(pt, {"test.@open_watches": "[]", "test.@needs": "[]"})
+			_json_out("%s/%d.release.obs.json" % [rdir, start], rel)
+			if _fail == "" and fobs.has("fields"):
+				var moved: Array = []
+				for k in rel["fields"]:
+					if _rx_stamps.search(String(k)) == null and String(rel["fields"][k]) != String(fobs["fields"].get(k, "<absent>")):
+						moved.append(String(k))
+				for k in fobs["fields"]:
+					if not rel["fields"].has(k):
+						moved.append(String(k) + " (gone)")
+				if not moved.is_empty() and not bool(msg.get("l2_continue", false)):
+					_failed("gate: release check: changed while waiting for the verdict: %s" % ", ".join(moved.slice(0, 8)))
+				elif moved.is_empty():
+					_say("gate: release check SAME (%s)" % String(gate["point"]))
+			# test-only control (layer 3): move an actor after the release check, just before the step
 			if not pert.is_empty() and String(pert.get("what", "")) == "van":
 				pt.camper().global_position += Vector3(float(pert.get("dx", 0.0)), 0, 0)
-				_say("gate control: van moved %.2f m after the final check" % float(pert.get("dx", 0.0)))
-			rv.apply_clock(point, drop)
+				_say("gate control: van moved %.2f m after the release check" % float(pert.get("dx", 0.0)))
 		if rv1:
 			tree.paused = false
 			_say("gate: held paused %d wall ms; physics frames +%d, game ms +%d while held" % [Time.get_ticks_msec() - int(hold0[0]),

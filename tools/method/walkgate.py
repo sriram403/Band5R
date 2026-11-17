@@ -112,10 +112,71 @@ def gate_hash():
     return h.hexdigest()[:16]
 
 
+def _finite(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+
+
+def coverage_rv1(point, f):
+    """GPT results audit #4b: the record must COVER what the observation shows, with typed, finite contents
+    (empty or partial records were admitted by validate_rv1 alone)."""
+    why = []
+    items = sorted(set(k[5:k.index("]")] for k in f if k.startswith("item[")))
+    bodies = {b.get("key"): b for b in point.get("live_bodies", []) if isinstance(b, dict)}
+    for it in items:
+        b = bodies.get("item:" + it)
+        if b is None:
+            why.append("no body record for item %s" % it)
+        elif not all(isinstance(b.get(k), str) and b.get(k) for k in ("xf", "lxf", "parent", "lv", "av")):
+            why.append("body record of %s incomplete (xf / lxf / parent / lv / av)" % it)
+    vb = bodies.get("van")
+    if vb is not None and not all(isinstance(vb.get(k), str) and vb.get(k) for k in ("xf", "lxf", "parent", "lv", "av")):
+        why.append("the van's body record incomplete")
+    v = point.get("live_vars") or {}
+    missing_iv = [it for it in items if it not in (v.get("items") or {})]
+    if missing_iv:
+        why.append("no vars for items %s" % missing_iv[:4])
+    if not all(isinstance(x, dict) and x for x in (v.get("players") or [])):
+        why.append("a player's vars are empty")
+    clock = point.get("live_clock") or []
+    have = {(e.get("own"), e.get("field")) for e in clock if isinstance(e, dict)}
+    need = [("van", "_cap_t")] + [("item:" + it, "_last_hit_t") for it in items]
+    if _problem_present(f):
+        need.append(("problem", "_item_ms"))
+    lost = [n for n in need if n not in have]
+    if lost:
+        why.append("live_clock misses %s" % lost[:4])
+    if any(not e.get("unset") and not _finite(e.get("age")) for e in clock if isinstance(e, dict)):
+        why.append("live_clock has a non-finite age")
+    fr = point.get("live_frames") or []
+    have_f = {(e.get("own"), e.get("field")) for e in fr if isinstance(e, dict)}
+    need_f = [("attack", "_last_pull"), ("attack", "_hold_start"), ("attack", "_done_f"), ("p0", "_climb_since"), ("p1", "_climb_since")]
+    if [n for n in need_f if n not in have_f]:
+        why.append("live_frames misses %s" % [n for n in need_f if n not in have_f])
+    for e in fr:
+        if not isinstance(e, dict) or (e.get("kind") == "dict" and not isinstance(e.get("ages"), dict))                 or (e.get("kind") == "int" and not e.get("unset") and not _finite(e.get("age"))):
+            why.append("live_frames entry malformed")
+            break
+    r = point.get("live_refs") or {}
+    if not (isinstance(r.get("targets"), list) and len(r["targets"]) == 2 and all(isinstance(t, str) for t in r["targets"])
+            and isinstance(r.get("window_fog"), dict) and all(_finite(x) for x in r["window_fog"].values())):
+        why.append("live_refs incomplete (2 targets, window_fog numbers)")
+    h = point.get("live_hearing") or {}
+    if any(not _finite(e.get("age")) for e in h.get("events", []) if isinstance(e, dict)):
+        why.append("live_hearing has a non-finite age")
+    if _problem_present(f):
+        c = point.get("live_problem_children") or {}
+        if not (isinstance(c.get("xf"), dict) and c["xf"] and isinstance(c.get("count"), (int, float)) and c["count"] >= len(c["xf"])
+                and isinstance(c.get("vars"), dict) and "eye_energy" in c and "glow_color" in c):
+            why.append("Problem's children record incomplete")
+    return why
+
+
 def _rv1_ok(point, f):
     if not isinstance(point, dict) or point.get("resume_v") is None:
         return False, []
     why = validate_rv1(point, _problem_present(f))
+    if not why:
+        why = coverage_rv1(point, f)
     return (not why), why
 
 
@@ -217,7 +278,9 @@ def normalise(obs, cfg):
         heard = _heard_ids(f)
         live = [e for e in rec if (now is not None and now - e["t"] < 2000) or any(e["id"] > h for h in heard)]
         # rv1: ids and radius too (the serial is restored); each live event's age compared within AGE_TOL_MS
-        f["static.Hearing.recent"] = "<consumed and old>" if not live else json.dumps([[e["id"], e["what"], e["pos"], e.get("r")] for e in live])
+        # + the side of Hearing's prune boundary (Hearing.gd 30: pruned on the next emit when now - t > 2000)
+        f["static.Hearing.recent"] = "<consumed and old>" if not live else json.dumps(
+            [[e["id"], e["what"], e["pos"], e.get("r"), "kept" if now is not None and now - e["t"] <= 2000 else "prunable"] for e in live])
         for e in live:
             if now is not None:
                 notes.append(("static.Hearing.recent#%d" % e["id"], float(now - e["t"])))
@@ -514,7 +577,8 @@ def identity_check(point_run, k, now_identity, now_walk, profile):
     pid = rj.get("identity") or {}
     if pid.get("schema") != SCHEMA or now_identity.get("schema") != SCHEMA:
         why.append("schema: point %s, now %s, gate %s" % (pid.get("schema"), now_identity.get("schema"), SCHEMA))
-    for key in ("game", "test", "bin"):
+    for key in ("game", "test", "bin", "testcode", "tools"):
+        # testcode + tools (GPT results audit #4c): the code that sends a walk's actions (scripts/dev, tools/live.py)
         if pid.get(key) != now_identity.get(key):
             why.append("%s hash %s != now %s" % (key, pid.get(key), now_identity.get(key)))
     if pid.get("profile") != profile:
@@ -636,6 +700,10 @@ def judge_resume(point_run, k, resume_run, cfg=None, repair=False):
            "resume_identity": rrun.get("identity") or {}, "point_sha": point_sha(ppath), "gate_hash": gate_hash(),
            "protocol": "%s/%s" % (point.get("resume_v"), point.get("seed_proto"))}
     out["refusal"] = refusal(p_obs, cfg, point)
+    prod = load(os.path.join(point_run, "run.json")).get("identity") or {}
+    keys = ("schema", "game", "bin", "testcode", "tools", "profile") + (() if repair else ("test",))
+    out["identity"] = ["%s: producer %s, resume %s" % (k_, prod.get(k_), out["resume_identity"].get(k_))
+                       for k_ in keys if not prod.get(k_) or prod.get(k_) != out["resume_identity"].get(k_)]
     out["layer1"] = layer1(p_obs, cfg) + [x + " (restored)" for x in (layer1(load(r_obs_p), cfg) if os.path.exists(r_obs_p) else ["restored observation absent"])]
     out["layer2"] = [list(d) for d in layer2(p_obs, load(r_obs_p), cfg)] if os.path.exists(r_obs_p) else [["<restored observation absent>", "", ""]]
     if point.get("resume_v") is not None:
@@ -643,7 +711,7 @@ def judge_resume(point_run, k, resume_run, cfg=None, repair=False):
         out["layer2_final"] = [list(d) for d in layer2(p_obs, load(f_obs_p), cfg)] if os.path.exists(f_obs_p) else [["<final pre-input observation absent>", "", ""]]
     else:
         out["layer2_final"] = []
-    layers = ["refusal", "layer1", "layer2", "layer2_final"]
+    layers = ["refusal", "identity", "layer1", "layer2", "layer2_final"]
     if repair:
         out["layer3"], out["next_step"], out["repair"] = [], [], True
     else:
@@ -656,7 +724,7 @@ def judge_resume(point_run, k, resume_run, cfg=None, repair=False):
         layers += ["layer3", "next_step"]
     bad = [x for x in layers if out[x]]
     ok = "REPAIR" if repair else "SAME"
-    out["verdict"] = "REFUSED" if (out["refusal"] or out["layer1"]) else (ok if not bad else "DIFFERENT")
+    out["verdict"] = "REFUSED" if (out["refusal"] or out["identity"] or out["layer1"]) else (ok if not bad else "DIFFERENT")
     out["failed_layers"] = bad
     return out
 

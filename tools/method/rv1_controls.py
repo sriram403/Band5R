@@ -17,7 +17,9 @@ sys.path.insert(0, HERE)
 import walkgate as wg  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
-SRC = os.environ.get("RV1_SRC", os.path.join(ROOT, "appdata", "rv1ctl", "src"))
+# the real rv1 point 13 of producer F2 (ghat_rp14_20261117_210651_22032), copied read-only (GPT results audit #4b:
+# the synthetic record of v1 of these controls was itself incomplete)
+SRC = os.environ.get("RV1_SRC", os.path.join(ROOT, "appdata", "rv1ctl", "src2"))
 K = int(os.environ.get("RV1_K", "13"))
 CTL = os.path.join(ROOT, "appdata", "rv1ctl", "work")
 RESULTS = []
@@ -167,12 +169,38 @@ def main():
     q = setf(o, **{"p2.@capsule": "1.0:Vector3(0, 0.5, 0):false"})
     a = setf(o, **{"p2.@capsule": "1.8:Vector3(0, 0.9, 0):false"})
     rec("layer 2: a player's capsule height differs", "DIFFERENT", "SAME" if not wg.layer2(a, q) else "DIFFERENT")
+    # GPT results audit #4a: an unconsumed hearing event either side of Hearing's 2000 ms prune boundary
+    def hq(age, base=o):
+        q = copy.deepcopy(base)
+        ev = [{"id": 999, "t": q["meta"]["wall_ms"] - age, "what": "step", "pos": "Vector3(0, 0, 0)", "r": 8.0}]
+        q["fields"]["static.Hearing.recent"] = json.dumps(ev)
+        q["fields"]["static.Hearing._next_id"] = "1000"
+        return q
+    for a_, b_, want in ((1995, 2005, "DIFFERENT"), (2000, 2001, "DIFFERENT"), (1990, 2000, "SAME"), (2005, 2015, "SAME")):
+        d = wg.layer2(hq(a_), hq(b_))
+        rec("hearing: unconsumed event %d vs %d ms old (prune > 2000)" % (a_, b_), want, "SAME" if not d else "DIFFERENT", d[:1])
+    # GPT results audit #4b: records with missing CONTENT (not just missing containers)
+    for name, mut in [("live_frames empty", lambda q: q.update(live_frames=[])),
+                      ("live_refs empty", lambda q: q.update(live_refs={})),
+                      ("live_clock empty", lambda q: q.update(live_clock=[])),
+                      ("Problem children count 99, no poses", lambda q: q.update(live_problem_children={"count": 99})),
+                      ("every body without xf / lxf / parent", lambda q: [b.pop(k, None) for b in q["live_bodies"] for k in ("xf", "lxf", "parent")]),
+                      ("one item's body record gone", lambda q: q.update(live_bodies=[b for b in q["live_bodies"] if b["key"] != "item:Crate0"])),
+                      ("a clock age NaN", lambda q: q["live_clock"].__setitem__(0, dict(q["live_clock"][0], unset=False, age=float("nan"))))]:
+        q = copy.deepcopy(p)
+        mut(q)
+        r = wg.refusal(o, None, q)
+        rec("rv1 content: %s" % name, "REFUSED", verdict(r), [x for x in r if "rv1 record" in x][:1])
+        rec("  ... reason 'rv1 record malformed'", True, has(r, "rv1 record malformed"))
     # physics-frame stamps: ages at the observation's frame
     def fr(base, hs, done):
         q = copy.deepcopy(o)
         q["meta"]["physics_frames"] = base
         q["fields"]["van.attack._hold_start"] = "{player:0: %d, player:1: %d}" % (base - hs[0], base - hs[1])
         q["fields"]["van.attack._done_f"] = str(done if done == -1 else base - done)
+        for i_ in (1, 2):
+            q["fields"]["p%d._climb_since" % i_] = "0"
+        q["fields"]["van.attack._last_pull"] = "{player:0: %d, player:1: %d}" % (base - 158, base - 3250)
         return q
     rec("frames: tarp stamps rebased (other frame base, same ages)", "SAME", "SAME" if not wg.layer2(fr(16000, (380, 3471), 300), fr(900, (380, 3471), 300)) else "DIFFERENT")
     d = wg.layer2(fr(16000, (380, 3471), 300), fr(900, (381, 3471), 300))
@@ -244,6 +272,26 @@ def main():
         rec("REPAIR: %s changed since" % key, "REFUSED", "REFUSED" if why else "ADMIT", "; ".join(why)[:120])
     why = wg.admit(pts, walk, walk["steps"][K]["name"], pid_, dict(ident))[0]
     rec("unchanged walk: gate evaluation (not REPAIR)", "ADMIT", "REFUSED" if why else "ADMIT", "; ".join(why)[:140])
+    # GPT results audit #4c: the client (tools) or test code changed -> refused for a normal resume too
+    for key in ("tools", "testcode"):
+        why = wg.admit(pts, walk, walk["steps"][K]["name"], pid_, dict(ident, **{key: "changed"}))[0]
+        rec("unchanged walk, %s changed: refused" % key, "REFUSED", "REFUSED" if why else "ADMIT", "; ".join(why)[:120])
+    # boundary: one resume run listed twice counts once
+    rr = os.path.join(pts, "res_dup")
+    os.makedirs(rr)
+    json.dump({"identity": ident, "pid": 77}, open(os.path.join(rr, "run.json"), "w"))
+    json.dump(o, open(os.path.join(rr, "%d.restored.obs.json" % K), "w"))
+    json.dump(o, open(os.path.join(rr, "%d.final.obs.json" % K), "w"))
+    real_jr = wg.judge_resume
+    wg.judge_resume = lambda pr, k, r, cfg=None: {"verdict": "SAME", "resume_run": os.path.basename(r), "resume_pid": 77, "profile": "play"}
+    b_ = wg.boundary(prun, K, [rr, rr])
+    rec("boundary: one SAME resume listed twice", "NOT QUALIFIED", b_["verdict"][:13], b_["verdict"])
+    wg.judge_resume = real_jr
+    r_ = wg.judge_resume(prun, K, rr)
+    rec("receipt: the resume's identity = the producer's", [], r_["identity"])
+    json.dump({"identity": dict(ident, tools="other"), "pid": 78}, open(os.path.join(rr, "run.json"), "w"))
+    r_ = wg.judge_resume(prun, K, rr)
+    rec("receipt: a resume run with another client -> REFUSED", "REFUSED", r_["verdict"], r_["identity"])
     # boundary: duplicate resume dirs don't count twice
     print("rv1 offline controls: %d / %d as expected" % (sum(RESULTS), len(RESULTS)))
     return 0 if all(RESULTS) else 1
