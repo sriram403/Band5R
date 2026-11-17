@@ -45,6 +45,85 @@ def inv():
     return load(INV_PATH)
 
 
+# ---- resume fix v1 (2026-11-17, notes/speed_research/resume_fix_design.md v2, GPT-audited) ------------
+RV = "rv1"
+SEED_PROTO = "seed-v1"
+AGE_TOL_MS = 20.0          # wall ms between a re-applied clock and its observation (ages frozen while held)
+
+
+def validate_rv1(point, problem_out=False):
+    """[] when the point carries a complete, well-formed rv1 record; else what is wrong. Fails closed on
+    anything missing or malformed (GPT audit #7)."""
+    if not isinstance(point, dict) or point.get("resume_v") is None:
+        return ["not an rv1 point"]
+    why = []
+    if point.get("resume_v") != RV:
+        why.append("resume_v %r != %s" % (point.get("resume_v"), RV))
+    if point.get("seed_proto") != SEED_PROTO:
+        why.append("seed_proto %r != %s" % (point.get("seed_proto"), SEED_PROTO))
+    if not isinstance(point.get("rng_seed"), (int, float)) or isinstance(point.get("rng_seed"), bool):
+        why.append("rng_seed missing")
+    if not isinstance(point.get("wall_ms"), (int, float)):
+        why.append("wall_ms missing")
+    b = point.get("live_bodies")
+    if not isinstance(b, list) or not any(isinstance(x, dict) and x.get("key") == "van" for x in b):
+        why.append("live_bodies missing the van")
+    elif not all(isinstance(x, dict) and all(k in x for k in ("key", "freeze", "freeze_mode", "sleeping", "lv", "av")) for x in b):
+        why.append("live_bodies entry malformed")
+    v = point.get("live_vars")
+    if not isinstance(v, dict) or not v.get("van") or not all(isinstance(v.get(k), d) for k, d in (("van", dict), ("attack", dict), ("items", dict), ("players", list))):
+        why.append("live_vars missing / malformed")
+    elif len(v["players"]) != 2:
+        why.append("live_vars players: %d (2 needed)" % len(v["players"]))
+    pl = point.get("live_players")
+    if not isinstance(pl, list) or len(pl) != 2 or not all(isinstance(x, dict) and "xf" in x and "vel" in x for x in pl):
+        why.append("live_players missing / malformed")
+    c = point.get("live_clock")
+    if not isinstance(c, list):
+        why.append("live_clock missing")
+    elif not all(isinstance(e, dict) and e.get("unit") in ("ms", "s") and all(k in e for k in ("own", "field", "unset"))
+                 and (e.get("unset") or isinstance(e.get("age"), (int, float))) for e in c):
+        why.append("live_clock entry malformed")
+    h = point.get("live_hearing")
+    if not isinstance(h, dict) or not isinstance(h.get("next_id"), (int, float)) or not isinstance(h.get("events"), list):
+        why.append("live_hearing missing / malformed")
+    elif not all(isinstance(e, dict) and all(k in e for k in ("id", "pos", "radius", "what", "age")) for e in h["events"]):
+        why.append("live_hearing event malformed")
+    if problem_out and not (isinstance(point.get("live_problem_children"), dict) and point["live_problem_children"].get("count", 0) > 0):
+        why.append("Problem out but live_problem_children missing")
+    return why
+
+
+def point_sha(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()[:16]
+
+
+def gate_hash():
+    """The judges a receipt was made with (this file + the inventory): a REPAIR needs the same."""
+    h = hashlib.sha256()
+    for p in (os.path.abspath(__file__), INV_PATH):
+        with open(p, "rb") as f:
+            h.update(f.read())
+    return h.hexdigest()[:16]
+
+
+def _rv1_ok(point, f):
+    if not isinstance(point, dict) or point.get("resume_v") is None:
+        return False, []
+    why = validate_rv1(point, _problem_present(f))
+    return (not why), why
+
+
+def _no_rng_draw(f):
+    """seed-v1 lifts the global-RNG refusal only while no GAMEPLAY draw can run in the step (GPT audit #4):
+    Problem passive and leaving, not crouched (it sniffs, drawing randf, only crouched: Creature.gd 668-671),
+    no player shake (PlayerRig 420 draws per drawn frame while shaking)."""
+    return (f.get("ghat.phase") == '"leave"' and f.get("problem.passive") == "true"
+            and f.get("problem.pose") != '"crouch"'
+            and all(f.get("p%d._shake_t" % i, "0.0") in ("0.0", "0") for i in (1, 2)))
+
+
 def _fields(obs):
     return obs["fields"] if "fields" in obs else obs
 
@@ -105,18 +184,23 @@ def normalise(obs, cfg):
                 continue
             age = (now - t) if w["unit"] == "ms" else (now / 1000.0 - t)
             if w.get("unset") is not None and t == w["unset"]:
-                f[k] = "<expired>"
+                f[k] = "<unset>"
             elif age >= w["window"]:
                 f[k] = "<expired>"
             else:
-                f[k] = "<live %.0f%s old>" % (age, w["unit"])
-                notes.append(k)
+                # rv1: the live age is compared separately within AGE_TOL_MS (layer2), same side of the window here
+                f[k] = "<live>"
+                notes.append((k, age * (1.0 if w["unit"] == "ms" else 1000.0)))
     # the Hearing queue: only its unconsumed / recent part matters (pruning happens on emit)
     if "static.Hearing.recent" in f:
         rec = json.loads(f["static.Hearing.recent"]) if f["static.Hearing.recent"].startswith("[") else []
         heard = _heard_ids(f)
         live = [e for e in rec if (now is not None and now - e["t"] < 2000) or any(e["id"] > h for h in heard)]
-        f["static.Hearing.recent"] = "<consumed and old>" if not live else json.dumps([[e["what"], e["pos"]] for e in live])
+        # rv1: ids and radius too (the serial is restored); each live event's age compared within AGE_TOL_MS
+        f["static.Hearing.recent"] = "<consumed and old>" if not live else json.dumps([[e["id"], e["what"], e["pos"], e.get("r")] for e in live])
+        for e in live:
+            if now is not None:
+                notes.append(("static.Hearing.recent#%d" % e["id"], float(now - e["t"])))
     # the serial counter matters only relative to a listener
     if not _problem_present(f) and "static.Hearing._next_id" in f:
         f["static.Hearing._next_id"] = "<no listener>"
@@ -151,18 +235,32 @@ ACTIVE = {"problem_present": _problem_present, "item_moving": _item_moving, "nev
 
 
 # ---- boundary refusal (before any input) -----------------------------------------------------------
-def refusal(obs, cfg=None):
+def refusal(obs, cfg=None, point=None):
+    """point: the save point's JSON; a valid rv1 record lifts the refusals for what it restores (frozen van's
+    stored speed, hearing, listener serial, wall stamps, the global RNG while no gameplay draw can run).
+    None / no record = the T4 v2 rules as before."""
     cfg = cfg or inv()
     f = _fields(obs)
     now = (obs.get("meta") or {}).get("wall_ms")
     why = []
+    rv1, rv1_why = _rv1_ok(point, f)
+    if isinstance(point, dict) and point.get("resume_v") is not None and not rv1:
+        why.append("rv1 record malformed: %s" % "; ".join(rv1_why))
+    # GPT audit #5 / #2: no held-body, crouch or climb adapter: refused, rv1 or not
+    for i in (1, 2):
+        if f.get("p%d.held" % i, "null") != "null":
+            why.append("p%d holds a carryable (a held body's contacts are not restored)" % i)
+        if f.get("p%d.crouching" % i) == "true":
+            why.append("p%d crouching (capsule state not restored)" % i)
+        if f.get("p%d.ladder" % i, "null") != "null":
+            why.append("p%d on a ladder (climb frame stamps not rebased)" % i)
     if f.get("van.engine_on") == "true":
         why.append("engine on (no van engine adapter: refused)")
     lv = nums(f.get("van.@lv", ""))
-    if len(lv) == 3 and math.sqrt(sum(x * x for x in lv)) > 0.1:
+    if len(lv) == 3 and math.sqrt(sum(x * x for x in lv)) > 0.1 and not (rv1 and f.get("van.@freeze") == "true"):
         why.append("van moving %.2f m/s (> 0.1)%s" % (math.sqrt(sum(x * x for x in lv)),
                    " (frozen on the handbrake: a stale STORED velocity, which the restore zeroes: lost physics state)" if f.get("van.@freeze") == "true" else ""))
-    if "static.Hearing.recent" in f:
+    if "static.Hearing.recent" in f and not rv1:
         rec = json.loads(f["static.Hearing.recent"]) if f["static.Hearing.recent"].startswith("[") else []
         heard = _heard_ids(f)
         recent = [e for e in rec if now is not None and now - e["t"] < 2000]
@@ -173,9 +271,9 @@ def refusal(obs, cfg=None):
             why.append("hearing activity < 2 wall s old (%s)" % ", ".join("%s %d ms" % (e["what"], now - e["t"]) for e in recent))
         if uncons:
             why.append("unconsumed hearing events (%s)" % ", ".join("%s #%d" % (e["what"], e["id"]) for e in uncons))
-    if _problem_present(f):
+    if _problem_present(f) and not rv1:
         why.append("a listener (Problem) is out: its hearing serial (_heard_id vs Hearing._next_id) cannot be restored (no rebase by design)")
-    for pat, w in cfg["wallstamps"]["fields"].items():
+    for pat, w in ([] if rv1 else cfg["wallstamps"]["fields"].items()):
         rx = re.compile(pat)
         for k, v in f.items():
             if rx.search(k):
@@ -201,6 +299,8 @@ def refusal(obs, cfg=None):
         why.append("needs not met %s" % f["test.@needs"])
     for u in cfg["unsupported"]:
         if ACTIVE[u["active_if"]](f):
+            if u["name"] == "global_rng_problem" and rv1 and _no_rng_draw(f):
+                continue
             why.append("unsupported state %s (%s)" % (u["name"], u["why"]))
     return sorted(set(why))
 
@@ -225,14 +325,19 @@ def layer1(obs, cfg=None):
 # ---- layer 2: immediate exact comparison ----------------------------------------------------------
 def layer2(point_obs, restored_obs, cfg=None):
     cfg = cfg or inv()
-    a, _ = normalise(point_obs, cfg)
-    b, _ = normalise(restored_obs, cfg)
+    a, na = normalise(point_obs, cfg)
+    b, nb = normalise(restored_obs, cfg)
     diffs = []
     for k in sorted(set(a) | set(b)):
         if k.startswith("test.@open_watches") or k.startswith("test.@needs"):
             continue            # judged by refusal() on the point (the restore starts with none open)
         if a.get(k) != b.get(k):
             diffs.append((k, a.get(k, "<absent>"), b.get(k, "<absent>")))
+    # live wall-clock ages (rv1 re-applies them right before each observation; another process's stamp shows)
+    na, nb = dict(na), dict(nb)
+    for k in sorted(set(na) & set(nb)):
+        if abs(na[k] - nb[k]) > AGE_TOL_MS:
+            diffs.append((k + " (age ms)", "%.0f" % na[k], "%.0f" % nb[k]))
     return diffs
 
 
@@ -420,13 +525,23 @@ def admit(points_dir, walk, walk_from, point_id, ident, probe=False):
     elif not point_id.rsplit("/", 1)[1].isdigit() or int(point_id.rsplit("/", 1)[1]) != k:
         why.append("point %s is not step %d" % (point_id, k))
     else:
-        why += identity_check(prun, k, ident, walk, ident.get("profile"))
+        idw = identity_check(prun, k, ident, walk, ident.get("profile"))
+        # a REPAIR (GPT audit #6): only the resumed step's actions changed (so the walk file, hence the `test`
+        # hash, differs); everything else must hold, and the point must already be qualified SAME
+        if any(x.startswith("the resumed step changed") for x in idw) and \
+                all(x.startswith(("the resumed step changed", "test hash")) for x in idw):
+            rw = repair_check(points_dir, point_id, k, prun, walk, ident)
+            if rw:
+                idw.append("REPAIR refused: " + "; ".join(rw))
+            else:
+                idw, note = [], "REPAIR (action-only change of step %d; point qualified SAME)" % k
+        why += idw
         op = os.path.join(prun, "%d.obs.json" % k)
         if not os.path.exists(op):
             why.append("the point's observation %s is missing" % op)
         else:
             pobs = load(op)
-            ref = refusal(pobs) + layer1(pobs)
+            ref = refusal(pobs, None, load(os.path.join(points_dir, point_id + ".json"))) + layer1(pobs)
             if ref and probe:
                 note = "; ".join(ref)
             else:
@@ -434,25 +549,94 @@ def admit(points_dir, walk, walk_from, point_id, ident, probe=False):
     return why, k, prun, note
 
 
+REPAIR_KEYS = ("do", "expect", "max", "allow")     # what a repair may change in the resumed step
+
+
+def repair_check(points_dir, point_id, k, prun, walk, ident):
+    """-> [] when a REPAIR resume of point_id is allowed: the step's name and every key but its actions are
+    unchanged; game, bin, tools and test code (scripts/dev) equal the producer's and the receipts' runs; >= RESUMES
+    SAME receipts from distinct runs and processes, each bound to this point's bytes, this gate and rv1/seed-v1."""
+    why = []
+    try:
+        old = load(os.path.join(prun, "walk.json"))
+        prod = load(os.path.join(prun, "run.json")).get("identity") or {}
+    except OSError:
+        return ["the producer's walk.json / run.json is missing"]
+    os_, ns_ = old.get("steps", []), walk.get("steps", [])
+    if k >= len(os_) or k >= len(ns_):
+        return ["step %d missing" % k]
+    a = {x: y for x, y in os_[k].items() if x not in REPAIR_KEYS}
+    b = {x: y for x, y in ns_[k].items() if x not in REPAIR_KEYS}
+    if steps_hash([a]) != steps_hash([b]):
+        why.append("more than the step's actions changed (%s)" % sorted(set(os_[k]) ^ set(ns_[k]) | {x for x in a if a.get(x) != b.get(x)}))
+    for key in ("game", "bin", "tools", "testcode"):
+        if not prod.get(key) or prod.get(key) != ident.get(key):
+            why.append("%s: producer %s, now %s" % (key, prod.get(key), ident.get(key)))
+    sha = point_sha(os.path.join(points_dir, point_id + ".json"))
+    gh = gate_hash()
+    good, runs, pids = [], set(), set()
+    for rd in sorted(os.listdir(points_dir)):
+        gp = os.path.join(points_dir, rd, "%d.gate.json" % k)
+        if not os.path.isfile(gp):
+            continue
+        try:
+            r = load(gp)
+        except ValueError:
+            continue
+        if r.get("point") != point_id or r.get("verdict") != "SAME":
+            continue
+        rid = r.get("resume_identity") or {}
+        bad = [x for x, ok in (("point bytes", r.get("point_sha") == sha), ("gate", r.get("gate_hash") == gh),
+                               ("protocol", r.get("protocol") == "%s/%s" % (RV, SEED_PROTO)),
+                               ("profile", r.get("profile") == ident.get("profile")))
+               + tuple((key, rid.get(key) == ident.get(key) and bool(rid.get(key))) for key in ("game", "bin", "tools", "testcode")) if not ok]
+        if bad or r.get("resume_run") in runs or r.get("resume_pid") in pids or r.get("resume_pid") is None:
+            continue
+        good.append(rd)
+        runs.add(r.get("resume_run"))
+        pids.add(r.get("resume_pid"))
+    if len(good) < RESUMES:
+        why.append("%d valid SAME receipt(s) for %s (distinct runs and processes, bound to its bytes, this gate, %s/%s): %d needed"
+                   % (len(good), point_id, RV, SEED_PROTO, RESUMES))
+    return why
+
+
 # ---- receipts -----------------------------------------------------------------------------------
-def judge_resume(point_run, k, resume_run, cfg=None):
+def judge_resume(point_run, k, resume_run, cfg=None, repair=False):
+    """repair=True: a REPAIR resume (changed actions): refusal + layers 1, 2 and the final pre-input check only;
+    its verdict is REPAIR, never SAME (it can't qualify a point)."""
     cfg = cfg or inv()
     p_obs = load(os.path.join(point_run, "%d.obs.json" % k))
+    ppath = os.path.join(point_run, "%d.json" % k)
+    point = load(ppath)
     r_obs_p = os.path.join(resume_run, "%d.restored.obs.json" % k)
+    rrun = load(os.path.join(resume_run, "run.json"))
     out = {"point": "%s/%d" % (os.path.basename(point_run), k), "resume_run": os.path.basename(resume_run),
-           "profile": (load(os.path.join(resume_run, "run.json")).get("identity") or {}).get("profile")}
-    out["refusal"] = refusal(p_obs, cfg)
+           "profile": (rrun.get("identity") or {}).get("profile"), "resume_pid": rrun.get("pid"),
+           "resume_identity": rrun.get("identity") or {}, "point_sha": point_sha(ppath), "gate_hash": gate_hash(),
+           "protocol": "%s/%s" % (point.get("resume_v"), point.get("seed_proto"))}
+    out["refusal"] = refusal(p_obs, cfg, point)
     out["layer1"] = layer1(p_obs, cfg) + [x + " (restored)" for x in (layer1(load(r_obs_p), cfg) if os.path.exists(r_obs_p) else ["restored observation absent"])]
     out["layer2"] = [list(d) for d in layer2(p_obs, load(r_obs_p), cfg)] if os.path.exists(r_obs_p) else [["<restored observation absent>", "", ""]]
-    ft = os.path.join(point_run, "%d.t3.json" % k)
-    rt = os.path.join(resume_run, "%d.t3.json" % k)
-    out["layer3"] = layer3(load(ft) if os.path.exists(ft) else None, load(rt) if os.path.exists(rt) else None, cfg)
-    fl = open(os.path.join(point_run, "walk.log"), encoding="utf-8").read().splitlines() if os.path.exists(os.path.join(point_run, "walk.log")) else []
-    rl = open(os.path.join(resume_run, "walk.log"), encoding="utf-8").read().splitlines() if os.path.exists(os.path.join(resume_run, "walk.log")) else []
-    step = load(os.path.join(point_run, "%d.json" % k)).get("live_step", "")
-    out["next_step"] = next_step(fl, rl, step, cfg)
-    bad = [x for x in ("refusal", "layer1", "layer2", "layer3", "next_step") if out[x]]
-    out["verdict"] = "REFUSED" if (out["refusal"] or out["layer1"]) else ("SAME" if not bad else "DIFFERENT")
+    if point.get("resume_v") is not None:
+        f_obs_p = os.path.join(resume_run, "%d.final.obs.json" % k)
+        out["layer2_final"] = [list(d) for d in layer2(p_obs, load(f_obs_p), cfg)] if os.path.exists(f_obs_p) else [["<final pre-input observation absent>", "", ""]]
+    else:
+        out["layer2_final"] = []
+    layers = ["refusal", "layer1", "layer2", "layer2_final"]
+    if repair:
+        out["layer3"], out["next_step"], out["repair"] = [], [], True
+    else:
+        ft = os.path.join(point_run, "%d.t3.json" % k)
+        rt = os.path.join(resume_run, "%d.t3.json" % k)
+        out["layer3"] = layer3(load(ft) if os.path.exists(ft) else None, load(rt) if os.path.exists(rt) else None, cfg)
+        fl = open(os.path.join(point_run, "walk.log"), encoding="utf-8").read().splitlines() if os.path.exists(os.path.join(point_run, "walk.log")) else []
+        rl = open(os.path.join(resume_run, "walk.log"), encoding="utf-8").read().splitlines() if os.path.exists(os.path.join(resume_run, "walk.log")) else []
+        out["next_step"] = next_step(fl, rl, point.get("live_step", ""), cfg)
+        layers += ["layer3", "next_step"]
+    bad = [x for x in layers if out[x]]
+    ok = "REPAIR" if repair else "SAME"
+    out["verdict"] = "REFUSED" if (out["refusal"] or out["layer1"]) else (ok if not bad else "DIFFERENT")
     out["failed_layers"] = bad
     return out
 
@@ -461,12 +645,13 @@ def boundary(point_run, k, resume_runs, cfg=None):
     rec = [judge_resume(point_run, k, r, cfg) for r in resume_runs]
     profiles = set(r["profile"] for r in rec)
     same = [r for r in rec if r["verdict"] == "SAME"]
+    distinct = len(set(r["resume_run"] for r in same)), len(set(r["resume_pid"] for r in same))
     if any(r["verdict"] != "SAME" for r in rec):
         v = "DIFFERENT" if any(r["verdict"] == "DIFFERENT" for r in rec) else "REFUSED"
     elif len(profiles) != 1:
         v = "NOT QUALIFIED (mixed profiles %s)" % sorted(map(str, profiles))
-    elif len(same) < RESUMES:
-        v = "NOT QUALIFIED (%d SAME resume(s), %d needed: D3 A)" % (len(same), RESUMES)
+    elif min(distinct) < RESUMES:
+        v = "NOT QUALIFIED (%d distinct SAME resume(s) / %d processes, %d needed: D3 A)" % (distinct[0], distinct[1], RESUMES)
     else:
         v = "SAME"
     return {"point": "%s/%d" % (os.path.basename(point_run), k), "resumes": rec, "verdict": v, "needs": RESUMES}
@@ -474,7 +659,8 @@ def boundary(point_run, k, resume_runs, cfg=None):
 
 def main(a):
     if a[0] == "refuse":
-        r = refusal(load(os.path.join(a[1], "%s.obs.json" % a[2])))
+        pp = os.path.join(a[1], "%s.json" % a[2])
+        r = refusal(load(os.path.join(a[1], "%s.obs.json" % a[2])), None, load(pp) if os.path.exists(pp) else None)
         l1 = layer1(load(os.path.join(a[1], "%s.obs.json" % a[2])))
         print(json.dumps({"refusal": r, "layer1": l1}, indent=1))
         return 0 if not (r or l1) else 1
