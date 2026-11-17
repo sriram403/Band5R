@@ -254,6 +254,12 @@ static func _wide_walk(f: Dictionary, n: Node, path: String, scripted_anc: Node,
 	var scripted: bool = sc != null
 	if scripted:
 		_vars(f, "w:" + k + ".", n, pt)
+		var gs: Array = []
+		for g in n.get_groups():
+			if not String(g).begins_with("_"):
+				gs.append(String(g))
+		gs.sort()
+		f["w:" + k + ".@groups"] = ",".join(gs)
 		scripted_anc = n
 		depth = 0
 	var near: bool = scripted or (depth <= 2 and scripted_anc != null and _desc_count(scripted_anc, cache) <= 400)

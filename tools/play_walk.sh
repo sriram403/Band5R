@@ -10,6 +10,9 @@
 # LANE=b: a second game of this copy (appdata/playtest_b, _shots_b, appdata/live_run_b.log).
 # Prints the walk's lines as they come; exit 0 = DONE, 1 = FAILED, 3 = guard refused, 5 = gate refused.
 # Watch it while it runs (CLAUDE.md): read appdata/playtest[_<lane>]/FindingNaresh/live/walk.log.
+# autoq (2026-11-17): a FAILED walk then qualifies a resume point by itself (tools/method/autoq.py: the nearest
+# resumable point at or before the failed step, 2 resumes in new games that must end the same way); the default
+# rerun resumes it (a REPAIR after a fix to the walk), or starts fresh with the reason printed. AUTOQ=0: skip.
 cd "$(dirname "$0")/.."
 w=${1:?which walk, e.g. ghat}
 shift
@@ -33,7 +36,16 @@ for i in $(seq 1 90); do
 	sleep 2
 done
 grep -q "\[live\] ready" "$runlog" || { echo "the game didn't start"; tools/method/stop_lane.sh "$LANE"; exit 1; }
-python tools/live.py --walk "tools/live/$w.json" "$@"
-rc=$?
+out="appdata/tmp/play_walk$sfx.$$.out"
+mkdir -p appdata/tmp
+python tools/live.py --walk "tools/live/$w.json" "$@" | tee "$out"
+rc=${PIPESTATUS[0]}
 tools/method/stop_lane.sh "$LANE"
+# autoq (2026-11-17): a FAILED walk qualifies its resume point by itself (new games, child mode); never inside a
+# qualification / probe child (AUTOQ_CHILD=1), never with AUTOQ=0 (staged proofs)
+run=$(grep -m1 "^RUN " "$out" | awk '{print $2}')
+rm -f "$out"
+if [ "$rc" = 1 ] && [ "$AUTOQ_CHILD" != 1 ] && [ "$AUTOQ" != 0 ] && [ -n "$run" ]; then
+	python tools/method/autoq.py "$w" --run "$run"
+fi
 exit $rc

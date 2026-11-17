@@ -881,6 +881,9 @@ def repair_check(points_dir, point_id, k, prun, walk, ident):
     return why
 
 
+COUNT_CONTROL_RUNS = False      # autoq_controls.py switches it on to see the guard fail
+
+
 def receipts(points_dir, point_id, k, ident):
     """autoq: the valid receipts of a point: bound to its bytes, this gate, rv1/seed-v1, the profile, and game / bin /
     tools / testcode = now; planted-control runs never count (GPT autoq audit #5). -> (same runs, different runs)"""
@@ -898,7 +901,7 @@ def receipts(points_dir, point_id, k, ident):
             continue
         if r.get("point") != point_id or r.get("verdict") not in ("SAME", "DIFFERENT"):
             continue
-        if rrun.get("control"):
+        if rrun.get("control") and not COUNT_CONTROL_RUNS:
             continue
         rid = r.get("resume_identity") or {}
         bad = [x for x, ok in (("point bytes", r.get("point_sha") == sha), ("gate", r.get("gate_hash") == gh),
@@ -1004,12 +1007,12 @@ def default_start(points_dir, walk, ident):
     names = [s.get("name", "") for s in walk.get("steps", [])]
     if k < 1 or k >= len(names):
         return dict(fresh, why="point %s is not a step of this walk" % pid)
-    q = qualified(points_dir, pid, k, ident)
-    if q:
-        return dict(fresh, why="point %s not qualified: %s" % (pid, "; ".join(q)))
     why, k_, _prun, note = admit(points_dir, walk, names[k], pid, ident)
     if why:
         return dict(fresh, why="point %s refused: %s" % (pid, "; ".join(why)[:300]))
+    q = qualified(points_dir, pid, k, ident)
+    if q:
+        return dict(fresh, why="point %s not qualified: %s" % (pid, "; ".join(q)))
     return {"from": names[k], "point": pid, "mode": "repair" if note.startswith("REPAIR") else "resume",
             "why": note or "qualified point, the identical walk"}
 
