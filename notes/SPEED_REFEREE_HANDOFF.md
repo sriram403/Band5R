@@ -15,7 +15,18 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 > D:\mine\Agentics\Skills\AGENTS.md. Then follow "Next steps" in the hand-off, one at a time, and report to the user short and plain,
 > A / B with your pick.
 
-## LIVE (2026-11-17 ~22:00): RESUME FIXED ON ONE POINT (branch `resume`, MPG_dev, not merged)
+## LIVE (2026-11-17 ~22:50): RESUME v1 IN MAIN (pushed `842f494`); NEXT = AUTO-QUALIFY (the user: A, new thread)
+**Next job (the user chose A, 2026-11-17):** make qualifying automatic, so nobody sets resume points by hand:
+1. a walk fails at step N -> the tool itself resumes point N twice in NEW games (background, ~1 game min); each must
+   reproduce the same outcome (the same FAIL) -> 2 SAME receipts = qualified; else it says so and the next run is fresh;
+2. after a fix to the walk's actions, the default rerun resumes N as REPAIR (already in `walkgate.admit`), not fresh;
+3. a game-code change keeps refusing old points (identity binds game / test code / tools): one fresh walk, then (1) again;
+4. a NEW puzzle: a one-off automatic restore check (producer + a few resumes, layer 2 lists what the restore misses ->
+   add its node to `LiveControl.LIVE_GROUPS`, its creature to the inventory's frozen children list).
+Prove on the ghat walk (~5 game min): a planted test-side failure at a late step -> auto-qualified -> REPAIR to DONE.
+After it: the held-item (pot, step 17) and engine-on adapters (still refused). Read `speed_research/resume_fix_result.md`.
+
+## (before) LIVE (2026-11-17 ~22:00): RESUME FIXED ON ONE POINT (branch `resume`, MPG_dev, not merged)
 `notes/speed_research/resume_fix_result.md`: ghat point 13 qualified SAME (2 receipts), controls DIFFERENT, REPAIR to DONE, ~4 min saved per repair there. GPT audited the design and the results (all changes taken). Waiting: the user's merge A / B; GPT's audit of the final chain.
 
 ## (before) LIVE (2026-11-17 ~20:35): RESEARCH DONE, TOOLS IN MAIN (local)
