@@ -23,7 +23,8 @@ CONDITIONS (all in `REPLAY_TASK.md` rulings 1-8); D5: the user chose **A** (run,
 one commit, own repo); meter `MPG_referee/meter_replay.log` (background meter restarts every 2 h: ADD the sessions' WALL);
 watch = scratchpad `watch_replay.sh` (starts/ends, verdicts, walk results, every 10 game min, load).
 **ETA (the user wants it in every update):** replay done ~21:00 (11-17), scoring + final + signatures ~22:30.
-Next: step 7 (score: S1-S7 + X1, X2 vs `MPG_referee/speed_secret.md`; plants PROVED; minutes vs 75 / 225).
+**Meter sessions (add them):** 1) 11-14 WALL 13.3; 2) 11-17 17:38-19:37 WALL 94.6; gap 19:37:25-~19:38:30 with 2 games
+running: add ~1.0; 3) from 19:38. Next: step 7 (score: S1-S7 + X1, X2 vs `MPG_referee/speed_secret.md`; plants PROVED; minutes vs 75 / 225).
 
 ## Where it stands (one paragraph)
 Stages 1-2 done (top 4 signed). Stage 3: **T1 + T2 (fast tests) QUALIFIED** after 3 rounds and 3 GPT audits: the final table
