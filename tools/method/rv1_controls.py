@@ -186,7 +186,14 @@ def main():
                       ("Problem children count 99, no poses", lambda q: q.update(live_problem_children={"count": 99})),
                       ("every body without xf / lxf / parent", lambda q: [b.pop(k, None) for b in q["live_bodies"] for k in ("xf", "lxf", "parent")]),
                       ("one item's body record gone", lambda q: q.update(live_bodies=[b for b in q["live_bodies"] if b["key"] != "item:Crate0"])),
-                      ("a clock age NaN", lambda q: q["live_clock"].__setitem__(0, dict(q["live_clock"][0], unset=False, age=float("nan"))))]:
+                      ("a clock age NaN", lambda q: q["live_clock"].__setitem__(0, dict(q["live_clock"][0], unset=False, age=float("nan")))),
+                      # GPT final audit's three reproductions
+                      ("a frames entry of an unknown kind", lambda q: q["live_frames"].__setitem__(0, dict(q["live_frames"][0], kind="unknown"))),
+                      ("one Problem child pose deleted", lambda q: q["live_problem_children"]["xf"].pop("0")),
+                      ("rng_seed NaN", lambda q: q.update(rng_seed=float("nan"))),
+                      ("rng_seed 1.5", lambda q: q.update(rng_seed=1.5)),
+                      ("_cap_t clock in ms", lambda q: [e.update(unit="ms") for e in q["live_clock"] if e["field"] == "_cap_t"]),
+                      ("a frame-age dict keyed by player 7", lambda q: [e.update(ages={"7": 3}) for e in q["live_frames"] if e["kind"] == "dict"])]:
         q = copy.deepcopy(p)
         mut(q)
         r = wg.refusal(o, None, q)

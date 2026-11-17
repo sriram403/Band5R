@@ -32,12 +32,18 @@ failure belonged to the replay copy's game); other points qualified (each needs 
 2. R1 (first build): 34 layer-2 differences: text round-trips lost a float's last digit; refs a plain snapshot skips;
    physics-frame stamps (frames count on while paused); the observation's clock read at its end.
 3. Bench: 3 "far sleeping items" 1e-7 off: a world pose set under a turned parent rounds: restored by LOCAL pose (exact).
-4. F2/R1/R2: layer 3 0.288 m: the FRESH run was the odd one (32 fps drawn: test stick input applied at the next drawn
-   frame). Fix: walk stick input flushed in the tick it is sent. (Flushing keys too ran the F1 menu inside the physics
+4. F2/R1/R2: layer 3 0.288 m. The data FIT the fresh run starting late (32 fps drawn; test stick input applied at the
+   next drawn frame; F at 48 fps matched the resumes), but that cause was not isolated by a controlled bench (GPT).
+   Change: walk stick input flushed in the tick it is sent; with it the fresh -> resume comparison passed twice. (Flushing keys too ran the F1 menu inside the physics
    tick: engine error, caught at step 1 in 3 s.)
 5. GPT's results audit: 3 false-SAME holes in the judges (hearing prune side, empty record contents, client identity),
-   flush reset, exceptions by identity, a synchronous release check: all fixed, controls 106 / 106, each new guard seen
-   failing when switched off.
+   flush reset, exceptions by identity, a synchronous release check: fixed before the proof chain (controls 106 / 106).
+6. GPT's final audit (DON'T SIGN for merge yet; the P13 SAME proof itself confirmed by its own rejudging): record
+   validation still admitted an unknown frames kind, a deleted Problem child pose, a NaN seed. Fixed after the chain
+   (seed a finite integer, frame kinds and clock units bound to their fields, a pose for every child, receipts judge the
+   release observation too); controls 118 / 118, each new guard seen failing when switched off; every saved run
+   rejudged under the tightened gate: boundary F3/13 SAME, X1 / X2 DIFFERENT, REPAIR (`appdata/resume_rejudged_v2.json`).
+   The judges changed, so new resumes need a new producer (identity binds the tools): by design.
 
 ## Cost
 Game minutes (meter, `appdata/meter_resume.log`): **~23.5** (budget ~20, the user approved the overrun: A): F 5.0,

@@ -61,8 +61,9 @@ def validate_rv1(point, problem_out=False):
         why.append("resume_v %r != %s" % (point.get("resume_v"), RV))
     if point.get("seed_proto") != SEED_PROTO:
         why.append("seed_proto %r != %s" % (point.get("seed_proto"), SEED_PROTO))
-    if not isinstance(point.get("rng_seed"), (int, float)) or isinstance(point.get("rng_seed"), bool):
-        why.append("rng_seed missing")
+    sd = point.get("rng_seed")
+    if not (_finite(sd) and float(sd).is_integer() and 0 <= sd < 2 ** 31):
+        why.append("rng_seed missing / not a finite integer (seed-v1: hash & 0x7fffffff)")
     if not isinstance(point.get("wall_ms"), (int, float)):
         why.append("wall_ms missing")
     b = point.get("live_bodies")
@@ -145,6 +146,10 @@ def coverage_rv1(point, f):
     lost = [n for n in need if n not in have]
     if lost:
         why.append("live_clock misses %s" % lost[:4])
+    units = {"_cap_t": "s", "_item_ms": "ms", "_last_hit_t": "ms"}      # GPT final audit: units bound to the field
+    bad_u = [(e.get("own"), e.get("field")) for e in clock if isinstance(e, dict) and units.get(e.get("field")) != e.get("unit")]
+    if bad_u:
+        why.append("live_clock unit / field not supported %s" % bad_u[:3])
     if any(not e.get("unset") and not _finite(e.get("age")) for e in clock if isinstance(e, dict)):
         why.append("live_clock has a non-finite age")
     fr = point.get("live_frames") or []
@@ -152,9 +157,11 @@ def coverage_rv1(point, f):
     need_f = [("attack", "_last_pull"), ("attack", "_hold_start"), ("attack", "_done_f"), ("p0", "_climb_since"), ("p1", "_climb_since")]
     if [n for n in need_f if n not in have_f]:
         why.append("live_frames misses %s" % [n for n in need_f if n not in have_f])
+    kinds = {"_last_pull": "dict", "_hold_start": "dict", "_done_f": "int", "_climb_since": "int"}   # ResumeV1.FRAMES
     for e in fr:
-        if not isinstance(e, dict) or (e.get("kind") == "dict" and not isinstance(e.get("ages"), dict))                 or (e.get("kind") == "int" and not e.get("unset") and not _finite(e.get("age"))):
-            why.append("live_frames entry malformed")
+        if not isinstance(e, dict) or kinds.get(e.get("field")) is None or e.get("kind") != kinds[e["field"]]                 or (e["kind"] == "dict" and not (isinstance(e.get("ages"), dict) and all(_finite(x) for x in e["ages"].values())
+                                                 and all(str(k) in ("0", "1") for k in e["ages"])))                 or (e["kind"] == "int" and not e.get("unset") and not _finite(e.get("age"))):
+            why.append("live_frames entry malformed / unsupported kind: %r" % (e,))
             break
     r = point.get("live_refs") or {}
     if not (isinstance(r.get("targets"), list) and len(r["targets"]) == 2 and all(isinstance(t, str) for t in r["targets"])
@@ -165,9 +172,16 @@ def coverage_rv1(point, f):
         why.append("live_hearing has a non-finite age")
     if _problem_present(f):
         c = point.get("live_problem_children") or {}
-        if not (isinstance(c.get("xf"), dict) and c["xf"] and isinstance(c.get("count"), (int, float)) and c["count"] >= len(c["xf"])
-                and isinstance(c.get("vars"), dict) and "eye_energy" in c and "glow_color" in c):
-            why.append("Problem's children record incomplete")
+        # one saved pose per child pose the observation shows (GPT final audit: a missing child passed)
+        n_obs = sum(1 for k in f if k.startswith("problem/") and k.endswith(".@local"))
+        n_scr = len({k[:k.rindex(".")] for k in f if k.startswith("problem/") and not k.split(".")[-1].startswith("@")})
+        # every built child has a pose (count == poses; a non-3D child is unsupported: fails closed); the observation
+        # collapses auto-named siblings ("@X@#"), so it can only bound the poses from below
+        if not (isinstance(c.get("xf"), dict) and len(c["xf"]) >= n_obs and n_obs > 0 and isinstance(c.get("count"), (int, float))
+                and c["count"] == len(c["xf"]) and isinstance(c.get("vars"), dict) and len(c["vars"]) >= n_scr
+                and all(isinstance(v, str) and v for v in c["xf"].values()) and "eye_energy" in c and "glow_color" in c):
+            why.append("Problem's children record incomplete (%d poses saved, %d observed; %d child scripts saved, %d observed)"
+                       % (len(c.get("xf") or {}), n_obs, len(c.get("vars") or {}), n_scr))
     return why
 
 
@@ -709,9 +723,12 @@ def judge_resume(point_run, k, resume_run, cfg=None, repair=False):
     if point.get("resume_v") is not None:
         f_obs_p = os.path.join(resume_run, "%d.final.obs.json" % k)
         out["layer2_final"] = [list(d) for d in layer2(p_obs, load(f_obs_p), cfg)] if os.path.exists(f_obs_p) else [["<final pre-input observation absent>", "", ""]]
+        # the release observation (taken in the tick the step starts; GPT final audit: judge it offline too)
+        r_rel = os.path.join(resume_run, "%d.release.obs.json" % k)
+        out["layer2_release"] = [list(d) for d in layer2(p_obs, load(r_rel), cfg)] if os.path.exists(r_rel) else [["<release observation absent>", "", ""]]
     else:
-        out["layer2_final"] = []
-    layers = ["refusal", "identity", "layer1", "layer2", "layer2_final"]
+        out["layer2_final"], out["layer2_release"] = [], []
+    layers = ["refusal", "identity", "layer1", "layer2", "layer2_final", "layer2_release"]
     if repair:
         out["layer3"], out["next_step"], out["repair"] = [], [], True
     else:
