@@ -34,6 +34,7 @@ static func observe(pt: PlayTest, extra: Dictionary = {}) -> Dictionary:
 		f["van.@av"] = var_to_str(c.angular_velocity)
 		f["van.@sleeping"] = var_to_str(c.sleeping)
 		f["van.@freeze"] = var_to_str(c.freeze)
+		f["van.@exceptions"] = var_to_str(c.get_collision_exceptions().size())
 		if c.attack != null:
 			_vars(f, "van.attack.", c.attack, pt)
 	for i in b.players.size():
@@ -41,6 +42,12 @@ static func observe(pt: PlayTest, extra: Dictionary = {}) -> Dictionary:
 		_vars(f, "p%d." % (i + 1), p, pt)
 		f["p%d.@xf" % (i + 1)] = var_to_str(p.global_transform)
 		f["p%d.@vel" % (i + 1)] = var_to_str(p.velocity)
+		# resume fix v1 (GPT audit #2): the body a script var doesn't hold
+		var col := p.get_node_or_null("Collider") as CollisionShape3D
+		f["p%d.@capsule" % (i + 1)] = "none" if col == null or not (col.shape is CapsuleShape3D) else "%s:%s:%s" % [
+			var_to_str((col.shape as CapsuleShape3D).height), var_to_str(col.position), col.disabled]
+		f["p%d.@exceptions" % (i + 1)] = var_to_str(p.get_collision_exceptions().size())
+		f["p%d.@layers" % (i + 1)] = "%d:%d" % [p.collision_layer, p.collision_mask]
 	var items: Array = []
 	for n in pt.get_tree().get_nodes_in_group("carryable"):
 		if n is Carryable and not (n as Node).is_queued_for_deletion():
@@ -53,6 +60,12 @@ static func observe(pt: PlayTest, extra: Dictionary = {}) -> Dictionary:
 		f[k + "@lv"] = var_to_str((it as RigidBody3D).linear_velocity)
 		f[k + "@av"] = var_to_str((it as RigidBody3D).angular_velocity)
 		f[k + "@sleeping"] = var_to_str((it as RigidBody3D).sleeping)
+		# resume fix v1 (GPT audit #2): stow / hold links and collision state
+		var rb := it as RigidBody3D
+		f[k + "@freeze"] = "%s:%d" % [rb.freeze, int(rb.freeze_mode)]
+		f[k + "@parent"] = _ref(rb.get_parent(), pt)
+		f[k + "@layers"] = "%d:%d:%d" % [rb.collision_layer, rb.collision_mask, int(rb.process_mode)]
+		f[k + "@exceptions"] = var_to_str(rb.get_collision_exceptions().size())
 	var mood := pt.get_tree().get_first_node_in_group("mood") as Mood
 	if mood != null:
 		f["mood.@value"] = var_to_str(mood.value)
