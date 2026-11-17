@@ -44,7 +44,8 @@ def point():
                   "live_players": [{"xf": "x", "vel": "v"}, {"xf": "x", "vel": "v"}],
                   "live_clock": [{"own": "problem", "field": "_item_ms", "unit": "ms", "unset": True}],
                   "live_hearing": {"next_id": 207, "events": [{"id": 206, "pos": "Vector3(0, 0, 0)", "radius": 20.0, "what": "tarp", "age": 100}]},
-                  "live_problem_children": {"count": 12, "xf": {}, "vars": {}}})
+                  "live_problem_children": {"count": 12, "xf": {}, "vars": {}},
+                  "live_frames": [], "phys_frame": 100, "live_refs": {"targets": ["", ""], "window_fog": {}}})
     return p
 
 
@@ -82,7 +83,9 @@ def main():
                       ("one player only", lambda q: q["live_players"].pop()),
                       ("bodies without the van", lambda q: q.update(live_bodies=[])),
                       ("clock entry unit 'min'", lambda q: q["live_clock"].append({"own": "van", "field": "_cap_t", "unit": "min", "unset": False, "age": 1})),
-                      ("resume_v rv0", lambda q: q.update(resume_v="rv0"))]:
+                      ("resume_v rv0", lambda q: q.update(resume_v="rv0")),
+                      ("no live_frames", lambda q: q.pop("live_frames")),
+                      ("no live_refs", lambda q: q.pop("live_refs"))]:
         q = copy.deepcopy(p)
         mut(q)
         r = wg.refusal(o, None, q)
@@ -164,6 +167,20 @@ def main():
     q = setf(o, **{"p2.@capsule": "1.0:Vector3(0, 0.5, 0):false"})
     a = setf(o, **{"p2.@capsule": "1.8:Vector3(0, 0.9, 0):false"})
     rec("layer 2: a player's capsule height differs", "DIFFERENT", "SAME" if not wg.layer2(a, q) else "DIFFERENT")
+    # physics-frame stamps: ages at the observation's frame
+    def fr(base, hs, done):
+        q = copy.deepcopy(o)
+        q["meta"]["physics_frames"] = base
+        q["fields"]["van.attack._hold_start"] = "{player:0: %d, player:1: %d}" % (base - hs[0], base - hs[1])
+        q["fields"]["van.attack._done_f"] = str(done if done == -1 else base - done)
+        return q
+    rec("frames: tarp stamps rebased (other frame base, same ages)", "SAME", "SAME" if not wg.layer2(fr(16000, (380, 3471), 300), fr(900, (380, 3471), 300)) else "DIFFERENT")
+    d = wg.layer2(fr(16000, (380, 3471), 300), fr(900, (381, 3471), 300))
+    rec("frames: a tarp hold stamp 1 frame off", "DIFFERENT", "SAME" if not d else "DIFFERENT", d[:1])
+    d = wg.layer2(fr(16000, (380, 3471), -1), fr(900, (380, 3471), 300))
+    rec("frames: _done_f unset vs set", "DIFFERENT", "SAME" if not d else "DIFFERENT", d[:1])
+    d = wg.layer2(fr(16000, (380, 3471), 300), dict(fr(900, (380, 3471), 300), meta=dict(o["meta"], physics_frames=900)) if False else setf(fr(900, (380, 3471), 300), **{"van.attack._hold_start": "{player:0: 15620, player:1: 12529}"}))
+    rec("frames: raw stamps from the old process (not rebased)", "DIFFERENT", "SAME" if not d else "DIFFERENT", d[:1])
     # --- receipts, boundary, REPAIR (synthetic run folders under appdata/rv1ctl/work)
     shutil.rmtree(CTL, ignore_errors=True)
     pts = os.path.join(CTL, "points")

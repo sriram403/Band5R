@@ -497,7 +497,9 @@ func _snap_vars(o: Object) -> Dictionary:
 		elif v == null and int(p["type"]) == TYPE_OBJECT and String(p["class_name"]) == "PlayerRig":
 			out[p["name"]] = "player:-1"
 		elif typeof(v) != TYPE_OBJECT and _plain(v):
-			out[p["name"]] = var_to_str(v)
+			# resume fix v1 (R1, 2026-11-17): bit-exact (var_to_str lost a float's last digit: _safe_t,
+			# _slump, a child's _lp came back 1 ulp off)
+			out[p["name"]] = "b64:" + Marshalls.raw_to_base64(var_to_bytes(v))
 	return out
 
 
@@ -507,6 +509,8 @@ func _unsnap_vars(o: Object, d: Dictionary) -> void:
 		if s.begins_with("player:"):
 			var pi := int(s.substr(7))
 			o.set(k, pt.boot.players[pi] if pi >= 0 and pi < pt.boot.players.size() else null)
+		elif s.begins_with("b64:"):
+			o.set(k, bytes_to_var(Marshalls.base64_to_raw(s.substr(4))))
 		else:
 			o.set(k, str_to_var(s))
 
@@ -751,7 +755,8 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 		for nd0 in st.get("needs", []):
 			if not ctx["passed"].has(nd0):
 				needs_open.append(String(nd0))
-		_json_out("%s/%d.obs.json" % [rdir, i], GateObs.observe(pt, {"test.@open_watches": JSON.stringify(open_w), "test.@needs": JSON.stringify(needs_open)}))
+		var obs0 := GateObs.observe(pt, {"test.@open_watches": JSON.stringify(open_w), "test.@needs": JSON.stringify(needs_open)})
+		_json_out("%s/%d.obs.json" % [rdir, i], obs0)
 		var point := SaveGame.collect(pt.boot, true)
 		point["live_step"] = nm
 		point["point_id"] = "%s/%d" % [_run, i]
@@ -773,7 +778,7 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 			point["live_naresh"] = {"pos": [nz.global_position.x, nz.global_position.y, nz.global_position.z],
 				"state": int(nz.state), "leader": pt.boot.players.find(nz.leader) if nz.leader != null else -1,
 				"go": [nz.go_point.x, nz.go_point.y, nz.go_point.z]}
-		rv.collect(point)
+		rv.collect(point, int(obs0["meta"]["wall_ms"]), int(obs0["meta"]["physics_frames"]))
 		_json_out("%s/%d.json" % [rdir, i], point)
 		ctx["allow"] = st.get("allow", [])
 		# what this step needs from earlier watches

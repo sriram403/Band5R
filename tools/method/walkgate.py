@@ -75,6 +75,10 @@ def validate_rv1(point, problem_out=False):
         why.append("live_vars missing / malformed")
     elif len(v["players"]) != 2:
         why.append("live_vars players: %d (2 needed)" % len(v["players"]))
+    if not isinstance(point.get("live_frames"), list) or not isinstance(point.get("phys_frame"), (int, float)):
+        why.append("live_frames / phys_frame missing")
+    if not isinstance(point.get("live_refs"), dict):
+        why.append("live_refs missing")
     pl = point.get("live_players")
     if not isinstance(pl, list) or len(pl) != 2 or not all(isinstance(x, dict) and "xf" in x and "vel" in x for x in pl):
         why.append("live_players missing / malformed")
@@ -191,6 +195,22 @@ def normalise(obs, cfg):
                 # rv1: the live age is compared separately within AGE_TOL_MS (layer2), same side of the window here
                 f[k] = "<live>"
                 notes.append((k, age * (1.0 if w["unit"] == "ms" else 1000.0)))
+    # physics-frame stamps (resume fix v1): compared as AGES at the observation's frame (frames run on in a
+    # new process and while paused); unset sentinels kept
+    pf = (obs.get("meta") or {}).get("physics_frames")
+    for pat, w in cfg.get("framestamps", {}).items():
+        rx = re.compile(pat)
+        for k in list(f):
+            if not rx.search(k) or pf is None:
+                continue
+            if w["kind"] == "dict":
+                f[k] = re.sub(r"(player:\d+): (-?\d+)", lambda m: "%s: age %d" % (m.group(1), pf - int(m.group(2))), f[k])
+            else:
+                try:
+                    t = int(nums(f[k])[0])
+                except (IndexError, ValueError):
+                    continue
+                f[k] = "<unset>" if t == w.get("unset") else "<age %d frames>" % (pf - t)
     # the Hearing queue: only its unconsumed / recent part matters (pruning happens on emit)
     if "static.Hearing.recent" in f:
         rec = json.loads(f["static.Hearing.recent"]) if f["static.Hearing.recent"].startswith("[") else []

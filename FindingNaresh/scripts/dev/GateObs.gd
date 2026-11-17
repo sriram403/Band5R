@@ -16,6 +16,10 @@ const KEYS := [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SHIFT, KEY_SPACE, KEY_CTRL, KEY_E
 
 
 static func observe(pt: PlayTest, extra: Dictionary = {}) -> Dictionary:
+	# resume fix v1: the clocks are read at the START (a big observation takes ~20 ms; the ages it shows
+	# are from this moment, the one a resume's re-applied clocks line up with)
+	var wall0 := Time.get_ticks_msec()
+	var pf0 := Engine.get_physics_frames()
 	var f := {}
 	var b := pt.boot
 	var gh := pt.get_tree().get_first_node_in_group("ghat") as Ghat
@@ -102,8 +106,8 @@ static func observe(pt: PlayTest, extra: Dictionary = {}) -> Dictionary:
 	f["test.@helpers_running"] = var_to_str(pt.helpers_running)
 	for k in extra:
 		f[k] = str(extra[k])
-	return {"fields": f, "meta": {"wall_ms": Time.get_ticks_msec(), "game_ms": PlayTest.gms(),
-		"physics_frames": Engine.get_physics_frames(), "frames_drawn": Engine.get_frames_drawn(),
+	return {"fields": f, "meta": {"wall_ms": wall0, "game_ms": PlayTest.gms(),
+		"physics_frames": pf0, "frames_drawn": Engine.get_frames_drawn(),
 		"pid": OS.get_process_id(), "recording": Engine.get_write_movie_path() != ""}}
 
 

@@ -63,11 +63,70 @@ func _owner(own: String) -> Object:
 
 
 func _body(key: String, b: RigidBody3D) -> Dictionary:
+	# xf bit-exact (R1: SaveGame's float arrays came back 1 ulp off on every item and the van)
 	return {"key": key, "freeze": b.freeze, "freeze_mode": int(b.freeze_mode), "sleeping": b.sleeping,
-		"lv": var_to_str(b.linear_velocity), "av": var_to_str(b.angular_velocity)}
+		"lv": var_to_str(b.linear_velocity), "av": var_to_str(b.angular_velocity),
+		"xf": Marshalls.raw_to_base64(var_to_bytes(b.global_transform))}
 
 
-func _clock_ages() -> Array:
+## Physics-frame stamps (they keep counting while the tree is paused: R1's hold +15 frames in 209 ms):
+## saved as AGES, put back as now - age. [owner, field, kind, unset sentinel]
+const FRAMES := [["attack", "_last_pull", "dict", null], ["attack", "_hold_start", "dict", null],
+	["attack", "_done_f", "int", -1], ["players", "_climb_since", "int", 0]]
+
+
+func _frame_owners(own: String) -> Array:
+	if own == "attack":
+		return [["attack", pt.boot.camper.attack]] if pt.boot.camper.attack != null else []
+	var out: Array = []
+	for i in pt.boot.players.size():
+		out.append(["p%d" % i, pt.boot.players[i]])
+	return out
+
+
+func _frame_ages(pf: int) -> Array:
+	var out: Array = []
+	for s in FRAMES:
+		for ow in _frame_owners(String(s[0])):
+			var v = (ow[1] as Object).get(String(s[1]))
+			if s[2] == "dict":
+				var d := {}
+				for k in v:
+					if k is PlayerRig:
+						d[str(pt.boot.players.find(k))] = pf - int(v[k])
+				out.append({"own": ow[0], "field": s[1], "kind": "dict", "ages": d})
+			elif s[3] != null and int(v) == int(s[3]):
+				out.append({"own": ow[0], "field": s[1], "kind": "int", "unset": true})
+			else:
+				out.append({"own": ow[0], "field": s[1], "kind": "int", "unset": false, "age": pf - int(v)})
+	return out
+
+
+func _apply_frames(point: Dictionary) -> void:
+	var now := Engine.get_physics_frames()
+	for e in point.get("live_frames", []):
+		var o: Object = null
+		var own := String(e["own"])
+		if own == "attack":
+			o = pt.boot.camper.attack
+		elif own.begins_with("p"):
+			o = pt.boot.players[int(own.substr(1))]
+		if o == null:
+			continue
+		if String(e["kind"]) == "dict":
+			var d := {}
+			for k in e["ages"]:
+				d[pt.boot.players[int(k)]] = now - int(e["ages"][k])
+			o.set(String(e["field"]), d)
+		elif bool(e["unset"]):
+			for s in FRAMES:
+				if s[1] == e["field"]:
+					o.set(String(e["field"]), s[3])
+		else:
+			o.set(String(e["field"]), now - int(e["age"]))
+
+
+func _clock_ages(wall: int = -1) -> Array:
 	var out: Array = []
 	for s in STAMPS:
 		var owners: Array = []
@@ -81,10 +140,11 @@ func _clock_ages() -> Array:
 			if o == null:
 				continue
 			var v = o.get(String(s[1]))
+			var nw := _now(String(s[2])) if wall < 0 else (float(wall) if s[2] == "ms" else wall / 1000.0)
 			if s[3] != null and v == s[3]:
 				out.append({"own": own, "field": s[1], "unit": s[2], "unset": true})
 			else:
-				out.append({"own": own, "field": s[1], "unit": s[2], "unset": false, "age": _now(String(s[2])) - float(v)})
+				out.append({"own": own, "field": s[1], "unit": s[2], "unset": false, "age": nw - float(v)})
 	return out
 
 
@@ -118,12 +178,23 @@ func _children_snap(pr: Creature) -> Dictionary:
 	return d
 
 
-## At a point (fresh run or a resumed run's own points), same tick as SaveGame.collect.
-func collect(point: Dictionary) -> void:
+## At a point (fresh run or a resumed run's own points), same tick as SaveGame.collect. Ages are taken
+## at the point's observation (its wall clock and physics frame), the moment layer 2 compares against.
+func collect(point: Dictionary, obs_wall: int, obs_frames: int) -> void:
 	point["resume_v"] = VERSION
 	point["seed_proto"] = SEED_PROTO
 	point["rng_seed"] = int(hash(String(point.get("point_id", "")))) & 0x7fffffff
-	point["wall_ms"] = Time.get_ticks_msec()
+	point["wall_ms"] = obs_wall
+	point["phys_frame"] = obs_frames
+	point["live_frames"] = _frame_ages(obs_frames)
+	var c0: Camper = pt.boot.camper
+	var refs := {"targets": [], "window_fog": {}}
+	for p in pt.boot.players:
+		var t = (p as Object).get("current_target")
+		refs["targets"].append(String((t as Node).get_path()) if t is Node and is_instance_valid(t) and (t as Node).is_inside_tree() else "")
+	for role in c0._window_fog:
+		refs["window_fog"][role] = c0.window_fog(role)
+	point["live_refs"] = refs
 	var c: Camper = pt.boot.camper
 	var bodies: Array = [_body("van", c)]
 	var ivars := {}
@@ -139,9 +210,9 @@ func collect(point: Dictionary) -> void:
 	point["live_vars"] = {"van": lc._snap_vars(c), "attack": lc._snap_vars(c.attack) if c.attack != null else {},
 		"items": ivars, "players": pvars}
 	point["live_players"] = pls
-	point["live_clock"] = _clock_ages()
+	point["live_clock"] = _clock_ages(obs_wall)
 	var ev: Array = []
-	var now := Time.get_ticks_msec()
+	var now := obs_wall
 	for s in Hearing.recent:
 		ev.append({"id": int(s["id"]), "pos": var_to_str(s["pos"]), "radius": float(s["radius"]),
 			"what": String(s["what"]), "age": now - int(s["t"])})
@@ -154,6 +225,7 @@ func collect(point: Dictionary) -> void:
 ## Ages back to stamps on this process's clock (called after the restore, before each observation and
 ## at release: the ages stay as they were at the point while the world is held paused).
 func apply_clock(point: Dictionary, drop: Array) -> void:
+	_apply_frames(point)
 	for e in point.get("live_clock", []):
 		var o := _owner(String(e["own"]))
 		if o == null:
@@ -207,6 +279,9 @@ func restore(point: Dictionary, drop: Array) -> void:
 			if not (o is RigidBody3D):
 				continue
 			var rb := o as RigidBody3D
+			if b.has("xf"):
+				rb.global_transform = bytes_to_var(Marshalls.base64_to_raw(String(b["xf"])))
+				rb.reset_physics_interpolation()
 			rb.freeze_mode = int(b["freeze_mode"]) as RigidBody3D.FreezeMode
 			rb.freeze = bool(b["freeze"])
 			rb.linear_velocity = str_to_var(String(b["lv"]))
@@ -233,4 +308,16 @@ func restore(point: Dictionary, drop: Array) -> void:
 		if gm is StandardMaterial3D and cd.has("glow_color"):
 			(gm as StandardMaterial3D).albedo_color = str_to_var(String(cd["glow_color"]))
 		pr.reset_physics_interpolation()
+	# references a plain-var snapshot skips (R1): what each player looks at, the van's window mist meshes
+	var refs: Dictionary = point.get("live_refs", {})
+	var tg: Array = refs.get("targets", [])
+	for i in mini(tg.size(), pt.boot.players.size()):
+		(pt.boot.players[i] as Object).set("current_target", pt.get_tree().root.get_node_or_null(NodePath(String(tg[i]))) if String(tg[i]) != "" else null)
+	var wf: Dictionary = refs.get("window_fog", {})
+	for role in wf:
+		c.fog_window(String(role), 0.0)
+		var m: MeshInstance3D = c._window_fog.get(role)
+		if m != null:
+			(m.material_override as StandardMaterial3D).albedo_color.a = float(wf[role])
+			m.visible = float(wf[role]) > 0.01
 	apply_clock(point, drop)
