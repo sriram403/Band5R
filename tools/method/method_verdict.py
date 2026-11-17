@@ -66,6 +66,7 @@ def reduce(tr, fz):
     # ---- checks (M9) with the reach policies (M10 departure "checks", M11 one try)
     req = fz["required"]
     ck = [c for c in tr["checks"] if c.get("scen") in req]
+    passed_ids = det.setdefault("passed_ids", set())     # qual round 2: manifest ids with a PASS (a proof's prerequisite)
     jump_missed = False
     missed_in = set()
     for scen, spec in req.items():
@@ -79,6 +80,7 @@ def reduce(tr, fz):
         seen = {m["id"]: c for m, c in pairs}
         for m, c in pairs:
             if c["ok"]:
+                passed_ids.add(m["id"])
                 continue
             if m["kind"] == "jump":
                 jump_missed = True
@@ -93,7 +95,7 @@ def reduce(tr, fz):
                               "begin": float(c["unix"]), "kind": "reach", "owner": "UNRESOLVED"})
             else:
                 conds.append({"status": "FAIL", "text": "check failed: '%s' (%s), owner=UNRESOLVED" % (c["text"], m["id"]),
-                              "begin": float(c["unix"]), "kind": "check", "owner": "UNRESOLVED"})
+                              "begin": float(c["unix"]), "kind": "check", "owner": "UNRESOLVED", "pf": c.get("pf"), "id": m["id"], "scen": scen})
         missing = [m["id"] for m in man if m["id"] not in seen]
         det["checks_%s" % scen] = (len(seen), len(man))
         if missing and scen in started:
@@ -135,7 +137,11 @@ def reduce(tr, fz):
     elif order:
         if pol["headline"] == "earliest":
             t0 = float(order[0]["begin"])
-            near = [c for c in order if float(c["begin"]) - t0 <= float(fz["limits"]["headline_tie_s"])]
+            p0 = order[0].get("pf")
+            tie = float(fz["limits"]["headline_tie_s"])
+            # T1: the tie window is game s when both conditions carry a physics frame (fast runs)
+            near = [c for c in order if ((float(c["pf"]) - float(p0)) / 60.0 if p0 is not None and c.get("pf") is not None
+                                         else float(c["begin"]) - t0) <= tie]
             head = sorted(near, key=lambda c: (TIE_RANK[c["status"]], float(c["begin"])))[0]
         else:
             raise SystemExit("headline policy '%s' not built" % pol["headline"])
@@ -143,8 +149,9 @@ def reduce(tr, fz):
     return status, head, order, det
 
 
-def fmt_t(tr, u):
-    return "%+.1fs" % (float(u) - float(tr["t_start"]))
+def fmt_t(tr, u, pf=None):
+    s = "%+.1fs" % (float(u) - float(tr["t_start"]))
+    return s + (" game %.1fs" % (float(pf) / 60.0) if pf is not None else "")
 
 
 def report(tr, fz, out):
@@ -156,7 +163,7 @@ def report(tr, fz, out):
     if head is None:
         L.append("RESULT: PASS (exit 0): %s profile %s" % (tr["plan"], prof))
     else:
-        L.append("RESULT: %s (exit %d): %s [began %s]" % (status, code, head["text"], fmt_t(tr, head["begin"])))
+        L.append("RESULT: %s (exit %d): %s [began %s]" % (status, code, head["text"], fmt_t(tr, head["begin"], head.get("pf"))))
     L.append("  asked %d (%s) / started %d / ended %d (%s); wall %.0f s; beats %d; game pid %s" % (
         len(tr["asked"]), ",".join(tr["asked"]), len(tr["started"]), len(tr["ended"]), ",".join(s["scen"] for s in tr["ended"]), tr.get("wall_s", 0), tr["beats"], tr.get("pid")))
     if tr.get("launch") and tr.get("first_beat"):
@@ -166,7 +173,7 @@ def report(tr, fz, out):
         for c in order:
             mark = "  <== headline" if c is head else ""
             dt = (" detected %s" % fmt_t(tr, c["detected"])) if c.get("detected") else ""
-            L.append("    %-11s %s%s  %s%s" % (c["status"], fmt_t(tr, c["begin"]), dt, c["text"], mark))
+            L.append("    %-11s %s%s  %s%s" % (c["status"], fmt_t(tr, c["begin"], c.get("pf")), dt, c["text"], mark))
     for x in det["lines"]:
         L.append(x)
     for k, v in det.items():
@@ -186,7 +193,7 @@ def report(tr, fz, out):
     if tr.get("kill"):
         L.append("  stop: kill started %.2f s after detection; shutdown %.2f s; %s" % (tr.get("detect_to_kill_start_s", -1), tr.get("shutdown_s", -1), "; ".join(tr["kill"])))
     if "stall_detect_after_deadline_s" in tr:
-        L.append("  stall detected %.2f s after its deadline (%.2f s after the step opened)" % (tr["stall_detect_after_deadline_s"], tr["stall_detect_after_open_s"]))
+        L.append("  stall detected %.2f s after its deadline (%.2f wall s after the step opened, %s game s)" % (tr["stall_detect_after_deadline_s"], tr["stall_detect_after_open_s"], tr.get("stall_game_open_s", "?")))
     L.append("  godot processes left after the run: %s" % (tr.get("godot_left_after") or "none"))
     sc = fz.get("scope_ghat", fz["scope"]) if tr["plan"].startswith("ghat") else fz["scope"]
     L.append("  Scope: %s, profile %s. Claims: %s" % (tr["plan"], prof, sc["claims"]))
@@ -195,6 +202,19 @@ def report(tr, fz, out):
     L.append("  Evidence: %s" % out)
     txt = "\n".join(L)
     print(txt, flush=True)
+    # fix round (GPT's blocker 3): the structured verdict a proof is judged from (exact ids and the
+    # run's identity), written before verdict.txt; verdict.txt's last line (Evidence) seals both
+    vj = {"status": status, "code": code, "inv": tr.get("inv", ""), "part": tr.get("part", ""), "fixture": tr.get("fixture", ""),
+          "asked": tr["asked"], "started": [s["scen"] for s in tr["started"]], "ended": [s["scen"] for s in tr["ended"]],
+          "failed_ids": sorted({c["id"] for c in order if c["status"] == "FAIL" and c.get("id")}),
+          # qual round 2: the ids that PASSED (a proof's prerequisite, e.g. marks' looks prelude made its round)
+          "passed_ids": sorted(det.get("passed_ids", set()) - {c["id"] for c in order if c.get("id")}),
+          "conditions": [{k: c.get(k) for k in ("status", "kind", "id", "scen", "text")} for c in order],
+          "early_stop": bool(tr.get("early_stop")), "expect_ids": tr.get("expect_ids", []), "kill": tr.get("kill", []),
+          "kill_ok": tr.get("kill_ok"), "godot_left_after": tr.get("godot_left_after"), "wrapper_rc": tr.get("wrapper_rc"),
+          "drained": tr.get("drained"), "closed_late": tr.get("closed_late", []), "evidence": out}
+    with open(os.path.join(out, "verdict.json"), "w", encoding="utf-8") as f:
+        json.dump(vj, f, indent=1)
     with open(os.path.join(out, "verdict.txt"), "w", encoding="utf-8") as f:
         f.write(txt + "\n")
     return code

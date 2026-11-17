@@ -113,6 +113,7 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   fails while both run is rerun alone before it is believed.
 - Always check which folder a file is written to: a new file for the dev
   branch written into `MPG` sat outside the branch (2026-09-27).
+- **Test tools (speed research, in main 2026-11-17): `notes/TESTING_METHOD.md` v7.** Ghat suite: `ROLE=final SPEED=fast tools/method_run.sh ghat` (fast + nodraw for heat / net only, two lanes); proofs: `python tools/method/prove_ghat.py <group>` (27 rows, each alone); judges `tools/method/t3_gate.py`; walks `tools/play_walk.sh` / `tools/record_walk.sh <w> --fresh` (fresh takes for acceptance); `LANE=b` a second game; `tools/method/stop_lane.sh`, `cpu_sampler.ps1` (note the CPU load beside every timing).
 
 ## The user's rules in short (details in MASTER_PROMPT section 3)
 

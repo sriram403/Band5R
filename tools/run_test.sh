@@ -17,6 +17,11 @@
 #   NO_CHECK=1 tools/run_test.sh ...              skip the compile check first
 #   TIMEOUT=5400 tools/run_test.sh full           seconds before one game process is
 #                                                 killed as hung (default 3600)
+#   FAST=1 tools/run_test.sh ghat_net             speed research T1 (pilot, 2026-11-10): every
+#                                                 frame advances exactly 1/60 s (--fixed-fps 60),
+#                                                 no vsync, no frame cap: the game runs as fast
+#                                                 as the PC can. NOT qualified for any check yet.
+#   ENGINE_ARGS="--fixed-fps 60" tools/run_test.sh ...  engine arguments (before the --)
 # The plans are in tools/test_plan.sh (shared with the headless runner).
 # Every run ends with one summary of all its segments; the exit code is 0 only
 # when everything passed. Logs: appdata/playtest/runs/<segment>.log.
@@ -24,7 +29,7 @@ DIR="$(dirname "$0")"
 . "$DIR/test_plan.sh"
 # Save/load scenarios must never overwrite a player's own slots. Godot still
 # writes only inside MPG/appdata, in a separate play-test profile.
-export MPG_DATA="$(cd "$DIR/.." && pwd -W 2>/dev/null || pwd)/appdata/playtest"
+export MPG_DATA="$(cd "$DIR/.." && pwd -W 2>/dev/null || pwd)/appdata/playtest${LANE:+_$LANE}"
 RUNS="$MPG_DATA/runs"
 PROGRESS="$RUNS/progress.txt"
 mkdir -p "$RUNS"
@@ -57,6 +62,9 @@ if [ -z "$NO_CHECK" ]; then
 		exit 1
 	fi
 fi
+# engine arguments go before the -- (Godot's own), game arguments after it
+[ -n "$FAST" ] && ENGINE_ARGS="--fixed-fps 60 --disable-vsync --max-fps 0 $ENGINE_ARGS"
+[ -n "$ENGINE_ARGS" ] && echo "engine args: $ENGINE_ARGS"
 FG=""
 if [ -z "$SHOW" ]; then
 	# The window the user is in now; the game hands focus back to it once it starts.
@@ -86,9 +94,9 @@ for line in $(test_plan "$PLAN"); do
 	# stdout also into the segment's log (Godot's own log is replaced each launch);
 	# a resumed segment adds to what it logged before
 	if [ -n "$SHOW" ]; then
-		timeout "${TIMEOUT:-3600}" "$DIR/run_game.sh" --resolution 1600x900 -- "--playtest=$scen" $g $ARGS "--progress=$PROGRESS" --show 2>&1 | tee -a "$seg_log"
+		timeout "${TIMEOUT:-3600}" "$DIR/run_game.sh" --resolution 1600x900 $ENGINE_ARGS -- "--playtest=$scen" $g $ARGS "--progress=$PROGRESS" --show 2>&1 | tee -a "$seg_log"
 	else
-		timeout "${TIMEOUT:-3600}" "$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 -- "--playtest=$scen" $g $ARGS "--refocus=${FG:-0}" "--progress=$PROGRESS" 2>&1 | tee -a "$seg_log"
+		timeout "${TIMEOUT:-3600}" "$DIR/run_game.sh" --resolution 1600x900 --position 4000,0 $ENGINE_ARGS -- "--playtest=$scen" $g $ARGS "--refocus=${FG:-0}" "--progress=$PROGRESS" 2>&1 | tee -a "$seg_log"
 	fi
 	# Finished only if it got to its summary line; otherwise it crashed or hung
 	# (killed by the timeout): stop, so `resume` carries on from its last scenario.
