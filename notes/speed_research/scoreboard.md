@@ -189,6 +189,11 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   one move, picture, then one full walk). No game knowledge given. Noted for the score: the method's "bench after 2-3" rule was
   not applied by the runner itself here (a compliance point for the final audit).
 
+- **Referee intervention 2 (2026-11-17 18:48, procedure only):** two suite parts in a row came back TEST "a check outside the
+  declared manifest" (1x lane 13.1 min, fast lane 2.4 min: ~15 game min spent on runs that couldn't count). Steered: rebuild the
+  manifest before any suite. **Method finding:** the guard is right (fail-closed), but the tool should check the manifest is
+  current BEFORE launching (seconds, offline) instead of after a 13-minute game: a tool default, not a rule to remember.
+
 ## Next (Stage 3 proper)
 **2026-11-14 13:40: stopped at the user's request; the referee's next steps are in `MPG
 otes\SPEED_REFEREE_HANDOFF.md`.**
