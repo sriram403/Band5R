@@ -1,0 +1,498 @@
+"""T4 v2 resume gate (speed research): judge a walk's save point and a resume of it.
+
+Evidence (written by the game, dev/LiveControl.gd + dev/GateObs.gd), per walk run folder
+<live>/points/<run>/: run.json (identity, profile), walk.json, walk.log, <i>.json (the point),
+<i>.obs.json (independent observation in the point's tick), <i>.t3.json (+3 game s sample: observation,
+walk lines, messages, inputs), and for a resume <k>.restored.obs.json (observed right after the restore,
+before any await). Rules and tolerances: tools/method/gate_inventory.json (written before the trials).
+
+  refusal(point obs)        boundary rules: engine on / van > 0.1 m/s, hearing activity, open work,
+                            held input, running helper, tweens, unsupported state (D4 A)
+  layer1(obs)               every observed field classified; every required field observed
+  layer2(point, restored)   exact equality after the documented volatile normalisations only
+  layer3(fresh t3, resume t3)  trajectory at +3 game s: discrete exact, continuous within tolerance,
+                            same event / message order, same inputs (times within tolerance)
+  next_step(fresh, resume)  the resumed step's expect lines (PASS / FAIL names, order, times)
+  identity(point, now)      same game, test, bin, schema, profile; walk steps before the point unchanged
+                            (producer) and the resumed step on unchanged (its fresh reference)
+A boundary is SAME only with >= RESUMES (2, D3 A) resume receipts SAME on all layers, same profile.
+
+CLI (offline, no game):
+  python tools/method/walkgate.py refuse <run_dir> <i>
+  python tools/method/walkgate.py l2 <point_run_dir> <i> <resume_run_dir>
+  python tools/method/walkgate.py l3 <point_run_dir> <i> <resume_run_dir>
+  python tools/method/walkgate.py boundary <point_run_dir> <i> [<resume_run_dir> ...]
+"""
+import hashlib
+import json
+import math
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+INV_PATH = os.path.join(HERE, "gate_inventory.json")
+SCHEMA = "t4v2-gate-1"
+RESUMES = int(os.environ.get("GATE_RESUMES", "2"))       # D3 A: two resumes per boundary (B would be 1)
+
+
+def load(p):
+    with open(p, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def inv():
+    return load(INV_PATH)
+
+
+def _fields(obs):
+    return obs["fields"] if "fields" in obs else obs
+
+
+# ---- value parsing (Godot var_to_str) ------------------------------------------------------------
+NUM = r"[-+]?(?:\d+\.?\d*(?:[eE][-+]?\d+)?|inf|nan)"
+
+
+def nums(s):
+    """The numbers of a value. Only INSIDE the brackets of a typed value: the type name itself has a
+    digit (Vector3, Transform3D), which the first version read as a number (found by t4_controls:
+    every velocity / transform check was silently skipped or 'not a transform')."""
+    s = str(s)
+    if "(" in s and s.rstrip().endswith(")"):
+        s = s[s.index("(") + 1:s.rstrip().rindex(")")]
+    return [float(x) for x in re.findall(NUM, s.replace("inf_neg", "-inf"))]
+
+
+def parse_xf(s):
+    """Transform3D(xx, xy, xz, yx, yy, yz, zx, zy, zz, ox, oy, oz) -> (basis 9, origin 3)."""
+    v = nums(s)
+    if not s.startswith("Transform3D") or len(v) != 12:
+        return None
+    return v[:9], v[9:]
+
+
+def rot_deg(b1, b2):
+    # angle of R1^T R2 from its trace (basis columns as written: rows here, same for both)
+    import itertools
+    m1 = [b1[0:3], b1[3:6], b1[6:9]]
+    m2 = [b2[0:3], b2[3:6], b2[6:9]]
+    tr = sum(m1[i][k] * m2[i][k] for i, k in itertools.product(range(3), range(3)))
+    c = max(-1.0, min(1.0, (tr - 1.0) / 2.0))
+    return math.degrees(math.acos(c))
+
+
+# ---- normalisation (layer 2's only allowed edits) ---------------------------------------------------
+def normalise(obs, cfg):
+    f = dict(_fields(obs))
+    now = (obs.get("meta") or {}).get("wall_ms")
+    notes = []
+    for v in cfg["volatile"]:
+        rx = re.compile(v["pattern"])
+        for k in list(f):
+            if rx.search(k):
+                f[k] = "<volatile>"
+    for pat, w in cfg["wallstamps"]["fields"].items():
+        rx = re.compile(pat)
+        for k in list(f):
+            if not rx.search(k):
+                continue
+            try:
+                t = float(nums(f[k])[0])
+            except (IndexError, ValueError):
+                continue
+            if now is None:
+                f[k] = "<no clock>"
+                continue
+            age = (now - t) if w["unit"] == "ms" else (now / 1000.0 - t)
+            if w.get("unset") is not None and t == w["unset"]:
+                f[k] = "<expired>"
+            elif age >= w["window"]:
+                f[k] = "<expired>"
+            else:
+                f[k] = "<live %.0f%s old>" % (age, w["unit"])
+                notes.append(k)
+    # the Hearing queue: only its unconsumed / recent part matters (pruning happens on emit)
+    if "static.Hearing.recent" in f:
+        rec = json.loads(f["static.Hearing.recent"]) if f["static.Hearing.recent"].startswith("[") else []
+        heard = _heard_ids(f)
+        live = [e for e in rec if (now is not None and now - e["t"] < 2000) or any(e["id"] > h for h in heard)]
+        f["static.Hearing.recent"] = "<consumed and old>" if not live else json.dumps([[e["what"], e["pos"]] for e in live])
+    # the serial counter matters only relative to a listener
+    if not _problem_present(f) and "static.Hearing._next_id" in f:
+        f["static.Hearing._next_id"] = "<no listener>"
+    return f, notes
+
+
+def _heard_ids(f):
+    out = []
+    for k, v in f.items():
+        if k.endswith("._heard_id"):
+            try:
+                out.append(int(nums(v)[0]))
+            except IndexError:
+                pass
+    return out
+
+
+def _problem_present(f):
+    return any(k.startswith("problem.") for k in f)
+
+
+def _item_moving(f):
+    for k, v in f.items():
+        if k.startswith("item[") and k.endswith(".@lv"):
+            n = nums(v)
+            if len(n) == 3 and math.sqrt(sum(x * x for x in n)) > 0.05:
+                return True
+    return False
+
+
+ACTIVE = {"problem_present": _problem_present, "item_moving": _item_moving, "never": lambda f: False}
+
+
+# ---- boundary refusal (before any input) -----------------------------------------------------------
+def refusal(obs, cfg=None):
+    cfg = cfg or inv()
+    f = _fields(obs)
+    now = (obs.get("meta") or {}).get("wall_ms")
+    why = []
+    if f.get("van.engine_on") == "true":
+        why.append("engine on (no van engine adapter: refused)")
+    lv = nums(f.get("van.@lv", ""))
+    if len(lv) == 3 and math.sqrt(sum(x * x for x in lv)) > 0.1:
+        why.append("van moving %.2f m/s (> 0.1)%s" % (math.sqrt(sum(x * x for x in lv)),
+                   " (frozen on the handbrake: a stale STORED velocity, which the restore zeroes: lost physics state)" if f.get("van.@freeze") == "true" else ""))
+    if "static.Hearing.recent" in f:
+        rec = json.loads(f["static.Hearing.recent"]) if f["static.Hearing.recent"].startswith("[") else []
+        heard = _heard_ids(f)
+        recent = [e for e in rec if now is not None and now - e["t"] < 2000]
+        uncons = [e for e in rec if any(e["id"] > h for h in heard)]
+        if now is None:
+            why.append("no wall clock in the observation: hearing ages unknown")
+        if recent:
+            why.append("hearing activity < 2 wall s old (%s)" % ", ".join("%s %d ms" % (e["what"], now - e["t"]) for e in recent))
+        if uncons:
+            why.append("unconsumed hearing events (%s)" % ", ".join("%s #%d" % (e["what"], e["id"]) for e in uncons))
+    if _problem_present(f):
+        why.append("a listener (Problem) is out: its hearing serial (_heard_id vs Hearing._next_id) cannot be restored (no rebase by design)")
+    for pat, w in cfg["wallstamps"]["fields"].items():
+        rx = re.compile(pat)
+        for k, v in f.items():
+            if rx.search(k):
+                try:
+                    t = float(nums(v)[0])
+                except IndexError:
+                    continue
+                if now is None:
+                    why.append("%s: no wall clock to age it" % k)
+                    continue
+                age = (now - t) if w["unit"] == "ms" else (now / 1000.0 - t)
+                if (w.get("unset") is None or t != w["unset"]) and age < w["window"]:
+                    why.append("%s inside its %s%s window (%s)" % (k, w["window"], w["unit"], w["why"]))
+    if f.get("tree.@tweens", "0") not in ("0",):
+        why.append("tweens running (%s)" % f["tree.@tweens"])
+    if f.get("input.@held", "[]") != "[]":
+        why.append("inputs held %s" % f["input.@held"])
+    if f.get("test.@helpers_running", "0") != "0":
+        why.append("a spawned helper runs (%s)" % f["test.@helpers_running"])
+    if f.get("test.@open_watches", "[]") != "[]":
+        why.append("open watches %s" % f["test.@open_watches"])
+    if f.get("test.@needs", "[]") != "[]":
+        why.append("needs not met %s" % f["test.@needs"])
+    for u in cfg["unsupported"]:
+        if ACTIVE[u["active_if"]](f):
+            why.append("unsupported state %s (%s)" % (u["name"], u["why"]))
+    return sorted(set(why))
+
+
+# ---- layer 1: the field inventory -----------------------------------------------------------------
+def layer1(obs, cfg=None):
+    cfg = cfg or inv()
+    f = _fields(obs)
+    rxs = [(re.compile(c["pattern"]), c) for c in cfg["classes"]]
+    why = []
+    for k in f:
+        if not any(rx.search(k) for rx, _ in rxs):
+            why.append("unclassified field %s" % k)
+    for r in cfg["required"]:
+        if r["when"] == "always" or ACTIVE[r["when"]](f):
+            rx = re.compile(r["pattern"])
+            if not any(rx.search(k) for k in f):
+                why.append("required observation missing: %s" % r["pattern"])
+    return why
+
+
+# ---- layer 2: immediate exact comparison ----------------------------------------------------------
+def layer2(point_obs, restored_obs, cfg=None):
+    cfg = cfg or inv()
+    a, _ = normalise(point_obs, cfg)
+    b, _ = normalise(restored_obs, cfg)
+    diffs = []
+    for k in sorted(set(a) | set(b)):
+        if k.startswith("test.@open_watches") or k.startswith("test.@needs"):
+            continue            # judged by refusal() on the point (the restore starts with none open)
+        if a.get(k) != b.get(k):
+            diffs.append((k, a.get(k, "<absent>"), b.get(k, "<absent>")))
+    return diffs
+
+
+# ---- layer 3: the trajectory at +3 game s ---------------------------------------------------------
+def _strip_times(line):
+    line = re.sub(r"\(\d+ s, frame \d+\)", "(t)", line)
+    line = re.sub(r"\(\d+\.\d s(, watched)?\)", "(t)", line)
+    line = re.sub(r" in \d+ s$", " in t", line)
+    return line
+
+
+def _line_time(line):
+    m = re.search(r"\((\d+\.\d) s", line)
+    return float(m.group(1)) if m else None
+
+
+def layer3(fresh_t3, resume_t3, cfg=None):
+    cfg = cfg or inv()
+    tr = cfg["trajectory"]
+    why = []
+    for nm, t in (("fresh", fresh_t3), ("resume", resume_t3)):
+        if t is None:
+            why.append("no +3 s sample from the %s run" % nm)
+    if why:
+        return why
+    if fresh_t3.get("failed_before") or resume_t3.get("failed_before"):
+        why.append("a FAIL before +3 s (fresh %r, resume %r)" % (fresh_t3.get("failed_before"), resume_t3.get("failed_before")))
+    for nm, t in (("fresh", fresh_t3), ("resume", resume_t3)):
+        if int(t.get("at_game_ms", 0)) < 3000:
+            why.append("%s sample at %d game ms (< 3000)" % (nm, int(t.get("at_game_ms", 0))))
+    a, _ = normalise(fresh_t3["obs"], cfg)
+    b, _ = normalise(resume_t3["obs"], cfg)
+    disc = [re.compile(p) for p in tr["discrete"]]
+    for k in sorted(set(a) | set(b)):
+        if any(rx.search(k) for rx in disc) and a.get(k) != b.get(k):
+            why.append("discrete %s: fresh %s, resume %s" % (k, a.get(k, "<absent>"), b.get(k, "<absent>")))
+    for c in tr["continuous"]:
+        rx = re.compile(c["pattern"])
+        for k in sorted(set(a) | set(b)):
+            if not rx.search(k):
+                continue
+            va, vb = a.get(k), b.get(k)
+            if va is None or vb is None:
+                why.append("continuous %s missing on one side" % k)
+                continue
+            if c["kind"] == "xf":
+                xa, xb = parse_xf(va), parse_xf(vb)
+                if xa is None or xb is None:
+                    why.append("%s not a transform" % k)
+                    continue
+                d = math.dist(xa[1], xb[1])
+                r = rot_deg(xa[0], xb[0])
+                if d > c["pos_m"] or r > c["rot_deg"]:
+                    why.append("%s moved %.3f m / %.2f deg apart (bounds %.2f m / %.1f deg)" % (k, d, r, c["pos_m"], c["rot_deg"]))
+            else:
+                na, nb = nums(va), nums(vb)
+                if len(na) != len(nb) or not na:
+                    why.append("%s not comparable (%s / %s)" % (k, va, vb))
+                    continue
+                d = math.dist(na, nb) if len(na) > 1 else abs(na[0] - nb[0])
+                if d > c["abs"]:
+                    why.append("%s differs by %.4f %s (bound %s)" % (k, d, c.get("unit", ""), c["abs"]))
+    la = [_strip_times(x) for x in fresh_t3.get("lines", [])]
+    lb = [_strip_times(x) for x in resume_t3.get("lines", [])]
+    if la != lb:
+        why.append("walk lines differ: fresh %s / resume %s" % (la, lb))
+    else:
+        for x, y in zip(fresh_t3.get("lines", []), resume_t3.get("lines", [])):
+            tx, ty = _line_time(x), _line_time(y)
+            if tx is not None and ty is not None and abs(tx - ty) > tr["events_time_s"]:
+                why.append("'%s' at %.1f s vs %.1f s" % (_strip_times(x), tx, ty))
+    ma = [m[1:] for m in fresh_t3.get("messages", [])]
+    mb = [m[1:] for m in resume_t3.get("messages", [])]
+    if ma != mb:
+        why.append("messages differ: fresh %s / resume %s" % (ma, mb))
+    else:
+        for x, y in zip(fresh_t3["messages"], resume_t3["messages"]):
+            if abs(x[0] - y[0]) / 1000.0 > tr["events_time_s"]:
+                why.append("message '%s' at %d vs %d game ms" % (x[3], x[0], y[0]))
+    ia = [i[1:] for i in fresh_t3.get("inputs", [])]
+    ib = [i[1:] for i in resume_t3.get("inputs", [])]
+    if ia != ib:
+        why.append("inputs differ (%d fresh, %d resume): first difference %s" % (len(ia), len(ib), next(((x, y) for x, y in zip(ia + [None] * 9, ib + [None] * 9) if x != y), None)))
+    else:
+        worst = max([abs(x[0] - y[0]) for x, y in zip(fresh_t3["inputs"], resume_t3["inputs"])] or [0])
+        if worst / 1000.0 > tr["inputs_time_s"]:
+            why.append("an input %d game ms off (bound %.0f)" % (worst, tr["inputs_time_s"] * 1000))
+    return why
+
+
+def step_block(walk_log_lines, step_name):
+    """The lines of one step (its step line up to the next step line / the end line)."""
+    out, on = [], False
+    for ln in walk_log_lines:
+        if ln.startswith("step "):
+            if on:
+                break
+            on = ln.startswith("step %s (" % step_name)
+        if on:
+            out.append(ln)
+    return out
+
+
+EXTERNAL_BREAK = ("FAIL deliberate break", "FAIL the client saw in the log")
+
+
+def next_step(fresh_lines, resume_lines, step_name, cfg=None):
+    """The resumed step's outcomes (PASS / FAIL lines) must be the fresh run's. A fresh run broken
+    from outside inside that step (a deliberate test break, the client's abort) is compared up to
+    its break: its outcomes before the break must open the resume's; the break line itself is not
+    an outcome. A fresh step with no outcome and no break is not evidence."""
+    cfg = cfg or inv()
+    a = [x for x in step_block(fresh_lines, step_name) if x.startswith(("PASS", "FAIL"))]
+    b = [x for x in step_block(resume_lines, step_name) if x.startswith(("PASS", "FAIL"))]
+    why = []
+    broken = [x for x in a if x.startswith(EXTERNAL_BREAK)]
+    if broken:
+        a = a[:a.index(broken[0])]
+        b = b[:len(a)]
+    elif not a:
+        why.append("the fresh run has no outcome for step '%s'" % step_name)
+    if [_strip_times(x) for x in a] != [_strip_times(x) for x in b]:
+        why.append("step outcomes differ: fresh %s / resume %s" % (a, b))
+    else:
+        for x, y in zip(a, b):
+            tx, ty = _line_time(x), _line_time(y)
+            if tx is not None and ty is not None and abs(tx - ty) > cfg["trajectory"]["next_step_time_s"]:
+                why.append("'%s' took %.1f s vs %.1f s" % (_strip_times(x), tx, ty))
+    return why
+
+
+# ---- identity -----------------------------------------------------------------------------------
+def _canon(v):
+    """Godot's JSON reads every number as a float (25 -> 25.0): compare numbers by value."""
+    if isinstance(v, bool) or v is None or isinstance(v, str):
+        return v
+    if isinstance(v, (int, float)):
+        return int(v) if float(v).is_integer() else float(v)
+    if isinstance(v, list):
+        return [_canon(x) for x in v]
+    if isinstance(v, dict):
+        return {k: _canon(x) for k, x in v.items()}
+    return v
+
+
+def steps_hash(steps):
+    return hashlib.sha256(json.dumps(_canon(steps), sort_keys=True).encode()).hexdigest()[:16]
+
+
+def identity_check(point_run, k, now_identity, now_walk, profile):
+    """-> reasons the point can't be used now ([] = compatible for gate evaluation, not SAME)."""
+    why = []
+    rj = load(os.path.join(point_run, "run.json"))
+    pid = rj.get("identity") or {}
+    if pid.get("schema") != SCHEMA or now_identity.get("schema") != SCHEMA:
+        why.append("schema: point %s, now %s, gate %s" % (pid.get("schema"), now_identity.get("schema"), SCHEMA))
+    for key in ("game", "test", "bin"):
+        if pid.get(key) != now_identity.get(key):
+            why.append("%s hash %s != now %s" % (key, pid.get(key), now_identity.get(key)))
+    if pid.get("profile") != profile:
+        why.append("profile %s != %s" % (pid.get("profile"), profile))
+    try:
+        old_walk = load(os.path.join(point_run, "walk.json"))
+    except OSError:
+        return why + ["the point's walk.json is missing"]
+    os_, ns_ = old_walk.get("steps", []), now_walk.get("steps", [])
+    if steps_hash(os_[:k]) != steps_hash(ns_[:k]) or steps_hash(old_walk.get("setup", [])) != steps_hash(now_walk.get("setup", [])):
+        why.append("the steps before the point changed (its producer): play the real prefix")
+    if k >= len(ns_) or k >= len(os_) or steps_hash(os_[k:k + 1]) != steps_hash(ns_[k:k + 1]):
+        why.append("the resumed step changed: its fresh +3 s reference is for other actions")
+    return why
+
+
+def admit(points_dir, walk, walk_from, point_id, ident, probe=False):
+    """The check before any launch / input (tools/live.py): -> (why, k, point_run_dir, probe_note).
+    why == [] admits the point to gate EVALUATION only (layers 2 + 3 still decide; SAME needs RESUMES)."""
+    names = [s.get("name", "") for s in walk.get("steps", [])]
+    k = names.index(walk_from) if walk_from in names else -1
+    prun = os.path.join(points_dir, point_id.rsplit("/", 1)[0]) if "/" in point_id else ""
+    why, note = [], ""
+    if k < 0:
+        why.append("no step '%s' in this walk" % walk_from)
+    elif not point_id or not os.path.exists(os.path.join(points_dir, point_id + ".json")):
+        why.append("no point ID for '%s' (%r)" % (walk_from, point_id))
+    elif not point_id.rsplit("/", 1)[1].isdigit() or int(point_id.rsplit("/", 1)[1]) != k:
+        why.append("point %s is not step %d" % (point_id, k))
+    else:
+        why += identity_check(prun, k, ident, walk, ident.get("profile"))
+        op = os.path.join(prun, "%d.obs.json" % k)
+        if not os.path.exists(op):
+            why.append("the point's observation %s is missing" % op)
+        else:
+            pobs = load(op)
+            ref = refusal(pobs) + layer1(pobs)
+            if ref and probe:
+                note = "; ".join(ref)
+            else:
+                why += ref
+    return why, k, prun, note
+
+
+# ---- receipts -----------------------------------------------------------------------------------
+def judge_resume(point_run, k, resume_run, cfg=None):
+    cfg = cfg or inv()
+    p_obs = load(os.path.join(point_run, "%d.obs.json" % k))
+    r_obs_p = os.path.join(resume_run, "%d.restored.obs.json" % k)
+    out = {"point": "%s/%d" % (os.path.basename(point_run), k), "resume_run": os.path.basename(resume_run),
+           "profile": (load(os.path.join(resume_run, "run.json")).get("identity") or {}).get("profile")}
+    out["refusal"] = refusal(p_obs, cfg)
+    out["layer1"] = layer1(p_obs, cfg) + [x + " (restored)" for x in (layer1(load(r_obs_p), cfg) if os.path.exists(r_obs_p) else ["restored observation absent"])]
+    out["layer2"] = [list(d) for d in layer2(p_obs, load(r_obs_p), cfg)] if os.path.exists(r_obs_p) else [["<restored observation absent>", "", ""]]
+    ft = os.path.join(point_run, "%d.t3.json" % k)
+    rt = os.path.join(resume_run, "%d.t3.json" % k)
+    out["layer3"] = layer3(load(ft) if os.path.exists(ft) else None, load(rt) if os.path.exists(rt) else None, cfg)
+    fl = open(os.path.join(point_run, "walk.log"), encoding="utf-8").read().splitlines() if os.path.exists(os.path.join(point_run, "walk.log")) else []
+    rl = open(os.path.join(resume_run, "walk.log"), encoding="utf-8").read().splitlines() if os.path.exists(os.path.join(resume_run, "walk.log")) else []
+    step = load(os.path.join(point_run, "%d.json" % k)).get("live_step", "")
+    out["next_step"] = next_step(fl, rl, step, cfg)
+    bad = [x for x in ("refusal", "layer1", "layer2", "layer3", "next_step") if out[x]]
+    out["verdict"] = "REFUSED" if (out["refusal"] or out["layer1"]) else ("SAME" if not bad else "DIFFERENT")
+    out["failed_layers"] = bad
+    return out
+
+
+def boundary(point_run, k, resume_runs, cfg=None):
+    rec = [judge_resume(point_run, k, r, cfg) for r in resume_runs]
+    profiles = set(r["profile"] for r in rec)
+    same = [r for r in rec if r["verdict"] == "SAME"]
+    if any(r["verdict"] != "SAME" for r in rec):
+        v = "DIFFERENT" if any(r["verdict"] == "DIFFERENT" for r in rec) else "REFUSED"
+    elif len(profiles) != 1:
+        v = "NOT QUALIFIED (mixed profiles %s)" % sorted(map(str, profiles))
+    elif len(same) < RESUMES:
+        v = "NOT QUALIFIED (%d SAME resume(s), %d needed: D3 A)" % (len(same), RESUMES)
+    else:
+        v = "SAME"
+    return {"point": "%s/%d" % (os.path.basename(point_run), k), "resumes": rec, "verdict": v, "needs": RESUMES}
+
+
+def main(a):
+    if a[0] == "refuse":
+        r = refusal(load(os.path.join(a[1], "%s.obs.json" % a[2])))
+        l1 = layer1(load(os.path.join(a[1], "%s.obs.json" % a[2])))
+        print(json.dumps({"refusal": r, "layer1": l1}, indent=1))
+        return 0 if not (r or l1) else 1
+    if a[0] == "l2":
+        d = layer2(load(os.path.join(a[1], "%s.obs.json" % a[2])), load(os.path.join(a[3], "%s.restored.obs.json" % a[2])))
+        print(json.dumps(d, indent=1))
+        return 0 if not d else 1
+    if a[0] == "l3":
+        d = layer3(load(os.path.join(a[1], "%s.t3.json" % a[2])), load(os.path.join(a[3], "%s.t3.json" % a[2])))
+        print(json.dumps(d, indent=1))
+        return 0 if not d else 1
+    if a[0] == "boundary":
+        b = boundary(a[1], int(a[2]), a[3:])
+        print(json.dumps(b, indent=1))
+        return 0 if b["verdict"] == "SAME" else 1
+    print(__doc__)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:] or ["help"]))

@@ -18,10 +18,29 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-LIVE = os.path.join(HERE, "..", "appdata", "playtest", "FindingNaresh", "live")
+sys.path.insert(0, os.path.join(HERE, "method"))
+# T4 v2 lanes: LANE=b -> appdata/playtest_b and appdata/live_run_b.log (lane a: the usual folders).
+# LIVE_DIR overrides the folder (only the misroute control uses it: the lane check then refuses).
+LANE = os.environ.get("LANE", "")
+LIVE = os.environ.get("LIVE_DIR") or os.path.join(HERE, "..", "appdata", "playtest" + ("_" + LANE if LANE else ""), "FindingNaresh", "live")
 # the game's output when started as: tools/run_test.sh live > appdata/live_run.log
-LOG = os.path.join(HERE, "..", "appdata", "live_run.log")
+LOG = os.path.join(HERE, "..", "appdata", "live_run%s.log" % ("_" + LANE if LANE else ""))
 SEEN = os.path.join(LIVE, "log_seen")
+
+
+def lane_ok():
+    """T4 v2: the game in this folder must be this lane's (instance.json, written at ready)."""
+    ip = os.path.join(LIVE, "instance.json")
+    if not os.path.exists(ip):
+        return True, "no game has answered here yet"
+    try:
+        with open(ip, encoding="utf-8") as f:
+            inst = json.load(f)
+    except (ValueError, OSError):
+        return False, "instance.json unreadable"
+    if inst.get("lane", "") != LANE:
+        return False, "MISROUTED: lane '%s' asked, the game in %s is lane '%s' (pid %s)" % (LANE or "a", LIVE, inst.get("lane") or "a", inst.get("pid"))
+    return True, "lane '%s' pid %s" % (LANE or "a", inst.get("pid"))
 
 
 def new_errors() -> list:
@@ -71,6 +90,8 @@ def resume_step(walk: dict):
     except (ValueError, OSError):
         return None
     step = last.get("step", "")
+    global RESUME_POINT
+    RESUME_POINT = last.get("point", "")
     names = [s.get("name", "") for s in walk.get("steps", [])]
     if step not in names:
         print("RESUME: the last failed step '%s' is not in this walk any more: from the start" % step, flush=True)
@@ -82,8 +103,25 @@ def resume_step(walk: dict):
     return step
 
 
+RESUME_POINT = ""
+
+
+def gate_identity(walk):
+    import tree_id
+    import walkgate
+    d = tree_id.identity()
+    d["schema"] = walkgate.SCHEMA
+    d["profile"] = os.environ.get("WALK_PROFILE", "play")
+    d["walk"] = walkgate.steps_hash(walk.get("steps", []))
+    return d
+
+
 def main() -> int:
     args = sys.argv[1:]
+    ok, why = lane_ok()
+    if not ok and "--gate-check" not in args:
+        print("REFUSED (lane): " + why, flush=True)
+        return 6
     timeout = 180.0
     quit_after = False
     if "--quit" in args:
@@ -98,6 +136,10 @@ def main() -> int:
         i = args.index("--from")
         walk_from = args[i + 1]
         del args[i:i + 2]
+    gate_check_only = False
+    if "--gate-check" in args:        # T4 v2: the gate's refusal before any launch (no game needed)
+        gate_check_only = True
+        args.remove("--gate-check")
     fresh = False
     if "--fresh" in args:
         fresh = True
@@ -114,6 +156,26 @@ def main() -> int:
         # the save points were there). --fresh starts over; --from picks a step.
         if walk_from is None and not fresh:
             walk_from = resume_step(walk)
+        point_id = os.environ.get("FROM_POINT", "") if walk_from else ""
+        if walk_from and not point_id:
+            point_id = RESUME_POINT
+        import walkgate
+        ident = gate_identity(walk)
+        run_id = "%s_%s_%d" % (walk.get("name", "walk"), time.strftime("%Y%m%d_%H%M%S"), os.getpid())
+        k, prun = -1, ""
+        if walk_from:
+            # T4 v2: refuse an unusable point BEFORE any input is sent
+            why, k, prun, probe_note = walkgate.admit(os.path.join(LIVE, "points"), walk, walk_from, point_id, ident,
+                                                      probe=os.environ.get("GATE_PROBE") == "1")
+            if probe_note:
+                print("GATE PROBE (test only): the point would be refused (%s); restoring anyway to show layer 2" % probe_note, flush=True)
+            if why:
+                print("REFUSED (gate, before any input): %s" % "; ".join(why), flush=True)
+                print("  -> play the real prefix: --fresh (the ghat's only real producer is step 1, F1 Puzzles)", flush=True)
+                return 5
+        if gate_check_only:
+            print("GATE CHECK: %s" % ("resume from %s (%s) admitted to gate evaluation" % (point_id, walk_from) if walk_from else "fresh walk"), flush=True)
+            return 0
     src = args[0] if args else "[]"
     if src.startswith("@"):          # a saved walk: tools/live/<name>.json
         with open(src[1:], encoding="utf-8") as f:
@@ -134,7 +196,15 @@ def main() -> int:
     with open(tmp, "w", encoding="utf-8") as f:
         msg = {"id": cid, "cmds": cmds, "quit": quit_after}
         if walk is not None:
-            msg = {"id": cid, "walk": walk, "from": walk_from or ""}
+            msg = {"id": cid, "walk": walk, "from": walk_from or "", "from_point": point_id, "run": run_id, "identity": ident}
+            if os.environ.get("WALK_FAIL_AT"):           # test-only control: "<step index>:<game s>"
+                st_, s_ = os.environ["WALK_FAIL_AT"].split(":")
+                msg["fail_at"] = {"step": int(st_), "s": float(s_)}
+            if os.environ.get("GATE_L2_CONTINUE") == "1":    # test-only control: past a layer 1+2 DIFFERENT
+                msg["l2_continue"] = True
+            if os.environ.get("GATE_PERTURB"):           # test-only control: "van:0.2"
+                w_, dx_ = os.environ["GATE_PERTURB"].split(":")
+                msg["perturb"] = {"what": w_, "dx": float(dx_)}
         json.dump(msg, f)
     for _ in range(50):
         try:
@@ -145,6 +215,11 @@ def main() -> int:
     t0 = time.time()
     walk_log = os.path.join(LIVE, "walk.log")
     shown = 0
+    gate_state = {}
+    if walk is not None:
+        print("RUN %s (points: %s)" % (run_id, os.path.join(LIVE, "points", run_id)), flush=True)
+        if walk_from:
+            gate_state = {"k": k, "prun": prun, "rrun": os.path.join(LIVE, "points", run_id), "l2": False, "l3": False}
     if walk is not None:
         new_errors()                     # only errors from now on
     while time.time() - t0 < timeout:
@@ -161,6 +236,8 @@ def main() -> int:
             if errs:
                 with open(os.path.join(LIVE, "abort"), "w", encoding="utf-8") as f:
                     f.write(errs[0])
+            if gate_state:
+                gate_step(gate_state)
         try:
             with open(res_path, encoding="utf-8") as f:
                 res = json.load(f)
@@ -168,7 +245,11 @@ def main() -> int:
             continue
         if int(res.get("id", -2)) == cid:
             if walk is not None:
+                if gate_state:
+                    gate_final(gate_state)
                 print("RESULT:", "ok" if res.get("ok") else "FAILED at %s: %s" % (res.get("failed_step"), res.get("fail")))
+                print("run %s; inputs sent %s, dropped by the gate %s, held at the failure picture %s" % (
+                    res.get("run"), res.get("input_sends"), res.get("blocked_sends"), res.get("held_at_shot")))
                 if res.get("shot"):
                     print("shot:", res["shot"])
                 for k in ("naresh", "p1", "p2", "creatures", "story"):
@@ -188,6 +269,58 @@ def main() -> int:
             return 0 if all(r.get("ok", True) for r in res.get("results", [])) else 1
     print("no answer in %.0f s (is the game running? tools/run_test.sh live)" % timeout)
     return 2
+
+
+def gate_step(g):
+    """During a resume: layer 1 + 2 as soon as the restored observation exists (the game waits for it
+    before the step's first input); layer 3 as soon as the resume's +3 s sample exists (DIFFERENT
+    stops the walk: a step resumed from a point that fails the gate doesn't count)."""
+    import walkgate
+    k = g["k"]
+    ro = os.path.join(g["rrun"], "%d.restored.obs.json" % k)
+    if not g["l2"] and os.path.exists(ro):
+        try:
+            robs = walkgate.load(ro)
+        except ValueError:
+            return
+        pobs = walkgate.load(os.path.join(g["prun"], "%d.obs.json" % k))
+        l1 = walkgate.layer1(robs)
+        d = walkgate.layer2(pobs, robs)
+        v = "SAME" if not (l1 or d) else ("REFUSED" if l1 else "DIFFERENT")
+        why = "; ".join(l1 + ["%s: %s -> %s" % (x[0], str(x[1])[:60], str(x[2])[:60]) for x in d[:12]]) + (" (+%d more)" % (len(d) - 12) if len(d) > 12 else "")
+        tmp = os.path.join(g["rrun"], "%d.l2.json.tmp" % k)
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump({"verdict": v, "why": why, "diffs": d, "layer1": l1}, f)
+        os.replace(tmp, os.path.join(g["rrun"], "%d.l2.json" % k))
+        print("GATE layer 1+2: %s %s" % (v, why[:400]), flush=True)
+        g["l2"] = True
+    rt = os.path.join(g["rrun"], "%d.t3.json" % k)
+    if g["l2"] and not g["l3"] and os.path.exists(rt):
+        try:
+            rt3 = walkgate.load(rt)
+        except ValueError:
+            return
+        ft = os.path.join(g["prun"], "%d.t3.json" % k)
+        d3 = walkgate.layer3(walkgate.load(ft) if os.path.exists(ft) else None, rt3)
+        print("GATE layer 3 (+3 game s): %s %s" % ("SAME" if not d3 else "DIFFERENT", "; ".join(d3)[:600]), flush=True)
+        if d3 and os.environ.get("GATE_NOABORT") != "1":
+            with open(os.path.join(LIVE, "abort"), "w", encoding="utf-8") as f:
+                f.write("gate layer 3 DIFFERENT: " + "; ".join(d3)[:300])
+        g["l3"] = True
+
+
+def gate_final(g):
+    import walkgate
+    rt = os.path.join(g["rrun"], "%d.t3.json" % g["k"])
+    for _ in range(100):                 # the +3 s sample may land just after the walk's end
+        if os.path.exists(rt):
+            break
+        time.sleep(0.1)
+    gate_step(g)
+    rec = walkgate.judge_resume(g["prun"], g["k"], g["rrun"])
+    with open(os.path.join(g["rrun"], "%d.gate.json" % g["k"]), "w", encoding="utf-8") as f:
+        json.dump(rec, f, indent=1)
+    print("GATE receipt %s: %s (failed layers %s)" % (os.path.join(g["rrun"], "%d.gate.json" % g["k"]), rec["verdict"], rec["failed_layers"]), flush=True)
 
 
 if __name__ == "__main__":

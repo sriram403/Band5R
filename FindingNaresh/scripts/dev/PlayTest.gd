@@ -22,6 +22,12 @@ var _done := {}                  ## scenario -> its failures, from an earlier ru
 ## No window and no GPU (`--headless`, e.g. CI or tools/run_test_headless.sh):
 ## screenshots are skipped and frame-rate checks are only logged.
 var headless := DisplayServer.get_name() == "headless"
+## Speed research P1c (2026-11-10, test code): `--nodraw` (after the --) switches the engine's
+## drawing off for the whole run (RenderingServer.render_loop_enabled = false; physics and scripts
+## run on) and back on only for the one frame a picture needs (shot / grab_p1). Off by default.
+var nodraw := OS.get_cmdline_user_args().has("--nodraw") and DisplayServer.get_name() != "headless"
+## T1: where shot() writes (--shots-dir=res://_shots_b: a second game of this copy, method_run.sh LANE=b)
+var shots_dir := "res://_shots"
 ## c1, the rig layer (research trial c1): the heartbeat and input receipts
 ## (dev/RigBeat.gd, watched from outside by tools/rig/rig_watch.py) and the
 ## referee's injection hooks (dev/RigInject.gd).
@@ -61,6 +67,8 @@ func _ready() -> void:
 			only = a.get_slice("=", 1)
 		elif a.begins_with("--progress="):
 			progress_path = a.substr(11)
+		elif a.begins_with("--shots-dir="):
+			shots_dir = a.substr(12)
 	# Stay out of the way of whatever the user is doing. tools/run_test.sh opens the
 	# window off screen; here it moves on screen but BEHIND every other window,
 	# without taking focus. The user brings it up with its taskbar button to watch;
@@ -96,7 +104,16 @@ func _ready() -> void:
 var _ready_ms := 0
 
 
+## F5 bench (speed research fix round, test only): every focus change of this window, logged.
+var focus_log: Array = []        ## [game ms, physics frame, "app_out" | "app_in" | "win_out" | "win_in"]
+
+
 func _notification(what: int) -> void:
+	var fk := {NOTIFICATION_APPLICATION_FOCUS_OUT: "app_out", NOTIFICATION_APPLICATION_FOCUS_IN: "app_in",
+		NOTIFICATION_WM_WINDOW_FOCUS_OUT: "win_out", NOTIFICATION_WM_WINDOW_FOCUS_IN: "win_in"}
+	if fk.has(what):
+		focus_log.append([gms(), Engine.get_physics_frames(), fk[what]])
+		print("[focus] %s at %d ms, physics frame %d" % [fk[what], gms(), Engine.get_physics_frames()])
 	var quiet := not OS.get_cmdline_user_args().has("--show") and not _recording()
 	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		if quiet:
@@ -195,11 +212,168 @@ static func send_window_behind() -> void:
 
 func _process(delta: float) -> void:
 	_frame_times.append(delta)
+	# T1: drawing came back on although the flag read false (P1c: after the world build, after an F1
+	# jump). Seen by the frames-drawn count, never by the flag: switch it off again (one frame), at most
+	# every 30 ticks; each re-arm is counted in the scenario's [speed] line.
+	if nodraw and _nd_armed and not _picture and Engine.get_frames_drawn() > _nd_drawn0 + 2 \
+			and Engine.get_physics_frames() - _nd_rearm_pf >= 30:
+		_nd_rearm_pf = Engine.get_physics_frames()
+		_nd_rearms += 1
+		nodraw_off("drawing was back on")
+
+
+var _picture := false            ## P1c: a picture is waiting for its drawn frame
+
+
+var _nd_armed := false           ## T1: drawing has been switched off once (after a scenario's setup)
+var _nd_drawn0 := 0              ## frames drawn when it was last switched off (+ the frame in flight)
+var _nd_rearm_pf := -999
+var _nd_rearms := 0              ## times the detector found drawing back on
+var _nd_pictures := 0            ## frames drawn for a picture (shot / grab_p1)
+
+
+## T1 (speed research): switch drawing off with one drawn frame on -> off. P1c: setting
+## render_loop_enabled = false early (in _ready, at tick 1) read back false but the engine drew on;
+## after a drawn frame's on -> off mid-scenario it stopped. Called after each scenario's setup
+## (_ghat_start: every F1 jump, every ghat_heat profile) and by the detector in _process.
+func nodraw_off(why: String) -> void:
+	if not nodraw or _picture:
+		return
+	_picture = true
+	RenderingServer.render_loop_enabled = true
+	await RenderingServer.frame_post_draw
+	# T1 (2026-11-11): read the frame back before switching off. Every switch-off that stuck (P1c:
+	# shot / grab_p1, which read the picture) did this; every one that didn't (P1c's early toggles,
+	# T1 run 6's nodraw_off) didn't, and the engine drew every tick with the flag false.
+	get_viewport().get_texture().get_image()
+	RenderingServer.render_loop_enabled = false
+	_picture = false
+	_nd_armed = true
+	_nd_drawn0 = Engine.get_frames_drawn() + 1
+	if why != "drawing was back on" or _nd_rearms <= 3 or _nd_rearms % 50 == 0:
+		print("[nodraw] off (%s) at physics frame %d, frames drawn %d (re-arms so far %d)" % [why, Engine.get_physics_frames(), Engine.get_frames_drawn(), _nd_rearms])
+
+
+## After a picture's one drawn frame: off again, counted.
+func _nd_picture_done(what: String) -> void:
+	RenderingServer.render_loop_enabled = false
+	_picture = false
+	_nd_pictures += 1
+	_nd_drawn0 = Engine.get_frames_drawn() + 1
+	print("[nodraw] %s: frames drawn %d, physics frames %d" % [what, Engine.get_frames_drawn(), Engine.get_physics_frames()])
+
+
+## T1 (speed research): game time in ms = physics ticks (60 / s). Under FAST (--fixed-fps 60,
+## uncapped) every tick is exactly 1/60 s of game, so a wall-clock deadline would loosen by the
+## speed-up. Gameplay deadlines use clk() / el_ms(): the elapsed time is the LARGER of game and wall,
+## so a deadline is never looser than before on either clock: at 1x (physics can't run ahead of the
+## wall clock) it is exactly the old wall deadline; fast, the game clock decides.
+static func gms() -> int:
+	return int(Engine.get_physics_frames() * 1000 / Engine.physics_ticks_per_second)
+
+
+func clk() -> Vector2i:
+	return Vector2i(Time.get_ticks_msec(), gms())
+
+
+func el_ms(t0: Vector2i) -> int:
+	# T4 v2 (recording profile): Movie Maker runs the game slower than real time (68-87 %), so the
+	# wall clock runs ahead of the recorded world; a recorded walk's deadlines are on the game clock
+	# (the clock the video plays at). Elsewhere the larger of the two, as T1 made it.
+	if _recording():
+		return gms() - t0.y
+	return maxi(Time.get_ticks_msec() - t0.x, gms() - t0.y)
+
+
+## Game s elapsed only (reporting).
+func game_s(t0: Vector2i) -> float:
+	return (gms() - t0.y) / 1000.0
+
+
+func wall_s(t0: Vector2i) -> float:
+	return (Time.get_ticks_msec() - t0.x) / 1000.0
 
 
 # --- input injection -----------------------------------------------------------
 
+# --- T4 v2: first-failure cancellation (test only) ---------------------------------
+## A walk's first FAIL bumps the generation and closes the input gate: helpers check the
+## generation after every await and before every send (walk_breath_bot), and the gate drops any
+## press a helper still sends (an old-style helper that never checks). Releases always go through.
+var walk_gen := 0
+var input_gate := false          ## true = closed: presses are dropped and counted
+var blocked_sends := 0           ## presses dropped by the closed gate
+var input_sends := 0             ## presses that went through (all input kinds)
+var input_trace: Array = []      ## [game ms, kind, code, value] of every input sent (the trajectory gate reads it)
+var helpers_running := 0         ## spawned helpers still running (LiveControl counts them)
+
+
+func cancel_inputs(why: String) -> void:
+	walk_gen += 1
+	input_gate = true
+	print("[cancel] gen %d: %s (inputs closed, everything released)" % [walk_gen, why])
+	release_everything()
+
+
+func open_inputs() -> void:
+	input_gate = false
+
+
+## Every key, pad button, axis and mouse button up (the gate lets releases through).
+func release_everything() -> void:
+	for k in [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SHIFT, KEY_SPACE, KEY_CTRL, KEY_E, KEY_X, KEY_F, KEY_L, KEY_R, KEY_C, KEY_ESCAPE, KEY_H, KEY_Q, KEY_TAB]:
+		if Input.is_physical_key_pressed(k):
+			key(k, false)
+	for b in range(JOY_BUTTON_SDL_MAX):
+		if Input.is_joy_button_pressed(0, b):
+			pad_button(b as JoyButton, false)
+	for a in range(JOY_AXIS_SDL_MAX):
+		if absf(Input.get_joy_axis(0, a as JoyAxis)) > 0.0:
+			pad_axis(a as JoyAxis, 0.0)
+	for m in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
+		if Input.is_mouse_button_pressed(m):
+			mouse_button(m, false)
+
+
+## false = the gate dropped it (counted); true = send it (and trace it).
+func _gate_send(kind: String, code: int, v: float) -> bool:
+	if input_gate and v != 0.0:
+		blocked_sends += 1
+		return false
+	input_sends += 1
+	input_trace.append([gms(), kind, code, snappedf(v, 0.001)])
+	if input_trace.size() > 4000:
+		input_trace = input_trace.slice(2000)
+	return true
+
+
+## T4 control helper (test only): presses CTRL (P1's breath key) and holds it, pressing again every
+## 2 ticks if it was let go, for max_s game s. checks=true: the walk_breath_bot pattern after the
+## fix (stops when the generation moves); false: the old pattern (never checks: only the gate stops it).
+func cancel_probe_bot(max_s: float, checks: bool) -> void:
+	var gen := walk_gen
+	var t0 := clk()
+	while el_ms(t0) < max_s * 1000.0:
+		await physics_frames(2)
+		if checks and gen != walk_gen:
+			return
+		if not Input.is_physical_key_pressed(KEY_CTRL):
+			key(KEY_CTRL, true)
+	key(KEY_CTRL, false)
+
+
+## T4 control: the cancel probe's state in one line (the live client reads it with eval).
+func probe_state() -> String:
+	return "ctrl=%s blocked=%d sends=%d helpers=%d gate_closed=%s gen=%d" % [Input.is_physical_key_pressed(KEY_CTRL), blocked_sends, input_sends, helpers_running, input_gate, walk_gen]
+
+
+func ctrl_held() -> bool:
+	return Input.is_physical_key_pressed(KEY_CTRL)
+
+
 func key(k: Key, down: bool) -> void:
+	if not _gate_send("key", k, 1.0 if down else 0.0):
+		return
 	var e := InputEventKey.new()
 	e.keycode = k
 	e.physical_keycode = k
@@ -231,7 +405,40 @@ func hold_physics(k: Key, seconds: float) -> void:
 	if mrec != null: mrec.close(_mo)
 
 
+## F5 bench (test only): n taps of N (P1's nav swing), each judged by its effect: nav_aside must
+## flip once per tap. Logs every tap with the focus changes since the bench began.
+## -> "tag: <ok> ok, <dropped> no flip, <double> ... focus changes <k>"
+var bench_lines: Array = []
+
+
+func tap_bench(n: int, tag: String, gap_s := 0.8) -> String:
+	var c := camper()
+	var f0 := focus_log.size()
+	var ok := 0
+	var bad := 0
+	for i in n:
+		var before: bool = c.nav_aside
+		var fb := focus_log.size()
+		await tap(KEY_N)
+		await physics_frames(3)
+		var flipped: bool = c.nav_aside != before
+		if flipped:
+			ok += 1
+		else:
+			bad += 1
+		var ln := "[tapbench] %s tap %d %s (focus changes during it %d, nav %s -> %s)" % [tag, i + 1, "flip" if flipped else "NO FLIP", focus_log.size() - fb, before, c.nav_aside]
+		print(ln)
+		bench_lines.append(ln)
+		await wait(gap_s)
+	var r := "%s: %d / %d flipped, %d no flip; focus changes %d %s" % [tag, ok, n, bad, focus_log.size() - f0, str(focus_log.slice(f0))]
+	print("[tapbench] " + r)
+	bench_lines.append(r)
+	return r
+
+
 func mouse(rel: Vector2) -> void:
+	if not _gate_send("mouse_move", 0, 1.0):
+		return
 	var e := InputEventMouseMotion.new()
 	e.relative = rel
 	e.screen_relative = rel
@@ -275,6 +482,7 @@ func log_line(s: String) -> void:
 
 
 func check(ok: bool, what: String) -> void:
+	_last_check = what
 	log_line(("PASS  " if ok else "FAIL  ") + what)
 	if mrec != null:
 		mrec.check(what, ok)
@@ -286,14 +494,41 @@ func shot(tag: String) -> void:
 	if headless:
 		return      # nothing is drawn (and frame_post_draw never fires)
 	var _mo := mrec.open("shot:" + tag + "", 5.0) if mrec != null else ""
+	if nodraw:
+		_picture = true
+		RenderingServer.render_loop_enabled = true    # P1c: draw this one frame (drawn after this tick's scripts)
 	if mrec != null and mrec.fixture == "n5" and mrec.active():
 		RenderingServer.render_loop_enabled = false   # builder's N5 control only: the engine stops drawing, physics runs on
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://_shots"))
-	img.save_png("res://_shots/test_%s.png" % tag)
+	if nodraw:
+		_nd_picture_done("shot " + tag)
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(shots_dir))
+	img.save_png(shots_dir + "/test_%s.png" % tag)
 	log_line("shot test_%s.png" % tag)
+	_capture_row(tag)
 	if mrec != null: mrec.close(_mo)
+
+
+## F7 (speed research fix round, test only): one row per picture in <shots_dir>/captures.jsonl, written
+## right after the file: scenario, tag, drawn / physics frame, game ms, unix time, the file's sha256 and
+## the last check before it. tools/method/captures.py turns it into the run's capture inventory.
+var _last_check := ""
+
+
+func _capture_row(tag: String) -> void:
+	var f := shots_dir + "/test_%s.png" % tag
+	var row := {"scenario": RigBeat.scen, "tag": tag, "file": "test_%s.png" % tag, "frame": Engine.get_frames_drawn(),
+		"physics_frame": Engine.get_physics_frames(), "game_ms": gms(), "unix": Time.get_unix_time_from_system(),
+		"sha256": FileAccess.get_sha256(f), "last_check": _last_check}
+	var p := shots_dir + "/captures.jsonl"
+	var fa := FileAccess.open(p, FileAccess.READ_WRITE) if FileAccess.file_exists(p) else FileAccess.open(p, FileAccess.WRITE)
+	if fa == null:
+		push_warning("captures.jsonl: %s" % FileAccess.get_open_error())
+		return
+	fa.seek_end()
+	fa.store_line(JSON.stringify(row))
+	fa.close()
 
 
 # --- helpers -------------------------------------------------------------------
@@ -497,14 +732,14 @@ func _run() -> void:
 		PlayTest.resume = ""
 		_failures = PlayTest.carried_failures.duplicate()
 		log_line("---- %s (after scene reload) ----" % r)
-		var resumed_at := Time.get_ticks_msec()
+		var resumed_at := clk()
 		RigBeat.scen = r
 		await call("t_" + r)
 		RigBeat.event("end", PlayTest.reloading_scenario)
 		RigBeat.scen = ""
 		if c2 != null:
 			c2.sync()
-		log_line("time %s %.1f s (after reload)" % [r, (Time.get_ticks_msec() - resumed_at) / 1000.0])
+		log_line("time %s %.1f s (after reload)" % [r, el_ms(resumed_at) / 1000.0])
 		_record_done(PlayTest.reloading_scenario, PlayTest.scenario_fail_start)
 		_finish()
 		return
@@ -563,7 +798,10 @@ func _run() -> void:
 			int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TEXTURE_MEM_USED) / 1048576.0),
 			int(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0),
 			int(Performance.get_monitor(Performance.OBJECT_COUNT))])
-		var started_at := Time.get_ticks_msec()
+		var started_at := clk()
+		var fd0 := Engine.get_frames_drawn()
+		var pics0 := _nd_pictures
+		var rearm0 := _nd_rearms
 		PlayTest.reloading_scenario = s
 		PlayTest.scenario_fail_start = _failures.size()
 		release_all()
@@ -575,6 +813,19 @@ func _run() -> void:
 		if inject != null:
 			inject.arm()
 		var _ep := mrec.open("episode:" + s, float(EPISODE_S.get(s, 90.0))) if mrec != null else ""
+		# T1's deadline-negative control (test-only fixture, off by default): one step overruns its
+		# 10 game s budget by 5 game s. The method must call it STALLED (by name) at any speed; fast it
+		# takes ~3 wall s, so a wall-clock judge would let it through.
+		# Fix round (GPT's blocker 2): late_close runs it 10.5 game s (just over, then it CLOSES: the
+		# method must judge the closed step, STALLED); on_time 9.5 game s (must pass).
+		var _fx: PackedStringArray = mrec.fixture.split(",") if mrec != null else PackedStringArray()
+		var _ov := 15.0 if _fx.has("overrun") else (10.5 if _fx.has("late_close") else (9.5 if _fx.has("on_time") else 0.0))
+		if _ov > 0.0 and mrec.active():
+			var _oc := mrec.open("overrun_control", 10.0)
+			for _i in int(_ov * 60.0):
+				await get_tree().physics_frame
+			mrec.close(_oc)
+			print("[overrun_control] %s: closed after %.2f game s (budget 10)" % [mrec.fixture, _ov])
 		await call("t_" + s)
 		if mrec != null:
 			mrec.close(_ep)
@@ -584,7 +835,11 @@ func _run() -> void:
 			c2.sync()
 		release_all()
 		await _unplug_test_pad()
-		log_line("time %s %.1f s" % [s, (Time.get_ticks_msec() - started_at) / 1000.0])
+		log_line("time %s %.1f s" % [s, el_ms(started_at) / 1000.0])
+		# T1: speed and drawing per scenario (with --nodraw: frames drawn ~= pictures + re-arms + a few)
+		print("[speed] %s: game %.1f s in wall %.1f s = %.2fx; frames drawn %d over %d physics frames (pictures %d, nodraw re-arms %d, nodraw %s)" % [
+			s, game_s(started_at), wall_s(started_at), game_s(started_at) / maxf(wall_s(started_at), 0.001),
+			Engine.get_frames_drawn() - fd0, int(game_s(started_at) * 60.0 + 0.5), _nd_pictures - pics0, _nd_rearms - rearm0, nodraw])
 		if PlayTest.resume != "":
 			return      # the scene is reloading; the new test node finishes up
 		_record_done(s, PlayTest.scenario_fail_start)
@@ -1057,6 +1312,8 @@ func t_look() -> void:
 ## screen, walk, look, use the doors and drive with the triggers, and neither
 ## player's input may move the other.
 func pad_axis(axis: JoyAxis, v: float) -> void:
+	if not _gate_send("axis", axis, v):
+		return
 	var e := InputEventJoypadMotion.new()
 	e.device = 0
 	e.axis = axis
@@ -1067,6 +1324,8 @@ func pad_axis(axis: JoyAxis, v: float) -> void:
 
 
 func pad_button(b: JoyButton, down: bool) -> void:
+	if not _gate_send("button", b, 1.0 if down else 0.0):
+		return
 	var e := InputEventJoypadButton.new()
 	e.device = 0
 	e.button_index = b
@@ -3054,6 +3313,8 @@ func t_house_world() -> void:
 
 
 func mouse_button(b: MouseButton, down: bool) -> void:
+	if not _gate_send("mouse", b, 1.0 if down else 0.0):
+		return
 	var e := InputEventMouseButton.new()
 	e.button_index = b
 	e.pressed = down
@@ -4351,6 +4612,7 @@ func _ghat_start() -> Ghat:
 			p1().held, boot.paused, boot.dev_menu.visible, p1().prompt_text, (boot.huds[0] as PlayerHUD)._note.visible])
 		await shot("ghat_no_start")
 	check(c.engine_on, "the engine starts ('%s')" % c.start_fail)
+	await nodraw_off("after the F1 jump and the start")
 	return g
 
 
@@ -4442,13 +4704,13 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 		return
 	# time to hide even if it was close when the van died (2026-11-10: it walked
 	# on and reached the van in seconds): set it 15 m behind (declared setup)
-	var t0 := Time.get_ticks_msec()
-	while c.linear_velocity.length() > 0.3 and Time.get_ticks_msec() - t0 < 20000:
+	var t0 := clk()
+	while c.linear_velocity.length() > 0.3 and el_ms(t0) < 20000:
 		await physics_frames(2)
 	# the fog cuts its sight as it cuts yours (the user, 2026-11-10: A): as it
 	# walks up, P2 on the road 25 m in front of it, in plain view, isn't seen
-	var tc := Time.get_ticks_msec()
-	while g.phase != "come" and Time.get_ticks_msec() - tc < 40000:
+	var tc := clk()
+	while g.phase != "come" and el_ms(tc) < 40000:
 		await physics_frames(2)
 	var fog_top := -1.0
 	if g.phase == "come":
@@ -4472,10 +4734,10 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 	# a boiled van counts as stopped while it rolls, so it had set off already)
 	g._set_phase("follow")
 	var phase_set := g.phase
-	t0 = Time.get_ticks_msec()
-	while g.phase != "circle" and Time.get_ticks_msec() - t0 < 90000:
+	t0 = clk()
+	while g.phase != "circle" and el_ms(t0) < 90000:
 		await wait(0.25)
-	var warn_s := (Time.get_ticks_msec() - t0) / 1000.0
+	var warn_s := (el_ms(t0)) / 1000.0
 	log_line("it reached the van in %.0f s (from 15 m, phase then %s, now %s)" % [warn_s, phase_set, g.phase])
 	check(phase_set == "follow" and warn_s >= 20.0, "%s: even from 15 m it stares first: %.0f s to hide before it reaches the van" % [label, warn_s])
 	check(g.phase == "circle" and c.attack.interested(), "%s: it comes up to the van and circles it, still interested" % label)
@@ -4483,7 +4745,7 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 	c.attack.set_tarp(true)
 	var temp_tarp := c.temp
 	var temp_low := c.temp
-	t0 = Time.get_ticks_msec()
+	t0 = clk()
 	# nobody holds their breath (holding it is ghat_jug's and ghat_spring's):
 	# each window gives you away once, the second visit only lingers, so the
 	# search still ends, a few rounds later (2026-11-10: with every visit
@@ -4491,7 +4753,7 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 	var r0 := g.search_restarts
 	var visits := {}
 	var at_window: PlayerRig = null
-	while not st.flags.has("first_attack_over") and Time.get_ticks_msec() - t0 < 180000:
+	while not st.flags.has("first_attack_over") and el_ms(t0) < 180000:
 		await physics_frames(3)
 		if g.phase == "circle":
 			temp_low = minf(temp_low, c.temp)
@@ -4500,7 +4762,7 @@ func _ghat_heat_run(label: String, kmh: float, follow_on: bool) -> void:
 			if at_window != null:
 				visits[at_window.seat_role] = int(visits.get(at_window.seat_role, 0)) + 1
 	var twice := visits.values().any(func(v): return int(v) >= 2)
-	log_line("gave up after %.0f s under the tarp (window visits %s, restarts %d, given away %d), coolant %.2f" % [(Time.get_ticks_msec() - t0) / 1000.0, str(visits), g.search_restarts - r0, g.breath_events, c.coolant])
+	log_line("gave up after %.0f s under the tarp (window visits %s, restarts %d, given away %d), coolant %.2f" % [(el_ms(t0)) / 1000.0, str(visits), g.search_restarts - r0, g.breath_events, c.coolant])
 	check(st.flags.has("first_attack_over") and g.phase == "leave", "%s: under the tarp, kept quiet, it gives up" % label)
 	check(twice and g.search_restarts - r0 <= 2, "sitting there breathing, a window gives you away only once: its second visit lingers (visits %s, restarts %d)" % [str(visits), g.search_restarts - r0])
 	check(temp_low >= temp_tarp - 0.05, "%s: while it searched the needle never fell (%.1f, lowest %.1f C)" % [label, temp_tarp, temp_low])
@@ -4613,10 +4875,13 @@ func van_side(x: float, z: float, y := 0.0) -> Vector3:
 ## P2 the pad's B), till it gives up: the walk spawns this alongside.
 func walk_breath_bot(max_s: float) -> void:
 	var g := gh()
-	var t0 := Time.get_ticks_msec()
+	var t0 := clk()
 	var holding: PlayerRig = null
-	while g.phase != "leave" and Time.get_ticks_msec() - t0 < max_s * 1000.0:
+	var gen := walk_gen              # T4 v2: a walk's first FAIL moves it: stop, send nothing more
+	while g.phase != "leave" and el_ms(t0) < max_s * 1000.0:
 		await physics_frames(2)
+		if gen != walk_gen:
+			break
 		if holding == null and g.breath_p != null and g.breath_state == "wait":
 			holding = g.breath_p
 			if holding == p1():
@@ -4812,10 +5077,10 @@ func _ghat_to_boil(jug_l: float) -> Ghat:
 ## (P1 Ctrl, P2 the pad's B) until it moves on. Returns false on the deadline.
 ## B is also the handbrake: it must not toggle while you hold your breath.
 func _hide_well(g: Ghat, c: Camper, max_s: float) -> bool:
-	var t0 := Time.get_ticks_msec()
+	var t0 := clk()
 	var holding: PlayerRig = null
 	var brake0 := c.parking_brake
-	while g.phase != "leave" and Time.get_ticks_msec() - t0 < max_s * 1000.0:
+	while g.phase != "leave" and el_ms(t0) < max_s * 1000.0:
 		await physics_frames(2)
 		if holding == null and g.breath_p != null and g.breath_state == "wait":
 			holding = g.breath_p
@@ -4978,10 +5243,10 @@ func _fix_with(c: Camper, g: Ghat, pot: WaterPot, sp: Node3D) -> void:
 		await tap(KEY_E)
 		await physics_frames(5)
 	check(p.held == item, "P1 holds the %s" % item.item_name)
-	var t0 := Time.get_ticks_msec()
-	while c.temp > Camper.TEMP_WARN and Time.get_ticks_msec() - t0 < 120000:
+	var t0 := clk()
+	while c.temp > Camper.TEMP_WARN and el_ms(t0) < 120000:
 		await wait(0.5)
-	log_line("the hissing stopped after %.0f s (%.0f C)" % [(Time.get_ticks_msec() - t0) / 1000.0, c.temp])
+	log_line("the hissing stopped after %.0f s (%.0f C)" % [el_ms(t0) / 1000.0, c.temp])
 	var front := c._body_root.global_transform * Vector3(0, 0, -5.4)
 	await place_player(p, Vector3(front.x, Landscape.ground(front.x, front.z) + 0.3, front.z), 0.0)
 	await look_at_point(p, c._body_root.global_transform * Vector3(0, 1.45, -4.0))
@@ -5062,8 +5327,8 @@ func t_ghat_spring() -> void:
 	var fogged := false
 	var prompt_seen := false
 	var events_before := 0
-	var t0 := Time.get_ticks_msec()
-	while (not held_ok or not fogged) and Time.get_ticks_msec() - t0 < 120000:
+	var t0 := clk()
+	while (not held_ok or not fogged) and el_ms(t0) < 120000:
 		await physics_frames(2)
 		if g.breath_p == p1() and not prompt_seen and (boot.huds[0] as PlayerHUD).breath_text().contains("HOLD"):
 			prompt_seen = true
@@ -5084,8 +5349,8 @@ func t_ghat_spring() -> void:
 			check(c.window_fog("passenger") > 0.3 and g.search_restarts > 0, "P2 doesn't hold their breath: the glass fogs, it noticed (its search starts again)")
 	key(KEY_CTRL, false)
 	check(prompt_seen and held_ok and fogged, "both windows visited (P1 prompt %s, held %s, P2 fogged %s)" % [prompt_seen, held_ok, fogged])
-	t0 = Time.get_ticks_msec()
-	while g.phase != "leave" and Time.get_ticks_msec() - t0 < 150000:
+	t0 = clk()
+	while g.phase != "leave" and el_ms(t0) < 150000:
 		await wait(0.5)
 	log_line("gave up: %.0f C, coolant %.0f%%" % [c.temp, c.coolant * 100.0])
 	check(g.phase == "leave", "quiet at last, it gives up (restarts %d)" % g.search_restarts)
@@ -5115,18 +5380,18 @@ func t_ghat_spring() -> void:
 	await shot("ghat_cap_blows")
 	check(c.cap_blows == 1 and c.coolant < cool0, "opening the hot cap: WHOOSH, steam, coolant lost (%.0f%% -> %.0f%%)" % [cool0 * 100.0, c.coolant * 100.0])
 	check((boot.huds[0] as PlayerHUD)._flash != null and (boot.huds[0] as PlayerHUD)._flash.color.a > 0.3, "a white screen for P1")
-	var t1 := Time.get_ticks_msec()
-	while not c.attack.interested() and Time.get_ticks_msec() - t1 < 5000:
+	var t1 := clk()
+	while not c.attack.interested() and el_ms(t1) < 5000:
 		await wait(0.2)
 	check(c.attack.interested() and g.phase in ["listen", "come", "circle"], "the yelp carries: it turns back, and the needle climbs again (%s)" % g.phase)
 	# it listens first (the user, 2026-11-10: A): the net back on and both in,
 	# by hand, before it comes (straight back from ~10 m it took both)
-	var listen_t0 := Time.get_ticks_msec()
+	var listen_t0 := clk()
 	var lis := {"s": -1.0}            # (a lambda captures locals by value: a dictionary is shared)
 	var watch_listen := func() -> void:
 		while g.phase == "listen":
 			await physics_frames(1)
-		lis["s"] = (Time.get_ticks_msec() - listen_t0) / 1000.0
+		lis["s"] = (el_ms(listen_t0)) / 1000.0
 	watch_listen.call()
 	await _to_tarp_corner(p1(), c, -1.0)
 	await hold_physics(KEY_E, 2.2)
@@ -5141,8 +5406,8 @@ func t_ghat_spring() -> void:
 	await pad_tap(JOY_BUTTON_X)
 	await wait(0.5)
 	var hidden_by_hand := c.attack.tarped and p1().seat != null and p2().seat != null
-	var t2 := Time.get_ticks_msec()
-	while float(lis["s"]) < 0.0 and Time.get_ticks_msec() - t2 < 15000:
+	var t2 := clk()
+	while float(lis["s"]) < 0.0 and el_ms(t2) < 15000:
 		await physics_frames(2)
 	await wait(1.0)
 	var listened := float(lis["s"])
@@ -5202,8 +5467,8 @@ func t_ghat_marks() -> void:
 	var c := camper()
 	check(c.marks.is_empty(), "a clean van to start with")
 	# mid-encounter: wait till it's at the van, then save and load
-	var t0 := Time.get_ticks_msec()
-	while g.phase != "circle" and Time.get_ticks_msec() - t0 < 60000:
+	var t0 := clk()
+	while g.phase != "circle" and el_ms(t0) < 60000:
 		await wait(0.5)
 	var d: Dictionary = SaveGame.collect(boot)
 	SaveGame.apply(boot, d)
@@ -5230,8 +5495,8 @@ func t_ghat_marks() -> void:
 	await tap(KEY_SPACE)
 	check(c.boiled_dry, "driven up again: it boils again (%.0f s)" % t)
 	await _ghat_hide(c)
-	t0 = Time.get_ticks_msec()
-	while g.stops_done < Ghat.POSED_STOPS and Time.get_ticks_msec() - t0 < 120000:
+	t0 = clk()
+	while g.stops_done < Ghat.POSED_STOPS and el_ms(t0) < 120000:
 		await wait(0.5)
 	await wait(0.5)
 	var kinds := {}
@@ -5290,8 +5555,13 @@ func t_ghat_marks() -> void:
 
 ## P1's half of the window as an image (after the next frame is drawn).
 func grab_p1() -> Image:
+	if nodraw:
+		_picture = true
+		RenderingServer.render_loop_enabled = true    # P1c: draw this one frame
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
+	if nodraw:
+		_nd_picture_done("grab_p1")
 	var r := (boot.viewports[0].get_parent() as Control).get_global_rect()
 	return img.get_region(Rect2i(r))
 
@@ -5487,8 +5757,8 @@ func t_ghat_looks() -> void:
 	check(c.tick_every() < tick_cool * 0.5 and c.hot_ticks > 5, "the hot engine ticks, faster as it heats (every %.2f s -> %.2f s, %d ticks)" % [tick_cool, c.tick_every(), c.hot_ticks])
 	await wait(0.5)
 	check(c._hiss.target >= 1.0, "boiled: it hisses like a kettle")
-	var t0 := Time.get_ticks_msec()
-	while g.phase != "circle" and Time.get_ticks_msec() - t0 < 60000:
+	var t0 := clk()
+	while g.phase != "circle" and el_ms(t0) < 60000:
 		await wait(0.25)
 	check(g.phase == "circle", "it comes to the van")
 	# one round: lean in at the windows and the bonnet, crouch and sniff at the back
@@ -5497,8 +5767,8 @@ func t_ghat_looks() -> void:
 	var sniffs0 := cr.sniffs
 	var shots := {}
 	var stops := {}                 # stops held long enough to show their pose
-	t0 = Time.get_ticks_msec()
-	while stops.size() < 4 and Time.get_ticks_msec() - t0 < 80000:
+	t0 = clk()
+	while stops.size() < 4 and el_ms(t0) < 80000:
 		await physics_frames(2)
 		if g.at_stop:
 			if g._stop_t > Ghat.STATION_S - 0.5:
@@ -5517,6 +5787,14 @@ func t_ghat_looks() -> void:
 				var side := cr.global_transform.basis.x
 				await obs_shot("ghat_look_stop%d_%s" % [g.stop_k, p], cr.global_position + side * 4.5 + Vector3.UP * 1.4, cr.global_position + Vector3.UP * 1.3)
 	log_line("round: stops %s, lean %.2f rad, crouch scale %.2f, sniffs %d" % [str(stops.keys()), leaned, crouched, cr.sniffs - sniffs0])
+	# qual round 2 (speed research, test-only diagnostic): no full round -> where is it, and a picture from above
+	if stops.size() < 4:
+		var bi := c._body_root.global_transform.affine_inverse()
+		log_line("ROUND DIAG: phase %s at_stop %s stop_k %d _stop_t %.2f stops_done %d state %s vel %.2f breath '%s' given %s; it at %s (van frame), its spot %s, dist %.2f m" % [
+			g.phase, g.at_stop, g.stop_k, g._stop_t, g.stops_done, cr.state, cr.velocity.length(), g.breath_state, str(g._windows_given.keys()),
+			str(bi * cr.global_position), str(bi * g._round_point(c, g.stop_k)), Vector2(cr.global_position.x - g._round_point(c, g.stop_k).x, cr.global_position.z - g._round_point(c, g.stop_k).z).length()])
+		await obs_shot("ghat_look_round_diag_top", c.global_position + Vector3(0.5, 14.0, 0.5), c.global_position)
+		await obs_shot("ghat_look_round_diag_side", cr.global_position + (cr.global_position - c.global_position).normalized() * 5.0 + Vector3.UP * 2.5, cr.global_position + Vector3.UP * 1.0)
 	check(stops.size() >= 4, "it goes round the van, stopping at the bonnet, both windows and the back (%d stops)" % stops.size())
 	check(leaned < -0.3, "at the windows and the bonnet it leans in (%.2f rad)" % leaned)
 	check(crouched < 0.7 and cr.sniffs > sniffs0, "at the back it crouches down and sniffs (%d sniffs)" % (cr.sniffs - sniffs0))
@@ -5529,17 +5807,17 @@ func t_ghat_looks() -> void:
 	g.stop_k = 6
 	g.at_stop = false
 	var closest := 9.0
-	t0 = Time.get_ticks_msec()
-	while not (g.at_stop and g.stop_k == 6) and Time.get_ticks_msec() - t0 < 30000:
+	t0 = clk()
+	while not (g.at_stop and g.stop_k == 6) and el_ms(t0) < 30000:
 		await physics_frames(2)
 		var lp := c._body_root.global_transform.affine_inverse() * cr.global_position
 		closest = minf(closest, maxf(absf(lp.x) - 1.2, absf(lp.z) - 3.0))
-	log_line("round from the far side: reached the passenger's window %s in %.1f s, closest to the body %.2f m" % [g.at_stop and g.stop_k == 6, (Time.get_ticks_msec() - t0) / 1000.0, closest])
+	log_line("round from the far side: reached the passenger's window %s in %.1f s, closest to the body %.2f m" % [g.at_stop and g.stop_k == 6, (el_ms(t0)) / 1000.0, closest])
 	check(g.at_stop and g.stop_k == 6 and closest > Creature.BODY_R, "from the far side it walks round the van to the other window, not into it (closest %.2f m, its body %.1f m)" % [closest, Creature.BODY_R])
 	# tarped and quiet: it gives up, visibly
 	c.attack.set_tarp(true)
-	t0 = Time.get_ticks_msec()
-	while g.phase != "leave" and Time.get_ticks_msec() - t0 < (Ghat.SEARCH_S + 45.0) * 1000.0:
+	t0 = clk()
+	while g.phase != "leave" and el_ms(t0) < (Ghat.SEARCH_S + 45.0) * 1000.0:
 		await wait(0.25)
 	check(g.phase == "leave" and g.stops_done >= Ghat.POSED_STOPS, "under the tarp it gives up, only after a full round of the van (%d stops)" % g.stops_done)
 	var yaw_prev := cr.rotation.y
@@ -5605,8 +5883,8 @@ func t_ghat() -> void:
 	log_line("pace notes: %s" % nav.text.replace("\n", " | "))
 	check(c.nav_aside and (nav.text.contains("LEFT") or nav.text.contains("RIGHT")), "the swung nav reads pace notes on the ghat")
 	check(nav.layers == 1 << (1 + p1().index), "the driver can't see them")
-	var t0 := Time.get_ticks_msec()
-	while g.fog < 0.99 and Time.get_ticks_msec() - t0 < 8000:
+	var t0 := clk()
+	while g.fog < 0.99 and el_ms(t0) < 8000:
 		await wait(0.2)
 	var env := (boot.world.get_node("Environment") as WorldEnvironment).environment
 	log_line("fog %.2f: visible to %.0f m" % [g.fog, env.fog_depth_end])
@@ -5699,8 +5977,8 @@ func t_ghat() -> void:
 	cr.global_position = Vector3(near_pt.x, Landscape.ground(near_pt.x, near_pt.z), near_pt.z)
 	cr.reset_physics_interpolation()
 	var closest := 999.0
-	t0 = Time.get_ticks_msec()
-	while Time.get_ticks_msec() - t0 < 45000:
+	t0 = clk()
+	while el_ms(t0) < 45000:
 		await wait(0.25)
 		closest = minf(closest, cr.global_position.distance_to(c.global_position))
 		if closest < 12.0 and cr.global_position.distance_to(c.global_position) > closest + 8.0:
@@ -5713,8 +5991,8 @@ func t_ghat() -> void:
 	var far_pt := g.road.point(far_i) + g.road.right(far_i) * 3.5
 	cr.global_position = Vector3(far_pt.x, Landscape.ground(far_pt.x, far_pt.z), far_pt.z)
 	cr.reset_physics_interpolation()
-	t0 = Time.get_ticks_msec()
-	while not st.flags.has("first_attack_over") and Time.get_ticks_msec() - t0 < 20000:
+	t0 = clk()
+	while not st.flags.has("first_attack_over") and el_ms(t0) < 20000:
 		await wait(0.25)
 	check(st.flags.has("first_attack_over") and cr.passive, "back up the road it's gone for good")
 	await wait(0.6)

@@ -1,0 +1,13 @@
+# F4 (fix round, 2026-11-14): join_check.py sound on R1b's movie. Windows from R1b.out's step frames (25 fps): quiet = step 2 (nav, engine off) frame 190 = 7.60 s, +0.5 s -> 8.10; known sound = step 3 'the engine on' frame 294 = 11.76 s.
+# video: appdata/t34/R1b_gateprobe.mp4 sha256 6617d3f4960f2639231d92c98a7a49fcd3e9c30bb08c7822722d4e8e1cc754ab
+$ python tools/method/join_check.py sound appdata/t34/R1b_gateprobe.mp4 8.10 11.76
+SOUND: PASS, audio aac,48000,2; quiet window 8.10 s: -30.7 dB, known sound window 11.76 s: -9.7 dB (21.0 dB louder, need 10)
+rc 0
+
+# planted: the audio stream removed / muted (copies under appdata/t34/fix/)
+$ python tools/method/join_check.py sound appdata/t34/fix/R1b_noaudio.mp4 8.10 11.76
+SOUND: FAIL, no audio stream in appdata/t34/fix/R1b_noaudio.mp4
+rc 1
+$ python tools/method/join_check.py sound appdata/t34/fix/R1b_silent.mp4 8.10 11.76
+SOUND: FAIL, audio aac,48000,2; quiet window 8.10 s: -91.0 dB, known sound window 11.76 s: -91.0 dB (0.0 dB louder, need 10)
+rc 1

@@ -1,0 +1,61 @@
+{
+ "name": "gateprobe_cancel",
+ "setup": [],
+ "steps": [
+  {
+   "name": "1 F1 Puzzles: the ghat: both in the van at the foot of the hairpins",
+   "max": 25,
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Puzzles",
+     "row": "The ghat pace notes"
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "both in, no Problem yet",
+     "expr": "p1().seat != null and p2().seat != null and gh().phase == ''",
+     "within": 4
+    }
+   ]
+  },
+  {
+   "name": "2 two helpers hold CTRL, then a deliberate FAIL",
+   "max": 15,
+   "do": [
+    {
+     "do": "spawn",
+     "fn": "cancel_probe_bot",
+     "args": [
+      4.0,
+      false
+     ]
+    },
+    {
+     "do": "spawn",
+     "fn": "cancel_probe_bot",
+     "args": [
+      30.0,
+      true
+     ]
+    },
+    {
+     "do": "wait",
+     "s": 1.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "deliberate FAIL while CTRL is held",
+     "expr": "false",
+     "within": 0.5
+    }
+   ]
+  }
+ ]
+}

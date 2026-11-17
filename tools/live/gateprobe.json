@@ -1,0 +1,119 @@
+{
+ "name": "gateprobe",
+ "setup": [],
+ "steps": [
+  {
+   "name": "1 F1 Puzzles: the ghat: both in the van at the foot of the hairpins",
+   "max": 25,
+   "do": [
+    {
+     "do": "menu",
+     "tab": "Puzzles",
+     "row": "The ghat pace notes"
+    },
+    {
+     "do": "wait",
+     "s": 3.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "both in, no Problem yet",
+     "expr": "p1().seat != null and p2().seat != null and gh().phase == ''",
+     "within": 4
+    }
+   ]
+  },
+  {
+   "name": "2 P1 swings the nav (N); both sit still",
+   "max": 15,
+   "do": [
+    {
+     "do": "tap",
+     "key": "N"
+    },
+    {
+     "do": "wait",
+     "s": 4.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "nav swung",
+     "expr": "camper().nav_aside",
+     "within": 6
+    }
+   ]
+  },
+  {
+   "name": "3 the engine on (its sound)",
+   "max": 15,
+   "do": [
+    {
+     "do": "hold",
+     "key": "X",
+     "s": 0.3
+    },
+    {
+     "do": "wait",
+     "s": 2.0
+    }
+   ],
+   "expect": [
+    {
+     "name": "engine on",
+     "expr": "camper().engine_on",
+     "within": 6
+    }
+   ]
+  },
+  {
+   "name": "4 the frame marker; on time: 9.5 game s inside a 10 s step limit",
+   "max": 10,
+   "do": [
+    {
+     "do": "marker"
+    },
+    {
+     "do": "wait",
+     "s": 9.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "on-time fixture done",
+     "expr": "true",
+     "within": 1
+    }
+   ]
+  },
+  {
+   "name": "5 an engine-on boundary: idle 3.5 s",
+   "max": 15,
+   "do": [
+    {
+     "do": "wait",
+     "s": 3.5
+    }
+   ],
+   "expect": [
+    {
+     "name": "engine still on",
+     "expr": "camper().engine_on",
+     "within": 2
+    }
+   ]
+  },
+  {
+   "name": "6 end",
+   "max": 10,
+   "do": [
+    {
+     "do": "wait",
+     "s": 0.5
+    }
+   ],
+   "expect": []
+  }
+ ]
+}
