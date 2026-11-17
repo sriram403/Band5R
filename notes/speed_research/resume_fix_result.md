@@ -42,11 +42,20 @@ failure belonged to the replay copy's game); other points qualified (each needs 
    validation still admitted an unknown frames kind, a deleted Problem child pose, a NaN seed. Fixed after the chain
    (seed a finite integer, frame kinds and clock units bound to their fields; after GPT's re-check, Problem's children
    must match a frozen list taken from F3 (14 index paths, child 2's 10 script fields: gate_inventory "problem_children"); receipts judge the
-   release observation too); controls 128 / 128, each new guard seen failing when switched off; every saved run
-   rejudged under the tightened gate: boundary F3/13 SAME, X1 / X2 DIFFERENT, REPAIR (`appdata/resume_rejudged_v3.json`).
+   release observation too); controls 148 / 148, each new guard seen failing when switched off; every saved run
+   rejudged under the tightened gate: boundary F3/13 SAME, X1 / X2 DIFFERENT, REPAIR (`appdata/resume_rejudged_v4.json`).
    The judges changed, so new resumes need a new producer (identity binds the tools): by design.
 
 ## Cost
 Game minutes (meter, `appdata/meter_resume.log`): **~23.5** (budget ~20, the user approved the overrun: A): F 5.0,
 R1 0.6, benches 2.3, F2 + R1 5.5, R2 0.6, F3 aborted 0.4, the final chain 9.8 (F3 4.9, R1, R2, X1, X2 ~0.6 each,
 REPAIR 2.4), compile checks ~0.1.
+
+## Audit trail (GPT, all read-only)
+Design: BUILD WITH CHANGES (8, all taken). Interim results: CHANGE FIRST (all taken before the proof chain). Final: the
+P13 proof confirmed by GPT's own rejudging; DON'T SIGN for merge over record validation. Re-check 1: same proof
+confirmed; child coverage open (fixed: frozen child list). Re-check 2: proof confirmed a third time; DON'T SIGN over
+junk-typed child payloads. **Closed after it (the user chose A: fix the whole class, merge without another GPT round):**
+every saved value type-checked (Godot bytes with a known type header, Transform3D / Vector3 / Color text with finite
+numbers, node paths), 10 more planted cases, controls 148 / 148, the type guard seen failing when off; rejudged v4: F3/13
+SAME, X1 / X2 DIFFERENT, REPAIR. **Not re-audited by GPT after this last fix** (the user's call, 2026-11-17 ~22:30).

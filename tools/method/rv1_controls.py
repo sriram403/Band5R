@@ -199,6 +199,17 @@ def main():
                       ("child pose 0 deleted AND count 13", lambda q: (q["live_problem_children"]["xf"].pop("0"), q["live_problem_children"].update(count=13))),
                       ("a child's script fields emptied", lambda q: q["live_problem_children"]["vars"].__setitem__(sorted(q["live_problem_children"]["vars"])[0], {})),
                       ("an extra child script record (path 77)", lambda q: q["live_problem_children"]["vars"].__setitem__("77", {"x": "b64:AA=="})),
+                      # GPT re-check 2's three, and the same class everywhere
+                      ("child pose 0 = 'not-a-transform'", lambda q: q["live_problem_children"]["xf"].__setitem__("0", "not-a-transform")),
+                      ("child 2's 'target' = 'not-a-variant'", lambda q: q["live_problem_children"]["vars"]["2"].__setitem__("target", "not-a-variant")),
+                      ("eye_energy null", lambda q: q["live_problem_children"].update(eye_energy=None)),
+                      ("glow_color a Vector3", lambda q: q["live_problem_children"].update(glow_color="Vector3(1, 2, 3)")),
+                      ("the van's local pose = junk base64", lambda q: q["live_bodies"][0].update(lxf="AAAA")),
+                      ("an item's stored speed 'Vector3(nan, 0, 0)'", lambda q: q["live_bodies"][1].update(lv="Vector3(nan, 0, 0)")),
+                      ("a van var not b64", lambda q: q["live_vars"]["van"].__setitem__(sorted(q["live_vars"]["van"])[0], "12.5")),
+                      ("a player's pose = a Vector3", lambda q: q["live_players"][0].update(xf="Vector3(1, 2, 3)")),
+                      ("a hearing event pos = 'here'", lambda q: [e.update(pos="here") for e in q["live_hearing"]["events"]]),
+                      ("a player's target = 'P1'", lambda q: q["live_refs"].update(targets=["P1", ""])),
                       ("a child's script field dropped", lambda q: (lambda d: d.pop(sorted(d)[0]))(q["live_problem_children"]["vars"][sorted(q["live_problem_children"]["vars"])[0]]))]:
         q = copy.deepcopy(p)
         mut(q)

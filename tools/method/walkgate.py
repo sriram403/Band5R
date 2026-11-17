@@ -117,6 +117,94 @@ def _finite(x):
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
 
 
+# ---- payload types (GPT re-check 2: junk strings in a record were admitted; fail closed on every saved value) ----
+import base64 as _b64
+import struct as _struct
+_TYPED = {"Transform3D": 12, "Vector3": 3, "Color": 4}
+
+
+def _typed_text(s, kind):
+    """'Vector3(1, 2, 3)' / 'Transform3D(...)' / 'Color(...)': the right type, the right count, all finite."""
+    if not isinstance(s, str) or not s.startswith(kind + "(") or not s.endswith(")"):
+        return False
+    try:
+        v = [float(x) for x in s[len(kind) + 1:-1].split(",")]
+    except ValueError:
+        return False
+    return len(v) == _TYPED[kind] and all(math.isfinite(x) for x in v)
+
+
+def _float_text(s):
+    try:
+        return isinstance(s, str) and math.isfinite(float(s))
+    except ValueError:
+        return False
+
+
+def _variant_bytes(b64, want=None):
+    """Godot var_to_bytes, base64: a known Variant type in its header (0..38), and for a Transform3D 12 finite floats."""
+    try:
+        raw = _b64.b64decode(b64, validate=True)
+    except (ValueError, TypeError):
+        return False
+    if len(raw) < 4:
+        return False
+    head = _struct.unpack("<I", raw[:4])[0]
+    t, wide = head & 0xFFFF, bool(head & (1 << 16))
+    if t > 38 or (want is not None and t != want):
+        return False
+    if t == 18:                      # TRANSFORM3D
+        n = 8 if wide else 4
+        if len(raw) != 4 + 12 * n:
+            return False
+        vals = _struct.unpack("<12" + ("d" if wide else "f"), raw[4:])
+        return all(math.isfinite(x) for x in vals)
+    return True
+
+
+def _var_value(s):
+    """A value LiveControl._snap_vars writes: 'b64:<Godot bytes>' or 'player:<i>'."""
+    return isinstance(s, str) and ((s.startswith("b64:") and _variant_bytes(s[4:])) or re.fullmatch(r"player:-?\d+", s) is not None)
+
+
+def payload_rv1(point):
+    """Every saved value has the type its restore decodes (ResumeV1.gd / LiveControl._unsnap_vars)."""
+    why = []
+    for b in point.get("live_bodies", []):
+        if not (_variant_bytes(b.get("xf"), 18) and _variant_bytes(b.get("lxf"), 18) and _typed_text(b.get("lv"), "Vector3")
+                and _typed_text(b.get("av"), "Vector3") and isinstance(b.get("parent"), str) and b["parent"].startswith("/root/")
+                and isinstance(b.get("freeze"), bool) and isinstance(b.get("sleeping"), bool) and isinstance(b.get("freeze_mode"), int)):
+            why.append("body %s: a value of the wrong type" % b.get("key"))
+            break
+    v = point.get("live_vars") or {}
+    groups = [v.get("van") or {}, v.get("attack") or {}] + list((v.get("items") or {}).values()) + list(v.get("players") or [])
+    c = point.get("live_problem_children") or {}
+    groups += list((c.get("vars") or {}).values())
+    for g in groups:
+        bad = [k for k, x in (g.items() if isinstance(g, dict) else []) if not _var_value(x)]
+        if bad or not isinstance(g, dict):
+            why.append("a saved var not decodable (%s)" % bad[:3])
+            break
+    for p_ in point.get("live_players", []):
+        if not (_typed_text(p_.get("xf"), "Transform3D") and _typed_text(p_.get("vel"), "Vector3")):
+            why.append("a player's pose / velocity of the wrong type")
+            break
+    for e in (point.get("live_hearing") or {}).get("events", []):
+        if not (_typed_text(e.get("pos"), "Vector3") and _finite(e.get("radius")) and isinstance(e.get("id"), int)
+                and isinstance(e.get("what"), str)):
+            why.append("a hearing event of the wrong type")
+            break
+    if c:
+        if not all(_typed_text(x, "Transform3D") for x in (c.get("xf") or {}).values()):
+            why.append("a Problem child pose is not a Transform3D")
+        if not (_float_text(c.get("eye_energy")) and _typed_text(c.get("glow_color"), "Color")):
+            why.append("Problem's eye / glow material values of the wrong type")
+    tg = (point.get("live_refs") or {}).get("targets", [])
+    if not all(isinstance(t, str) and (t == "" or t.startswith("/root/")) for t in tg):
+        why.append("a player's target is not a node path")
+    return why
+
+
 def coverage_rv1(point, f):
     """GPT results audit #4b: the record must COVER what the observation shows, with typed, finite contents
     (empty or partial records were admitted by validate_rv1 alone)."""
@@ -209,6 +297,8 @@ def _rv1_ok(point, f):
     why = validate_rv1(point, _problem_present(f))
     if not why:
         why = coverage_rv1(point, f)
+    if not why:
+        why = payload_rv1(point)
     return (not why), why
 
 
