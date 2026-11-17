@@ -66,7 +66,11 @@ func _body(key: String, b: RigidBody3D) -> Dictionary:
 	# xf bit-exact (R1: SaveGame's float arrays came back 1 ulp off on every item and the van)
 	return {"key": key, "freeze": b.freeze, "freeze_mode": int(b.freeze_mode), "sleeping": b.sleeping,
 		"lv": var_to_str(b.linear_velocity), "av": var_to_str(b.angular_velocity),
-		"xf": Marshalls.raw_to_base64(var_to_bytes(b.global_transform))}
+		"xf": Marshalls.raw_to_base64(var_to_bytes(b.global_transform)),
+		# the LOCAL pose under its parent (bench B1: three sleeping items inside the house / the far hut came
+		# back 1e-7 off: a global pose set under a turned parent goes through its inverse and rounds)
+		"parent": String(b.get_parent().get_path()) if b.get_parent() != null else "",
+		"lxf": Marshalls.raw_to_base64(var_to_bytes(b.transform))}
 
 
 ## Physics-frame stamps (they keep counting while the tree is paused: R1's hold +15 frames in 209 ms):
@@ -279,7 +283,10 @@ func restore(point: Dictionary, drop: Array) -> void:
 			if not (o is RigidBody3D):
 				continue
 			var rb := o as RigidBody3D
-			if b.has("xf"):
+			if b.has("lxf") and rb.get_parent() != null and String(rb.get_parent().get_path()) == String(b["parent"]):
+				rb.transform = bytes_to_var(Marshalls.base64_to_raw(String(b["lxf"])))
+				rb.reset_physics_interpolation()
+			elif b.has("xf"):
 				rb.global_transform = bytes_to_var(Marshalls.base64_to_raw(String(b["xf"])))
 				rb.reset_physics_interpolation()
 			rb.freeze_mode = int(b["freeze_mode"]) as RigidBody3D.FreezeMode
