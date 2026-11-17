@@ -220,3 +220,78 @@ static func _children(f: Dictionary, prefix: String, root: Node, n: Node, pt: Pl
 		if ch.get_script() != null:
 			_vars(f, k + ".", ch, pt)
 		_children(f, prefix, root, ch, pt)
+
+
+## autoq (2026-11-17, GPT audit #7): the WIDE observation, a DIAGNOSTIC only (never a receipt). Generic, so a new
+## puzzle's node shows without being named here: every scripted node under the game (dev / test nodes left out): its
+## script vars, local pose, visible, a body's speed / sleep / freeze; and its unscripted descendants (up to the next
+## scripted node): engine state (timers, sounds, animations, particles) and, within 2 levels and below scripted nodes
+## of <= 400 descendants, local pose + visible. Auto-named siblings are told apart by their child index.
+## Blind spots (listed in every restore-check report): autoloads, script statics, a resource's insides (a mesh,
+## a material's parameters other than what a scripted var holds), the physics server's contacts.
+static func wide(pt: PlayTest) -> Dictionary:
+	var t0 := Time.get_ticks_usec()
+	var f := {}
+	var root: Node = pt.boot
+	_wide_walk(f, root, "", null, 0, pt, {})
+	return {"meta": {"wall_ms": Time.get_ticks_msec(), "physics_frames": Engine.get_physics_frames(),
+		"capture_us": Time.get_ticks_usec() - t0, "fields": f.size()}, "fields": f}
+
+
+static func _wide_key(n: Node) -> String:
+	var nm := String(n.name)
+	if nm.begins_with("@"):
+		return "%s%d" % [_nm(nm), n.get_index()]
+	return nm
+
+
+static func _wide_walk(f: Dictionary, n: Node, path: String, scripted_anc: Node, depth: int, pt: PlayTest, cache: Dictionary) -> void:
+	var k := path + "/" + _wide_key(n) if path != "" else _wide_key(n)
+	var sc = n.get_script()
+	var is_dev: bool = sc != null and String((sc as Script).resource_path).contains("/scripts/dev/")
+	if is_dev:
+		return
+	var scripted: bool = sc != null
+	if scripted:
+		_vars(f, "w:" + k + ".", n, pt)
+		scripted_anc = n
+		depth = 0
+	var near: bool = scripted or (depth <= 2 and scripted_anc != null and _desc_count(scripted_anc, cache) <= 400)
+	if n is Node3D and near:
+		f["w:" + k + ".@local"] = var_to_str((n as Node3D).transform)
+		f["w:" + k + ".@visible"] = var_to_str((n as Node3D).visible)
+	if n is RigidBody3D and near:
+		var rb := n as RigidBody3D
+		f["w:" + k + ".@body"] = "%s:%s:%s:%s" % [var_to_str(rb.linear_velocity), var_to_str(rb.angular_velocity), rb.sleeping, rb.freeze]
+	if n is Timer:
+		f["w:" + k + ".@timer"] = "%s:%s" % [not (n as Timer).is_stopped(), var_to_str((n as Timer).time_left)]
+	if n is AudioStreamPlayer3D:
+		var a3 := n as AudioStreamPlayer3D
+		f["w:" + k + ".@audio"] = "%s:%s:%s" % [a3.playing, var_to_str(a3.pitch_scale), var_to_str(a3.volume_db)]
+	if n is AudioStreamPlayer:
+		var a2 := n as AudioStreamPlayer
+		f["w:" + k + ".@audio"] = "%s:%s:%s" % [a2.playing, var_to_str(a2.pitch_scale), var_to_str(a2.volume_db)]
+	if n is AnimationPlayer:
+		var ap := n as AnimationPlayer
+		f["w:" + k + ".@anim"] = "%s:%s:%s" % [ap.is_playing(), ap.current_animation, var_to_str(snappedf(ap.current_animation_position, 0.0001)) if ap.is_playing() else "-"]
+	if n is GPUParticles3D:
+		f["w:" + k + ".@particles"] = var_to_str((n as GPUParticles3D).emitting)
+	if n is CPUParticles3D:
+		f["w:" + k + ".@particles"] = var_to_str((n as CPUParticles3D).emitting)
+	for ch in n.get_children():
+		_wide_walk(f, ch, k, scripted_anc, depth + 1, pt, cache)
+
+
+static func _desc_count(n: Node, cache: Dictionary) -> int:
+	# a local cache (an observer never writes the world, not even metadata)
+	var id := n.get_instance_id()
+	if not cache.has(id):
+		cache[id] = _count(n)
+	return int(cache[id])
+
+
+static func _count(n: Node) -> int:
+	var c := n.get_child_count()
+	for ch in n.get_children():
+		c += _count(ch)
+	return c
