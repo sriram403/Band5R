@@ -823,6 +823,10 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 		for nd0 in st.get("needs", []):
 			if not ctx["passed"].has(nd0):
 				needs_open.append(String(nd0))
+		# the wide diagnostic (WIDE_OBS) BEFORE the point, same tick: its capture time never sits between the point's
+		# clocks and the step's start (a resume lines its clocks up with the point)
+		if _wide:
+			_json_out("%s/%d.wide.json" % [rdir, i], GateObs.wide(pt))
 		var obs0 := GateObs.observe(pt, {"test.@open_watches": JSON.stringify(open_w), "test.@needs": JSON.stringify(needs_open)})
 		_json_out("%s/%d.obs.json" % [rdir, i], obs0)
 		var point := SaveGame.collect(pt.boot, true)
@@ -848,8 +852,6 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 				"go": [nz.go_point.x, nz.go_point.y, nz.go_point.z]}
 		rv.collect(point, int(obs0["meta"]["wall_ms"]), int(obs0["meta"]["physics_frames"]))
 		_json_out("%s/%d.json" % [rdir, i], point)
-		if _wide:
-			_json_out("%s/%d.wide.json" % [rdir, i], GateObs.wide(pt))
 		ctx["allow"] = st.get("allow", [])
 		# what this step needs from earlier watches
 		for need in st.get("needs", []):
