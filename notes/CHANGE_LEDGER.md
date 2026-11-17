@@ -732,3 +732,13 @@ Task: `notes/speed_research/merge_tools_task.md`. `speed-t34` (`fd4ae18`) merged
   - `ROLE=final SPEED=fast tools/method_run.sh ghat`: **PASS**, 7 / 7, **124 / 124** required checks, 0 FAILs (inv `20261117_201630_59849`; fast part heat + net 2.8 min, 1x part 13.1 min; union 13.5 wall min); main's new heat checks hold fast on the game clock ("stares first" 24 s, as at 1x).
   - Planted, each FAILS by its own id: `heat_always` fast -> **PROVED** (check + H1, 1.1 min); `solo_no_breath_lock` 1x -> **PROVED** (2.8 min). Both beside the suite's 1x lane.
   - Not run: the other 25 matrix rows (`prove_ghat.py <group>` for each, ~20 lane minutes), the ramp's method run, a recorded take.
+
+## 2026-11-17 resume fix v1 (branch `resume` in MPG_dev; NOT merged)
+- **Changed:** test code only (`scripts/dev/ResumeV1.gd` new; LiveControl paused hold + final pre-input check + seed-v1 +
+  bit-exact vars; GateObs clocks at the start, body links / capsules observed; PlayTest walk inputs flushed per tick);
+  judges (`walkgate.py` rv1 admission, ages, REPAIR; `gate_inventory.json` framestamps; `tree_id.py` testcode).
+  No game code.
+- **Could break:** every walk's input timing (inputs now land a tick or two earlier: deadlines are generous, but walks
+  tuned to the old lag could shift); old points (no rv1 record) keep the T4 refusals; points need `testcode` in identity.
+- **Tests:** `tools/method/rv1_controls.py` 83/83, `t4_controls.py` 85/85, mutation check (each guard off -> 2-9 BAD);
+  live: F2 + R1 + R2 on ghat point 13 (layer 1+2 SAME x2, layer 3 DIFFERENT by fresh-run jitter); the flush change unproved.

@@ -809,3 +809,11 @@ happened, the fix, and the habit to keep.
   as ages, the observation's clocks read at its start and the ages taken at that moment. Then a cheap bench (a 2-step
   producer) before re-running the 5-min producer. Habit: a restore compared EXACTLY finds every text round-trip; use
   bytes, not text, for anything compared exactly.
+- **2026-11-17 (resume fix), layer 3 failed a resume that was right: the FRESH run was the odd one.** After the exact
+  restore (layer 1+2 and the final pre-input check SAME on the real ghat point 13, twice), layer 3 said P2 0.288 m off
+  at +3 s. Assumed: the resume lost something. Reality (data already on disk, no new run): same 179 inputs, same speed at
+  +3 s; P2's 3-s travel: fresh F (48 fps) 12.494 m, **fresh F2 (32 fps) 12.208 m**, resume R1 (41 fps) 12.496 m, R2 the
+  same as R1 to the mm. Test inputs are applied at the next DRAWN frame, so a slower-rendering fresh run starts walking
+  ~4 physics ticks later. The 5 cm bound (frozen before the trials) was never run on two fresh runs. Fix built
+  (unproved): walk inputs flushed in the tick they are sent. Habit (the testing skill's §1, again): run the judge on the
+  reference first (fresh vs fresh) before reading a DIFFERENT as the candidate's fault; note fps beside every pose compare.
