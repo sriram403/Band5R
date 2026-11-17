@@ -3,78 +3,328 @@
  "written": "2026-11-11, before any gate trial (T4 v2: tolerances and classes recorded before trials)",
  "about": "tools/method/walkgate.py reads this. Layer 1 = every observed field has a class here; every 'required' pattern is observed. Layer 2 = exact equality after the 'volatile' normalisations only. Layer 3 = the 'trajectory' fields at +3 game s, fresh vs resume, within 'tolerances'; discrete fields exact.",
  "volatile": [
-  {"pattern": "^problem/.*\\._rng$|^van\\..*_rng$|^van/.*_rng$", "why": "audio noise generators (NoiseLoop / EngineAudio) seed per process: the hiss texture of a sound, read by no check, no step, no gameplay code"},
-  {"pattern": "^van\\.attack\\.last_honk_ms$", "why": "wall-clock stamp read only by a test outside the ghat (PlayTest t_ ... 'his honk act'); the ghat walk never honks (no H key in make_ghat.py)"},
-  {"pattern": "^p[12]\\._ready_ms$", "why": "process start stamp (if present)"}
+  {
+   "pattern": "^problem/.*\\._rng$|^van\\..*_rng$|^van/.*_rng$",
+   "why": "audio noise generators (NoiseLoop / EngineAudio) seed per process: the hiss texture of a sound, read by no check, no step, no gameplay code"
+  },
+  {
+   "pattern": "^van\\.attack\\.last_honk_ms$",
+   "why": "wall-clock stamp read only by a test outside the ghat (PlayTest t_ ... 'his honk act'); the ghat walk never honks (no H key in make_ghat.py)"
+  },
+  {
+   "pattern": "^p[12]\\._ready_ms$",
+   "why": "process start stamp (if present)"
+  }
  ],
  "wallstamps": {
   "about": "wall-clock (Time.get_ticks_msec) fields: compared as 'expired' when older than their window at their own observation, else refused at the boundary (no rebase).",
   "fields": {
-   "^problem\\._item_ms$": {"unit": "ms", "window": 1500, "unset": -99999, "why": "Creature item-bounce window (Creature.gd 448)"},
-   "^item\\[.*\\]\\._last_hit_t$": {"unit": "ms", "window": 150, "unset": 0, "why": "Carryable knock debounce (Carryable.gd 164)"},
-   "^van\\._cap_t$": {"unit": "s", "window": 3.0, "unset": null, "why": "Camper._blow_cap 3 s window (Camper.gd 1650)"}
+   "^problem\\._item_ms$": {
+    "unit": "ms",
+    "window": 1500,
+    "unset": -99999,
+    "why": "Creature item-bounce window (Creature.gd 448)"
+   },
+   "^item\\[.*\\]\\._last_hit_t$": {
+    "unit": "ms",
+    "window": 150,
+    "unset": 0,
+    "why": "Carryable knock debounce (Carryable.gd 164)"
+   },
+   "^van\\._cap_t$": {
+    "unit": "s",
+    "window": 3.0,
+    "unset": null,
+    "why": "Camper._blow_cap 3 s window (Camper.gd 1650)"
+   }
   }
  },
  "classes": [
-  {"pattern": "^ghat\\.", "how": "saved", "why": "LiveControl _snap_live: every plain script var of the ghat node; objects rebuilt by the owner (_spawn_problem) or static (road, builder)"},
-  {"pattern": "^problem\\.director$", "how": "rebuilt", "why": "set by Ghat._spawn_problem (the owner path) on restore; observed as a callable on the ghat"},
-  {"pattern": "^problem\\.@xf$", "how": "saved", "why": "_snap_live creature xf"},
-  {"pattern": "^problem\\.", "how": "saved", "why": "_snap_live creature plain vars; object vars rebuilt by Creature._ready (eyes, mats, hum)"},
-  {"pattern": "^problem/", "how": "rebuilt", "why": "Problem's children are built by Creature._ready; their pose/emission/hum follow its vars: observed directly"},
-  {"pattern": "^van\\.@(xf|lv|av|sleeping|freeze)$", "how": "saved_or_refused", "why": "xf saved; SaveGame.apply zeroes velocities and unfreezes: a boundary with velocity is refused (engine refusal)"},
-  {"pattern": "^van\\.attack\\.", "how": "partly_saved", "why": "SaveGame saves only tarp; every other VanAttack var must equal its fresh-process value or layer 2 shows it"},
-  {"pattern": "^van\\.", "how": "partly_saved", "why": "SaveGame saves a listed subset; engine_on forced off; the rest must equal the fresh-process value or layer 2 shows it"},
-  {"pattern": "^p[12]\\.", "how": "partly_saved", "why": "SaveGame saves pos/yaw/pitch/torch/binoculars/seat; LiveControl saves held; the rest must match or layer 2 shows it"},
-  {"pattern": "^item\\[", "how": "partly_saved", "why": "SaveGame saves name/kind/xf/litres/slot; velocity zeroed (refused if moving)"},
-  {"pattern": "^mood\\.", "how": "saved", "why": "SaveGame mood + LiveControl fog re-apply"},
-  {"pattern": "^story\\.", "how": "saved", "why": "SaveGame story"},
-  {"pattern": "^naresh\\.", "how": "saved", "why": "SaveGame naresh / live_naresh"},
-  {"pattern": "^static\\.Hearing\\.recent$", "how": "refuse_if", "why": "process-local queue, pruned only on emit: recent (<2 wall s) or unconsumed events refuse"},
-  {"pattern": "^static\\.Hearing\\._next_id$", "how": "refuse_if", "why": "listener serial: not restored (no rebase); with a listener (Problem) present the restored serial is inconsistent -> refused"},
-  {"pattern": "^static\\.Creature\\.", "how": "compared", "why": "statics; equal or layer 2 shows it"},
-  {"pattern": "^static\\.TagMarker\\.", "how": "compared", "why": "static; equal or layer 2 shows it"},
-  {"pattern": "^tree\\.@tweens$", "how": "refuse_if", "why": "running tweens (Camper.thump body rock) are not saved: refused when any runs"},
-  {"pattern": "^input\\.@held$", "how": "refuse_if", "why": "held inputs at a boundary: refused"},
-  {"pattern": "^test\\.@(open_watches|needs|helpers_running)$", "how": "refuse_if", "why": "open work at a boundary: refused (no watch-budget restore)"}
+  {
+   "pattern": "^ghat\\.",
+   "how": "saved",
+   "why": "LiveControl _snap_live: every plain script var of the ghat node; objects rebuilt by the owner (_spawn_problem) or static (road, builder)"
+  },
+  {
+   "pattern": "^problem\\.director$",
+   "how": "rebuilt",
+   "why": "set by Ghat._spawn_problem (the owner path) on restore; observed as a callable on the ghat"
+  },
+  {
+   "pattern": "^problem\\.@xf$",
+   "how": "saved",
+   "why": "_snap_live creature xf"
+  },
+  {
+   "pattern": "^problem\\.",
+   "how": "saved",
+   "why": "_snap_live creature plain vars; object vars rebuilt by Creature._ready (eyes, mats, hum)"
+  },
+  {
+   "pattern": "^problem/",
+   "how": "rebuilt",
+   "why": "Problem's children are built by Creature._ready; their pose/emission/hum follow its vars: observed directly"
+  },
+  {
+   "pattern": "^van\\.@(xf|lv|av|sleeping|freeze)$",
+   "how": "saved_or_refused",
+   "why": "xf saved; SaveGame.apply zeroes velocities and unfreezes: a boundary with velocity is refused (engine refusal)"
+  },
+  {
+   "pattern": "^van\\.attack\\.",
+   "how": "partly_saved",
+   "why": "SaveGame saves only tarp; every other VanAttack var must equal its fresh-process value or layer 2 shows it"
+  },
+  {
+   "pattern": "^van\\.",
+   "how": "partly_saved",
+   "why": "SaveGame saves a listed subset; engine_on forced off; the rest must equal the fresh-process value or layer 2 shows it"
+  },
+  {
+   "pattern": "^p[12]\\.",
+   "how": "partly_saved",
+   "why": "SaveGame saves pos/yaw/pitch/torch/binoculars/seat; LiveControl saves held; the rest must match or layer 2 shows it"
+  },
+  {
+   "pattern": "^item\\[",
+   "how": "partly_saved",
+   "why": "SaveGame saves name/kind/xf/litres/slot; velocity zeroed (refused if moving)"
+  },
+  {
+   "pattern": "^mood\\.",
+   "how": "saved",
+   "why": "SaveGame mood + LiveControl fog re-apply"
+  },
+  {
+   "pattern": "^story\\.",
+   "how": "saved",
+   "why": "SaveGame story"
+  },
+  {
+   "pattern": "^naresh\\.",
+   "how": "saved",
+   "why": "SaveGame naresh / live_naresh"
+  },
+  {
+   "pattern": "^static\\.Hearing\\.recent$",
+   "how": "refuse_if",
+   "why": "process-local queue, pruned only on emit: recent (<2 wall s) or unconsumed events refuse"
+  },
+  {
+   "pattern": "^static\\.Hearing\\._next_id$",
+   "how": "refuse_if",
+   "why": "listener serial: not restored (no rebase); with a listener (Problem) present the restored serial is inconsistent -> refused"
+  },
+  {
+   "pattern": "^static\\.Creature\\.",
+   "how": "compared",
+   "why": "statics; equal or layer 2 shows it"
+  },
+  {
+   "pattern": "^static\\.TagMarker\\.",
+   "how": "compared",
+   "why": "static; equal or layer 2 shows it"
+  },
+  {
+   "pattern": "^tree\\.@tweens$",
+   "how": "refuse_if",
+   "why": "running tweens (Camper.thump body rock) are not saved: refused when any runs"
+  },
+  {
+   "pattern": "^input\\.@held$",
+   "how": "refuse_if",
+   "why": "held inputs at a boundary: refused"
+  },
+  {
+   "pattern": "^test\\.@(open_watches|needs|helpers_running)$",
+   "how": "refuse_if",
+   "why": "open work at a boundary: refused (no watch-budget restore)"
+  }
  ],
  "unsupported": [
-  {"name": "global_rng_problem", "active_if": "problem_present", "why": "Creature._sniff_t uses the global RNG (randf, Creature.gd 669); its state is not observable or saved: a boundary with Problem out is refused"},
-  {"name": "coroutines", "active_if": "never", "why": "no await in Ghat / Creature / Camper / VanAttack / PlayerRig / Carryable (grep 2026-11-11); test helpers: helpers_running"},
-  {"name": "physics_contacts", "active_if": "item_moving", "why": "contact pairs live in the physics server: refused while a carryable moves (> 0.05 m/s)"},
-  {"name": "global_rng_players", "active_if": "never", "why": "PlayerRig camera shake / shiver use randf: camera wobble only, no check or step reads it; recorded here as accepted, not hidden"}
+  {
+   "name": "global_rng_problem",
+   "active_if": "problem_present",
+   "why": "Creature._sniff_t uses the global RNG (randf, Creature.gd 669); its state is not observable or saved: a boundary with Problem out is refused"
+  },
+  {
+   "name": "coroutines",
+   "active_if": "never",
+   "why": "no await in Ghat / Creature / Camper / VanAttack / PlayerRig / Carryable (grep 2026-11-11); test helpers: helpers_running"
+  },
+  {
+   "name": "physics_contacts",
+   "active_if": "item_moving",
+   "why": "contact pairs live in the physics server: refused while a carryable moves (> 0.05 m/s)"
+  },
+  {
+   "name": "global_rng_players",
+   "active_if": "never",
+   "why": "PlayerRig camera shake / shiver use randf: camera wobble only, no check or step reads it; recorded here as accepted, not hidden"
+  }
  ],
  "required": [
-  {"pattern": "^van\\.engine_on$", "when": "always"},
-  {"pattern": "^van\\.@lv$", "when": "always"},
-  {"pattern": "^van\\.@av$", "when": "always"},
-  {"pattern": "^van\\.attack\\.tarped$", "when": "always"},
-  {"pattern": "^p1\\.@xf$", "when": "always"},
-  {"pattern": "^p2\\.@xf$", "when": "always"},
-  {"pattern": "^ghat\\.phase$", "when": "always"},
-  {"pattern": "^static\\.Hearing\\.recent$", "when": "always"},
-  {"pattern": "^input\\.@held$", "when": "always"},
-  {"pattern": "^test\\.@helpers_running$", "when": "always"},
-  {"pattern": "^problem\\.@xf$", "when": "problem_present"},
-  {"pattern": "^problem/.*\\.@mat$", "when": "problem_present"},
-  {"pattern": "^problem/.*\\.@audio$", "when": "problem_present"}
+  {
+   "pattern": "^van\\.engine_on$",
+   "when": "always"
+  },
+  {
+   "pattern": "^van\\.@lv$",
+   "when": "always"
+  },
+  {
+   "pattern": "^van\\.@av$",
+   "when": "always"
+  },
+  {
+   "pattern": "^van\\.attack\\.tarped$",
+   "when": "always"
+  },
+  {
+   "pattern": "^p1\\.@xf$",
+   "when": "always"
+  },
+  {
+   "pattern": "^p2\\.@xf$",
+   "when": "always"
+  },
+  {
+   "pattern": "^ghat\\.phase$",
+   "when": "always"
+  },
+  {
+   "pattern": "^static\\.Hearing\\.recent$",
+   "when": "always"
+  },
+  {
+   "pattern": "^input\\.@held$",
+   "when": "always"
+  },
+  {
+   "pattern": "^test\\.@helpers_running$",
+   "when": "always"
+  },
+  {
+   "pattern": "^problem\\.@xf$",
+   "when": "problem_present"
+  },
+  {
+   "pattern": "^problem/.*\\.@mat$",
+   "when": "problem_present"
+  },
+  {
+   "pattern": "^problem/.*\\.@audio$",
+   "when": "problem_present"
+  }
  ],
  "trajectory": {
   "about": "layer 3: these fields at +3 game s, fresh vs each resume. Discrete = exact. Continuous = within the tolerance (units). A tolerance never crosses a check margin: the smallest margin a ghat walk check reads is 0.15 m (the face-glass gap, ghat_looks) and 0.5 m/s (step 6 'stopped'), both above these bounds.",
-  "discrete": ["^ghat\\.(phase|seen_index|boil_index|breath_state|breath_events|stop_k|at_stop|stops_done|encounter_no|search_restarts|guard_fired)$",
-               "^van\\.(engine_on|parking_brake|nav_aside|boiled_dry|cap_blows|heat_lockout|coolant_leak)$",
-               "^van\\.attack\\.(tarped)$", "^p[12]\\.(seat_role|held)$", "^problem\\.(state|pose|sniffs)$",
-               "^story\\.@id$", "^naresh\\.@present$"],
+  "discrete": [
+   "^ghat\\.(phase|seen_index|boil_index|breath_state|breath_events|stop_k|at_stop|stops_done|encounter_no|search_restarts|guard_fired)$",
+   "^van\\.(engine_on|parking_brake|nav_aside|boiled_dry|cap_blows|heat_lockout|coolant_leak)$",
+   "^van\\.attack\\.(tarped)$",
+   "^p[12]\\.(seat_role|held)$",
+   "^problem\\.(state|pose|sniffs)$",
+   "^story\\.@id$",
+   "^naresh\\.@present$"
+  ],
   "continuous": [
-   {"pattern": "^(van|p[12]|problem)\\.@xf$|^item\\[.*\\]\\.@xf$", "kind": "xf", "pos_m": 0.05, "rot_deg": 2.0},
-   {"pattern": "^van\\.@lv$|^p[12]\\.@vel$", "kind": "vec", "abs": 0.05, "unit": "m/s"},
-   {"pattern": "^van\\.temp$", "kind": "num", "abs": 0.5, "unit": "C"},
-   {"pattern": "^van\\.(fuel)$", "kind": "num", "abs": 0.05, "unit": "L"},
-   {"pattern": "^van\\.(coolant)$", "kind": "num", "abs": 0.01, "unit": "fraction"},
-   {"pattern": "^problem\\.suspicion$", "kind": "num", "abs": 0.05, "unit": "0..1"},
-   {"pattern": "^ghat\\.(fog|breath)$", "kind": "num", "abs": 0.02, "unit": "0..1"}
+   {
+    "pattern": "^(van|p[12]|problem)\\.@xf$|^item\\[.*\\]\\.@xf$",
+    "kind": "xf",
+    "pos_m": 0.05,
+    "rot_deg": 2.0
+   },
+   {
+    "pattern": "^van\\.@lv$|^p[12]\\.@vel$",
+    "kind": "vec",
+    "abs": 0.05,
+    "unit": "m/s"
+   },
+   {
+    "pattern": "^van\\.temp$",
+    "kind": "num",
+    "abs": 0.5,
+    "unit": "C"
+   },
+   {
+    "pattern": "^van\\.(fuel)$",
+    "kind": "num",
+    "abs": 0.05,
+    "unit": "L"
+   },
+   {
+    "pattern": "^van\\.(coolant)$",
+    "kind": "num",
+    "abs": 0.01,
+    "unit": "fraction"
+   },
+   {
+    "pattern": "^problem\\.suspicion$",
+    "kind": "num",
+    "abs": 0.05,
+    "unit": "0..1"
+   },
+   {
+    "pattern": "^ghat\\.(fog|breath)$",
+    "kind": "num",
+    "abs": 0.02,
+    "unit": "0..1"
+   }
   ],
   "events_time_s": 0.2,
   "inputs_time_s": 0.1,
   "next_step_time_s": 0.5
+ },
+ "framestamps": {
+  "^van\\.attack\\._(last_pull|hold_start)$": {
+   "kind": "dict",
+   "why": "VanAttack._pull: physics frame of each player's last tarp pull / hold start (VanAttack.gd 299-302)"
+  },
+  "^van\\.attack\\._done_f$": {
+   "kind": "int",
+   "unset": -1,
+   "why": "the frame the net finished (VanAttack.gd 313)"
+  },
+  "^p[12]\\._climb_since$": {
+   "kind": "int",
+   "unset": 0,
+   "why": "the frame a climb started (PlayerRig.gd 946/981)"
+  }
+ },
+ "rv1": "resume fix v1 (2026-11-17): walkgate.validate_rv1 / refusal(point=...) lift the refusals a valid rv1 record restores; framestamps and wallstamps compare as ages (AGE_TOL_MS 20 for wall ms)",
+ "problem_children": {
+  "from": "ghat_rp14_20261117_212548_20588/13 (F3, the qualified point's producer, 2026-11-17)",
+  "why": "Problem's built children by index path (Creature._ready builds them in a fixed order; the observation collapses auto-named siblings, so it can't list them): every rv1 record with Problem out must carry exactly these poses and these script fields (GPT re-check). A changed creature build refuses until this list is updated.",
+  "paths": [
+   "0",
+   "1",
+   "1/0",
+   "1/1",
+   "1/2",
+   "1/3",
+   "1/4",
+   "1/4/0",
+   "1/4/1",
+   "1/4/2",
+   "1/4/3",
+   "1/4/4",
+   "2",
+   "2/0"
+  ],
+  "vars": {
+   "2": [
+    "_gain",
+    "_gurgle",
+    "_lp",
+    "_lp2",
+    "_phase",
+    "kind",
+    "pitch",
+    "positional",
+    "target",
+    "volume_db"
+   ]
+  }
  }
 }

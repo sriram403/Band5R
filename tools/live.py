@@ -162,12 +162,15 @@ def main() -> int:
         import walkgate
         ident = gate_identity(walk)
         run_id = "%s_%s_%d" % (walk.get("name", "walk"), time.strftime("%Y%m%d_%H%M%S"), os.getpid())
-        k, prun = -1, ""
+        k, prun, repair = -1, "", False
         if walk_from:
             # T4 v2: refuse an unusable point BEFORE any input is sent
             why, k, prun, probe_note = walkgate.admit(os.path.join(LIVE, "points"), walk, walk_from, point_id, ident,
                                                       probe=os.environ.get("GATE_PROBE") == "1")
-            if probe_note:
+            repair = probe_note.startswith("REPAIR")
+            if repair:
+                print("GATE: %s: layers 1 + 2 and the final pre-input check still decide; no layer 3 (new actions)" % probe_note, flush=True)
+            elif probe_note:
                 print("GATE PROBE (test only): the point would be refused (%s); restoring anyway to show layer 2" % probe_note, flush=True)
             if why:
                 print("REFUSED (gate, before any input): %s" % "; ".join(why), flush=True)
@@ -202,6 +205,8 @@ def main() -> int:
                 msg["fail_at"] = {"step": int(st_), "s": float(s_)}
             if os.environ.get("GATE_L2_CONTINUE") == "1":    # test-only control: past a layer 1+2 DIFFERENT
                 msg["l2_continue"] = True
+            if os.environ.get("GATE_DROP"):              # test-only control (resume fix v1): "hearing", "vars", "bodies"
+                msg["drop"] = os.environ["GATE_DROP"].split(",")
             if os.environ.get("GATE_PERTURB"):           # test-only control: "van:0.2"
                 w_, dx_ = os.environ["GATE_PERTURB"].split(":")
                 msg["perturb"] = {"what": w_, "dx": float(dx_)}
@@ -219,7 +224,8 @@ def main() -> int:
     if walk is not None:
         print("RUN %s (points: %s)" % (run_id, os.path.join(LIVE, "points", run_id)), flush=True)
         if walk_from:
-            gate_state = {"k": k, "prun": prun, "rrun": os.path.join(LIVE, "points", run_id), "l2": False, "l3": False}
+            gate_state = {"k": k, "prun": prun, "rrun": os.path.join(LIVE, "points", run_id), "l2": False, "l3": False,
+                          "l2f": False, "repair": repair}
     if walk is not None:
         new_errors()                     # only errors from now on
     while time.time() - t0 < timeout:
@@ -294,7 +300,26 @@ def gate_step(g):
         os.replace(tmp, os.path.join(g["rrun"], "%d.l2.json" % k))
         print("GATE layer 1+2: %s %s" % (v, why[:400]), flush=True)
         g["l2"] = True
+    fo = os.path.join(g["rrun"], "%d.final.obs.json" % k)
+    if g["l2"] and not g.get("l2f") and os.path.exists(fo):
+        # resume fix v1: the final pre-input check (the world as it will start the step, still paused)
+        try:
+            fobs = walkgate.load(fo)
+        except ValueError:
+            return
+        pobs = walkgate.load(os.path.join(g["prun"], "%d.obs.json" % k))
+        d = walkgate.layer2(pobs, fobs)
+        v = "SAME" if not d else "DIFFERENT"
+        why = "; ".join("%s: %s -> %s" % (x[0], str(x[1])[:60], str(x[2])[:60]) for x in d[:12])
+        tmp = os.path.join(g["rrun"], "%d.l2f.json.tmp" % k)
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump({"verdict": v, "why": why, "diffs": d}, f)
+        os.replace(tmp, os.path.join(g["rrun"], "%d.l2f.json" % k))
+        print("GATE final pre-input check: %s %s" % (v, why[:400]), flush=True)
+        g["l2f"] = True
     rt = os.path.join(g["rrun"], "%d.t3.json" % k)
+    if g.get("repair"):
+        return
     if g["l2"] and not g["l3"] and os.path.exists(rt):
         try:
             rt3 = walkgate.load(rt)
@@ -312,12 +337,12 @@ def gate_step(g):
 def gate_final(g):
     import walkgate
     rt = os.path.join(g["rrun"], "%d.t3.json" % g["k"])
-    for _ in range(100):                 # the +3 s sample may land just after the walk's end
+    for _ in range(0 if g.get("repair") else 100):    # the +3 s sample may land just after the walk's end
         if os.path.exists(rt):
             break
         time.sleep(0.1)
     gate_step(g)
-    rec = walkgate.judge_resume(g["prun"], g["k"], g["rrun"])
+    rec = walkgate.judge_resume(g["prun"], g["k"], g["rrun"], repair=bool(g.get("repair")))
     with open(os.path.join(g["rrun"], "%d.gate.json" % g["k"]), "w", encoding="utf-8") as f:
         json.dump(rec, f, indent=1)
     print("GATE receipt %s: %s (failed layers %s)" % (os.path.join(g["rrun"], "%d.gate.json" % g["k"]), rec["verdict"], rec["failed_layers"]), flush=True)

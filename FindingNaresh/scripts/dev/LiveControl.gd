@@ -57,6 +57,9 @@ extends RefCounted
 ## Lanes: instance.json (pid, lane) lets the client refuse a misrouted command.
 
 const GateObs := preload("res://scripts/dev/GateObs.gd")
+const ResumeV1 := preload("res://scripts/dev/ResumeV1.gd")
+## fields a resume re-applies from the point's record at release (wall / frame stamps, the hearing queue's times)
+var _rx_stamps := RegEx.create_from_string(r"^(problem\._item_ms|item\[.*\]\._last_hit_t|van\._cap_t|static\.Hearing\.recent|van\.attack\._(last_pull|hold_start|done_f)|p[12]\._climb_since)$")
 
 var pt: PlayTest
 var dir := ""
@@ -68,10 +71,12 @@ var _events: Array = []          ## [who, "sees"/"hears", text] for the watcher
 var _fail := ""                  ## the watched run's first failure ("" = none)
 var _log: Array = []             ## the watched run's PASS / FAIL lines
 var _walk_name := ""
+var rv                           ## ResumeV1 (resume fix v1, 2026-11-17)
 
 
 func _init(test: PlayTest) -> void:
 	pt = test
+	rv = ResumeV1.new(self)
 
 
 func run() -> void:
@@ -115,6 +120,7 @@ func run() -> void:
 		_last_id = int(data["id"])
 		if data.has("walk"):
 			var rep: Dictionary = await _run_walk(data["walk"], String(data.get("from", "")), data)
+			pt.flush_inputs = false      # walks only (GPT results audit #2): later commands keep the old timing
 			_messages.clear()
 			rep["id"] = _last_id
 			rep["state"] = state()
@@ -494,7 +500,9 @@ func _snap_vars(o: Object) -> Dictionary:
 		elif v == null and int(p["type"]) == TYPE_OBJECT and String(p["class_name"]) == "PlayerRig":
 			out[p["name"]] = "player:-1"
 		elif typeof(v) != TYPE_OBJECT and _plain(v):
-			out[p["name"]] = var_to_str(v)
+			# resume fix v1 (R1, 2026-11-17): bit-exact (var_to_str lost a float's last digit: _safe_t,
+			# _slump, a child's _lp came back 1 ulp off)
+			out[p["name"]] = "b64:" + Marshalls.raw_to_base64(var_to_bytes(v))
 	return out
 
 
@@ -504,6 +512,8 @@ func _unsnap_vars(o: Object, d: Dictionary) -> void:
 		if s.begins_with("player:"):
 			var pi := int(s.substr(7))
 			o.set(k, pt.boot.players[pi] if pi >= 0 and pi < pt.boot.players.size() else null)
+		elif s.begins_with("b64:"):
+			o.set(k, bytes_to_var(Marshalls.base64_to_raw(s.substr(4))))
 		else:
 			o.set(k, str_to_var(s))
 
@@ -561,8 +571,16 @@ func _json_out(path: String, d: Dictionary) -> void:
 
 ## The +3 game s sample of a step (layer 3's evidence): taken while the step's actions run.
 func _t3_sample(path: String, idx: int, step: String, gms0: int, log0: int, msg0: int, in0: int) -> void:
+	var ticks: Array = []
 	while PlayTest.gms() - gms0 < 3000:
 		await pt.get_tree().physics_frame
+		if ticks.size() < 12:
+			var row: Array = [PlayTest.gms() - gms0, Engine.get_frames_drawn(), snappedf(Input.get_joy_axis(0, JOY_AXIS_LEFT_Y), 0.001)]
+			for pl in pt.boot.players:
+				var p3: Vector3 = (pl as Node3D).global_position
+				var v3: Vector3 = (pl as CharacterBody3D).velocity
+				row.append([snappedf(p3.x, 0.0001), snappedf(p3.y, 0.0001), snappedf(p3.z, 0.0001), snappedf(v3.length(), 0.001), (pl as CharacterBody3D).is_on_floor()])
+			ticks.append(row)
 	var obs := GateObs.observe(pt)
 	var msgs: Array = []
 	for m in _trace_msgs.slice(msg0):
@@ -574,7 +592,15 @@ func _t3_sample(path: String, idx: int, step: String, gms0: int, log0: int, msg0
 	for ln in _log.slice(log0):
 		lines.append(String(ln))
 	_json_out(path, {"index": idx, "step": step, "at_game_ms": PlayTest.gms() - gms0, "obs": obs,
-		"lines": lines, "messages": msgs, "inputs": ins, "failed_before": _fail})
+		"lines": lines, "messages": msgs, "inputs": ins, "failed_before": _fail, "ticks": ticks})
+
+
+## A gate verdict file written by the client (tools/live.py); waits on the wall clock, also while paused.
+func _gate_verdict(path: String):
+	var t0 := Time.get_ticks_msec()
+	while not FileAccess.file_exists(path) and Time.get_ticks_msec() - t0 < 30000:
+		await pt.get_tree().create_timer(0.05, true, false, true).timeout
+	return JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
 
 
 func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictionary:
@@ -582,6 +608,7 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 	_fail = ""
 	_log.clear()
 	pt.open_inputs()
+	pt.flush_inputs = true
 	pt.input_trace.clear()
 	_trace_msgs.clear()
 	# T4 v2: this run's own, never-overwritten points folder
@@ -657,20 +684,36 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 				nz.leader = pt.boot.players[li] if li >= 0 else null
 				nz.go_point = Vector3(float(ln["go"][0]), float(ln["go"][1]), float(ln["go"][2]))
 				nz.state = st0
-		# T4 v2 layer 2: observe NOW, before any await or tick (h1's 1 s settling wait comes after)
+		# resume fix v1 (2026-11-17): what the restore above still lost (bodies' stored speeds and freeze,
+		# van / item / player vars, players' full pose, Problem's children, clocks as ages, hearing)
+		var drop: Array = msg.get("drop", [])
+		var rv1 := String(point.get("resume_v", "")) == ResumeV1.VERSION
+		if rv1:
+			rv.restore(point, drop)
+			gate["seed"] = int(point.get("rng_seed", 0))
+			if not drop.is_empty():
+				_say("gate control (TEST ONLY): restore without %s" % str(drop))
+		# the paused hold (GPT audit #1): no game time passes between the restore and the step's first
+		# action, as in the fresh run (h1's 1 s running settle and the running verdict wait are gone)
+		var tree := pt.get_tree()
+		var hold0 := [Time.get_ticks_msec(), Engine.get_physics_frames(), PlayTest.gms()]
+		if rv1:
+			tree.paused = true
+			await tree.process_frame
+			await tree.process_frame
+			rv.apply_clock(point, drop)
+		# T4 v2 layer 2: observe NOW, before any game time passes (rv1: after 2 paused frames for deferred work)
 		_json_out("%s/%d.restored.obs.json" % [rdir, start], GateObs.observe(pt, {"test.@open_watches": "[]", "test.@needs": "[]"}))
 		_say("gate: restored observation written (%s)" % String(gate["point"]))
-		# test-only control (T4 v2 layer 3): move an actor AFTER the immediate observation
 		var pert: Dictionary = msg.get("perturb", {})
-		if not pert.is_empty() and String(pert.get("what", "")) == "van":
-			pt.camper().global_position += Vector3(float(pert.get("dx", 0.0)), 0, 0)
-			_say("gate control: van moved %.2f m after the immediate observation" % float(pert.get("dx", 0.0)))
-		await pt.wait(1.0)
-		# the client's layer 1+2 verdict before the step's first input
-		var vwait := pt.clk()
-		while not FileAccess.file_exists(String(gate["l2"])) and pt.el_ms(vwait) < 30000:
-			await pt.wait(0.1)
-		var v = JSON.parse_string(FileAccess.get_file_as_string(String(gate["l2"]))) if FileAccess.file_exists(String(gate["l2"])) else null
+		if not rv1:
+			# test-only control (T4 v2 layer 3): move an actor AFTER the immediate observation
+			if not pert.is_empty() and String(pert.get("what", "")) == "van":
+				pt.camper().global_position += Vector3(float(pert.get("dx", 0.0)), 0, 0)
+				_say("gate control: van moved %.2f m after the immediate observation" % float(pert.get("dx", 0.0)))
+			await pt.wait(1.0)
+		# the client's layer 1+2 verdict before the step's first input (rv1: still paused)
+		var v = await _gate_verdict(String(gate["l2"]))
 		if typeof(v) == TYPE_DICTIONARY and String(v.get("verdict", "")) != "SAME" and bool(msg.get("l2_continue", false)):
 			# test-only control (GATE_L2_CONTINUE): go on past a layer 1+2 DIFFERENT so layer 3 can be shown live;
 			# the receipt keeps the DIFFERENT (such a run never counts as a resume)
@@ -680,6 +723,44 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 				"" if typeof(v) != TYPE_DICTIONARY else String(v.get("why", "")).substr(0, 200)])
 		else:
 			_say("gate: layer 1+2 SAME (%s)" % String(gate["point"]))
+		if rv1 and _fail == "":
+			# the final pre-input check (GPT audit #1): the world as it will start the step must still equal the point
+			rv.apply_clock(point, drop)
+			var fobs := GateObs.observe(pt, {"test.@open_watches": "[]", "test.@needs": "[]"})
+			_json_out("%s/%d.final.obs.json" % [rdir, start], fobs)
+			var vf = await _gate_verdict("%s/%d.l2f.json" % [rdir, start])
+			if typeof(vf) != TYPE_DICTIONARY or String(vf.get("verdict", "")) != "SAME":
+				if not bool(msg.get("l2_continue", false)):
+					_failed("gate: final pre-input check %s (%s)" % ["missing" if typeof(vf) != TYPE_DICTIONARY else String(vf.get("verdict", "?")),
+						"" if typeof(vf) != TYPE_DICTIONARY else String(vf.get("why", "")).substr(0, 200)])
+			else:
+				_say("gate: final pre-input check SAME (%s)" % String(gate["point"]))
+			rv.apply_clock(point, drop)
+			# the release check (GPT results audit #3): no await from here to the step's first input, so compare
+			# NOW, in this tick, with the observation the client approved (clock / frame stamps re-applied from the
+			# point, so they are left out); anything else that moved during the wait for the verdict fails it
+			var rel := GateObs.observe(pt, {"test.@open_watches": "[]", "test.@needs": "[]"})
+			_json_out("%s/%d.release.obs.json" % [rdir, start], rel)
+			if _fail == "" and fobs.has("fields"):
+				var moved: Array = []
+				for k in rel["fields"]:
+					if _rx_stamps.search(String(k)) == null and String(rel["fields"][k]) != String(fobs["fields"].get(k, "<absent>")):
+						moved.append(String(k))
+				for k in fobs["fields"]:
+					if not rel["fields"].has(k):
+						moved.append(String(k) + " (gone)")
+				if not moved.is_empty() and not bool(msg.get("l2_continue", false)):
+					_failed("gate: release check: changed while waiting for the verdict: %s" % ", ".join(moved.slice(0, 8)))
+				elif moved.is_empty():
+					_say("gate: release check SAME (%s)" % String(gate["point"]))
+			# test-only control (layer 3): move an actor after the release check, just before the step
+			if not pert.is_empty() and String(pert.get("what", "")) == "van":
+				pt.camper().global_position += Vector3(float(pert.get("dx", 0.0)), 0, 0)
+				_say("gate control: van moved %.2f m after the release check" % float(pert.get("dx", 0.0)))
+		if rv1:
+			tree.paused = false
+			_say("gate: held paused %d wall ms; physics frames +%d, game ms +%d while held" % [Time.get_ticks_msec() - int(hold0[0]),
+				Engine.get_physics_frames() - int(hold0[1]), PlayTest.gms() - int(hold0[2])])
 		# no Naresh in some puzzles (#6): the old line read his state and died on it
 		var nz2: Naresh = pt.boot.naresh
 		var nar := "none" if nz2 == null or not is_instance_valid(nz2) else "%s %s" % [Naresh.State.keys()[nz2.state], _f3(nz2.global_position)]
@@ -704,7 +785,8 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 		for nd0 in st.get("needs", []):
 			if not ctx["passed"].has(nd0):
 				needs_open.append(String(nd0))
-		_json_out("%s/%d.obs.json" % [rdir, i], GateObs.observe(pt, {"test.@open_watches": JSON.stringify(open_w), "test.@needs": JSON.stringify(needs_open)}))
+		var obs0 := GateObs.observe(pt, {"test.@open_watches": JSON.stringify(open_w), "test.@needs": JSON.stringify(needs_open)})
+		_json_out("%s/%d.obs.json" % [rdir, i], obs0)
 		var point := SaveGame.collect(pt.boot, true)
 		point["live_step"] = nm
 		point["point_id"] = "%s/%d" % [_run, i]
@@ -726,6 +808,7 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 			point["live_naresh"] = {"pos": [nz.global_position.x, nz.global_position.y, nz.global_position.z],
 				"state": int(nz.state), "leader": pt.boot.players.find(nz.leader) if nz.leader != null else -1,
 				"go": [nz.go_point.x, nz.go_point.y, nz.go_point.z]}
+		rv.collect(point, int(obs0["meta"]["wall_ms"]), int(obs0["meta"]["physics_frames"]))
 		_json_out("%s/%d.json" % [rdir, i], point)
 		ctx["allow"] = st.get("allow", [])
 		# what this step needs from earlier watches
@@ -760,6 +843,9 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 		ctx["step_from"] = pt.clk()
 		ctx["step_max_ms"] = int(float(st.get("max", 300.0)) * 1000.0)
 		ctx["step_name"] = nm
+		# seed-v1 (resume fix): the global RNG from the same seed right before the step's first action, in the
+		# fresh run (its own point's seed) and in a resume (the restored point's seed)
+		seed(int(gate["seed"]) if i == start and gate.has("seed") else int(point.get("rng_seed", 0)))
 		for c in st.get("do", []):
 			if _fail != "":
 				break

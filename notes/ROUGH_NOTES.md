@@ -798,3 +798,27 @@ happened, the fix, and the habit to keep.
 - **2026-11-17 (speedtools merge), a Godot call straight to the exe wrote logs to C:.** Assumed: setting MPG_DATA was enough for a `--check-only` call. Reality: only `tools/run_game.sh` sets APPDATA / LOCALAPPDATA from it; the bare exe wrote 3 small logs to `C:\Users\...\AppData\Roaming\FindingNaresh\logs` (removed; the folder already held one log from 2026-11-11). Fix: compile checks through `tools/run_game.sh --headless --check-only --script <path>`. Habit: every Godot launch through run_game.sh, never the bare exe.
 - **2026-11-17 (speedtools merge), the identity hash said SAME for a changed file, 1 run in 10.** Assumed: the auditors' 123 / 123 meant `tree_id.py` was solid. Reality: it copied the git index with a new timestamp, so git's same-second safety check was lost and a same-size edit matched the stat cache (`ident dirty bytes` BAD once, then green 13 times). Fix: a fresh temp index from HEAD, every input hashed (1.5 s), and a deterministic control (mtime restored) that the old code fails. Habit: a control that fails once is a finding, not noise: rerun it 10x and make the failure deterministic.
 
+- **2026-11-17 (resume fix), the first rv1 resume (R1) was DIFFERENT in 34 fields; the gate was right.** Assumed: saving
+  the lost pieces (bodies, vars, hearing, clocks) as text was enough. Reality: (1) `var_to_str` -> `str_to_var` lost a
+  float64's last digit (`_safe_t`, `_slump`); (2) SaveGame's float arrays brought every item / the van back 1 ulp off;
+  (3) object refs a plain snapshot skips (a player's `current_target`, the van's window-mist meshes, the tarp's
+  player-keyed pull stamps); (4) the hearing ages 24 ms off: the observation read its clock at its END (~20 ms after the
+  start), the point's ages were taken later still; (5) measured: **physics frames keep counting while the tree is
+  paused** (+15 frames in a 209 ms hold), so frame stamps need ages too (GPT's audit had flagged it as "I think").
+  Fix: bit-exact bytes (`var_to_bytes` + base64) for every saved var and body pose, refs by path / rebuilt, frame stamps
+  as ages, the observation's clocks read at its start and the ages taken at that moment. Then a cheap bench (a 2-step
+  producer) before re-running the 5-min producer. Habit: a restore compared EXACTLY finds every text round-trip; use
+  bytes, not text, for anything compared exactly.
+- **2026-11-17 (resume fix), layer 3 failed a resume that was right: the FRESH run was the odd one.** After the exact
+  restore (layer 1+2 and the final pre-input check SAME on the real ghat point 13, twice), layer 3 said P2 0.288 m off
+  at +3 s. Assumed: the resume lost something. Reality (data already on disk, no new run): same 179 inputs, same speed at
+  +3 s; P2's 3-s travel: fresh F (48 fps) 12.494 m, **fresh F2 (32 fps) 12.208 m**, resume R1 (41 fps) 12.496 m, R2 the
+  same as R1 to the mm. Test inputs are applied at the next DRAWN frame, so a slower-rendering fresh run starts walking
+  ~4 physics ticks later. The 5 cm bound (frozen before the trials) was never run on two fresh runs. Fix built
+  (unproved): walk inputs flushed in the tick they are sent. Habit (the testing skill's §1, again): run the judge on the
+  reference first (fresh vs fresh) before reading a DIFFERENT as the candidate's fault; note fps beside every pose compare.
+- **2026-11-17 (resume fix), flushing every test press broke the F1 menu.** Assumed: `Input.flush_buffered_events()` after
+  each injected key / button / stick event is harmless. Reality: the F1 key then opened the dev menu inside the physics
+  tick: engine error `p_elem->_root` (self_list.h) at step 1; the watch stopped the run in 3 s. Fix: flush stick movement
+  only (the input whose delay mattered). Then F3 + R1 + R2: SAME on every layer. Habit: a change to how inputs are
+  delivered is a change to every walk: run its first steps watched before the long run, and keep it as narrow as the cause.

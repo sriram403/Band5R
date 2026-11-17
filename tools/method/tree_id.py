@@ -109,7 +109,9 @@ def identity(root=ROOT):
     game = [x for x in lines if x[0].startswith("FindingNaresh/") and not x[0].startswith("FindingNaresh/scripts/dev/")]
     test = [x for x in lines if x[0].startswith("FindingNaresh/scripts/dev/") or x[0].startswith("tools/live/")]
     tools = [x for x in lines if x[0].startswith("tools/") and not x[0].startswith("tools/live/")]
-    return {"game": _h(game), "test": _h(test), "tools": _h(tools), "full": _h(lines), "bin": bin_hash(root),
+    # resume fix v1: the test CODE alone (no walk files): a REPAIR may change a walk's actions, never this
+    testcode = [x for x in lines if x[0].startswith("FindingNaresh/scripts/dev/")]
+    return {"game": _h(game), "test": _h(test), "testcode": _h(testcode), "tools": _h(tools), "full": _h(lines), "bin": bin_hash(root),
             "head": _git(["rev-parse", "HEAD"], root=root).strip(), "files": len(lines)}
 
 
