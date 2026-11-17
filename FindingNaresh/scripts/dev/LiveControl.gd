@@ -597,6 +597,7 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 	_fail = ""
 	_log.clear()
 	pt.open_inputs()
+	pt.flush_inputs = true
 	pt.input_trace.clear()
 	_trace_msgs.clear()
 	# T4 v2: this run's own, never-overwritten points folder

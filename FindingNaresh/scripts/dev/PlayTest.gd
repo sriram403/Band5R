@@ -371,6 +371,12 @@ func ctrl_held() -> bool:
 	return Input.is_physical_key_pressed(KEY_CTRL)
 
 
+## Resume fix (2026-11-17, R1/R2): a walk's input lands in the physics tick it was sent, not at the next
+## DRAWN frame (a fresh run at 32 fps started P2 walking ~4 ticks later than one at 41-48 fps: 0.29 m
+## apart after 3 s). LiveControl sets it for walks; other tests keep the old timing.
+var flush_inputs := false
+
+
 func key(k: Key, down: bool) -> void:
 	if not _gate_send("key", k, 1.0 if down else 0.0):
 		return
@@ -379,6 +385,8 @@ func key(k: Key, down: bool) -> void:
 	e.physical_keycode = k
 	e.pressed = down
 	Input.parse_input_event(e)
+	if flush_inputs:
+		Input.flush_buffered_events()
 	if rig != null:
 		rig.request("key", k, 1.0 if down else 0.0)
 
@@ -1319,6 +1327,8 @@ func pad_axis(axis: JoyAxis, v: float) -> void:
 	e.axis = axis
 	e.axis_value = v
 	Input.parse_input_event(e)
+	if flush_inputs:
+		Input.flush_buffered_events()
 	if rig != null:
 		rig.request("axis", axis, v)
 
@@ -1331,6 +1341,8 @@ func pad_button(b: JoyButton, down: bool) -> void:
 	e.button_index = b
 	e.pressed = down
 	Input.parse_input_event(e)
+	if flush_inputs:
+		Input.flush_buffered_events()
 	if rig != null:
 		rig.request("button", b, 1.0 if down else 0.0)
 
