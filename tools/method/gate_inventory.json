@@ -292,5 +292,39 @@
    "why": "the frame a climb started (PlayerRig.gd 946/981)"
   }
  },
- "rv1": "resume fix v1 (2026-11-17): walkgate.validate_rv1 / refusal(point=...) lift the refusals a valid rv1 record restores; framestamps and wallstamps compare as ages (AGE_TOL_MS 20 for wall ms)"
+ "rv1": "resume fix v1 (2026-11-17): walkgate.validate_rv1 / refusal(point=...) lift the refusals a valid rv1 record restores; framestamps and wallstamps compare as ages (AGE_TOL_MS 20 for wall ms)",
+ "problem_children": {
+  "from": "ghat_rp14_20261117_212548_20588/13 (F3, the qualified point's producer, 2026-11-17)",
+  "why": "Problem's built children by index path (Creature._ready builds them in a fixed order; the observation collapses auto-named siblings, so it can't list them): every rv1 record with Problem out must carry exactly these poses and these script fields (GPT re-check). A changed creature build refuses until this list is updated.",
+  "paths": [
+   "0",
+   "1",
+   "1/0",
+   "1/1",
+   "1/2",
+   "1/3",
+   "1/4",
+   "1/4/0",
+   "1/4/1",
+   "1/4/2",
+   "1/4/3",
+   "1/4/4",
+   "2",
+   "2/0"
+  ],
+  "vars": {
+   "2": [
+    "_gain",
+    "_gurgle",
+    "_lp",
+    "_lp2",
+    "_phase",
+    "kind",
+    "pitch",
+    "positional",
+    "target",
+    "volume_db"
+   ]
+  }
+ }
 }

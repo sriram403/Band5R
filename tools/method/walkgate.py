@@ -182,6 +182,24 @@ def coverage_rv1(point, f):
                 and all(isinstance(v, str) and v for v in c["xf"].values()) and "eye_energy" in c and "glow_color" in c):
             why.append("Problem's children record incomplete (%d poses saved, %d observed; %d child scripts saved, %d observed)"
                        % (len(c.get("xf") or {}), n_obs, len(c.get("vars") or {}), n_scr))
+        # the frozen list of the creature's built children (gate_inventory "problem_children", GPT re-check): exactly
+        # these index paths posed, and every listed script field saved
+        spec = inv().get("problem_children") or {}
+        xf = c.get("xf") if isinstance(c.get("xf"), dict) else {}
+        vs = c.get("vars") if isinstance(c.get("vars"), dict) else {}
+        if not spec.get("paths"):
+            why.append("no frozen Problem children list in the gate inventory")
+        else:
+            if sorted(xf) != spec["paths"] or c.get("count") != len(spec["paths"]):
+                why.append("Problem's child poses != the frozen list (extra %s, missing %s, count %s)"
+                           % (sorted(set(xf) - set(spec["paths"]))[:3], sorted(set(spec["paths"]) - set(xf))[:3], c.get("count")))
+            if sorted(vs) != sorted(spec.get("vars", {})):
+                why.append("Problem child scripts saved %s != the frozen list %s" % (sorted(vs)[:4], sorted(spec.get("vars", {}))[:4]))
+            for p_, fields in spec.get("vars", {}).items():
+                got = vs.get(p_)
+                if not isinstance(got, dict) or sorted(got) != fields or not all(isinstance(x, str) and x for x in got.values()):
+                    why.append("Problem child %s: script fields != the frozen list" % p_)
+                    break
     return why
 
 

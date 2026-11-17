@@ -193,7 +193,13 @@ def main():
                       ("rng_seed NaN", lambda q: q.update(rng_seed=float("nan"))),
                       ("rng_seed 1.5", lambda q: q.update(rng_seed=1.5)),
                       ("_cap_t clock in ms", lambda q: [e.update(unit="ms") for e in q["live_clock"] if e["field"] == "_cap_t"]),
-                      ("a frame-age dict keyed by player 7", lambda q: [e.update(ages={"7": 3}) for e in q["live_frames"] if e["kind"] == "dict"])]:
+                      ("a frame-age dict keyed by player 7", lambda q: [e.update(ages={"7": 3}) for e in q["live_frames"] if e["kind"] == "dict"]),
+                      # GPT re-check's three
+                      ("child pose 0 renamed 999", lambda q: q["live_problem_children"]["xf"].__setitem__("999", q["live_problem_children"]["xf"].pop("0"))),
+                      ("child pose 0 deleted AND count 13", lambda q: (q["live_problem_children"]["xf"].pop("0"), q["live_problem_children"].update(count=13))),
+                      ("a child's script fields emptied", lambda q: q["live_problem_children"]["vars"].__setitem__(sorted(q["live_problem_children"]["vars"])[0], {})),
+                      ("an extra child script record (path 77)", lambda q: q["live_problem_children"]["vars"].__setitem__("77", {"x": "b64:AA=="})),
+                      ("a child's script field dropped", lambda q: (lambda d: d.pop(sorted(d)[0]))(q["live_problem_children"]["vars"][sorted(q["live_problem_children"]["vars"])[0]]))]:
         q = copy.deepcopy(p)
         mut(q)
         r = wg.refusal(o, None, q)
