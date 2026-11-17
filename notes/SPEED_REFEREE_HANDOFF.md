@@ -15,13 +15,12 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 > D:\mine\Agentics\Skills\AGENTS.md. Then follow "Next steps" in the hand-off, one at a time, and report to the user short and plain,
 > A / B with your pick.
 
-## LIVE (2026-11-17 ~20:40): THE RESEARCH IS DONE
-FINAL: `speed_research/FINAL.md`; score `replay_score.md` (+ both signers' corrections); signatures `sign_claude.md`, `sign_gpt.md`
-(both SIGN WITH RESERVATIONS); `notes/TESTING_METHOD.md` v7 written (KEEP + 7 CHANGE items, each TO PROVE).
-The user (2026-11-17 ~20:50): (1) **A** merge the tools into main: RUNNING as T3 child "Merge speed tools into main (MPG_dev)"
-(`merge_tools_task.md`, branch `speedtools` in MPG_dev; 8 conflicts; meter `MPG_referee/meter_merge.log`); the referee merges into main
-after checking, **no push without the user's OK**; (2) **A** skill edit: DONE (two-model-research v3, library commit `dc8d35b`, not
-pushed). Then: fix resume (the user chose A). ETA merge ~22:00.
+## LIVE (2026-11-17 ~20:35): RESEARCH DONE, TOOLS IN MAIN (local)
+FINAL: `speed_research/FINAL.md`; `TESTING_METHOD.md` v7; skill two-model-research v3 (library `dc8d35b`, not pushed).
+**Tools merged into main locally** (`a6e754d`, from `speedtools` in MPG_dev): suite 7/7 PASS (124 checks), heat_always + no_breath_lock
+caught by their own ids, offline 124/124 + 85/85; game code untouched; ~14 game min. **Not pushed: waiting on the user's OK.**
+Not done: proofs of the other 25 matrix rows on main (~20 min), the ramp method run, a recorded take.
+**Next (the user chose A): fix resume** (see "After the replay" below), best in a NEW thread (this one is long).
 
 ## Where it stands (one paragraph)
 Stages 1-2 done (top 4 signed). Stage 3: **T1 + T2 (fast tests) QUALIFIED** after 3 rounds and 3 GPT audits: the final table
