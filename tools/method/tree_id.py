@@ -1,7 +1,7 @@
 """Input identity (speed research T3 v2 "small input identity helper", reused by T4 v2's points).
 
-One content hash of the working tree's inputs, taken through a TEMPORARY git index on D: (a copy
-of the real index, so stat caching keeps it fast; the real index is never written), plus the Godot
+One content hash of the working tree's inputs, taken through a TEMPORARY git index on D: (read from
+HEAD with no stat data, so every input file is hashed; the real index is never written), plus the Godot
 binary's hash. Dirty and untracked bytes count (git add -A into the temp index); HEAD alone does not.
 
 Groups (sha256 over the sorted "mode blob path" lines of the temp index):
@@ -42,9 +42,9 @@ EXCLUDE = ("appdata/", "FindingNaresh/.godot/", "tools/_last_playtest.log", "too
 EXCLUDE_PREFIX_GLOB = ("FindingNaresh/_shots",)
 
 
-def _git(args, env=None, root=ROOT):
+def _git(args, env=None, root=ROOT, check=True):
     return subprocess.run(["git"] + args, cwd=root, env=env, capture_output=True, text=True, encoding="utf-8",
-                          errors="replace", check=True).stdout
+                          errors="replace", check=check).stdout
 
 
 def excluded(path):
@@ -59,8 +59,14 @@ def index_lines(root=ROOT):
     tmpd = os.path.join(root, "appdata", "tmp")
     os.makedirs(tmpd, exist_ok=True)
     tmp = os.path.join(tmpd, "tree_id_index_%d" % os.getpid())
-    shutil.copyfile(real, tmp)
+    # a FRESH temp index from HEAD (no stat data): `git add -A` then hashes every input file. A copy of the real
+    # index let git's stat cache call a same-size edit made in the same second unchanged (1 in 10 control runs,
+    # merge 2026-11-17; t3_controls "ident same-size edit, mtime restored"). Full hash of this repo: ~1.5 s.
     env = dict(os.environ, GIT_INDEX_FILE=tmp)
+    if os.path.exists(tmp):
+        os.remove(tmp)
+    if real and _git(["rev-parse", "--verify", "-q", "HEAD"], root=root, check=False).strip():
+        _git(["read-tree", "HEAD"], env=env, root=root)
     try:
         _git(["add", "-A", "--", ".", ":(exclude)notes"], env=env, root=root)
         out = _git(["ls-files", "-s"], env=env, root=root)
