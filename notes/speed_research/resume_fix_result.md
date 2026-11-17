@@ -42,7 +42,7 @@ failure belonged to the replay copy's game); other points qualified (each needs 
    validation still admitted an unknown frames kind, a deleted Problem child pose, a NaN seed. Fixed after the chain
    (seed a finite integer, frame kinds and clock units bound to their fields; after GPT's re-check, Problem's children
    must match a frozen list taken from F3 (14 index paths, child 2's 10 script fields: gate_inventory "problem_children"); receipts judge the
-   release observation too); controls 127 / 127, each new guard seen failing when switched off; every saved run
+   release observation too); controls 128 / 128, each new guard seen failing when switched off; every saved run
    rejudged under the tightened gate: boundary F3/13 SAME, X1 / X2 DIFFERENT, REPAIR (`appdata/resume_rejudged_v3.json`).
    The judges changed, so new resumes need a new producer (identity binds the tools): by design.
 
