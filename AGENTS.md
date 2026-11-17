@@ -114,6 +114,12 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
 - Always check which folder a file is written to: a new file for the dev
   branch written into `MPG` sat outside the branch (2026-09-27).
 - **Test tools (speed research, in main 2026-11-17): `notes/TESTING_METHOD.md` v7.** Ghat suite: `ROLE=final SPEED=fast tools/method_run.sh ghat` (fast + nodraw for heat / net only, two lanes); proofs: `python tools/method/prove_ghat.py <group>` (27 rows, each alone); judges `tools/method/t3_gate.py`; walks `tools/play_walk.sh` / `tools/record_walk.sh <w> --fresh` (fresh takes for acceptance); `LANE=b` a second game; `tools/method/stop_lane.sh`, `cpu_sampler.ps1` (note the CPU load beside every timing).
+- **Resume v1 (the user: A, 2026-11-17): a walk resumes SAME from a QUALIFIED point.** A save point restores exactly
+  (`scripts/dev/ResumeV1.gd`: bodies, vars, clocks as ages, hearing, a paused hold + final + release checks, seed-v1);
+  a point counts only with 2 SAME receipts (`FROM_POINT=<run>/<i> python tools/live.py --walk <w> --from "<step>"`), and
+  then a step whose ACTIONS changed resumes as REPAIR. Engine-on / held-item / crouch points stay refused. Qualified so
+  far: ghat step 14 (~4 of ~6.4 min saved per repair). Controls `python tools/method/rv1_controls.py` (118); details
+  `notes/speed_research/resume_fix_result.md`. A tools or test-code change needs a new producer (identity binds them).
 
 ## The user's rules in short (details in MASTER_PROMPT section 3)
 
