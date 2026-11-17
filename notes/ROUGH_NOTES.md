@@ -822,3 +822,17 @@ happened, the fix, and the habit to keep.
   tick: engine error `p_elem->_root` (self_list.h) at step 1; the watch stopped the run in 3 s. Fix: flush stick movement
   only (the input whose delay mattered). Then F3 + R1 + R2: SAME on every layer. Habit: a change to how inputs are
   delivered is a change to every walk: run its first steps watched before the long run, and keep it as narrow as the cause.
+
+- **2026-11-17 (autoq), my own tool changed the identity it guards.** Assumed: autoq only reads files. Reality: `import live`
+  (tools/live.py) made Python write `tools/__pycache__/live.pyc`, untracked, inside the `tools` hash: autoq's own
+  "files changed while qualifying" guard stopped the first qualification before any game (fail-closed: right). My offline
+  controls never hit it: they replaced the identity with a test value (`AUTOQ_TEST_IDENT`), so the real import never ran.
+  Fix: `__pycache__/` and `*.pyc` ignored repo-wide (root .gitignore, outside the `tools` group: the producer stayed valid).
+  Habit: a test override that skips a real call hides what that call does to the world; run the real path once offline.
+- **2026-11-17 (autoq), a walk's result never reached the client: 13 game min lost to silence.** Assumed: the game's
+  `rename(res.tmp -> res.json)` always lands. Reality: on Windows a rename onto a file the client is reading fails; the
+  game didn't check or retry (LiveControl.gd 179; same at 170, 581), so the client waited (its limit: 3600 s) while the
+  game idled. My Monitor printed every line but never reported a MISSING line: I only saw it when the monitor expired.
+  Fix: every rename retried until it lands (and an error printed if it never does); the client stops a walk whose end line
+  is printed but whose result doesn't come in 30 s; my watches emit "SILENT 60 s" too. Habit: watch for the line that
+  should come, not only the lines that do (silence is not success).
