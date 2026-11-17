@@ -69,4 +69,30 @@ Held-item and engine-on adapters (next job). Qualifying several points per failu
 acceptance takes stay FRESH (v7): `record_walk.sh` gets no auto-qualify. A resumed run's own points are never
 producers.
 
-AUDITED: (GPT-6.1 Sol, high: pending)
+## v2: after GPT's audit (GPT-6.1 Sol, high: BUILD WITH CHANGES, `audit_autoq_gpt.md`; all 8 taken)
+1. **Walk bound by content:** SAME needs the identical walk (all keys); a different walk can only be REPAIR:
+   setup, every top-level key, steps[:k] and step k's name / non-action keys equal; later steps free. A re-armed
+   watch (`needs`) binds to the nearest definition BEFORE the needing step (the game took the last one anywhere).
+2. **Spill:** layer 3 runs only when every step inside the producer's +3 s window is unchanged; next_step only when
+   step k is unchanged; otherwise "n/a: <why>", never SAME. Same rule live (`gate_step`) and offline (`judge_resume`).
+3. **Structured end record** `<run>/end.json` (status DONE / FAILED / STOPPED, failed index + name, kind: expect /
+   watch / do / limit / needs / gate / abort / break / van_stuck / naresh / taken, check name, text, outcomes:
+   [index, PASS/FAIL, check] in order). Outcome layer: same status, index, kind, check, and the same ordered outcomes
+   from step k on; diagnostics (text) not compared. gate / abort / break failures never qualify; no end.json = no.
+4. **Lifecycle:** child mode (`AUTOQ_CHILD=1`): no post-run hook, no last_fail write or delete. autoq only for the
+   run named in last_fail, with an end.json FAILED; one record per producer point + identity: run once, again
+   only with `--again`; atomic writes; last_fail rewritten only if it still names that run.
+5. **One decision:** `walkgate.default_start` used by `--gate-check` and the walk alike: a default resume needs >= 2
+   valid bound SAME receipts and NO valid DIFFERENT one (a DIFFERENT disqualifies the point); else fresh, reason
+   printed. Explicit `--from` keeps exit 5. last_fail keeps step name + index. A resumed run's failure maps to its
+   own source point (never a producer). Planted-control receipts (drop / perturb / l2_continue) never count.
+6. **Candidates checked offline:** skip k = 0, a missing / malformed point, obs or +3 s sample, a +3 s sample with a
+   FAIL in it, a resumed producer; every skip reason recorded.
+7. **Wide check is a diagnostic only:** its own report, never a receipt; the walk stays whole (a runtime
+   `stop_after`); scripted nodes' vars + local pose + visible, and their unscripted descendants' engine state
+   (timers, sounds, animations, particles, near poses); no auto-masking; capture ms / bytes measured; blind spots
+   listed (autoloads, statics, resources' insides); fixes written as hypotheses.
+8. **Controls:** an offline planted case for every new guard (`autoq_controls.py`), each seen failing with its
+   guard off; game proof ~12 min (the user may cut the wide pair: B).
+
+AUDITED: GPT-6.1 Sol, high, `notes/speed_research/audit_autoq_gpt.md` (BUILD WITH CHANGES 1-8, all taken in v2)
