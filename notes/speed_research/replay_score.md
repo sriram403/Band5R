@@ -8,8 +8,8 @@ Secret list: `MPG_referee/speed_secret.md` (the exam is over; it may now be show
 | Rule | Needed | Got | Verdict |
 |---|---|---|---|
 | (a) game time | <= 75 wall game min | **~119** (meter: 13.3 + 94.6 + ~1.0 gap + 10.1; the runner's own count 120.2); summed ~175. Baseline 225 -> **~1.9x** | **FAIL** |
-| (b) the 7 holes of the real day | all 7 named, each with a check that FAILS on it and passes fixed | **3 / 7** (S3, S4, S7); S1 seen but not named as a hole; S2, S5, S6 missed | **FAIL** |
-| (c) every plant still caught at the end | the 21 starting rows + one per hole | **25 / 28 certified**; 3 starting rows lost (`lean_close`, `no_stall_drag`, `endless_window`); 2 more (`no_fix`, `no_power`) certified only through a broken state (the jug left 77 m behind, = S1) | **FAIL** |
+| (b) the 7 holes of the real day | all 7 named, each with a check that FAILS on it and passes fixed | **3 / 7** (S3, S4, S7); S1 and S5 seen but not named as holes; S2, S6 missed | **FAIL** |
+| (c) every plant still caught at the end | the 21 starting rows + one per hole | **25 / 28 certified**, but against the brief's rule (21 starting rows + one per *real* hole): **18 / 21 starting rows**, really **16** (see `no_fix` / `no_power`); 3 starting rows lost (`lean_close`, `no_stall_drag`, `endless_window`); 2 more (`no_fix`, `no_power`) certified only through a broken state (the jug left 77 m behind, = S1) | **FAIL** |
 | Insurance plants (R1b, blind) | found + proved | **X1 + X2: 2 / 2** | PASS |
 
 **Overall: the method does NOT pass the benchmark.** It is ~1.9x faster and finds what can be SEEN (both blind insurance
@@ -23,7 +23,7 @@ plants, found only by looking at the screen), but it missed 4 of the day's 7 hol
 | S2 | Tail lights z-fighting (flicker) | MISSED | no mention |
 | S3 | Holding past the net's finish pulls it back off | **FOUND + PROVED** (`tarp_overpull`, planted FAIL 78 %, clean PASS) | run `20261117_193210_..._tarp_overpull_fast` |
 | S4 | Round walks through the van and sticks | **FOUND + PROVED** (`round_through_van`) | runs 19:02 (planted FAIL, clean PASS), 19:30 matrix |
-| S5 | After the whoosh it comes straight back (no listen) | MISSED (the runner benched step 10-11 but found no hole) | bench11 |
+| S5 | After the whoosh it comes straight back (no listen) | **SEEN, NOT FOUND**: bench 11 measured it "back at the van in 3 s" and the runner blamed the walk (correction from `sign_claude.md`) | bench11 |
 | S6 | Van stops near it: arrives in seconds (no stare / >= 24 s warning) | MISSED | no mention |
 | S7 | Sees through the fog from ~40 m | **FOUND + PROVED** (`fog_sees`: seen at 35 m, fog sight 15 m) | run `..._fog_sees,one_corner_fast` |
 | X1 | P2's breath prompt names P1's key (Ctrl) | **FOUND + PROVED** (`breath_key_ctrl`) | run `..._breath_key_ctrl_1x` |
@@ -51,3 +51,6 @@ judged against a stale list) · final suite 13 · recorded take 12 (beside the f
   shown and the row left NOT CERTIFIED (no rerun-until-green).
 - Picture inspection found both blind plants; the observation table flagged X1's area before any run.
 - Commit after every sub-step: the rate-limit cut on 11-14 cost nothing.
+
+## Corrections applied from the signatures
+- `sign_claude.md` (SIGN WITH RESERVATIONS): S5 seen-not-found (was "missed"); plant rows read against the brief: 18 / 21, really 16.
