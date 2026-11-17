@@ -15,16 +15,14 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 > D:\mine\Agentics\Skills\AGENTS.md. Then follow "Next steps" in the hand-off, one at a time, and report to the user short and plain,
 > A / B with your pick.
 
-## LIVE (2026-11-14 14:55, new referee thread)
-Steps 1-5 done. Builder resume 2 + fix round (F1-F11) done (builder total ~19 game min); audits + re-audits: both GO WITH
-CONDITIONS (all in `REPLAY_TASK.md` rulings 1-8); D5: the user chose **A** (run, report the overrun; hard stop 150).
-**Step 6:** part 1 2026-11-14 14:55-15:11 (cut by the rate limit; WALL 13.3); **RUNNING again since 2026-11-17 17:40
-(child "Speed REPLAY runner (resume 1)"; meter session 2: ADD 13.3):** the replay runner (T3 child "Speed REPLAY runner") in `MPG_speed_replay` (`f9418c5`, sealed:
-one commit, own repo); meter `MPG_referee/meter_replay.log` (background meter restarts every 2 h: ADD the sessions' WALL);
-watch = scratchpad `watch_replay.sh` (starts/ends, verdicts, walk results, every 10 game min, load).
-**ETA (the user wants it in every update):** replay done ~21:00 (11-17), scoring + final + signatures ~22:30.
-**Meter sessions (add them):** 1) 11-14 WALL 13.3; 2) 11-17 17:38-19:37 WALL 94.6; gap 19:37:25-~19:38:30 with 2 games
-running: add ~1.0; 3) from 19:38. Next: step 7 (score: S1-S7 + X1, X2 vs `MPG_referee/speed_secret.md`; plants PROVED; minutes vs 75 / 225).
+## LIVE (2026-11-17 ~19:55)
+Steps 1-7 done. **The replay finished** (runner `e2b197f` in `MPG_speed_replay`); **scored: `speed_research/replay_score.md`**:
+FAIL vs the brief: ~119 wall game min (baseline 225: ~1.9x), holes 3 / 7 (S3, S4, S7; S1 seen not named; S2, S5, S6 missed),
+plant rows 25 / 28 (lean_close, no_stall_drag, endless_window lost); insurance X1 + X2 2 / 2. The video shows P2 left on the road
+from 5:47 (walk checks passed it). **Running: the two signers** (Claude + GPT, `sign_task.md` -> `sign_claude.md`, `sign_gpt.md`).
+Next: FINAL.md from both signatures; TESTING_METHOD.md next version (KEEP / CHANGE list); the skill's example 2 result (ASK the
+user: library edit); the report to the user (A / B on adopting); then "after the replay": fix resume (the user chose A).
+**ETA:** signatures ~20:30, write-up ~21:15.
 
 ## Where it stands (one paragraph)
 Stages 1-2 done (top 4 signed). Stage 3: **T1 + T2 (fast tests) QUALIFIED** after 3 rounds and 3 GPT audits: the final table
