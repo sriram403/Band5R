@@ -798,3 +798,14 @@ happened, the fix, and the habit to keep.
 - **2026-11-17 (speedtools merge), a Godot call straight to the exe wrote logs to C:.** Assumed: setting MPG_DATA was enough for a `--check-only` call. Reality: only `tools/run_game.sh` sets APPDATA / LOCALAPPDATA from it; the bare exe wrote 3 small logs to `C:\Users\...\AppData\Roaming\FindingNaresh\logs` (removed; the folder already held one log from 2026-11-11). Fix: compile checks through `tools/run_game.sh --headless --check-only --script <path>`. Habit: every Godot launch through run_game.sh, never the bare exe.
 - **2026-11-17 (speedtools merge), the identity hash said SAME for a changed file, 1 run in 10.** Assumed: the auditors' 123 / 123 meant `tree_id.py` was solid. Reality: it copied the git index with a new timestamp, so git's same-second safety check was lost and a same-size edit matched the stat cache (`ident dirty bytes` BAD once, then green 13 times). Fix: a fresh temp index from HEAD, every input hashed (1.5 s), and a deterministic control (mtime restored) that the old code fails. Habit: a control that fails once is a finding, not noise: rerun it 10x and make the failure deterministic.
 
+- **2026-11-17 (resume fix), the first rv1 resume (R1) was DIFFERENT in 34 fields; the gate was right.** Assumed: saving
+  the lost pieces (bodies, vars, hearing, clocks) as text was enough. Reality: (1) `var_to_str` -> `str_to_var` lost a
+  float64's last digit (`_safe_t`, `_slump`); (2) SaveGame's float arrays brought every item / the van back 1 ulp off;
+  (3) object refs a plain snapshot skips (a player's `current_target`, the van's window-mist meshes, the tarp's
+  player-keyed pull stamps); (4) the hearing ages 24 ms off: the observation read its clock at its END (~20 ms after the
+  start), the point's ages were taken later still; (5) measured: **physics frames keep counting while the tree is
+  paused** (+15 frames in a 209 ms hold), so frame stamps need ages too (GPT's audit had flagged it as "I think").
+  Fix: bit-exact bytes (`var_to_bytes` + base64) for every saved var and body pose, refs by path / rebuilt, frame stamps
+  as ages, the observation's clocks read at its start and the ages taken at that moment. Then a cheap bench (a 2-step
+  producer) before re-running the 5-min producer. Habit: a restore compared EXACTLY finds every text round-trip; use
+  bytes, not text, for anything compared exactly.
