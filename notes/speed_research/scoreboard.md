@@ -184,6 +184,11 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   runner named itself); **discovery suite PASS both parts** (fast heat + net 2.5 min, 1x looks / places / jug / spring / marks 12.8
   min; union 13.1). Meter: **WALL 13.3, proc 15.6**. Resumed 2026-11-17 17:40 (`REPLAY_TASK.md` RESUME 1; meter session 2 adds).
 
+- **Referee intervention (2026-11-17 18:37, procedure only):** three fresh full walks failed in a row on P2's walk back to the van
+  (test move "walk did not work", steps 17, 17, 14; ~18 game min). The referee steered the runner to its own bench rule (bench the
+  one move, picture, then one full walk). No game knowledge given. Noted for the score: the method's "bench after 2-3" rule was
+  not applied by the runner itself here (a compliance point for the final audit).
+
 ## Next (Stage 3 proper)
 **2026-11-14 13:40: stopped at the user's request; the referee's next steps are in `MPG
 otes\SPEED_REFEREE_HANDOFF.md`.**
