@@ -25,7 +25,7 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   plan -> stop it at once, look, tell the user. Never only read the end.
 - **Never wait for an answer (the user, 2026-11-10).** A design choice that comes up while
   building: build your recommended pick, note it, tell the user in a line ("my pick, say if you
-  want the other"), keep going. Stop and wait only for merges, pushes, deletes.
+  want the other"), keep going. Stop and wait only for merges and deletes; **a merge into main is pushed at once** (the user, 2026-11-17: "always push as well").
 - **Fix what you see (the user, 2026-10-20).** An issue found while working
   is fixed then and there; never offer "record / carry on as is" as an
   option. Questions are for real choices only.
