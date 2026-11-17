@@ -54,3 +54,4 @@ judged against a stale list) · final suite 13 · recorded take 12 (beside the f
 
 ## Corrections applied from the signatures
 - `sign_claude.md` (SIGN WITH RESERVATIONS): S5 seen-not-found (was "missed"); plant rows read against the brief: 18 / 21, really 16.
+- `sign_gpt.md` (SIGN WITH RESERVATIONS): summed time ~170 (approximate, unreconciled with the runner's ~175); present the matrix as 25 tool certificates = **23 provisionally supported + 2 confounded** + 3 not certified; the 1.9x is not an equal finish; X1 was found via the observation table's GAP + code, X2 via pictures + code (not pictures alone).

@@ -1,6 +1,7 @@
 # How we test the game: the method, version by version
 
-**Current: v5 (v4's watched run, recorded as a video for the user; 2026-10-05).**
+**Current: v7 (2026-11-17: the speed research's result, signed by Claude and GPT with reservations; see the end).**
+v6's "long runs after every push" was replaced by the project's milestone-only full run (CLAUDE.md, 2026-10-14).
 Each version keeps what worked in the one before and names what it wasted.
 The general way of thinking behind it is in the skill
 `first-principles-solving` (`D:\mine\Agentics\Skills\skills\first-principles-solving\SKILL.md`).
@@ -142,7 +143,7 @@ reviews first.
   times off the frame grid, not the log; with a failure, look at
   `_shots/test_walk_fail.png` and `appdata/live_run.log` ("PAD WALK
   STUCK at ...") first.
-- **A failed take resumes at the failed step and the parts are joined** (`tools/record_walk.sh`, default since
+- *(v7: until a resume point is qualified SAME, acceptance takes are FRESH: see v7.)* **A failed take resumes at the failed step and the parts are joined** (`tools/record_walk.sh`, default since
   2026-11-10); the user chose this for the final video too (A, 2026-11-10): send it with every join's time
   ("joins at 0:57, 1:18") and look at the frames either side of each join first.
 - Puzzle walks start from **F1 → Puzzles → N** (`{"do": "menu", "tab":
@@ -169,3 +170,39 @@ reviews first.
   while the next part is built in `../MPG_dev`. Failures are matched to a
   ledger entry, written under it, and fixed in the next round.
 - At the end of the puzzle tuning: one last full run against the ledger.
+
+## v7 (2026-11-17): the speed research (two-model research, example 2)
+
+Benchmark: replay #6 day 2 (225 game min on the real day) from its first commit, blind, with secret holes. Result
+(`notes/speed_research/replay_score.md`, `FINAL.md`): **~119 wall game min (~1.9x), but only 3 of the day's 7 holes and 18 of 21
+starting plant rows**: the method did NOT pass. Both blind insurance plants (visual) were found. So v7 keeps what was proved and
+marks every change **TO PROVE** until its own planted control passes. The tools live in the research copies (`speed-t34`,
+`MPG_speed_replay`), not yet in `main`.
+
+**Keep (proved in the replay)**
+- **Fast + nodraw only where it matched normal speed:** heat and net (final replay 3.6x / 2.9x); looks, places, jug, spring,
+  marks and the recording at normal speed (they read the PC clock or shifted when fast). Looks before marks, same run.
+- **Two games at once** (two lanes, each walk and recording in a NEW game, at most two): the final suite's normal half
+  (~13 min) hid the fast half and the recording. Count union and summed minutes.
+- **Fail-closed judges:** a stale check list -> TEST, missing checks -> INCOMPLETE, a plant not caught -> row NOT CERTIFIED;
+  never rerun until green. Exact identities, input bytes sealed before / after.
+- **Picture inspection** of current bytes (rebuild the inventory right before judging): found both blind visual holes.
+- **The plant matrix** with solo groups and early stop; commit after every sub-step (a rate-limit cut cost nothing).
+
+**Change (TO PROVE, each with its planted control first)**
+1. **Check the required-check list BEFORE launch** (offline, seconds; one documented file: the judge reads
+   `tools/method/frozen.json`). ~15 game min were lost on two runs judged against a stale list.
+2. **Bench at the second failed fix**, from the real failing pose, then one full confirmation. ~18 game min went on three
+   full walks for one move until the referee steered.
+3. **Prerequisites first:** a proof whose setup already failed (the jug left behind) is BLOCKED, never certified; an
+   unexpected earlier failure is a discovery to name, not "the test did it" (S1 and S5 were seen and explained away).
+4. **Player-time checks:** seconds from the first cue to contact at each encounter transition (finds S5 / S6 kinds);
+   stowed things stay with the van (S1 kind); both players aboard before the van leaves (the take left P2 on the road and
+   the walk still said DONE).
+5. **A moving-camera clip at normal rate** around new surfaces (z-fighting / flicker: S2 kind); nodraw or 5-s grids can't
+   clear it.
+6. **Resume:** fresh takes for acceptance now. Qualify one resume point (the parked van's stale stored speed ignored, the
+   engine / nav / hearing saved, the settle second lined up: the user's choice, 2026-11-17), proved SAME and a perturbed
+   DIFFERENT, before any saving is counted.
+7. **Never tell a blind runner how many holes exist** (it stopped at the count).
+

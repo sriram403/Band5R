@@ -15,14 +15,11 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 > D:\mine\Agentics\Skills\AGENTS.md. Then follow "Next steps" in the hand-off, one at a time, and report to the user short and plain,
 > A / B with your pick.
 
-## LIVE (2026-11-17 ~19:55)
-Steps 1-7 done. **The replay finished** (runner `e2b197f` in `MPG_speed_replay`); **scored: `speed_research/replay_score.md`**:
-FAIL vs the brief: ~119 wall game min (baseline 225: ~1.9x), holes 3 / 7 (S3, S4, S7; S1 seen not named; S2, S5, S6 missed),
-plant rows 25 / 28 (lean_close, no_stall_drag, endless_window lost); insurance X1 + X2 2 / 2. The video shows P2 left on the road
-from 5:47 (walk checks passed it). **Running: the two signers** (Claude + GPT, `sign_task.md` -> `sign_claude.md`, `sign_gpt.md`).
-Next: FINAL.md from both signatures; TESTING_METHOD.md next version (KEEP / CHANGE list); the skill's example 2 result (ASK the
-user: library edit); the report to the user (A / B on adopting); then "after the replay": fix resume (the user chose A).
-**ETA:** signatures ~20:30, write-up ~21:15.
+## LIVE (2026-11-17 ~20:40): THE RESEARCH IS DONE
+FINAL: `speed_research/FINAL.md`; score `replay_score.md` (+ both signers' corrections); signatures `sign_claude.md`, `sign_gpt.md`
+(both SIGN WITH RESERVATIONS); `notes/TESTING_METHOD.md` v7 written (KEEP + 7 CHANGE items, each TO PROVE).
+**Waiting on the user:** (1) merge the research tools into `main` (A / B); (2) the skill library edit (two-model-research example 2
+result + lessons) (A / B). Then: fix resume (the user chose A).
 
 ## Where it stands (one paragraph)
 Stages 1-2 done (top 4 signed). Stage 3: **T1 + T2 (fast tests) QUALIFIED** after 3 rounds and 3 GPT audits: the final table
