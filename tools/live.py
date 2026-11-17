@@ -77,30 +77,19 @@ def new_errors() -> list:
     return out[:12]
 
 
-def resume_step(walk: dict):
-    """The step the last run of this walk failed at, if it is still in the
-    walk; else None (start from the beginning)."""
-    name = walk.get("name", "walk")
-    lf = os.path.join(LIVE, "points", "%s_last_fail.json" % name)
-    if not os.path.exists(lf):
-        return None
-    try:
-        with open(lf, encoding="utf-8") as f:
-            last = json.load(f)
-    except (ValueError, OSError):
-        return None
-    step = last.get("step", "")
+def resume_step(walk: dict, ident: dict):
+    """autoq (2026-11-17): the default start is ONE decision (walkgate.default_start, shared by --gate-check and the
+    walk call): a qualified point (>= 2 valid SAME receipts, no DIFFERENT) as a resume or a REPAIR; otherwise fresh,
+    with the reason printed. No more exit 5 + a manual --fresh for a stale point."""
+    import walkgate
+    d = walkgate.default_start(os.path.join(LIVE, "points"), walk, ident)
     global RESUME_POINT
-    RESUME_POINT = last.get("point", "")
-    names = [s.get("name", "") for s in walk.get("steps", [])]
-    if step not in names:
-        print("RESUME: the last failed step '%s' is not in this walk any more: from the start" % step, flush=True)
+    RESUME_POINT = d.get("point", "")
+    if d["from"] is None:
+        print("START fresh: %s" % d["why"], flush=True)
         return None
-    if names.index(step) == 0:
-        return None
-    print("RESUME from step '%s' (the last run failed there: %s). Start over: --fresh; "
-          "cause earlier: --from '<earlier step>'" % (step, last.get("fail", "")[:160]), flush=True)
-    return step
+    print("RESUME (%s) from step '%s', point %s: %s. Start over: --fresh" % (d["mode"], d["from"], d["point"], d["why"]), flush=True)
+    return d["from"]
 
 
 RESUME_POINT = ""
@@ -154,22 +143,29 @@ def main() -> int:
         # By default a walk resumes from the step its last run failed at (the
         # user, 2026-11-10: a model restarted 10 trial plays from step 1 though
         # the save points were there). --fresh starts over; --from picks a step.
-        if walk_from is None and not fresh:
-            walk_from = resume_step(walk)
-        point_id = os.environ.get("FROM_POINT", "") if walk_from else ""
-        if walk_from and not point_id:
-            point_id = RESUME_POINT
         import walkgate
         ident = gate_identity(walk)
+        explicit = walk_from is not None
+        if walk_from is None and not fresh:
+            walk_from = resume_step(walk, ident)
+        point_id = (os.environ.get("FROM_POINT", "") if explicit else "") if walk_from else ""
+        if walk_from and not point_id:
+            point_id = RESUME_POINT
         run_id = "%s_%s_%d" % (walk.get("name", "walk"), time.strftime("%Y%m%d_%H%M%S"), os.getpid())
-        k, prun, repair = -1, "", False
+        k, prun, repair, l3_on = -1, "", False, True
         if walk_from:
             # T4 v2: refuse an unusable point BEFORE any input is sent
             why, k, prun, probe_note = walkgate.admit(os.path.join(LIVE, "points"), walk, walk_from, point_id, ident,
                                                       probe=os.environ.get("GATE_PROBE") == "1")
             repair = probe_note.startswith("REPAIR")
-            if repair:
-                print("GATE: %s: layers 1 + 2 and the final pre-input check still decide; no layer 3 (new actions)" % probe_note, flush=True)
+            l3_on = True
+            if repair and not why:
+                # autoq (GPT audit #2): layer 3 live only if every step in the producer's +3 s window is unchanged
+                t3p = os.path.join(prun, "%d.t3.json" % k)
+                l3_on, l3_why = walkgate.spill_ok(walkgate.load(os.path.join(prun, "walk.json")), walk, k,
+                                                  walkgate.load(t3p) if os.path.exists(t3p) else None)
+                print("GATE: %s: layers 1 + 2 and the final pre-input check decide; layer 3 %s" % (
+                    probe_note, "ON (its window's steps are unchanged)" if l3_on else "n/a: " + l3_why), flush=True)
             elif probe_note:
                 print("GATE PROBE (test only): the point would be refused (%s); restoring anyway to show layer 2" % probe_note, flush=True)
             if why:
@@ -200,6 +196,17 @@ def main() -> int:
         msg = {"id": cid, "cmds": cmds, "quit": quit_after}
         if walk is not None:
             msg = {"id": cid, "walk": walk, "from": walk_from or "", "from_point": point_id, "run": run_id, "identity": ident}
+            if os.environ.get("AUTOQ_CHILD") == "1":       # autoq child (qualification / probe): last_fail untouched
+                msg["no_last_fail"] = True
+                msg["mode"] = os.environ.get("AUTOQ_MODE", "qualify")
+            if os.environ.get("WIDE_OBS") == "1":          # the wide diagnostic observation (restore check)
+                msg["wide"] = True
+            if os.environ.get("STOP_AFTER"):               # a probe: end the walk after this step (the walk stays whole)
+                nms = [s_.get("name", "") for s_ in walk.get("steps", [])]
+                if os.environ["STOP_AFTER"] not in nms:
+                    print("STOP_AFTER: no step '%s'" % os.environ["STOP_AFTER"], flush=True)
+                    return 4
+                msg["stop_after"] = nms.index(os.environ["STOP_AFTER"])
             if os.environ.get("WALK_FAIL_AT"):           # test-only control: "<step index>:<game s>"
                 st_, s_ = os.environ["WALK_FAIL_AT"].split(":")
                 msg["fail_at"] = {"step": int(st_), "s": float(s_)}
@@ -225,7 +232,7 @@ def main() -> int:
         print("RUN %s (points: %s)" % (run_id, os.path.join(LIVE, "points", run_id)), flush=True)
         if walk_from:
             gate_state = {"k": k, "prun": prun, "rrun": os.path.join(LIVE, "points", run_id), "l2": False, "l3": False,
-                          "l2f": False, "repair": repair}
+                          "l2f": False, "repair": repair, "l3_on": l3_on}
     if walk is not None:
         new_errors()                     # only errors from now on
     while time.time() - t0 < timeout:
@@ -318,7 +325,7 @@ def gate_step(g):
         print("GATE final pre-input check: %s %s" % (v, why[:400]), flush=True)
         g["l2f"] = True
     rt = os.path.join(g["rrun"], "%d.t3.json" % k)
-    if g.get("repair"):
+    if not g.get("l3_on", True):
         return
     if g["l2"] and not g["l3"] and os.path.exists(rt):
         try:
@@ -337,7 +344,7 @@ def gate_step(g):
 def gate_final(g):
     import walkgate
     rt = os.path.join(g["rrun"], "%d.t3.json" % g["k"])
-    for _ in range(0 if g.get("repair") else 100):    # the +3 s sample may land just after the walk's end
+    for _ in range(100 if g.get("l3_on", True) else 0):    # the +3 s sample may land just after the walk's end
         if os.path.exists(rt):
             break
         time.sleep(0.1)

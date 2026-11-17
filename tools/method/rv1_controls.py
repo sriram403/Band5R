@@ -254,6 +254,8 @@ def main():
               "resume_identity": dict(ident), "point_sha": sha, "gate_hash": gh, "protocol": "rv1/seed-v1"}
         r_.update(over)
         json.dump(r_, open(os.path.join(rd, "%d.gate.json" % K), "w"))
+        # autoq: a receipt counts only next to its run's record (planted-control runs are excluded by it)
+        json.dump({"identity": dict(ident), "pid": pid, "control": []}, open(os.path.join(rd, "run.json"), "w"))
 
     fixed = copy.deepcopy(walk)
     fixed["steps"][K]["do"] = fixed["steps"][K]["do"][:-1] + [{"do": "wait", "s": 0.1}]
@@ -280,6 +282,10 @@ def main():
     why, note = repair()
     rec("REPAIR: DIFFERENT / other protocol / other test code receipts", "REFUSED", "REFUSED" if why else "ADMIT")
     receipt("r8", 18)
+    why, note = repair()
+    # autoq (GPT audit #5): a valid DIFFERENT receipt next to the SAMEs disqualifies the point
+    rec("REPAIR: 2 SAME + a valid DIFFERENT receipt (autoq: disqualified)", "REFUSED", "REFUSED" if why else "ADMIT", "; ".join(why)[:140])
+    shutil.rmtree(os.path.join(pts, "r5"))
     why, note = repair()
     rec("REPAIR clean: 2 valid receipts, actions-only change", "ADMIT", "REFUSED" if why else "ADMIT", "; ".join(why)[:140] or note)
     rec("  ... noted as REPAIR", True, note.startswith("REPAIR"))
