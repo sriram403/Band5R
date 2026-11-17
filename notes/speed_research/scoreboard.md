@@ -180,6 +180,10 @@ Brief: `notes/SPEED_RESEARCH.md`. Score = summed game-running minutes (meter), t
   qualification controls; rulings win) + X1 / X2 (Ghat.gd = base + 2 lines) + 3 symptom comments scrubbed; game code = speed-base.
   Hard stop 150 wall game min. Meter `MPG_referee/meter_replay.log`.
 
+- **Replay, part 1 (2026-11-14 14:54-15:11, then cut by the API rate limit):** import check; step 1 (observation table: 1 GAP the
+  runner named itself); **discovery suite PASS both parts** (fast heat + net 2.5 min, 1x looks / places / jug / spring / marks 12.8
+  min; union 13.1). Meter: **WALL 13.3, proc 15.6**. Resumed 2026-11-17 17:40 (`REPLAY_TASK.md` RESUME 1; meter session 2 adds).
+
 ## Next (Stage 3 proper)
 **2026-11-14 13:40: stopped at the user's request; the referee's next steps are in `MPG
 otes\SPEED_REFEREE_HANDOFF.md`.**

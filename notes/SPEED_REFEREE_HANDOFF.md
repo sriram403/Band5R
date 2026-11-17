@@ -18,10 +18,11 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 ## LIVE (2026-11-14 14:55, new referee thread)
 Steps 1-5 done. Builder resume 2 + fix round (F1-F11) done (builder total ~19 game min); audits + re-audits: both GO WITH
 CONDITIONS (all in `REPLAY_TASK.md` rulings 1-8); D5: the user chose **A** (run, report the overrun; hard stop 150).
-**Step 6 RUNNING since 14:55:** the replay runner (T3 child "Speed REPLAY runner") in `MPG_speed_replay` (`f9418c5`, sealed:
+**Step 6:** part 1 2026-11-14 14:55-15:11 (cut by the rate limit; WALL 13.3); **RUNNING again since 2026-11-17 17:40
+(child "Speed REPLAY runner (resume 1)"; meter session 2: ADD 13.3):** the replay runner (T3 child "Speed REPLAY runner") in `MPG_speed_replay` (`f9418c5`, sealed:
 one commit, own repo); meter `MPG_referee/meter_replay.log` (background meter restarts every 2 h: ADD the sessions' WALL);
 watch = scratchpad `watch_replay.sh` (starts/ends, verdicts, walk results, every 10 game min, load).
-**ETA (the user wants it in every update):** replay done ~18:30-19:00, scoring + final + signatures ~20:00-20:30.
+**ETA (the user wants it in every update):** replay done ~21:00 (11-17), scoring + final + signatures ~22:30.
 Next: step 7 (score: S1-S7 + X1, X2 vs `MPG_referee/speed_secret.md`; plants PROVED; minutes vs 75 / 225).
 
 ## Where it stands (one paragraph)
