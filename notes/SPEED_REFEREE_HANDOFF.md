@@ -85,6 +85,13 @@ built as the referee's pick **A/A/A**, each a removable piece. D5: stop and repo
    `notes/speed_research/FINAL.md`, a new `notes/TESTING_METHOD.md` version, the skill two-model-research example 2 result
    (ask the user first: library edit), and the report to the user (A / B on adopting the method), with time spent.
 
+## After the replay (the user chose A, 2026-11-17 ~19:05)
+**Fix resume, then measure the saving** (the biggest win left: fresh-only walks cost ~40 game min in the replay vs ~15 with
+resume). The user's idea: the parked van's stale stored speed (0.148 m/s, a frozen body, no motion) is ignored / zeroed;
+save what the restore loses: the engine running, the nav swung aside, the creature's hearing memory; line up the 1 s settle
+(the 1.6 C cooling offset); layer-2 tolerance for far, sleeping items. Claude designs + builds it (its idea), GPT audits; then
+a gate session proves a SAME resume on the real ghat walk, and the saving is measured on a failed-step repair.
+
 ## Rules learned in this research (keep them)
 - **A rule only in a note is forgotten:** the hand-off gate hook (`tools/hooks/handoff_gate.py`) blocks a build hand-off
   without the other model's audit (`AUDITED:` line). Every spec / result is audited by the other model before it counts.
