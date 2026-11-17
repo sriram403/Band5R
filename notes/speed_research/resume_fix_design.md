@@ -106,3 +106,20 @@ game from the same point and diff the two observations), or a control that shoul
   a player's game is untouched (LiveControl only).
 - One point qualified is one point: each new boundary needs its own 2 receipts.
 - Points made before this change (no `live_bodies` / `live_hearing` / `rng_seed`) keep today's refusals.
+
+## v2 (2026-11-17, after GPT's audit `audit_resume_fix_gpt.md`: BUILD WITH THESE CHANGES; all 8 accepted)
+
+| GPT # | What changes in the build |
+|---|---|
+| 1 | Atomic paused restore: restore -> pause -> 2 frames -> observation 1 (immediate) -> client verdict (paused) -> clocks re-applied -> reseed -> **observation 2 (final, pre-input) must also equal the point** -> unpause -> step. The run logs physics frames / wall ms across the hold (the clock bench, no extra launch). |
+| 2 | Restore + observe: player full transform + velocity; capsule / crouch / climb (a boundary with crouch or climb **refused**); carryable parent, freeze_mode, layers / masks, holders (GateObs gains them); Problem's children (local transforms, child script vars, eye / glow material) put back; audio = gameplay-only SAME (sound cursors not promised; recording acceptance stays separate, said in the receipt). |
+| 3 | Typed clocks: every wall stamp (ms / s, its unset sentinel kept) saved as an AGE at the point and set to `now - age` at release (one offset for the hearing queue, `_item_ms`, `_last_hit_t`, `_cap_t`); ages frozen through the hold; layer 2 compares ages within 20 ms **and** on the same side of every expiry window. Edge controls offline. |
+| 4 | RNG: protocol `seed-v1` (stored integer seed, fresh and resume seed at the same place: right before the step's first action). The global-RNG refusal is lifted **only** while no gameplay draw can run in the step: Problem passive in `leave`, pose not `crouch` (its sniff draws only when crouched, Creature.gd 668-671), no player shake. Else refused. |
+| 5 | **Held-carryable and engine-on refusals stay.** Far-item tolerance **cut**. So the qualified point moves from P16 (P2 holds the pot) to **P13 = the start of step 14** ("P2 down the road to the spring: the pot ... back to the van"), ~5 game min in: nobody holds anything, engine off, nav aside, van frozen with a stale stored speed, Problem out (`leave`), tarp hearing events unconsumed. Engine-on stays refused (row 6 deferred: its own proof later). |
+| 6 | REPAIR only for an action-only change of the resumed step: game, bin, test code (`scripts/dev/`), tools, setup and every earlier step identical to the qualified receipts' runs; >= 2 SAME receipts from **distinct** runs (pids), bound to the point's bytes hash, `seed-v1`, restore version and the gate + inventory hash. Never counted as SAME. live.py skips layer 3 / final judging for it. |
+| 7 | Every new admission fails closed on an absent / malformed record; one offline negative control per rule (want the intended reason). |
+| 8 | Saving = **estimate** (F's measured prefix + the repair's measured suffix), labelled; no extra fresh run unless budget is left. Every launch and hold counted in the meter. |
+
+Proof plan v2: 0 offline controls; F (fresh, step 14's return leg = the replay's real failing route from its step 17,
+translated); R1, R2 (resume F/13, two launches); X1 (van +0.2 m after observation 1: DIFFERENT at layer 3);
+X2 (hearing restore off: DIFFERENT at layer 2, named); repair (main's real step 14, REPAIR, to DONE). ~13 game min.
