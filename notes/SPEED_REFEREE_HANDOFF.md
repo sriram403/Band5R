@@ -15,7 +15,9 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 > D:\mine\Agentics\Skills\AGENTS.md. Then follow "Next steps" in the hand-off, one at a time, and report to the user short and plain,
 > A / B with your pick.
 
-## LIVE (2026-11-24): AUTO-QUALIFY BUILT + PROVED (branch `autoq` in `dev`, not merged)
+## LIVE (2026-11-24 ~17:20): AUTO-QUALIFY IN MAIN (pushed `a4b87b8`, the user: C). NEXT (new thread): the held-pot and engine-on adapters; then the GPT-as-tester experiment (TODO)
+
+## (before) AUTO-QUALIFY BUILT + PROVED (branch `autoq` in `dev`)
 `speed_research/autoq_result.md`: spec v2 (GPT-6.1 Sol audit: BUILD WITH CHANGES, all 8 taken); ghat proof: planted typo at step 15 ->
 walk-back to point 13 -> planted hearing gap NOT QUALIFIED / clean QUALIFIED (2 SAME + same outcome) -> plain rerun REPAIRs to DONE;
 restore check (wide diagnostic); the lost-result rename race found + fixed (race_bench: old 3/3 lost, fixed 3/3 landed). 28.3 game min
