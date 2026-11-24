@@ -1,0 +1,18 @@
+# race bench + STALLED backstop evidence (2026-11-24, branch autoq 96197a9); CPU 41 %, GTA closed
+## OLD LiveControl (one-shot rename, from 22f48fa)
+race bench 1: res.json held 1.0 s while the game answered -> answer LOST
+race bench 2: res.json held 1.0 s while the game answered -> answer LOST
+race bench 3: res.json held 1.0 s while the game answered -> answer LOST
+race bench: FAIL (3 of 3 lost)
+stop: lane 'a' game gone (verified)
+## FIXED LiveControl (retry until it lands, 96197a9)
+race bench 1: res.json held 1.0 s while the game answered -> answer LANDED
+race bench 2: res.json held 1.0 s while the game answered -> answer LANDED
+race bench 3: res.json held 1.0 s while the game answered -> answer LANDED
+race bench: PASS (0 of 3 lost)
+stop: lane 'a' game gone (verified)
+## STALLED backstop, offline (fake folder): no result
+FAILED ghat in 5 s
+STALLED: the walk ended (its end line is printed) but no result came in 30 s
+## STALLED backstop, offline: a result present before the deadline
+run ghat_20261124_170402_13664; inputs sent None, dropped by the gate None, held at the failure picture None

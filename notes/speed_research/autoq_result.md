@@ -1,7 +1,9 @@
 # Auto-qualify resume points: result (2026-11-17 / 11-24, branch `autoq` in `dev`, not merged)
 
-**Nobody sets or qualifies a resume point by hand any more.** A failed walk qualifies its own point in new games;
-the next default run resumes it (or REPAIRs it after a fix), or starts fresh and says why. Spec `autoq_spec.md` v2
+**Nobody sets or qualifies a resume point by hand any more (proved for the tested ghat failure).** A failed walk
+qualifies its own point in new games; the next default run resumes it (or REPAIRs it after a fix), or starts fresh
+and says why. The receipts below are HISTORICAL: identity changed with the later fixes, so they qualify nothing today
+(by design); the code that qualifies has stayed the same in substance, and the saved pair still rejudges SAME. Spec `autoq_spec.md` v2
 (Claude Opus 5.5, high); spec audit `audit_autoq_gpt.md` (GPT-6.1 Sol, high: BUILD WITH CHANGES, all 8 taken).
 
 ## How it works (one table)
@@ -21,19 +23,20 @@ the next default run resumes it (or REPAIRs it after a fix), or starts fresh and
 | 3 | Clean qualification, resume 1 (`..._225112_24248`) | 1.3 | SAME, every layer + outcome (same FAIL at step 15, 59 s) |
 | 3b | resume 2 (`..._225232_3852`) | **14.4** | the game's result never reached the client: **found a real bug** (see below); no receipt |
 | 4 | Clean qualification again (`--again`): `..._230724_14148`, `..._230844_13532` | 2.6 | **SAME x2 -> QUALIFIED** point 13; default: RESUME from 13 |
-| 5 | Restore check point 13, clean / `RC_PLANT=groups` (the puzzle's state not restored) | 1.0 | clean: GateObs SAME, wide 233 diffs on 137 nodes; plant: GateObs DIFFERENT (129), wide 344 (**115 new: Problem 57, Ghat 23**); the probes' DIFFERENT receipts did not disqualify 13 (control runs) |
+| 5 | Restore check point 13, clean / `RC_PLANT=groups` (the puzzle's state not restored) | 1.0 | clean: GateObs SAME, wide 233 mismatches on 137 nodes; plant: GateObs DIFFERENT (129), wide 344 (**115 new: Problem 57, Ghat 23**); the probes' DIFFERENT receipts exist but are excluded (control runs), so they don't disqualify 13 |
 | 6 | The fix: plain `tools/play_walk.sh ghat` (regenerates the walk) `..._231151_3420` | 2.4 | **RESUME (repair)** from 13, layer 3 ON (its window unchanged) and SAME, **DONE** in 118 s, receipt REPAIR |
 | 7 | Offline: a game file edited | 0 | default: START fresh ("game hash ... != now ..."); explicit `--from`: REFUSED |
 | 8 | Rename-race check, old code / fixed (11-24) | 1.0 | old: **3 of 3 answers lost**; fixed: 3 of 3 landed |
-Offline controls: **autoq 51 / 51** (`autoq_controls.py`; each of the 7 new guards seen failing when switched off),
-**rv1 149 / 149** (one case split: a valid DIFFERENT next to 2 SAMEs now disqualifies). Total **28.3 game min**
-(meter `extras/referee/meter_autoq.log`; budget ~10: 14.4 went to the stuck game in 3b).
+Offline controls (after the results audit): **autoq 71 / 71** (`autoq_controls.py`; 14 guards each seen failing when
+switched off; the rejudge proved on copies of the REAL saved runs: the historical pair QUALIFIED, 6 tampered copies
+NOT), **rv1 149 / 149**. Total **29.3 game min** (meter `extras/referee/meter_autoq.log`; budget ~10: 14.4 went to the
+stuck game in 3b; 1.0 + 1.0 to the race bench, its output kept in `autoq_evidence_2026-11-24.txt`).
 
 ## The saving (one sample each)
 | | Wall |
 |---|---|
 | Fix the step-15 typo with a fresh walk to DONE | ~6.4 min |
-| With autoq: qualify (2 background games, automatic) + the REPAIR to DONE | ~2.6 + 2.4 = **~5.0 min the first time**, then **~2.4 min per further repair** from 13 |
+| With autoq: qualify (2 background games, automatic) + the REPAIR to DONE | ~2.6 + 2.4 = **~5.0 min the first time**, then **~2.4 min per further repair** from 13 (one sample each: an estimate) |
 
 ## Found on the way (each fixed, each with its own check)
 1. **My tool changed the identity it guards:** `import live` wrote `tools/__pycache__`, inside the `tools` hash; autoq's
@@ -49,10 +52,24 @@ Offline controls: **autoq 51 / 51** (`autoq_controls.py`; each of the 7 new guar
 ## Limits (said plainly)
 - On the ghat only points 1, 3, 4, 9, 12, 13 can be resumed; a failure at 15-20 walks back to 13 (held pot, engine on
   refused): the held-item and engine-on adapters are the next job.
-- The clean wide check shows **233 real gaps GateObs doesn't watch** (sounds playing, per-node random generators,
-  HUD timers, far-off creatures' parts). None changed this walk (layer 3 + outcome SAME twice); a new puzzle could
-  trip on them: the report lists them all, nothing masked.
+- The clean wide check shows **233 mismatches GateObs doesn't watch** (sounds playing, per-node random generators,
+  HUD timers, far-off creatures' parts): mismatches, not proved defects. None changed this walk (layer 3 + outcome
+  SAME twice); a new puzzle could trip on them: the report lists them all, nothing masked. The wide observation's
+  own scope: unscripted nodes beyond 2 levels below a scripted node (or below one with > 400 descendants) show only
+  their engine state; a node vanishing there is invisible; object references collapse auto-named siblings.
+- The rename retry blocks the game thread up to 2 s per locked write (heartbeat and evidence writes too); if it
+  never lands it logs an ERROR, which the client turns into a walk failure. Only the result write was benched.
 - `needs` now re-arms from the nearest EARLIER definition only: changed by code reading, no live case run for it.
 - The restore check's "add group X to LIVE_GROUPS?" hypothesis is untested live (the ghat's group is listed already, so
   the planted run named the missed nodes without it).
 - One producer, one point, one planted failure: not yet run on a second walk.
+
+## Results audit, round 1 (GPT-6.1 Sol, high: DON'T SIGN, 2 blockers; `audit_autoq_results_gpt.md`)
+GPT rejudged the saved runs itself: the pair SAME, the REPAIR REPAIR, the claims in the table confirmed. Taken:
+| # | GPT | Done |
+|---|---|---|
+| B1 | receipts trusted by their stored verdict; incomplete folders / malformed end records counted | every receipt **rejudged from its own files** when counted, bound to a complete run folder (pid, from_point, identity, walk.json, a valid end.json); end records validated |
+| B1a | REPAIR allows generator edits | **not taken (disputed):** the game plays only the walk JSON, bound byte for byte; fixes are made in the generator, so locking it would refuse every normal walk fix. For the user |
+| B2 | attempts not durable; last_fail could be overwritten | a lane lock (play_walk refuses a game while it runs), the attempt written before any game, interrupted attempts kept, --again appends |
+| F3 | STALLED before reading the result | the result is read first (offline: no result -> STALLED 31 s; a present result accepted) |
+| F4/5 | malformed inputs crash; wording; logs | recorded skips; wording above; race bench rerun with its output kept (old 3/3 lost, fixed 3/3 landed) |
