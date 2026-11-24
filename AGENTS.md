@@ -101,6 +101,11 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   test code and doesn't run the game: it designs, audits, reviews and writes a spec in a file; a
   Claude builder builds exactly that and reports what it had to change. (AI limit, 2026-11: re-test
   on newer models.) Skill: `game-dev` §1.6. **The GPT model (the user, 2026-11-24): GPT Astra 6.2, high** (`gpt-6.2-astra`) for every GPT role.
+- **Both plan, each audits the other; the main thread referees (the user: A, 2026-11-24).** A design before a build
+  gets two blind specs (a Claude child + a GPT child), each model audits the other's, the main thread merges by
+  applying the audits' exact changes (disputes to the user) and writes no spec of its own; a fresh Claude builder
+  builds; the results are audited by GPT and a fresh Claude auditor. A new thread loads every skill it names BEFORE
+  any work (the user, 2026-11-24). Skills: `two-model-research` §2, `project-memory` §4.
 
 ## Two copies of the project
 
