@@ -119,7 +119,11 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   (`scripts/dev/ResumeV1.gd`: bodies, vars, clocks as ages, hearing, a paused hold + final + release checks, seed-v1);
   a point counts only with 2 SAME receipts (`FROM_POINT=<run>/<i> python tools/live.py --walk <w> --from "<step>"`), and
   then a step whose ACTIONS changed resumes as REPAIR. Engine-on / held-item / crouch points stay refused. Qualified so
-  far: ghat step 14 (~4 of ~6.4 min saved per repair). Controls `python tools/method/rv1_controls.py` (118); details
+  far: ghat step 14 (~4 of ~6.4 min saved per repair). **Auto-qualify (2026-11-24, branch `autoq`):** nobody
+  qualifies by hand: a FAILED `tools/play_walk.sh` run calls `tools/method/autoq.py` (nearest resumable point, 2 new
+  games, same outcome); the default rerun resumes / REPAIRs it or starts fresh with the reason; a new puzzle:
+  `python tools/method/restore_check.py <walk>`. Controls `tools/method/autoq_controls.py` (51); result
+  `notes/speed_research/autoq_result.md`. Controls `python tools/method/rv1_controls.py` (118); details
   `notes/speed_research/resume_fix_result.md`. A tools or test-code change needs a new producer (identity binds them).
 
 ## The user's rules in short (details in MASTER_PROMPT section 3)

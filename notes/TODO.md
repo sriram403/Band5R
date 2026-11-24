@@ -6,7 +6,7 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- [ ] **NEXT (the user: A, 2026-11-17 ~22:50, new thread): auto-qualify resume points** (SPEED_REFEREE_HANDOFF.md LIVE). Then the held-pot and engine-on adapters.
+- [~] **2026-11-24: auto-qualify resume points BUILT + PROVED on ghat** (branch `autoq` in `dev`, NOT merged; `speed_research/autoq_result.md`): failed walk -> nearest resumable point qualified in 2 new games -> default REPAIR to DONE; planted bad restore -> NOT QUALIFIED -> fresh; restore check for new puzzles; found + fixed the lost-result rename race (race_bench). Controls autoq 51/51, rv1 149/149; 28.3 game min. Waiting: GPT-6.1 Sol results audit, then the user's merge A / B. Next: the held-pot and engine-on adapters.
 - [x] 2026-11-17: resume v1 merged into main and pushed (`842f494`).
 - [x] **2026-11-17 22:00: resume FIXED on one point** (branch `resume` in MPG_dev, `3053aa1`+notes, NOT merged: waiting on the user's A / B): ghat point 13 (step 14) qualified SAME (2 resumes, all layers), X1 / X2 DIFFERENT for their own reason, a REPAIR resume of main's walk to DONE; saving ~4.0 of ~6.4 min per repair there (estimate). `notes/speed_research/resume_fix_result.md`. Next: merge (user), then qualify points near steps 11 / 17 / 19 (17 needs a held-pot adapter), the engine-on proof.
 - [x] **2026-11-17: speed research DONE** (`notes/speed_research/FINAL.md`): ~119 game min vs 225 (~1.9x) but 3 / 7 holes, 18 / 21 starting rows: did NOT pass; both models signed with reservations; `TESTING_METHOD.md` v7. Next: the user's A / B on merging the tools into main and on the skill edit; then fix resume (the user chose A).

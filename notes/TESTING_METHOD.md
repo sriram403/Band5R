@@ -207,5 +207,8 @@ marks every change **TO PROVE** until its own planted control passes. The tools 
    the rv1 restore (bit-exact bytes, local poses, clocks and frame stamps as ages, the paused hold + final + release
    checks, seed-v1, stick input flushed per tick), 2 SAME receipts, X1 / X2 DIFFERENT, REPAIR to DONE: ~4 of ~6.4 min
    saved per repair there. Each further point needs its own 2 receipts; engine-on and held-item points stay refused.
+   **Automatic since 2026-11-24 (`speed_research/autoq_result.md`):** a failed walk qualifies the nearest resumable
+   point itself (2 new games, SAME on every layer + the same outcome); the default rerun resumes / REPAIRs it or goes
+   fresh with the reason; a new puzzle gets `restore_check.py` (a diagnostic of what the restore misses).
 7. **Never tell a blind runner how many holes exist** (it stopped at the count).
 
