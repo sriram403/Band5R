@@ -62,8 +62,11 @@ def finish(walk_name, run, last, verdict, **kw):
     if cur.get("run") != run and cur.get("producer_run") != run:
         say("last_fail now names another run (%s): left as it is" % cur.get("run"))
         return
-    rec = {"run": run, "producer_run": run, "fail": last.get("fail", ""), "failed_step": last.get("step", ""),
-           "failed_index": last.get("index"), "at": time.strftime("%Y-%m-%d %H:%M:%S"), "autoq": verdict}
+    # carry the producer's failure forward (an --again reads autoq's own record, which names it failed_step / failed_index)
+    rec = {"run": run, "producer_run": run, "fail": last.get("fail", ""),
+           "failed_step": last.get("failed_step") or last.get("step", ""),
+           "failed_index": last.get("failed_index") if last.get("failed_index") is not None else last.get("index"),
+           "at": time.strftime("%Y-%m-%d %H:%M:%S"), "autoq": verdict}
     rec.update(kw)
     jwrite(lf, rec)
 

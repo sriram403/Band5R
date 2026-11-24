@@ -197,6 +197,7 @@ def cases(prod, ident, walk, end, only=None):
     json.dump({"run": "ghat_R", "point": "ghat_R/15", "step": "x"}, open(lf, "w"))
     c("autoq: a resumed run's failure -> SOURCE, no games", "SOURCE", lambda: (aq("--run", "ghat_R") and wg.load(lf).get("autoq"), wg.load(lf).get("point")))
     c("autoq: already done -> nothing (no --again)", True, lambda: ("already done" in aq("--run", "ghat_R"), ""))
+    c("autoq: --again keeps the producer's failed step", "x", lambda: (aq("--again") and wg.load(lf).get("failed_step"), wg.load(lf).get("autoq")))
     json.dump({"run": "ghat_P", "point": "ghat_P/13", "step": "x"}, open(lf, "w"))
     e2 = dict(end, kind="gate")
     json.dump(e2, open(os.path.join(prod, "end.json"), "w"))

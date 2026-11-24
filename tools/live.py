@@ -233,6 +233,7 @@ def main() -> int:
         if walk_from:
             gate_state = {"k": k, "prun": prun, "rrun": os.path.join(LIVE, "points", run_id), "l2": False, "l3": False,
                           "l2f": False, "repair": repair, "l3_on": l3_on}
+    end_seen = None
     if walk is not None:
         new_errors()                     # only errors from now on
     while time.time() - t0 < timeout:
@@ -244,7 +245,13 @@ def main() -> int:
                     lines = f.read().splitlines()
                 for ln in lines[shown:]:
                     print(ln, flush=True)
+                    if (ln.startswith("FAILED ") or ln.startswith("DONE ")) and " in " in ln and end_seen is None:
+                        end_seen = time.time()
                 shown = len(lines)
+            # autoq (2026-11-17): the walk printed its end but its result never came (a lost rename once cost 13 min)
+            if end_seen is not None and time.time() - end_seen > 30:
+                print("STALLED: the walk ended (its end line is printed) but no result came in 30 s", flush=True)
+                return 2
             errs = new_errors()
             if errs:
                 with open(os.path.join(LIVE, "abort"), "w", encoding="utf-8") as f:

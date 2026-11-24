@@ -167,7 +167,7 @@ func _heartbeat() -> void:
 		var f := FileAccess.open(dir + "/heartbeat.tmp", FileAccess.WRITE)
 		f.store_string(JSON.stringify({"pid": OS.get_process_id(), "physics_frames": Engine.get_physics_frames(), "wall_ms": Time.get_ticks_msec()}))
 		f.close()
-		DirAccess.rename_absolute(dir + "/heartbeat.tmp", dir + "/heartbeat.json")
+		_replace(dir + "/heartbeat.tmp", dir + "/heartbeat.json")
 		await pt.get_tree().create_timer(0.5, true, false, true).timeout
 
 
@@ -176,7 +176,7 @@ func _write(d: Dictionary) -> void:
 	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	f.store_string(JSON.stringify(d, "  "))
 	f.close()
-	DirAccess.rename_absolute(tmp, dir + "/res.json")
+	_replace(tmp, dir + "/res.json")
 
 
 func _v3(v) -> Vector3:
@@ -574,11 +574,21 @@ func _restore_live(point: Dictionary) -> void:
 				(cr as Node3D).reset_physics_interpolation()
 
 
+## autoq (2026-11-17): a rename onto a file the client is reading fails on Windows; one failed rename lost a walk's
+## result (the client waited 13 min). Retry until it lands (~2 s at most, blocking: the writes are small); say so if not.
+func _replace(tmp: String, path: String) -> void:
+	for k in 200:
+		if DirAccess.rename_absolute(tmp, path) == OK:
+			return
+		OS.delay_msec(10)
+	push_error("LiveControl: could not replace %s (still locked after 2 s)" % path)
+
+
 func _json_out(path: String, d: Dictionary) -> void:
 	var f := FileAccess.open(path + ".tmp", FileAccess.WRITE)
 	f.store_string(JSON.stringify(d, "", true, true))
 	f.close()
-	DirAccess.rename_absolute(path + ".tmp", path)
+	_replace(path + ".tmp", path)
 
 
 ## The +3 game s sample of a step (layer 3's evidence): taken while the step's actions run.
