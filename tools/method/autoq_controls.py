@@ -308,6 +308,96 @@ def cases(prod, ident, walk, end, only=None):
     return out
 
 
+def b2_cases(only=None):
+    """GPT results audit B2: the lane lock and the durable attempt book, run IN-PROCESS on the synthetic folder (no
+    game can start: the producer's failure is at step 0, so no point exists to resume)."""
+    import contextlib
+    import io
+    out = {}
+    os.environ["AUTOQ_LIVE"] = W
+    prod, ident, walk, end = setup()
+    json.dump(dict(end, failed_index=0), open(os.path.join(prod, "end.json"), "w"))
+    wp = os.path.join(W, "walk_now.json")
+    json.dump(walk, open(wp, "w"))
+    os.environ.update(AUTOQ_TEST_IDENT=json.dumps(ident), AUTOQ_TEST_WALK=wp)
+    import importlib
+    import autoq
+    importlib.reload(autoq)
+    for nm, fn in PATCH_AQ:
+        setattr(autoq, nm, fn(autoq))
+    lf = os.path.join(PTS, "ghat_last_fail.json")
+    book_p = os.path.join(PTS, "ghat_autoq.json")
+    key = "ghat_P|%s" % wg.walk_hash(ident)
+
+    def call(*a):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            autoq.main(["ghat"] + list(a))
+        return buf.getvalue()
+
+    def reset_lf():
+        json.dump({"run": "ghat_P", "point": "ghat_P/0", "step": "x", "index": 0}, open(lf, "w"))
+
+    def c(name, want, fn):
+        if only and name != only:
+            return
+        for x in (book_p, autoq.LOCK):
+            if os.path.exists(x):
+                os.remove(x)
+        reset_lf()
+        try:
+            got, note = fn()
+        except Exception as e:
+            got, note = "CRASH", repr(e)
+        out[name] = rec(name, want, got, note)
+
+    def held():
+        json.dump({"pid": os.getpid(), "walk": "ghat", "at": "now"}, open(autoq.LOCK, "w"))
+        o = call("--run", "ghat_P")
+        return ("running in this lane" in o and not os.path.exists(book_p), o.strip()[-80:])
+    c("B2: the lane lock held by a live process -> nothing done", True, held)
+
+    def stale():
+        json.dump({"pid": 999999, "walk": "ghat", "at": "then"}, open(autoq.LOCK, "w"))
+        o = call("--run", "ghat_P")
+        return ("taken over" in o and os.path.exists(book_p) and not os.path.exists(autoq.LOCK), o.strip()[-80:])
+    c("B2: a stale lock (process gone) is taken over, released after", True, stale)
+
+    def interrupted():
+        json.dump({key: {"attempts": [{"status": "running", "pid": 999999, "verdict": None}]}}, open(book_p, "w"))
+        o = call("--run", "ghat_P")
+        a = wg.load(book_p)[key]["attempts"]
+        return ("%d/%s" % (len(a), a[0]["status"]), o.strip()[-90:])
+    c("B2: an interrupted attempt is kept and named; a plain call launches nothing", "1/interrupted", interrupted)
+
+    def again():
+        call("--run", "ghat_P")
+        reset_lf()
+        call("--again")
+        a = wg.load(book_p)[key]["attempts"]
+        return (len(a), [x.get("verdict", "")[:30] for x in a])
+    c("B2: --again appends an attempt (history kept)", 2, again)
+
+    def play_refused():
+        real_lock = os.path.join(ROOT, "appdata", "playtest", "FindingNaresh", "live", "autoq.lock")
+        if os.path.exists(real_lock):
+            return ("SKIPPED", "a real lock exists")
+        json.dump({"pid": os.getpid(), "walk": "ghat", "at": "now"}, open(real_lock, "w"))
+        try:
+            r = subprocess.run(["bash", os.path.join(ROOT, "tools", "play_walk.sh"), "zz_no_such_walk"], cwd=ROOT,
+                               capture_output=True, text=True, encoding="utf-8", errors="replace",
+                               env=dict(os.environ, AUTOQ_LIVE="", AUTOQ_CHILD=""))
+        finally:
+            os.remove(real_lock)
+        return (r.returncode, (r.stdout + r.stderr).strip()[-80:])
+    c("B2: play_walk.sh refuses a game while the lane's qualification runs (exit 3)", 3, play_refused)
+    os.environ["AUTOQ_LIVE"] = ""
+    return out
+
+
+PATCH_AQ = []    # (name, fn(autoq) -> replacement): the B2 guard-off pass fills it
+
+
 GUARDS = [   # (guard switched off, the planted case that must then turn BAD)
     ("outcome compares the check", "outcome: another failed check -> differ",
      lambda: setattr(wg, "outcome", lambda p, r, k: [] if isinstance(p, dict) and isinstance(r, dict) else ["x"])),
@@ -324,6 +414,11 @@ GUARDS = [   # (guard switched off, the planted case that must then turn BAD)
      lambda: setattr(wg, "refusal", lambda *a, **k: [])),
     ("validate_end", "outcome: two malformed DONE records (no fields) -> differ", lambda: setattr(wg, "validate_end", lambda e: [])),
 ]
+B2_GUARDS = [     # the B2 guards, in-process
+    ("the lane lock", "B2: the lane lock held by a live process -> nothing done", ("lock_holder", lambda aq: (lambda: None))),
+    ("attempts kept (no silent relaunch)", "B2: an interrupted attempt is kept and named; a plain call launches nothing",
+     ("book_attempts", lambda aq: (lambda book, key: []))),
+]
 REAL_GUARDS = [   # the B1 guards, on the real saved runs
     ("rejudge (a stored verdict never trusted)", "real: a resume's observation edited behind its stored SAME -> NOT",
      lambda: setattr(wg, "TRUST_STORED_VERDICT", True)),
@@ -337,6 +432,8 @@ def main():
     print("--- the rejudge on the real saved ghat runs (GPT results audit B1)")
     wg.TRUST_STORED_VERDICT = False
     real_cases()
+    print("--- the lane lock and the attempt book (GPT results audit B2)")
+    b2_cases()
     print("--- guards switched off (each planted case must turn BAD)")
     import importlib
     for gname, case, off in GUARDS:
@@ -349,6 +446,16 @@ def main():
         got_bad = len(RES) > n0 and not RES[-1]
         del RES[n0:]
         rec("  guard '%s' seen failing when off" % gname, True, got_bad)
+    for gname, case, patch in B2_GUARDS:
+        importlib.reload(wg)
+        PATCH_AQ[:] = [patch]
+        print("guard OFF: %s" % gname, flush=True)
+        n0 = len(RES)
+        b2_cases(only=case)
+        got_bad = len(RES) > n0 and not RES[-1]
+        del RES[n0:]
+        rec("  guard '%s' seen failing when off" % gname, True, got_bad)
+    PATCH_AQ[:] = []
     for gname, case, off in REAL_GUARDS:
         importlib.reload(wg)
         off()

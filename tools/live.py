@@ -248,10 +248,6 @@ def main() -> int:
                     if (ln.startswith("FAILED ") or ln.startswith("DONE ")) and " in " in ln and end_seen is None:
                         end_seen = time.time()
                 shown = len(lines)
-            # autoq (2026-11-17): the walk printed its end but its result never came (a lost rename once cost 13 min)
-            if end_seen is not None and time.time() - end_seen > 30:
-                print("STALLED: the walk ended (its end line is printed) but no result came in 30 s", flush=True)
-                return 2
             errs = new_errors()
             if errs:
                 with open(os.path.join(LIVE, "abort"), "w", encoding="utf-8") as f:
@@ -262,7 +258,12 @@ def main() -> int:
             with open(res_path, encoding="utf-8") as f:
                 res = json.load(f)
         except (ValueError, OSError):
-            continue
+            res = {}
+        # autoq (2026-11-17; GPT results audit F3: the result is read FIRST): the walk printed its end, but no matching
+        # result came in 30 s (a lost rename once cost 13 min) -> STALLED, exit 2
+        if walk is not None and end_seen is not None and time.time() - end_seen > 30 and int(res.get("id", -2)) != cid:
+            print("STALLED: the walk ended (its end line is printed) but no result came in 30 s", flush=True)
+            return 2
         if int(res.get("id", -2)) == cid:
             if walk is not None:
                 if gate_state:

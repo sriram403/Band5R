@@ -74,10 +74,88 @@ def finish(walk_name, run, last, verdict, **kw):
     jwrite(lf, rec)
 
 
+LOCK = os.path.join(LIVE, "autoq.lock")
+
+
+def pid_alive(pid):
+    """Windows: a process handle that still runs (exit code STILL_ACTIVE 259)."""
+    try:
+        import ctypes
+        k32 = ctypes.windll.kernel32
+        h = k32.OpenProcess(0x1000, False, int(pid))      # PROCESS_QUERY_LIMITED_INFORMATION
+        if not h:
+            return False
+        code = ctypes.c_ulong()
+        ok = k32.GetExitCodeProcess(h, ctypes.byref(code))
+        k32.CloseHandle(h)
+        return bool(ok) and code.value == 259
+    except (OSError, ValueError, AttributeError):
+        return True                                       # can't tell: treat as alive (fail closed: no second launch)
+
+
+def lock_holder():
+    """-> the live holder's record, or None (no lock / a stale one)."""
+    try:
+        d = wg.load(LOCK)
+    except (OSError, ValueError):
+        return None if not os.path.exists(LOCK) else {"pid": -1, "why": "unreadable lock"}
+    return d if pid_alive(d.get("pid", -1)) else None
+
+
+def take_lock(wname):
+    """The lane's qualification lock (GPT results audit B2): one autoq per lane; play_walk.sh refuses to start a game
+    while it is held, so last_fail can't change under a qualification. A stale lock (its pid gone) is taken over."""
+    os.makedirs(LIVE, exist_ok=True)
+    for _ in range(2):
+        try:
+            fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(fd, json.dumps({"pid": os.getpid(), "walk": wname, "at": time.strftime("%Y-%m-%d %H:%M:%S")}).encode())
+            os.close(fd)
+            return True
+        except FileExistsError:
+            h = lock_holder()
+            if h is not None:
+                say("a qualification is running in this lane (pid %s, %s, since %s): nothing done" % (h.get("pid"), h.get("walk"), h.get("at")))
+                return False
+            say("a stale lock (its process is gone): taken over")
+            try:
+                os.remove(LOCK)
+            except OSError:
+                pass
+    return False
+
+
+def book_attempts(book, key):
+    """The attempts recorded for one producer + identity (an old single entry counts as one attempt)."""
+    e = book.get(key)
+    if e is None:
+        return []
+    return e.get("attempts", [e]) if isinstance(e, dict) else []
+
+
 def main(argv):
+    if argv[:1] == ["--lock-check"]:
+        h = lock_holder()
+        if h is not None:
+            print("[autoq] a qualification is running in this lane (pid %s, %s, since %s): wait for it" % (h.get("pid"), h.get("walk"), h.get("at")))
+            return 3
+        return 0
     if not argv or argv[0].startswith("-"):
         print(__doc__)
         return 2
+    if not take_lock(argv[0]):
+        return 0
+    try:
+        return run(argv)
+    finally:
+        try:
+            if wg.load(LOCK).get("pid") == os.getpid():
+                os.remove(LOCK)
+        except (OSError, ValueError):
+            pass
+
+
+def run(argv):
     wname = argv[0]
     again = "--again" in argv
     want_run = argv[argv.index("--run") + 1] if "--run" in argv else None
@@ -127,8 +205,15 @@ def main(argv):
     recp = os.path.join(PTS, "%s_autoq.json" % wname)
     book = wg.load(recp) if os.path.exists(recp) else {}
     key = "%s|%s" % (run, wg.walk_hash(ident))
-    if key in book and not again:
-        say("already tried for %s (%s): retry with --again" % (run, book[key].get("verdict")))
+    att = book_attempts(book, key)
+    for a in att:
+        if a.get("status") == "running":           # we hold the lane lock: whoever wrote this is gone
+            a["status"] = "interrupted"
+            a["verdict"] = "INTERRUPTED (its process ended before a verdict)"
+    if att and not again:
+        book[key] = {"attempts": att}
+        jwrite(recp, book)
+        say("already tried for %s (%d attempt(s), last: %s): retry with --again" % (run, len(att), att[-1].get("verdict")))
         return 0
     k, skips = wg.pick_point(rdir, int(end.get("failed_index", -1)))
     for s in skips:
@@ -137,7 +222,8 @@ def main(argv):
              "skips": skips, "resumes": [], "at": time.strftime("%Y-%m-%d %H:%M:%S"), "plant": os.environ.get("AUTOQ_PLANT", "")}
     if k is None:
         entry["verdict"] = "NOT QUALIFIED: no resumable point before step %s" % end.get("failed_index")
-        book[key] = entry
+        entry["status"] = "done"
+        book[key] = {"attempts": att + [entry]}
         jwrite(recp, book)
         finish(wname, run, last, "NOT QUALIFIED", fresh_next=entry["verdict"])
         say(entry["verdict"] + ": next run fresh")
@@ -149,6 +235,10 @@ def main(argv):
         % (run, end.get("failed_index"), end.get("kind"), end.get("check"), pid, step_k, wg.RESUMES))
     prod_id = rr.get("identity") or {}
     stop_why = ""
+    # the attempt is written down BEFORE any game starts (GPT results audit B2): an interrupted one stays on record
+    entry.update(status="running", pid=os.getpid(), attempt=len(att) + 1)
+    book[key] = {"attempts": att + [entry]}
+    jwrite(recp, book)
     for i in range(1, wg.RESUMES + 1):
         # the tree must still be the producer's (a walk edited while qualifying would be refused anyway: say why now)
         cur_walk = wg.load(walk_now_p)
@@ -189,7 +279,8 @@ def main(argv):
             break
     q = ["stopped: " + stop_why] if stop_why else wg.qualified(PTS, pid, k, ident)
     entry["verdict"] = "QUALIFIED" if not q else "NOT QUALIFIED: " + "; ".join(q)
-    book[key] = entry
+    entry["status"] = "done"
+    book[key] = {"attempts": att + [entry]}
     jwrite(recp, book)
     if not q:
         finish(wname, run, last, "QUALIFIED", point=pid, step=step_k, index=k)

@@ -18,6 +18,8 @@ w=${1:?which walk, e.g. ghat}
 shift
 sfx=${LANE:+_$LANE}
 export LANE WALK_PROFILE=${WALK_PROFILE:-play}
+# autoq (GPT results audit B2): no game while this lane's qualification runs (its own children are inside it)
+[ "$AUTOQ_CHILD" = 1 ] || python tools/method/autoq.py --lock-check || exit 3
 # NO_MAKE=1: play tools/live/<w>.json as it is (a hand-edited or planted variant)
 [ -n "$NO_MAKE" ] || python "tools/live/make_$w.py" >/dev/null || exit 1
 python tools/method/godot_guard.py "$LANE" || exit 3
