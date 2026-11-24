@@ -765,6 +765,36 @@ def spill_ok(old, new, k, t3):
 QUALIFIABLE_KINDS = ("expect", "watch", "do", "limit", "needs", "van_stuck", "naresh", "taken", "other")
 
 
+def _int(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) and float(x).is_integer()
+
+
+def validate_end(e):
+    """GPT results audit B1b: an end record is complete and well-typed, or it is rejected (fails closed): status,
+    failed_index, failed_step, kind, check, text, steps, and every outcome a [step index, PASS / FAIL, check] triple."""
+    why = []
+    if not isinstance(e, dict):
+        return ["not a record"]
+    if e.get("status") not in ("DONE", "FAILED", "STOPPED"):
+        why.append("status %r" % e.get("status"))
+    for key, ok in (("failed_index", _int), ("steps", _int), ("kind", lambda x: isinstance(x, str)),
+                    ("check", lambda x: isinstance(x, str)), ("failed_step", lambda x: isinstance(x, str)),
+                    ("text", lambda x: isinstance(x, str)), ("outcomes", lambda x: isinstance(x, list))):
+        if key not in e or not ok(e.get(key)):
+            why.append("%s missing / wrong type" % key)
+    if why:
+        return why
+    if e["status"] == "FAILED" and not (e["failed_index"] >= 0 and e["kind"] and e["text"]):
+        why.append("a FAILED record without its failed step / kind / text")
+    if e["status"] != "FAILED" and (e["failed_index"] != -1 or e["kind"]):
+        why.append("a %s record carries a failure" % e["status"])
+    for x in e["outcomes"]:
+        if not (isinstance(x, list) and len(x) == 3 and _int(x[0]) and x[1] in ("PASS", "FAIL") and isinstance(x[2], str)):
+            why.append("outcome entry malformed: %r" % (x,))
+            break
+    return why
+
+
 def outcome(p_end, r_end, k):
     """The resume ends as the producer did: same status, failed step index, kind and check (no diagnostics), and the
     same ordered PASS / FAIL outcomes from step k on. Gate / abort / break failures and missing records never pass."""
@@ -773,6 +803,9 @@ def outcome(p_end, r_end, k):
         return ["no end record from the producer"]
     if not isinstance(r_end, dict):
         return ["no end record from the resume"]
+    bad = ["producer end record: " + x for x in validate_end(p_end)] + ["resume end record: " + x for x in validate_end(r_end)]
+    if bad:
+        return bad
     for nm, e in (("producer", p_end), ("resume", r_end)):
         if e.get("status") not in ("DONE", "FAILED"):
             why.append("%s status %r (DONE / FAILED only)" % (nm, e.get("status")))
@@ -882,24 +915,34 @@ def repair_check(points_dir, point_id, k, prun, walk, ident):
 
 
 COUNT_CONTROL_RUNS = False      # autoq_controls.py switches it on to see the guard fail
+TRUST_STORED_VERDICT = False    # autoq_controls.py switches it on to see the rejudge guard fail
+GATE_HASH_OVERRIDE = None       # autoq_controls.py only: judge saved historical receipts by the gate they were made with
+BIND_RUN_FOLDER = True          # autoq_controls.py switches it off to see the run-folder binding guard fail
 
 
-def receipts(points_dir, point_id, k, ident):
-    """autoq: the valid receipts of a point: bound to its bytes, this gate, rv1/seed-v1, the profile, and game / bin /
-    tools / testcode = now; planted-control runs never count (GPT autoq audit #5). -> (same runs, different runs)"""
+def receipts(points_dir, point_id, k, ident, why_out=None):
+    """autoq: the valid receipts of a point -> (same runs, different runs). GPT results audit B1: a stored verdict is
+    never trusted. A receipt counts only when its run folder is complete and bound (run.json with this point as its
+    from_point, its pid = the receipt's, no controls; walk.json; a valid end.json), it is bound to the point's bytes,
+    this gate, rv1/seed-v1, the profile and game / bin / tools / testcode = now, AND judge_resume rejudges it from its
+    own files right now with the same verdict class (SAME / DIFFERENT). why_out (a list) collects every skip reason."""
     sha = point_sha(os.path.join(points_dir, point_id + ".json"))
-    gh = gate_hash()
+    gh = GATE_HASH_OVERRIDE or gate_hash()
+    prun = os.path.join(points_dir, point_id.rsplit("/", 1)[0])
     same, diff, runs, pids = [], [], set(), set()
+    skip = why_out if isinstance(why_out, list) else []
     for rd in sorted(os.listdir(points_dir)):
-        gp = os.path.join(points_dir, rd, "%d.gate.json" % k)
+        rdir = os.path.join(points_dir, rd)
+        gp = os.path.join(rdir, "%d.gate.json" % k)
         if not os.path.isfile(gp):
             continue
         try:
             r = load(gp)
-            rrun = load(os.path.join(points_dir, rd, "run.json"))
+            rrun = load(os.path.join(rdir, "run.json"))
         except (ValueError, OSError):
+            skip.append("%s: receipt / run.json unreadable" % rd)
             continue
-        if r.get("point") != point_id or r.get("verdict") not in ("SAME", "DIFFERENT"):
+        if not isinstance(r, dict) or not isinstance(rrun, dict) or r.get("point") != point_id or r.get("verdict") not in ("SAME", "DIFFERENT"):
             continue
         if rrun.get("control") and not COUNT_CONTROL_RUNS:
             continue
@@ -908,15 +951,44 @@ def receipts(points_dir, point_id, k, ident):
                                ("protocol", r.get("protocol") == "%s/%s" % (RV, SEED_PROTO)),
                                ("profile", r.get("profile") == ident.get("profile")))
                + tuple((key, rid.get(key) == ident.get(key) and bool(rid.get(key))) for key in ("game", "bin", "tools", "testcode")) if not ok]
+        # the run folder itself (B1): the receipt's run, pid and source are the run's own; its walk and end exist
+        if BIND_RUN_FOLDER and not (_int(rrun.get("pid")) and rrun.get("pid") == r.get("resume_pid")):
+            bad.append("pid: run %r, receipt %r" % (rrun.get("pid"), r.get("resume_pid")))
+        if BIND_RUN_FOLDER and (rrun.get("from_point") != point_id or r.get("resume_run") != rd):
+            bad.append("source / run name not this point's (%r, %r)" % (rrun.get("from_point"), r.get("resume_run")))
+        if (rrun.get("identity") or {}) != rid:
+            bad.append("the run's identity != the receipt's")
+        if not os.path.exists(os.path.join(rdir, "walk.json")):
+            bad.append("walk.json missing")
+        try:
+            ev = validate_end(load(os.path.join(rdir, "end.json")))
+        except (OSError, ValueError):
+            ev = ["end.json missing / unreadable"]
+        bad += ["end.json: " + x for x in ev]
         if bad:
+            skip.append("%s: %s" % (rd, "; ".join(bad)[:200]))
             continue
-        if r["verdict"] == "DIFFERENT":
+        verdict = r["verdict"]
+        if not TRUST_STORED_VERDICT:
+            try:
+                jr = judge_resume(prun, k, rdir)
+                verdict = jr["verdict"]
+            except (OSError, ValueError, KeyError, TypeError) as e:
+                skip.append("%s: rejudge failed (%s)" % (rd, e))
+                continue
+            if verdict != r["verdict"]:
+                skip.append("%s: stored %s, rejudged %s (the rejudge counts)" % (rd, r["verdict"], verdict))
+        if verdict == "DIFFERENT":
             diff.append(rd)
             continue
-        if r.get("resume_run") in runs or r.get("resume_pid") in pids or r.get("resume_pid") is None:
+        if verdict != "SAME":
+            skip.append("%s: rejudged %s" % (rd, verdict))
+            continue
+        if rd in runs or r.get("resume_pid") in pids:
+            skip.append("%s: a second receipt of one run / process" % rd)
             continue
         same.append(rd)
-        runs.add(r.get("resume_run"))
+        runs.add(rd)
         pids.add(r.get("resume_pid"))
     return same, diff
 
@@ -924,7 +996,10 @@ def receipts(points_dir, point_id, k, ident):
 def qualified(points_dir, point_id, k, ident):
     """[] when the point has >= RESUMES valid SAME receipts and NO valid DIFFERENT one (a DIFFERENT next to SAMEs means
     the restore isn't repeatable: the point is out)."""
-    same, diff = receipts(points_dir, point_id, k, ident)
+    try:
+        same, diff = receipts(points_dir, point_id, k, ident)
+    except (OSError, ValueError) as e:
+        return ["the point's receipts can't be read (%s)" % e]
     why = []
     if diff:
         why.append("a valid DIFFERENT receipt for %s (%s): the point is disqualified" % (point_id, diff[0]))
@@ -962,8 +1037,11 @@ def pick_point(run_dir, failed_index):
     """autoq piece 1 (+ GPT audit #6): walk back from the failed step to the nearest point of THIS fresh run that passes
     refusal + layer 1 and has a usable +3 s reference. -> (k or None, [skip reasons])."""
     skips = []
-    rr = load(os.path.join(run_dir, "run.json")) if os.path.exists(os.path.join(run_dir, "run.json")) else None
-    if rr is None or rr.get("from", "") != "" or rr.get("control"):
+    try:
+        rr = load(os.path.join(run_dir, "run.json")) if os.path.exists(os.path.join(run_dir, "run.json")) else None
+    except ValueError:
+        rr = None
+    if not isinstance(rr, dict) or rr.get("from", "") != "" or rr.get("control"):
         return None, ["the producer is not a fresh, uncontrolled run"]
     for k in range(int(failed_index), 0, -1):
         miss = [x for x in ("%d.json" % k, "%d.obs.json" % k, "%d.t3.json" % k) if not os.path.exists(os.path.join(run_dir, x))]
@@ -972,13 +1050,16 @@ def pick_point(run_dir, failed_index):
             continue
         try:
             pt_, ob, t3 = (load(os.path.join(run_dir, "%d%s.json" % (k, x))) for x in ("", ".obs", ".t3"))
-        except ValueError as e:
-            skips.append("%d: unreadable (%s)" % (k, e))
+            if not all(isinstance(x, dict) for x in (pt_, ob, t3)) or not _int(t3.get("at_game_ms")):
+                raise TypeError("a point / observation / +3 s sample of the wrong shape")
+            if t3.get("failed_before") or int(t3.get("at_game_ms", 0)) < 3000:
+                skips.append("%d: its +3 s sample has a FAIL in it / is short" % k)
+                continue
+            why = refusal(ob, None, pt_) + layer1(ob)
+        except (ValueError, TypeError, AttributeError, KeyError) as e:
+            # GPT results audit F4: a malformed reference is a recorded skip, never a crash
+            skips.append("%d: unreadable / malformed (%s)" % (k, e))
             continue
-        if t3.get("failed_before") or int(t3.get("at_game_ms", 0)) < 3000:
-            skips.append("%d: its +3 s sample has a FAIL in it / is short" % k)
-            continue
-        why = refusal(ob, None, pt_) + layer1(ob)
         if why:
             skips.append("%d: %s" % (k, "; ".join(why)[:160]))
             continue
@@ -1000,9 +1081,13 @@ def default_start(points_dir, walk, ident):
         return dict(fresh, why="last_fail unreadable")
     if last.get("fresh_next"):
         return dict(fresh, why=str(last["fresh_next"]))
+    if not isinstance(last, dict):
+        return dict(fresh, why="last_fail is not a record")
     pid, why0 = fresh_root(points_dir, str(last.get("point", "")))
     if pid is None:
         return dict(fresh, why=why0)
+    if not pid.rsplit("/", 1)[1].isdigit():
+        return dict(fresh, why="point ID %r has no step index" % pid)
     k = int(pid.rsplit("/", 1)[1])
     names = [s.get("name", "") for s in walk.get("steps", [])]
     if k < 1 or k >= len(names):

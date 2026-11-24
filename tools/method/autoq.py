@@ -29,6 +29,9 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import walkgate as wg  # noqa: E402
 
+if os.environ.get("AUTOQ_TEST_GATE_HASH"):      # offline controls only: judge the saved historical receipts by their gate
+    wg.GATE_HASH_OVERRIDE = os.environ["AUTOQ_TEST_GATE_HASH"]
+
 LANE = os.environ.get("LANE", "")
 LIVE = os.environ.get("AUTOQ_LIVE") or os.path.join(ROOT, "appdata", "playtest" + ("_" + LANE if LANE else ""), "FindingNaresh", "live")   # AUTOQ_LIVE: offline controls only
 PTS = os.path.join(LIVE, "points")

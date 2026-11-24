@@ -46,20 +46,107 @@ def setup():
     walk["name"] = "ghat"
     json.dump(walk, open(os.path.join(prod, "walk.json"), "w"))
     end = {"status": "FAILED", "failed_index": 13, "failed_step": walk["steps"][13]["name"], "kind": "expect",
-           "check": "P2 holds a full pot", "text": "x", "outcomes": [[12, "PASS", "net off"], [13, "FAIL", "expect:P2 holds a full pot"]]}
+           "check": "P2 holds a full pot", "text": "x", "outcomes": [[12, "PASS", "net off"], [13, "FAIL", "expect:P2 holds a full pot"]],
+           "steps": len(walk["steps"]), "from": ""}
     json.dump(end, open(os.path.join(prod, "end.json"), "w"))
+    # synthetic receipts below can't be rejudged (no observations): their rejudge is off in this section; the rejudge
+    # is proved on the REAL saved ghat runs in real_cases()
+    wg.TRUST_STORED_VERDICT = True
     return prod, ident, walk, end
 
 
 def receipt(name, k, ident, pid, verdict="SAME", control=None, rpid=None):
+    """A complete synthetic receipt folder (run.json bound to the point and pid, walk.json, a valid end.json)."""
     rd = os.path.join(PTS, name)
     os.makedirs(rd, exist_ok=True)
     sha = wg.point_sha(os.path.join(PTS, pid + ".json"))
-    json.dump({"point": pid, "verdict": verdict, "resume_run": name, "resume_pid": rpid or (hash(name) % 9000 + 1000),
+    rp = rpid or (hash(name) % 9000 + 1000)
+    json.dump({"point": pid, "verdict": verdict, "resume_run": name, "resume_pid": rp,
                "profile": "play", "resume_identity": dict(ident), "point_sha": sha, "gate_hash": wg.gate_hash(),
                "protocol": "rv1/seed-v1"}, open(os.path.join(rd, "%d.gate.json" % k), "w"))
-    json.dump({"identity": dict(ident), "pid": rpid or 1, "control": control or [], "from": "x", "from_point": pid},
+    json.dump({"identity": dict(ident), "pid": rp, "control": control or [], "from": "x", "from_point": pid},
               open(os.path.join(rd, "run.json"), "w"))
+    shutil.copy(os.path.join(PTS, pid.rsplit("/", 1)[0], "walk.json"), os.path.join(rd, "walk.json"))
+    shutil.copy(os.path.join(PTS, pid.rsplit("/", 1)[0], "end.json"), os.path.join(rd, "end.json"))
+
+
+# ---- GPT results audit B1: the rejudge on REAL saved runs (the historical ghat proof) ---------------------------
+REAL = os.environ.get("AQ_REAL", os.path.join(ROOT, "appdata", "playtest", "FindingNaresh", "live", "points"))
+REAL_P, REAL_R = "ghat_20261117_224429_13940", ("ghat_20261117_230724_14148", "ghat_20261117_230844_13532")
+P_FILES = ("run.json", "walk.json", "end.json", "walk.log", "13.json", "13.obs.json", "13.t3.json")
+R_FILES = ("run.json", "walk.json", "end.json", "walk.log", "13.gate.json", "13.restored.obs.json", "13.final.obs.json",
+           "13.release.obs.json", "13.t3.json")
+
+
+def real_setup():
+    """-> (points dir, producer identity) with copies of the producer and its 2 qualifying resumes; None if absent."""
+    w2 = os.path.join(ROOT, "appdata", "autoqctl", "real", "points")
+    shutil.rmtree(os.path.dirname(w2), ignore_errors=True)
+    for run, files in [(REAL_P, P_FILES)] + [(r, R_FILES) for r in REAL_R]:
+        if not os.path.isdir(os.path.join(REAL, run)):
+            return None, None
+        os.makedirs(os.path.join(w2, run))
+        for f in files:
+            shutil.copy(os.path.join(REAL, run, f), os.path.join(w2, run, f))
+    wg.GATE_HASH_OVERRIDE = wg.load(os.path.join(w2, REAL_R[0], "13.gate.json"))["gate_hash"]   # the gate they were made by
+    return w2, wg.load(os.path.join(w2, REAL_P, "run.json"))["identity"]
+
+
+def real_cases(only=None):
+    out = {}
+    w2, ident = real_setup()
+    if w2 is None:
+        rec("real saved ghat runs present (AQ_REAL)", True, False, "missing: run the proof chain first")
+        return out
+    pid = REAL_P + "/13"
+
+    def q(note=""):
+        sk = []
+        r = wg.receipts(w2, pid, 13, ident, sk)
+        return ("QUALIFIED" if not wg.qualified(w2, pid, 13, ident) else "NOT", "%s same / %s diff; %s" % (len(r[0]), len(r[1]), "; ".join(sk)[:110]))
+
+    def c(name, want, plant):
+        if only and name != only:
+            return
+        real_setup()
+        undo = plant() if plant else None
+        got, note = q()
+        out[name] = rec(name, want, got, note)
+
+    def edit(run, f, fn):
+        p_ = os.path.join(w2, run, f)
+        d = wg.load(p_)
+        fn(d)
+        json.dump(d, open(p_, "w"))
+
+    c("real: the historical pair rejudges -> QUALIFIED", "QUALIFIED", None)
+    c("real: a resume's end.json lacks 'kind' -> NOT", "NOT", lambda: edit(REAL_R[1], "end.json", lambda d: d.pop("kind")))
+    c("real: a resume's walk.json gained a step -> NOT", "NOT",
+      lambda: edit(REAL_R[1], "walk.json", lambda d: d["steps"].append({"name": "21 extra", "do": [], "expect": []})))
+    c("real: a resume's observation edited behind its stored SAME -> NOT", "NOT",
+      lambda: edit(REAL_R[1], "13.restored.obs.json", lambda d: d["fields"].__setitem__("ghat.phase", '"hunt"')))
+    c("real: a receipt's pid != its run's pid -> NOT", "NOT", lambda: edit(REAL_R[1], "13.gate.json", lambda d: d.__setitem__("resume_pid", 1)))
+    c("real: a resume's from_point names another point -> NOT", "NOT",
+      lambda: edit(REAL_R[1], "run.json", lambda d: d.__setitem__("from_point", REAL_P + "/12")))
+    c("real: a resume's end.json missing -> NOT", "NOT", lambda: os.remove(os.path.join(w2, REAL_R[1], "end.json")))
+    # the resumed-run lifecycle on the real runs: autoq (a separate process, real rejudge) names the qualified source
+    if not only or only.startswith("real: autoq"):
+        real_setup()
+        rr = os.path.join(w2, "ghat_R")
+        os.makedirs(rr)
+        json.dump({"identity": ident, "pid": 9, "from": "x", "from_point": pid, "control": []}, open(os.path.join(rr, "run.json"), "w"))
+        e_ = wg.load(os.path.join(w2, REAL_P, "end.json"))
+        json.dump(dict(e_, failed_index=17, **{"from": "x"}), open(os.path.join(rr, "end.json"), "w"))
+        lf = os.path.join(w2, "ghat_last_fail.json")
+        json.dump({"run": "ghat_R", "point": "ghat_R/17", "step": "x", "index": 17}, open(lf, "w"))
+        env = dict(os.environ, AUTOQ_LIVE=os.path.dirname(w2), AUTOQ_TEST_IDENT=json.dumps(ident),
+                   AUTOQ_TEST_WALK=os.path.join(w2, REAL_P, "walk.json"), AUTOQ_TEST_GATE_HASH=wg.GATE_HASH_OVERRIDE)
+        o = subprocess.run([sys.executable, os.path.join(HERE, "autoq.py"), "ghat", "--run", "ghat_R"], env=env, capture_output=True,
+                           text=True, encoding="utf-8", errors="replace").stdout
+        out["real: autoq SOURCE"] = rec("real: autoq: a resumed run's failure -> its qualified source, no games", "SOURCE/" + pid,
+                                        "%s/%s" % (wg.load(lf).get("autoq"), wg.load(lf).get("point")), o.strip()[-100:])
+    wg.GATE_HASH_OVERRIDE = None
+    return out
 
 
 def cases(prod, ident, walk, end, only=None):
@@ -135,6 +222,11 @@ def cases(prod, ident, walk, end, only=None):
     c("outcome: a difference BEFORE step k is not compared -> pass", 0, lambda: (len(wg.outcome(end, early, K)), ""))
     c("outcome: no end record from the resume -> differ", 1, lambda: (min(1, len(wg.outcome(end, None, K))), ""))
     c("outcome: a STOPPED (probe) run -> differ", 1, lambda: (min(1, len(wg.outcome(end, stop, K))), ""))
+    c("outcome: two malformed DONE records (no fields) -> differ", 1,
+      lambda: (min(1, len(wg.outcome({"status": "DONE"}, {"status": "DONE"}, K))), wg.outcome({"status": "DONE"}, {"status": "DONE"}, K)[:1]))
+    bad_o = copy.deepcopy(end)
+    bad_o["outcomes"] = end["outcomes"] + ["junk"]
+    c("outcome: a junk outcome entry is rejected, not filtered -> differ", 1, lambda: (min(1, len(wg.outcome(end, bad_o, K))), ""))
     # --- pick_point (GPT #6): F3's real refusals (6-8, 10, 11 refused; 9, 12, 13 resumable)
     c("pick_point: failed at 13 -> 13", 13, lambda: wg.pick_point(prod, 13))
     c("pick_point: failed at 11 -> walks back past 11, 10 to 9", 9, lambda: (wg.pick_point(prod, 11)[0], wg.pick_point(prod, 11)[1]))
@@ -195,7 +287,8 @@ def cases(prod, ident, walk, end, only=None):
     json.dump({"run": "ghat_P", "point": "ghat_P/13", "step": walk["steps"][13]["name"], "index": 13}, open(lf, "w"))
     c("autoq: --run names another run -> nothing done", True, lambda: ("nothing done" in aq("--run", "ghat_X"), aq("--run", "ghat_X").strip()[-90:]))
     json.dump({"run": "ghat_R", "point": "ghat_R/15", "step": "x"}, open(lf, "w"))
-    c("autoq: a resumed run's failure -> SOURCE, no games", "SOURCE", lambda: (aq("--run", "ghat_R") and wg.load(lf).get("autoq"), wg.load(lf).get("point")))
+    c("autoq: a resumed run's failure, source NOT qualified (synthetic receipts can't be rejudged) -> fresh_next", "NOT QUALIFIED",
+      lambda: (aq("--run", "ghat_R") and wg.load(lf).get("autoq"), wg.load(lf).get("fresh_next")))
     c("autoq: already done -> nothing (no --again)", True, lambda: ("already done" in aq("--run", "ghat_R"), ""))
     c("autoq: --again keeps the producer's failed step", "x", lambda: (aq("--again") and wg.load(lf).get("failed_step"), wg.load(lf).get("autoq")))
     json.dump({"run": "ghat_P", "point": "ghat_P/13", "step": "x"}, open(lf, "w"))
@@ -229,12 +322,21 @@ GUARDS = [   # (guard switched off, the planted case that must then turn BAD)
      lambda: setattr(wg, "qualified", (lambda f: (lambda pd, p, k, i: [x for x in f(pd, p, k, i) if "disqualified" not in x]))(wg.qualified))),
     ("pick_point refusal", "pick_point: failed at 11 -> walks back past 11, 10 to 9",
      lambda: setattr(wg, "refusal", lambda *a, **k: [])),
+    ("validate_end", "outcome: two malformed DONE records (no fields) -> differ", lambda: setattr(wg, "validate_end", lambda e: [])),
+]
+REAL_GUARDS = [   # the B1 guards, on the real saved runs
+    ("rejudge (a stored verdict never trusted)", "real: a resume's observation edited behind its stored SAME -> NOT",
+     lambda: setattr(wg, "TRUST_STORED_VERDICT", True)),
+    ("run-folder binding (pid)", "real: a receipt's pid != its run's pid -> NOT", lambda: setattr(wg, "BIND_RUN_FOLDER", False)),
 ]
 
 
 def main():
     prod, ident, walk, end = setup()
     cases(prod, ident, walk, end)
+    print("--- the rejudge on the real saved ghat runs (GPT results audit B1)")
+    wg.TRUST_STORED_VERDICT = False
+    real_cases()
     print("--- guards switched off (each planted case must turn BAD)")
     import importlib
     for gname, case, off in GUARDS:
@@ -244,6 +346,15 @@ def main():
         print("guard OFF: %s" % gname, flush=True)
         n0 = len(RES)
         cases(prod, ident, walk, end, only=case)
+        got_bad = len(RES) > n0 and not RES[-1]
+        del RES[n0:]
+        rec("  guard '%s' seen failing when off" % gname, True, got_bad)
+    for gname, case, off in REAL_GUARDS:
+        importlib.reload(wg)
+        off()
+        print("guard OFF: %s" % gname, flush=True)
+        n0 = len(RES)
+        real_cases(only=case)
         got_bad = len(RES) > n0 and not RES[-1]
         del RES[n0:]
         rec("  guard '%s' seen failing when off" % gname, True, got_bad)
