@@ -758,7 +758,7 @@ Task: `notes/speed_research/merge_tools_task.md`. `speed-t34` (`fd4ae18`) merged
 - **Could break:** every walk's default start (a stale point now goes fresh instead of exit 5); `needs` re-arming (a walk
   whose later step defined a watch an earlier step needed now fails "no earlier step expects"); receipts without a
   run.json beside them no longer count; old points (identity changed) refused.
-- **Tests:** offline autoq 71/71 (14 guards each seen failing when off; rejudge proved on the real saved runs), rv1 149/149; live on ghat
+- **Tests:** offline autoq 81/81 (16 guards each seen failing when off; rejudge proved on the real saved runs; lane-lock race 20/20 one winner), rv1 149/149; `tools/method/lanelock.py` new (every walk now holds its lane); live on ghat
   (`speed_research/autoq_result.md`): planted typo at step 15 -> walk-back to 13; planted hearing gap -> NOT QUALIFIED
   -> fresh; clean -> QUALIFIED (2 SAME + outcome); restore check clean / planted; REPAIR to DONE; race bench old 3/3
   lost, fixed 3/3 landed; STALLED backstop offline. Not run: a second walk; the LIVE_GROUPS hypothesis live.

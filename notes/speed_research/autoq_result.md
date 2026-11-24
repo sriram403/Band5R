@@ -27,7 +27,7 @@ and says why. The receipts below are HISTORICAL: identity changed with the later
 | 6 | The fix: plain `tools/play_walk.sh ghat` (regenerates the walk) `..._231151_3420` | 2.4 | **RESUME (repair)** from 13, layer 3 ON (its window unchanged) and SAME, **DONE** in 118 s, receipt REPAIR |
 | 7 | Offline: a game file edited | 0 | default: START fresh ("game hash ... != now ..."); explicit `--from`: REFUSED |
 | 8 | Rename-race check, old code / fixed (11-24) | 1.0 | old: **3 of 3 answers lost**; fixed: 3 of 3 landed |
-Offline controls (after the results audit): **autoq 71 / 71** (`autoq_controls.py`; 14 guards each seen failing when
+Offline controls (after both audit rounds): **autoq 81 / 81** (`autoq_controls.py`; 16 guards each seen failing when
 switched off; the rejudge proved on copies of the REAL saved runs: the historical pair QUALIFIED, 6 tampered copies
 NOT), **rv1 149 / 149**. Total **29.3 game min** (meter `extras/referee/meter_autoq.log`; budget ~10: 14.4 went to the
 stuck game in 3b; 1.0 + 1.0 to the race bench, its output kept in `autoq_evidence_2026-11-24.txt`).
@@ -73,3 +73,12 @@ GPT rejudged the saved runs itself: the pair SAME, the REPAIR REPAIR, the claims
 | B2 | attempts not durable; last_fail could be overwritten | a lane lock (play_walk refuses a game while it runs), the attempt written before any game, interrupted attempts kept, --again appends |
 | F3 | STALLED before reading the result | the result is read first (offline: no result -> STALLED 31 s; a present result accepted) |
 | F4/5 | malformed inputs crash; wording; logs | recorded skips; wording above; race bench rerun with its output kept (old 3/3 lost, fixed 3/3 landed) |
+
+## Re-check, round 2 (GPT Astra 6.2, high: DON'T SIGN; `audit_autoq_recheck_gpt.md`) -> the whole class fixed
+Smaller holes in the same two places (the skill's "cap the rounds" case), so each class was fixed whole, not hole by hole:
+| Class | Holes it showed | The class fix |
+|---|---|---|
+| Evidence records | a resume naming another run counted; an end record with -1 steps counted; an array last_fail crashed the start | **one checker for every record** (`validate_run`, `validate_end` with its run's walk, `validate_last_fail`): every field typed and cross-checked (the run's name = its folder, the step count = its walk's, the failed step = its walk's step, every index inside the walk), used by receipts, the start decision and autoq |
+| Lane ownership | two callers both took one stale lock; a walk checked the lock once, then could start after a qualification took the lane; a failed process check meant "dead"; a cut between the book and last_fail wasn't repaired | **one lane lock for every writer** (`tools/method/lanelock.py`): an ordinary walk OWNS the lane for its whole run (play_walk acquires / releases), autoq acquires it or acts under the walk's token, children run under the parent's token; a stale lock is taken over under a takeover lock after re-reading it (20/20 rounds one winner; the old way 20/20 two); "dead" only on ERROR_INVALID_PARAMETER or an exit code; a recorded but unpublished verdict is published on the next call; a deleted last_fail is never recreated |
+| B1a (generators) | an edited generator is arbitrary code and could write last_fail itself | **the user: A (2026-11-24)**: generator edits stay allowed for a REPAIR; the tools guard against mistakes, not hostile code |
+Not re-audited after this fix (the user chooses: merge with this written down, or one more round).

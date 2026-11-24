@@ -64,7 +64,7 @@ def receipt(name, k, ident, pid, verdict="SAME", control=None, rpid=None):
     json.dump({"point": pid, "verdict": verdict, "resume_run": name, "resume_pid": rp,
                "profile": "play", "resume_identity": dict(ident), "point_sha": sha, "gate_hash": wg.gate_hash(),
                "protocol": "rv1/seed-v1"}, open(os.path.join(rd, "%d.gate.json" % k), "w"))
-    json.dump({"identity": dict(ident), "pid": rp, "control": control or [], "from": "x", "from_point": pid},
+    json.dump({"run": name, "identity": dict(ident), "pid": rp, "control": control or [], "from": "x", "from_point": pid},
               open(os.path.join(rd, "run.json"), "w"))
     shutil.copy(os.path.join(PTS, pid.rsplit("/", 1)[0], "walk.json"), os.path.join(rd, "walk.json"))
     shutil.copy(os.path.join(PTS, pid.rsplit("/", 1)[0], "end.json"), os.path.join(rd, "end.json"))
@@ -129,14 +129,18 @@ def real_cases(only=None):
     c("real: a resume's from_point names another point -> NOT", "NOT",
       lambda: edit(REAL_R[1], "run.json", lambda d: d.__setitem__("from_point", REAL_P + "/12")))
     c("real: a resume's end.json missing -> NOT", "NOT", lambda: os.remove(os.path.join(w2, REAL_R[1], "end.json")))
+    c("real: a resume's run.json names another run -> NOT", "NOT", lambda: edit(REAL_R[0], "run.json", lambda d: d.__setitem__("run", "other_run")))
+    c("real: a resume's end.json claims -1 steps -> NOT", "NOT", lambda: edit(REAL_R[0], "end.json", lambda d: d.__setitem__("steps", -1)))
+    c("real: a resume's end.json names another failed step -> NOT", "NOT", lambda: edit(REAL_R[0], "end.json", lambda d: d.__setitem__("failed_step", "x")))
     # the resumed-run lifecycle on the real runs: autoq (a separate process, real rejudge) names the qualified source
     if not only or only.startswith("real: autoq"):
         real_setup()
         rr = os.path.join(w2, "ghat_R")
         os.makedirs(rr)
-        json.dump({"identity": ident, "pid": 9, "from": "x", "from_point": pid, "control": []}, open(os.path.join(rr, "run.json"), "w"))
+        json.dump({"run": "ghat_R", "identity": ident, "pid": 9, "from": "x", "from_point": pid, "control": []}, open(os.path.join(rr, "run.json"), "w"))
+        shutil.copy(os.path.join(w2, REAL_P, "walk.json"), os.path.join(rr, "walk.json"))
         e_ = wg.load(os.path.join(w2, REAL_P, "end.json"))
-        json.dump(dict(e_, failed_index=17, **{"from": "x"}), open(os.path.join(rr, "end.json"), "w"))
+        json.dump(dict(e_, **{"from": "x"}), open(os.path.join(rr, "end.json"), "w"))
         lf = os.path.join(w2, "ghat_last_fail.json")
         json.dump({"run": "ghat_R", "point": "ghat_R/17", "step": "x", "index": 17}, open(lf, "w"))
         env = dict(os.environ, AUTOQ_LIVE=os.path.dirname(w2), AUTOQ_TEST_IDENT=json.dumps(ident),
@@ -272,8 +276,9 @@ def cases(prod, ident, walk, end, only=None):
     # a resumed run's failure maps to its source
     rr = os.path.join(PTS, "ghat_R")
     os.makedirs(rr, exist_ok=True)
-    json.dump({"identity": ident, "pid": 9, "from": walk["steps"][13]["name"], "from_point": pid, "control": []}, open(os.path.join(rr, "run.json"), "w"))
-    json.dump(dict(end, failed_index=15), open(os.path.join(rr, "end.json"), "w"))
+    json.dump({"run": "ghat_R", "identity": ident, "pid": 9, "from": walk["steps"][13]["name"], "from_point": pid, "control": []}, open(os.path.join(rr, "run.json"), "w"))
+    shutil.copy(os.path.join(prod, "walk.json"), os.path.join(rr, "walk.json"))
+    json.dump(dict(end, **{"from": "x"}), open(os.path.join(rr, "end.json"), "w"))   # the resumed run failed at the same step
     json.dump({"run": "ghat_R", "point": "ghat_R/15", "step": "x"}, open(lf, "w"))
     c("default: a resumed run failed later -> its qualified source", "resume/" + pid, lambda: ("%s/%s" % (ds()["mode"], ds()["point"]), ds()["why"]))
     json.dump({"run": "ghat_P", "fresh_next": "autoq said so"}, open(lf, "w"))
@@ -300,7 +305,7 @@ def cases(prod, ident, walk, end, only=None):
     c("autoq: no end record -> NOT QUALIFIED, fresh_next", "fresh_next", lambda: (aq("--run", "ghat_P") and ("fresh_next" if wg.load(lf).get("fresh_next") else "?"), wg.load(lf).get("fresh_next")))
     json.dump(end, open(os.path.join(prod, "end.json"), "w"))
     # pick_point none: failed at step 0
-    json.dump(dict(end, failed_index=0), open(os.path.join(prod, "end.json"), "w"))
+    json.dump(dict(end, failed_index=0, failed_step=walk["steps"][0]["name"], outcomes=[[0, "FAIL", "expect:x"]]), open(os.path.join(prod, "end.json"), "w"))
     json.dump({"run": "ghat_P", "point": "ghat_P/0", "step": "x"}, open(lf, "w"))
     c("autoq: no resumable point -> NOT QUALIFIED without a game", True,
       lambda: ("no resumable point" in aq("--run", "ghat_P") and "resume 1" not in open(os.path.join(PTS, "ghat_autoq.json")).read(), ""))
@@ -316,15 +321,19 @@ def b2_cases(only=None):
     out = {}
     os.environ["AUTOQ_LIVE"] = W
     prod, ident, walk, end = setup()
-    json.dump(dict(end, failed_index=0), open(os.path.join(prod, "end.json"), "w"))
+    json.dump(dict(end, failed_index=0, failed_step=walk["steps"][0]["name"], outcomes=[[0, "FAIL", "expect:x"]]), open(os.path.join(prod, "end.json"), "w"))
     wp = os.path.join(W, "walk_now.json")
     json.dump(walk, open(wp, "w"))
     os.environ.update(AUTOQ_TEST_IDENT=json.dumps(ident), AUTOQ_TEST_WALK=wp)
     import importlib
     import autoq
     importlib.reload(autoq)
+    importlib.reload(autoq.lanelock)
     for nm, fn in PATCH_AQ:
-        setattr(autoq, nm, fn(autoq))
+        if nm.startswith("lanelock."):
+            setattr(autoq.lanelock, nm.split(".", 1)[1], fn(autoq))
+        else:
+            setattr(autoq, nm, fn(autoq))
     lf = os.path.join(PTS, "ghat_last_fail.json")
     book_p = os.path.join(PTS, "ghat_autoq.json")
     key = "ghat_P|%s" % wg.walk_hash(ident)
@@ -352,15 +361,15 @@ def b2_cases(only=None):
         out[name] = rec(name, want, got, note)
 
     def held():
-        json.dump({"pid": os.getpid(), "walk": "ghat", "at": "now"}, open(autoq.LOCK, "w"))
+        json.dump({"token": "held", "owner": "play_walk", "pid": os.getpid(), "walk": "ghat", "at": "now"}, open(autoq.LOCK, "w"))
         o = call("--run", "ghat_P")
-        return ("running in this lane" in o and not os.path.exists(book_p), o.strip()[-80:])
+        return ("lane is busy" in o and not os.path.exists(book_p), o.strip()[-80:])
     c("B2: the lane lock held by a live process -> nothing done", True, held)
 
     def stale():
-        json.dump({"pid": 999999, "walk": "ghat", "at": "then"}, open(autoq.LOCK, "w"))
+        json.dump({"token": "stale", "owner": "autoq", "pid": 999999, "walk": "ghat", "at": "then"}, open(autoq.LOCK, "w"))
         o = call("--run", "ghat_P")
-        return ("taken over" in o and os.path.exists(book_p) and not os.path.exists(autoq.LOCK), o.strip()[-80:])
+        return (os.path.exists(book_p) and not os.path.exists(autoq.LOCK), o.strip()[-80:])
     c("B2: a stale lock (process gone) is taken over, released after", True, stale)
 
     def interrupted():
@@ -379,10 +388,10 @@ def b2_cases(only=None):
     c("B2: --again appends an attempt (history kept)", 2, again)
 
     def play_refused():
-        real_lock = os.path.join(ROOT, "appdata", "playtest", "FindingNaresh", "live", "autoq.lock")
+        real_lock = os.path.join(ROOT, "appdata", "playtest", "FindingNaresh", "live", "lane.lock")
         if os.path.exists(real_lock):
             return ("SKIPPED", "a real lock exists")
-        json.dump({"pid": os.getpid(), "walk": "ghat", "at": "now"}, open(real_lock, "w"))
+        json.dump({"token": "held", "owner": "autoq", "pid": os.getpid(), "walk": "ghat", "at": "now"}, open(real_lock, "w"))
         try:
             r = subprocess.run(["bash", os.path.join(ROOT, "tools", "play_walk.sh"), "zz_no_such_walk"], cwd=ROOT,
                                capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -391,6 +400,72 @@ def b2_cases(only=None):
             os.remove(real_lock)
         return (r.returncode, (r.stdout + r.stderr).strip()[-80:])
     c("B2: play_walk.sh refuses a game while the lane's qualification runs (exit 3)", 3, play_refused)
+
+    def under_walk():
+        # a walk owns the lane and calls autoq with its token: autoq acts under it and does NOT release it
+        tok, _h = autoq.lanelock.acquire("play_walk", os.getpid(), "ghat", W)
+        os.environ["LANE_TOKEN"] = tok
+        try:
+            o = call("--run", "ghat_P")
+            return (os.path.exists(book_p) and autoq.lanelock.verify(tok, W), o.strip()[-60:])
+        finally:
+            os.environ["LANE_TOKEN"] = ""
+            autoq.lanelock.release(tok, W)
+    c("B2: autoq under a walk's lane token acts, and leaves the walk's ownership in place", True, under_walk)
+
+    def walk_holds():
+        # an ordinary walk owns the lane: a standalone autoq (no token) does nothing
+        tok, _h = autoq.lanelock.acquire("play_walk", os.getpid(), "ghat", W)
+        try:
+            o = call("--again")
+            return ("lane is busy" in o and not os.path.exists(book_p), o.strip()[-60:])
+        finally:
+            autoq.lanelock.release(tok, W)
+    c("B2: an ordinary walk owns the lane -> a standalone autoq does nothing", True, walk_holds)
+
+    def race():
+        # GPT re-check: two callers on ONE stale lock at the same instant; exactly one may win (20 rounds, real files)
+        import threading
+        wins = []
+        for _ in range(20):
+            if os.path.exists(autoq.LOCK):
+                os.remove(autoq.LOCK)
+            json.dump({"token": "stale", "owner": "x", "pid": 999999, "walk": "ghat", "at": "then"}, open(autoq.LOCK, "w"))
+            bar = threading.Barrier(2)
+            got = {}
+
+            def go(nm):
+                bar.wait()
+                got[nm] = autoq.lanelock.acquire(nm, os.getpid(), "ghat", W)[0] is not None
+            ts = [threading.Thread(target=go, args=(n,)) for n in ("A", "B")]
+            [t.start() for t in ts]
+            [t.join() for t in ts]
+            wins.append(sum(got.values()))
+            os.remove(autoq.LOCK)
+        return (max(wins), "winners per round: %s" % wins)
+    c("B2: two callers on one stale lock (20 rounds): at most one winner", 1, race)
+
+    def last_fail_array():
+        json.dump(["not", "a", "record"], open(lf, "w"))
+        o = call("--run", "ghat_P")
+        d = wg.default_start(PTS, walk, ident)
+        return ("%s/%s" % ("malformed" in o, d["mode"]), d["why"][:60])
+    c("B1: a last_fail that is an array -> autoq does nothing, the start is fresh (no crash)", "True/fresh", last_fail_array)
+
+    def cut_publication():
+        # the verdict was written to the book, then the process was cut before last_fail: a plain call publishes it
+        json.dump({key: {"attempts": [{"status": "done", "verdict": "QUALIFIED", "point": "ghat_P/13", "k": 13,
+                                       "step_k": walk["steps"][13]["name"]}]}}, open(book_p, "w"))
+        call("--run", "ghat_P")
+        d = wg.load(lf)
+        return ("%s/%s" % (d.get("autoq"), d.get("point")), "")
+    c("B2: a verdict recorded but not published (cut) -> the next call publishes it", "QUALIFIED/ghat_P/13", cut_publication)
+
+    def deleted_stays_deleted():
+        os.remove(lf)                     # a newer walk passed and removed it
+        autoq.finish("ghat", "ghat_P", {"run": "ghat_P"}, "QUALIFIED", point="ghat_P/13")
+        return (os.path.exists(lf), "")
+    c("B2: a last_fail deleted by a newer passing walk is not recreated", False, deleted_stays_deleted)
     os.environ["AUTOQ_LIVE"] = ""
     return out
 
@@ -415,7 +490,10 @@ GUARDS = [   # (guard switched off, the planted case that must then turn BAD)
     ("validate_end", "outcome: two malformed DONE records (no fields) -> differ", lambda: setattr(wg, "validate_end", lambda e: [])),
 ]
 B2_GUARDS = [     # the B2 guards, in-process
-    ("the lane lock", "B2: the lane lock held by a live process -> nothing done", ("lock_holder", lambda aq: (lambda: None))),
+    ("the lane lock (owner alive)", "B2: the lane lock held by a live process -> nothing done",
+     ("lanelock.pid_alive", lambda aq: (lambda pid: False))),
+    ("the safe stale takeover", "B2: two callers on one stale lock (20 rounds): at most one winner",
+     ("lanelock.SAFE_TAKEOVER", lambda aq: False)),
     ("attempts kept (no silent relaunch)", "B2: an interrupted attempt is kept and named; a plain call launches nothing",
      ("book_attempts", lambda aq: (lambda book, key: []))),
 ]

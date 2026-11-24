@@ -18,8 +18,16 @@ w=${1:?which walk, e.g. ghat}
 shift
 sfx=${LANE:+_$LANE}
 export LANE WALK_PROFILE=${WALK_PROFILE:-play}
-# autoq (GPT results audit B2): no game while this lane's qualification runs (its own children are inside it)
-[ "$AUTOQ_CHILD" = 1 ] || python tools/method/autoq.py --lock-check || exit 3
+# the lane lock (GPT re-check B2): an ordinary walk OWNS the lane for its whole run (no other walk or qualification can
+# write this lane's records meanwhile); a qualification / probe child runs under its parent's token (LANE_TOKEN)
+if [ "$AUTOQ_CHILD" = 1 ]; then
+	python tools/method/lanelock.py verify "$LANE_TOKEN" || { echo "child run without its parent's lane ownership: refused"; exit 3; }
+else
+	wpid=$(cat /proc/$$/winpid 2>/dev/null || echo $$)
+	LANE_TOKEN=$(python tools/method/lanelock.py acquire play_walk "$wpid" "$w") || exit 3
+	export LANE_TOKEN
+	trap 'python tools/method/lanelock.py release "$LANE_TOKEN"' EXIT
+fi
 # NO_MAKE=1: play tools/live/<w>.json as it is (a hand-edited or planted variant)
 [ -n "$NO_MAKE" ] || python "tools/live/make_$w.py" >/dev/null || exit 1
 python tools/method/godot_guard.py "$LANE" || exit 3

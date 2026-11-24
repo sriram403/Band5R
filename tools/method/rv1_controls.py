@@ -258,7 +258,7 @@ def main():
         # autoq: a receipt counts only next to its complete run folder (run.json bound to the point and pid, walk.json,
         # a valid end.json); these receipts are synthetic, so their rejudge is off here (TRUST_STORED_VERDICT): the
         # rejudge itself is proved on real saved runs in autoq_controls.py
-        json.dump({"identity": dict(r_["resume_identity"]), "pid": pid, "control": [], "from": walk["steps"][K]["name"],
+        json.dump({"run": name, "identity": dict(r_["resume_identity"]), "pid": pid, "control": [], "from": walk["steps"][K]["name"],
                    "from_point": pid_}, open(os.path.join(rd, "run.json"), "w"))
         json.dump(walk, open(os.path.join(rd, "walk.json"), "w"))
         json.dump({"status": "DONE", "failed_index": -1, "failed_step": "", "kind": "", "check": "", "text": "",

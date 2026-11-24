@@ -74,55 +74,27 @@ def finish(walk_name, run, last, verdict, **kw):
     jwrite(lf, rec)
 
 
-LOCK = os.path.join(LIVE, "autoq.lock")
+import lanelock  # noqa: E402  (the lane lock shared with tools/play_walk.sh: GPT re-check B2)
 
-
-def pid_alive(pid):
-    """Windows: a process handle that still runs (exit code STILL_ACTIVE 259)."""
-    try:
-        import ctypes
-        k32 = ctypes.windll.kernel32
-        h = k32.OpenProcess(0x1000, False, int(pid))      # PROCESS_QUERY_LIMITED_INFORMATION
-        if not h:
-            return False
-        code = ctypes.c_ulong()
-        ok = k32.GetExitCodeProcess(h, ctypes.byref(code))
-        k32.CloseHandle(h)
-        return bool(ok) and code.value == 259
-    except (OSError, ValueError, AttributeError):
-        return True                                       # can't tell: treat as alive (fail closed: no second launch)
+LOCK = lanelock.lock_path(LIVE)
+pid_alive = lanelock.pid_alive
 
 
 def lock_holder():
-    """-> the live holder's record, or None (no lock / a stale one)."""
-    try:
-        d = wg.load(LOCK)
-    except (OSError, ValueError):
-        return None if not os.path.exists(LOCK) else {"pid": -1, "why": "unreadable lock"}
-    return d if pid_alive(d.get("pid", -1)) else None
+    return lanelock.holder(LIVE)
 
 
 def take_lock(wname):
-    """The lane's qualification lock (GPT results audit B2): one autoq per lane; play_walk.sh refuses to start a game
-    while it is held, so last_fail can't change under a qualification. A stale lock (its pid gone) is taken over."""
-    os.makedirs(LIVE, exist_ok=True)
-    for _ in range(2):
-        try:
-            fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            os.write(fd, json.dumps({"pid": os.getpid(), "walk": wname, "at": time.strftime("%Y-%m-%d %H:%M:%S")}).encode())
-            os.close(fd)
-            return True
-        except FileExistsError:
-            h = lock_holder()
-            if h is not None:
-                say("a qualification is running in this lane (pid %s, %s, since %s): nothing done" % (h.get("pid"), h.get("walk"), h.get("at")))
-                return False
-            say("a stale lock (its process is gone): taken over")
-            try:
-                os.remove(LOCK)
-            except OSError:
-                pass
-    return False
+    """-> (token, own): the lane's ownership. A walk that called us passes its token (LANE_TOKEN): we act under it.
+    Else we acquire the lane ourselves (own=True: we release it). Busy (a live owner) -> (None, False)."""
+    tok = os.environ.get("LANE_TOKEN", "")
+    if tok and lanelock.verify(tok, LIVE):
+        return tok, False
+    tok, h = lanelock.acquire("autoq", os.getpid(), wname, LIVE)
+    if tok is None:
+        say("the lane is busy (%s pid %s, %s, since %s): nothing done" % (h.get("owner"), h.get("pid"), h.get("walk"), h.get("at")))
+        return None, False
+    return tok, True
 
 
 def book_attempts(book, key):
@@ -134,25 +106,18 @@ def book_attempts(book, key):
 
 
 def main(argv):
-    if argv[:1] == ["--lock-check"]:
-        h = lock_holder()
-        if h is not None:
-            print("[autoq] a qualification is running in this lane (pid %s, %s, since %s): wait for it" % (h.get("pid"), h.get("walk"), h.get("at")))
-            return 3
-        return 0
     if not argv or argv[0].startswith("-"):
         print(__doc__)
         return 2
-    if not take_lock(argv[0]):
+    tok, own = take_lock(argv[0])
+    if tok is None:
         return 0
+    os.environ["LANE_TOKEN"] = tok                 # the qualification children run under this ownership
     try:
         return run(argv)
     finally:
-        try:
-            if wg.load(LOCK).get("pid") == os.getpid():
-                os.remove(LOCK)
-        except (OSError, ValueError):
-            pass
+        if own:
+            lanelock.release(tok, LIVE)
 
 
 def run(argv):
@@ -163,7 +128,14 @@ def run(argv):
     if not os.path.exists(lf):
         say("no last_fail for %s: nothing to qualify" % wname)
         return 0
-    last = wg.load(lf)
+    try:
+        last = wg.load(lf)
+    except ValueError:
+        last = None
+    bad = wg.validate_last_fail(last)
+    if bad:
+        say("last_fail is malformed (%s): nothing qualified; the next run starts fresh" % "; ".join(bad))
+        return 0
     run = last.get("producer_run") or last.get("run", "")
     if want_run and run != want_run:
         say("last_fail names run %s, not the run just played (%s): nothing done" % (run, want_run))
@@ -177,7 +149,15 @@ def run(argv):
         finish(wname, run, last, "NOT QUALIFIED", fresh_next="the failed run %s left no end record" % run)
         say("NOT QUALIFIED: no end record in %s: next run fresh" % run)
         return 0
-    end = wg.load(endp)
+    try:
+        end, rr, pwalk = (wg.load(os.path.join(rdir, x)) for x in ("end.json", "run.json", "walk.json"))
+    except (OSError, ValueError) as e:
+        end, rr, pwalk = None, None, None
+    bad = wg.validate_run(rr, run) + wg.validate_end(end, pwalk)
+    if bad:
+        finish(wname, run, last, "NOT QUALIFIED", fresh_next="the failed run's records are malformed (%s)" % "; ".join(bad)[:200])
+        say("NOT QUALIFIED: the failed run's records are malformed (%s): next run fresh" % "; ".join(bad)[:200])
+        return 0
     if end.get("status") != "FAILED":
         say("run %s ended %s: nothing to qualify" % (run, end.get("status")))
         return 0
@@ -185,7 +165,6 @@ def run(argv):
         finish(wname, run, last, "NOT QUALIFIED", fresh_next="the run failed by %r (%s), not a game outcome" % (end.get("kind"), end.get("check")))
         say("NOT QUALIFIED: failed by %r, not a game outcome: next run fresh" % end.get("kind"))
         return 0
-    rr = wg.load(os.path.join(rdir, "run.json"))
     walk_now_p = os.environ.get("AUTOQ_TEST_WALK") or os.path.join(ROOT, "tools", "live", "%s.json" % wname)
     walk_now = wg.load(walk_now_p)
     ident = identity(walk_now)
@@ -210,6 +189,15 @@ def run(argv):
         if a.get("status") == "running":           # we hold the lane lock: whoever wrote this is gone
             a["status"] = "interrupted"
             a["verdict"] = "INTERRUPTED (its process ended before a verdict)"
+    last_done = att[-1] if att and att[-1].get("status") == "done" else None
+    if last_done is not None and not again and not last.get("autoq"):
+        # its verdict was written, last_fail not yet (a cut between the two writes): publish it now (GPT re-check B2)
+        if last_done.get("verdict") == "QUALIFIED":
+            finish(wname, run, last, "QUALIFIED", point=last_done["point"], step=last_done.get("step_k", ""), index=last_done.get("k"))
+        else:
+            finish(wname, run, last, "NOT QUALIFIED", fresh_next=str(last_done.get("verdict")), **({"point": last_done["point"]} if last_done.get("point") else {}))
+        say("published the recorded verdict (%s): its last write had been cut" % last_done.get("verdict"))
+        return 0
     if att and not again:
         book[key] = {"attempts": att}
         jwrite(recp, book)
@@ -230,7 +218,7 @@ def run(argv):
         return 0
     pid = "%s/%d" % (run, k)
     step_k = wg.load(os.path.join(rdir, "walk.json"))["steps"][k]["name"]
-    entry["point"] = pid
+    entry.update(point=pid, k=k, step_k=step_k)
     say("producer %s FAILED at step %s (%s %s); qualifying point %s (step '%s') in up to %d new games"
         % (run, end.get("failed_index"), end.get("kind"), end.get("check"), pid, step_k, wg.RESUMES))
     prod_id = rr.get("identity") or {}

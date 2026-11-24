@@ -769,9 +769,51 @@ def _int(x):
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) and float(x).is_integer()
 
 
-def validate_end(e):
+IDENT_KEYS = ("game", "test", "testcode", "tools", "bin", "schema", "profile")
+
+
+def validate_run(rr, dirname):
+    """GPT re-check B1 (one checker for every record): a run record is complete, typed and names ITS OWN folder."""
+    if not isinstance(rr, dict):
+        return ["run.json is not a record"]
+    why = []
+    if rr.get("run") != dirname:
+        why.append("run.json names run %r, its folder is %r" % (rr.get("run"), dirname))
+    if not (_int(rr.get("pid")) and rr["pid"] > 0):
+        why.append("run.json pid %r" % rr.get("pid"))
+    for key in ("from", "from_point"):
+        if not isinstance(rr.get(key), str):
+            why.append("run.json %s missing / not text" % key)
+    if not isinstance(rr.get("control"), list):
+        why.append("run.json control missing / not a list")
+    idt = rr.get("identity")
+    if not (isinstance(idt, dict) and all(isinstance(idt.get(k), str) and idt.get(k) for k in IDENT_KEYS)):
+        why.append("run.json identity incomplete (%s)" % ", ".join(IDENT_KEYS))
+    if isinstance(rr.get("from"), str) and isinstance(rr.get("from_point"), str) and (rr["from"] == "") != (rr["from_point"] == ""):
+        why.append("run.json from / from_point disagree (a resume names both, a fresh run neither)")
+    return why
+
+
+def validate_last_fail(d):
+    """GPT re-check B1: <walk>_last_fail.json is a record with typed fields (a malformed one crashed the start)."""
+    if not isinstance(d, dict):
+        return ["last_fail is not a record"]
+    why = []
+    for key in ("run", "producer_run", "point", "fresh_next", "autoq", "step", "fail", "failed_step"):
+        if key in d and not isinstance(d[key], str):
+            why.append("last_fail %s not text" % key)
+    for key in ("index", "failed_index"):
+        if key in d and d[key] is not None and not _int(d[key]):
+            why.append("last_fail %s not an integer" % key)
+    if not (d.get("run") or d.get("producer_run")):
+        why.append("last_fail names no run")
+    return why
+
+
+def validate_end(e, walk=None):
     """GPT results audit B1b: an end record is complete and well-typed, or it is rejected (fails closed): status,
-    failed_index, failed_step, kind, check, text, steps, and every outcome a [step index, PASS / FAIL, check] triple."""
+    failed_index, failed_step, kind, check, text, steps, and every outcome a [step index, PASS / FAIL, check] triple.
+    GPT re-check B1: with its run's walk, the step count is the walk's and every index lies inside it."""
     why = []
     if not isinstance(e, dict):
         return ["not a record"]
@@ -792,6 +834,19 @@ def validate_end(e):
         if not (isinstance(x, list) and len(x) == 3 and _int(x[0]) and x[1] in ("PASS", "FAIL") and isinstance(x[2], str)):
             why.append("outcome entry malformed: %r" % (x,))
             break
+    if e["steps"] < 1:
+        why.append("steps %r" % e["steps"])
+    elif e["failed_index"] >= e["steps"]:
+        why.append("failed_index %d outside the walk's %d steps" % (e["failed_index"], e["steps"]))
+    elif any(_int(x[0]) and not (-1 <= x[0] < e["steps"]) for x in e["outcomes"] if isinstance(x, list) and x):
+        why.append("an outcome's step index lies outside the walk")
+    if walk is not None:
+        if not (isinstance(walk, dict) and isinstance(walk.get("steps"), list)):
+            why.append("its walk.json is not a walk")
+        elif e["steps"] != len(walk["steps"]):
+            why.append("steps %d != its walk's %d" % (e["steps"], len(walk["steps"])))
+        elif e["status"] == "FAILED" and walk["steps"][e["failed_index"]].get("name") != e["failed_step"]:
+            why.append("failed_step %r is not its walk's step %d" % (e["failed_step"], e["failed_index"]))
     return why
 
 
@@ -958,12 +1013,12 @@ def receipts(points_dir, point_id, k, ident, why_out=None):
             bad.append("source / run name not this point's (%r, %r)" % (rrun.get("from_point"), r.get("resume_run")))
         if (rrun.get("identity") or {}) != rid:
             bad.append("the run's identity != the receipt's")
-        if not os.path.exists(os.path.join(rdir, "walk.json")):
-            bad.append("walk.json missing")
+        if BIND_RUN_FOLDER:
+            bad += validate_run(rrun, rd)
         try:
-            ev = validate_end(load(os.path.join(rdir, "end.json")))
+            ev = validate_end(load(os.path.join(rdir, "end.json")), load(os.path.join(rdir, "walk.json")))
         except (OSError, ValueError):
-            ev = ["end.json missing / unreadable"]
+            ev = ["end.json / walk.json missing or unreadable"]
         bad += ["end.json: " + x for x in ev]
         if bad:
             skip.append("%s: %s" % (rd, "; ".join(bad)[:200]))
@@ -1079,10 +1134,11 @@ def default_start(points_dir, walk, ident):
         last = load(lf)
     except ValueError:
         return dict(fresh, why="last_fail unreadable")
+    bad = validate_last_fail(last)
+    if bad:
+        return dict(fresh, why="last_fail malformed: %s" % "; ".join(bad))
     if last.get("fresh_next"):
         return dict(fresh, why=str(last["fresh_next"]))
-    if not isinstance(last, dict):
-        return dict(fresh, why="last_fail is not a record")
     pid, why0 = fresh_root(points_dir, str(last.get("point", "")))
     if pid is None:
         return dict(fresh, why=why0)
