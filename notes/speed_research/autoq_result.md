@@ -29,8 +29,8 @@ and says why. The receipts below are HISTORICAL: identity changed with the later
 | 8 | Rename-race check, old code / fixed (11-24) | 1.0 | old: **3 of 3 answers lost**; fixed: 3 of 3 landed |
 Offline controls (after both audit rounds): **autoq 81 / 81** (`autoq_controls.py`; 16 guards each seen failing when
 switched off; the rejudge proved on copies of the REAL saved runs: the historical pair QUALIFIED, 6 tampered copies
-NOT), **rv1 149 / 149**. Total **29.3 game min** (meter `extras/referee/meter_autoq.log`; budget ~10: 14.4 went to the
-stuck game in 3b; 1.0 + 1.0 to the race bench, its output kept in `autoq_evidence_2026-11-24.txt`).
+NOT), **rv1 149 / 149**. Total **29.8 game min** (meter `extras/referee/meter_autoq.log`; budget ~10: 14.4 went to the
+stuck game in 3b; 1.0 + 1.0 to the race bench, 0.5 to the lane-lock smoke (a real walk held and released its lane), its output kept in `autoq_evidence_2026-11-24.txt`).
 
 ## The saving (one sample each)
 | | Wall |
