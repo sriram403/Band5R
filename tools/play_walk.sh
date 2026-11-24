@@ -10,11 +10,24 @@
 # LANE=b: a second game of this copy (appdata/playtest_b, _shots_b, appdata/live_run_b.log).
 # Prints the walk's lines as they come; exit 0 = DONE, 1 = FAILED, 3 = guard refused, 5 = gate refused.
 # Watch it while it runs (CLAUDE.md): read appdata/playtest[_<lane>]/FindingNaresh/live/walk.log.
+# autoq (2026-11-17): a FAILED walk then qualifies a resume point by itself (tools/method/autoq.py: the nearest
+# resumable point at or before the failed step, 2 resumes in new games that must end the same way); the default
+# rerun resumes it (a REPAIR after a fix to the walk), or starts fresh with the reason printed. AUTOQ=0: skip.
 cd "$(dirname "$0")/.."
 w=${1:?which walk, e.g. ghat}
 shift
 sfx=${LANE:+_$LANE}
 export LANE WALK_PROFILE=${WALK_PROFILE:-play}
+# the lane lock (GPT re-check B2): an ordinary walk OWNS the lane for its whole run (no other walk or qualification can
+# write this lane's records meanwhile); a qualification / probe child runs under its parent's token (LANE_TOKEN)
+if [ "$AUTOQ_CHILD" = 1 ]; then
+	python tools/method/lanelock.py verify "$LANE_TOKEN" || { echo "child run without its parent's lane ownership: refused"; exit 3; }
+else
+	wpid=$(cat /proc/$$/winpid 2>/dev/null || echo $$)
+	LANE_TOKEN=$(python tools/method/lanelock.py acquire play_walk "$wpid" "$w") || exit 3
+	export LANE_TOKEN
+	trap 'python tools/method/lanelock.py release "$LANE_TOKEN"' EXIT
+fi
 # NO_MAKE=1: play tools/live/<w>.json as it is (a hand-edited or planted variant)
 [ -n "$NO_MAKE" ] || python "tools/live/make_$w.py" >/dev/null || exit 1
 python tools/method/godot_guard.py "$LANE" || exit 3
@@ -33,7 +46,16 @@ for i in $(seq 1 90); do
 	sleep 2
 done
 grep -q "\[live\] ready" "$runlog" || { echo "the game didn't start"; tools/method/stop_lane.sh "$LANE"; exit 1; }
-python tools/live.py --walk "tools/live/$w.json" "$@"
-rc=$?
+out="appdata/tmp/play_walk$sfx.$$.out"
+mkdir -p appdata/tmp
+python tools/live.py --walk "tools/live/$w.json" "$@" | tee "$out"
+rc=${PIPESTATUS[0]}
 tools/method/stop_lane.sh "$LANE"
+# autoq (2026-11-17): a FAILED walk qualifies its resume point by itself (new games, child mode); never inside a
+# qualification / probe child (AUTOQ_CHILD=1), never with AUTOQ=0 (staged proofs)
+run=$(grep -m1 "^RUN " "$out" | awk '{print $2}')
+rm -f "$out"
+if [ "$rc" = 1 ] && [ "$AUTOQ_CHILD" != 1 ] && [ "$AUTOQ" != 0 ] && [ -n "$run" ]; then
+	python tools/method/autoq.py "$w" --run "$run"
+fi
 exit $rc

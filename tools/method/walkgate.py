@@ -692,6 +692,193 @@ def steps_hash(steps):
     return hashlib.sha256(json.dumps(_canon(steps), sort_keys=True).encode()).hexdigest()[:16]
 
 
+def walk_hash(walk):
+    """autoq (GPT audit #1): the whole walk's content (every key), canonical."""
+    return hashlib.sha256(json.dumps(_canon(walk), sort_keys=True).encode()).hexdigest()[:16]
+
+
+def classify_walk(old, new, k):
+    """How a walk now relates to the producer's walk, for a resume from point k:
+    same    -> identical content
+    repair  -> setup, every top-level key but steps, steps[:k] and step k's name / non-action keys equal; step k's
+               actions and any later step may differ (played live from a state proven equal)
+    refuse  -> anything else (the prefix the point stands for changed)
+    k_changed: step k's actions differ (its +3 s reference and outcome are for other actions)."""
+    out = {"mode": "refuse", "k_changed": True, "changed_after": [], "why": ""}
+    if not isinstance(old, dict) or not isinstance(new, dict):
+        out["why"] = "a walk is missing"
+        return out
+    if walk_hash(old) == walk_hash(new):
+        out.update(mode="same", k_changed=False, why="the identical walk")
+        return out
+    os_, ns_ = old.get("steps", []), new.get("steps", [])
+    top_o = {x: y for x, y in old.items() if x != "steps"}
+    top_n = {x: y for x, y in new.items() if x != "steps"}
+    if walk_hash(top_o) != walk_hash(top_n):
+        out["why"] = "the walk's setup / top-level keys changed (%s)" % sorted(x for x in set(top_o) | set(top_n) if top_o.get(x) != top_n.get(x))
+        return out
+    if k < 1 or k >= len(os_) or k >= len(ns_):
+        out["why"] = "step %d missing in one walk" % k
+        return out
+    if steps_hash(os_[:k]) != steps_hash(ns_[:k]):
+        out["why"] = "a step before the point changed"
+        return out
+    a = {x: y for x, y in os_[k].items() if x not in REPAIR_KEYS}
+    b = {x: y for x, y in ns_[k].items() if x not in REPAIR_KEYS}
+    if steps_hash([a]) != steps_hash([b]):
+        out["why"] = "step %d changed beyond its actions (%s)" % (k, sorted(x for x in set(a) | set(b) if a.get(x) != b.get(x)))
+        return out
+    kc = steps_hash(os_[k:k + 1]) != steps_hash(ns_[k:k + 1])
+    after = [i for i in range(k + 1, max(len(os_), len(ns_)))
+             if i >= len(os_) or i >= len(ns_) or steps_hash(os_[i:i + 1]) != steps_hash(ns_[i:i + 1])]
+    if kc:
+        w = "step %d's actions%s changed" % (k, (" and steps %s" % after) if after else "")
+    else:
+        w = "steps %s changed (step %d itself unchanged)" % (after, k)
+    out.update(mode="repair", k_changed=kc, changed_after=after, why=w)
+    return out
+
+
+def t3_steps(t3):
+    """The step names the +3 s sample's window covers (its lines start at step k's line; a short step spills)."""
+    out = []
+    for ln in (t3 or {}).get("lines", []):
+        m = re.match(r"step (.+) \(\d+ s, frame \d+\)$", ln)
+        if m:
+            out.append(m.group(1))
+    return out
+
+
+def spill_ok(old, new, k, t3):
+    """autoq (GPT audit #2): layer 3 compares only when every step inside the producer's +3 s window is unchanged."""
+    names = t3_steps(t3)
+    if not names:
+        return False, "the producer's +3 s sample names no step"
+    os_, ns_ = old.get("steps", []), new.get("steps", [])
+    for i in range(k, len(os_)):
+        if os_[i].get("name") in names and (i >= len(ns_) or steps_hash(os_[i:i + 1]) != steps_hash(ns_[i:i + 1])):
+            return False, "step %d (%s) runs inside the +3 s window and changed" % (i, os_[i].get("name"))
+    return True, ""
+
+
+# ---- autoq: the outcome layer (GPT audit #3) ------------------------------------------------------
+QUALIFIABLE_KINDS = ("expect", "watch", "do", "limit", "needs", "van_stuck", "naresh", "taken", "other")
+
+
+def _int(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) and float(x).is_integer()
+
+
+IDENT_KEYS = ("game", "test", "testcode", "tools", "bin", "schema", "profile")
+
+
+def validate_run(rr, dirname):
+    """GPT re-check B1 (one checker for every record): a run record is complete, typed and names ITS OWN folder."""
+    if not isinstance(rr, dict):
+        return ["run.json is not a record"]
+    why = []
+    if rr.get("run") != dirname:
+        why.append("run.json names run %r, its folder is %r" % (rr.get("run"), dirname))
+    if not (_int(rr.get("pid")) and rr["pid"] > 0):
+        why.append("run.json pid %r" % rr.get("pid"))
+    for key in ("from", "from_point"):
+        if not isinstance(rr.get(key), str):
+            why.append("run.json %s missing / not text" % key)
+    if not isinstance(rr.get("control"), list):
+        why.append("run.json control missing / not a list")
+    idt = rr.get("identity")
+    if not (isinstance(idt, dict) and all(isinstance(idt.get(k), str) and idt.get(k) for k in IDENT_KEYS)):
+        why.append("run.json identity incomplete (%s)" % ", ".join(IDENT_KEYS))
+    if isinstance(rr.get("from"), str) and isinstance(rr.get("from_point"), str) and (rr["from"] == "") != (rr["from_point"] == ""):
+        why.append("run.json from / from_point disagree (a resume names both, a fresh run neither)")
+    return why
+
+
+def validate_last_fail(d):
+    """GPT re-check B1: <walk>_last_fail.json is a record with typed fields (a malformed one crashed the start)."""
+    if not isinstance(d, dict):
+        return ["last_fail is not a record"]
+    why = []
+    for key in ("run", "producer_run", "point", "fresh_next", "autoq", "step", "fail", "failed_step"):
+        if key in d and not isinstance(d[key], str):
+            why.append("last_fail %s not text" % key)
+    for key in ("index", "failed_index"):
+        if key in d and d[key] is not None and not _int(d[key]):
+            why.append("last_fail %s not an integer" % key)
+    if not (d.get("run") or d.get("producer_run")):
+        why.append("last_fail names no run")
+    return why
+
+
+def validate_end(e, walk=None):
+    """GPT results audit B1b: an end record is complete and well-typed, or it is rejected (fails closed): status,
+    failed_index, failed_step, kind, check, text, steps, and every outcome a [step index, PASS / FAIL, check] triple.
+    GPT re-check B1: with its run's walk, the step count is the walk's and every index lies inside it."""
+    why = []
+    if not isinstance(e, dict):
+        return ["not a record"]
+    if e.get("status") not in ("DONE", "FAILED", "STOPPED"):
+        why.append("status %r" % e.get("status"))
+    for key, ok in (("failed_index", _int), ("steps", _int), ("kind", lambda x: isinstance(x, str)),
+                    ("check", lambda x: isinstance(x, str)), ("failed_step", lambda x: isinstance(x, str)),
+                    ("text", lambda x: isinstance(x, str)), ("outcomes", lambda x: isinstance(x, list))):
+        if key not in e or not ok(e.get(key)):
+            why.append("%s missing / wrong type" % key)
+    if why:
+        return why
+    if e["status"] == "FAILED" and not (e["failed_index"] >= 0 and e["kind"] and e["text"]):
+        why.append("a FAILED record without its failed step / kind / text")
+    if e["status"] != "FAILED" and (e["failed_index"] != -1 or e["kind"]):
+        why.append("a %s record carries a failure" % e["status"])
+    for x in e["outcomes"]:
+        if not (isinstance(x, list) and len(x) == 3 and _int(x[0]) and x[1] in ("PASS", "FAIL") and isinstance(x[2], str)):
+            why.append("outcome entry malformed: %r" % (x,))
+            break
+    if e["steps"] < 1:
+        why.append("steps %r" % e["steps"])
+    elif e["failed_index"] >= e["steps"]:
+        why.append("failed_index %d outside the walk's %d steps" % (e["failed_index"], e["steps"]))
+    elif any(_int(x[0]) and not (-1 <= x[0] < e["steps"]) for x in e["outcomes"] if isinstance(x, list) and x):
+        why.append("an outcome's step index lies outside the walk")
+    if walk is not None:
+        if not (isinstance(walk, dict) and isinstance(walk.get("steps"), list)):
+            why.append("its walk.json is not a walk")
+        elif e["steps"] != len(walk["steps"]):
+            why.append("steps %d != its walk's %d" % (e["steps"], len(walk["steps"])))
+        elif e["status"] == "FAILED" and walk["steps"][e["failed_index"]].get("name") != e["failed_step"]:
+            why.append("failed_step %r is not its walk's step %d" % (e["failed_step"], e["failed_index"]))
+    return why
+
+
+def outcome(p_end, r_end, k):
+    """The resume ends as the producer did: same status, failed step index, kind and check (no diagnostics), and the
+    same ordered PASS / FAIL outcomes from step k on. Gate / abort / break failures and missing records never pass."""
+    why = []
+    if not isinstance(p_end, dict):
+        return ["no end record from the producer"]
+    if not isinstance(r_end, dict):
+        return ["no end record from the resume"]
+    bad = ["producer end record: " + x for x in validate_end(p_end)] + ["resume end record: " + x for x in validate_end(r_end)]
+    if bad:
+        return bad
+    for nm, e in (("producer", p_end), ("resume", r_end)):
+        if e.get("status") not in ("DONE", "FAILED"):
+            why.append("%s status %r (DONE / FAILED only)" % (nm, e.get("status")))
+        if e.get("status") == "FAILED" and e.get("kind") not in QUALIFIABLE_KINDS:
+            why.append("%s failed by %r (a gate / client / test break is not a game outcome)" % (nm, e.get("kind")))
+    if why:
+        return why
+    for key in ("status", "failed_index", "kind", "check"):
+        if _canon(p_end.get(key)) != _canon(r_end.get(key)):
+            why.append("%s: producer %r, resume %r" % (key, p_end.get(key), r_end.get(key)))
+    po = [_canon(x) for x in p_end.get("outcomes", []) if isinstance(x, list) and x and _finite(x[0]) and x[0] >= k]
+    ro = [_canon(x) for x in r_end.get("outcomes", []) if isinstance(x, list) and x and _finite(x[0]) and x[0] >= k]
+    if po != ro:
+        first = next(((a, b) for a, b in zip(po + [None] * 99, ro + [None] * 99) if a != b), None)
+        why.append("outcomes from step %d differ (%d vs %d; first %s)" % (k, len(po), len(ro), first))
+    return why
+
+
 def identity_check(point_run, k, now_identity, now_walk, profile):
     """-> reasons the point can't be used now ([] = compatible for gate evaluation, not SAME)."""
     why = []
@@ -714,6 +901,9 @@ def identity_check(point_run, k, now_identity, now_walk, profile):
         why.append("the steps before the point changed (its producer): play the real prefix")
     if k >= len(ns_) or k >= len(os_) or steps_hash(os_[k:k + 1]) != steps_hash(ns_[k:k + 1]):
         why.append("the resumed step changed: its fresh +3 s reference is for other actions")
+    elif walk_hash(old_walk) != walk_hash(now_walk):
+        # autoq (GPT audit #1): a SAME resume needs the identical walk; any other edit can only be a REPAIR
+        why.append("the walk changed after the resumed step (only a REPAIR can use the point)")
     return why
 
 
@@ -734,13 +924,14 @@ def admit(points_dir, walk, walk_from, point_id, ident, probe=False):
         idw = identity_check(prun, k, ident, walk, ident.get("profile"))
         # a REPAIR (GPT audit #6): only the resumed step's actions changed (so the walk file, hence the `test`
         # hash, differs); everything else must hold, and the point must already be qualified SAME
-        if any(x.startswith("the resumed step changed") for x in idw) and \
-                all(x.startswith(("the resumed step changed", "test hash")) for x in idw):
+        if any(x.startswith(("the resumed step changed", "the walk changed after", "the steps before")) for x in idw) and \
+                all(x.startswith(("the resumed step changed", "the walk changed after", "the steps before", "test hash")) for x in idw):
             rw = repair_check(points_dir, point_id, k, prun, walk, ident)
             if rw:
                 idw.append("REPAIR refused: " + "; ".join(rw))
             else:
-                idw, note = [], "REPAIR (action-only change of step %d; point qualified SAME)" % k
+                cw = classify_walk(load(os.path.join(prun, "walk.json")), walk, k)
+                idw, note = [], "REPAIR (%s; point qualified SAME)" % cw["why"]
         why += idw
         op = os.path.join(prun, "%d.obs.json" % k)
         if not os.path.exists(op):
@@ -768,43 +959,203 @@ def repair_check(points_dir, point_id, k, prun, walk, ident):
         prod = load(os.path.join(prun, "run.json")).get("identity") or {}
     except OSError:
         return ["the producer's walk.json / run.json is missing"]
-    os_, ns_ = old.get("steps", []), walk.get("steps", [])
-    if k >= len(os_) or k >= len(ns_):
-        return ["step %d missing" % k]
-    a = {x: y for x, y in os_[k].items() if x not in REPAIR_KEYS}
-    b = {x: y for x, y in ns_[k].items() if x not in REPAIR_KEYS}
-    if steps_hash([a]) != steps_hash([b]):
-        why.append("more than the step's actions changed (%s)" % sorted(set(os_[k]) ^ set(ns_[k]) | {x for x in a if a.get(x) != b.get(x)}))
+    cw = classify_walk(old, walk, k)
+    if cw["mode"] != "repair":
+        why.append("not a REPAIR: " + cw["why"])
     for key in ("game", "bin", "tools", "testcode"):
         if not prod.get(key) or prod.get(key) != ident.get(key):
             why.append("%s: producer %s, now %s" % (key, prod.get(key), ident.get(key)))
+    why += qualified(points_dir, point_id, k, ident)
+    return why
+
+
+COUNT_CONTROL_RUNS = False      # autoq_controls.py switches it on to see the guard fail
+TRUST_STORED_VERDICT = False    # autoq_controls.py switches it on to see the rejudge guard fail
+GATE_HASH_OVERRIDE = None       # autoq_controls.py only: judge saved historical receipts by the gate they were made with
+BIND_RUN_FOLDER = True          # autoq_controls.py switches it off to see the run-folder binding guard fail
+
+
+def receipts(points_dir, point_id, k, ident, why_out=None):
+    """autoq: the valid receipts of a point -> (same runs, different runs). GPT results audit B1: a stored verdict is
+    never trusted. A receipt counts only when its run folder is complete and bound (run.json with this point as its
+    from_point, its pid = the receipt's, no controls; walk.json; a valid end.json), it is bound to the point's bytes,
+    this gate, rv1/seed-v1, the profile and game / bin / tools / testcode = now, AND judge_resume rejudges it from its
+    own files right now with the same verdict class (SAME / DIFFERENT). why_out (a list) collects every skip reason."""
     sha = point_sha(os.path.join(points_dir, point_id + ".json"))
-    gh = gate_hash()
-    good, runs, pids = [], set(), set()
+    gh = GATE_HASH_OVERRIDE or gate_hash()
+    prun = os.path.join(points_dir, point_id.rsplit("/", 1)[0])
+    same, diff, runs, pids = [], [], set(), set()
+    skip = why_out if isinstance(why_out, list) else []
     for rd in sorted(os.listdir(points_dir)):
-        gp = os.path.join(points_dir, rd, "%d.gate.json" % k)
+        rdir = os.path.join(points_dir, rd)
+        gp = os.path.join(rdir, "%d.gate.json" % k)
         if not os.path.isfile(gp):
             continue
         try:
             r = load(gp)
-        except ValueError:
+            rrun = load(os.path.join(rdir, "run.json"))
+        except (ValueError, OSError):
+            skip.append("%s: receipt / run.json unreadable" % rd)
             continue
-        if r.get("point") != point_id or r.get("verdict") != "SAME":
+        if not isinstance(r, dict) or not isinstance(rrun, dict) or r.get("point") != point_id or r.get("verdict") not in ("SAME", "DIFFERENT"):
+            continue
+        if rrun.get("control") and not COUNT_CONTROL_RUNS:
             continue
         rid = r.get("resume_identity") or {}
         bad = [x for x, ok in (("point bytes", r.get("point_sha") == sha), ("gate", r.get("gate_hash") == gh),
                                ("protocol", r.get("protocol") == "%s/%s" % (RV, SEED_PROTO)),
                                ("profile", r.get("profile") == ident.get("profile")))
                + tuple((key, rid.get(key) == ident.get(key) and bool(rid.get(key))) for key in ("game", "bin", "tools", "testcode")) if not ok]
-        if bad or r.get("resume_run") in runs or r.get("resume_pid") in pids or r.get("resume_pid") is None:
+        # the run folder itself (B1): the receipt's run, pid and source are the run's own; its walk and end exist
+        if BIND_RUN_FOLDER and not (_int(rrun.get("pid")) and rrun.get("pid") == r.get("resume_pid")):
+            bad.append("pid: run %r, receipt %r" % (rrun.get("pid"), r.get("resume_pid")))
+        if BIND_RUN_FOLDER and (rrun.get("from_point") != point_id or r.get("resume_run") != rd):
+            bad.append("source / run name not this point's (%r, %r)" % (rrun.get("from_point"), r.get("resume_run")))
+        if (rrun.get("identity") or {}) != rid:
+            bad.append("the run's identity != the receipt's")
+        if BIND_RUN_FOLDER:
+            bad += validate_run(rrun, rd)
+        try:
+            ev = validate_end(load(os.path.join(rdir, "end.json")), load(os.path.join(rdir, "walk.json")))
+        except (OSError, ValueError):
+            ev = ["end.json / walk.json missing or unreadable"]
+        bad += ["end.json: " + x for x in ev]
+        if bad:
+            skip.append("%s: %s" % (rd, "; ".join(bad)[:200]))
             continue
-        good.append(rd)
-        runs.add(r.get("resume_run"))
+        verdict = r["verdict"]
+        if not TRUST_STORED_VERDICT:
+            try:
+                jr = judge_resume(prun, k, rdir)
+                verdict = jr["verdict"]
+            except (OSError, ValueError, KeyError, TypeError) as e:
+                skip.append("%s: rejudge failed (%s)" % (rd, e))
+                continue
+            if verdict != r["verdict"]:
+                skip.append("%s: stored %s, rejudged %s (the rejudge counts)" % (rd, r["verdict"], verdict))
+        if verdict == "DIFFERENT":
+            diff.append(rd)
+            continue
+        if verdict != "SAME":
+            skip.append("%s: rejudged %s" % (rd, verdict))
+            continue
+        if rd in runs or r.get("resume_pid") in pids:
+            skip.append("%s: a second receipt of one run / process" % rd)
+            continue
+        same.append(rd)
+        runs.add(rd)
         pids.add(r.get("resume_pid"))
-    if len(good) < RESUMES:
+    return same, diff
+
+
+def qualified(points_dir, point_id, k, ident):
+    """[] when the point has >= RESUMES valid SAME receipts and NO valid DIFFERENT one (a DIFFERENT next to SAMEs means
+    the restore isn't repeatable: the point is out)."""
+    try:
+        same, diff = receipts(points_dir, point_id, k, ident)
+    except (OSError, ValueError) as e:
+        return ["the point's receipts can't be read (%s)" % e]
+    why = []
+    if diff:
+        why.append("a valid DIFFERENT receipt for %s (%s): the point is disqualified" % (point_id, diff[0]))
+    if len(same) < RESUMES:
         why.append("%d valid SAME receipt(s) for %s (distinct runs and processes, bound to its bytes, this gate, %s/%s): %d needed"
-                   % (len(good), point_id, RV, SEED_PROTO, RESUMES))
+                   % (len(same), point_id, RV, SEED_PROTO, RESUMES))
     return why
+
+
+# ---- autoq (2026-11-17, notes/speed_research/autoq_spec.md v2): pick the point, decide the default start ----------
+def _run_rec(points_dir, run):
+    try:
+        return load(os.path.join(points_dir, run, "run.json"))
+    except (OSError, ValueError):
+        return None
+
+
+def fresh_root(points_dir, point_id, depth=0):
+    """A point named by a RESUMED run maps to the point that run started from (its own points are never producers).
+    -> (point_id of a fresh producer, why-not)."""
+    if "/" not in point_id or depth > 8:
+        return None, "no usable point ID %r" % point_id
+    rr = _run_rec(points_dir, point_id.rsplit("/", 1)[0])
+    if rr is None:
+        return None, "the run of %s has no run.json" % point_id
+    if rr.get("control"):
+        return None, "%s comes from a planted-control run" % point_id
+    if rr.get("from", "") == "":
+        return point_id, ""
+    src = rr.get("from_point", "")
+    return fresh_root(points_dir, src, depth + 1) if src else (None, "resumed run without a from_point")
+
+
+def pick_point(run_dir, failed_index):
+    """autoq piece 1 (+ GPT audit #6): walk back from the failed step to the nearest point of THIS fresh run that passes
+    refusal + layer 1 and has a usable +3 s reference. -> (k or None, [skip reasons])."""
+    skips = []
+    try:
+        rr = load(os.path.join(run_dir, "run.json")) if os.path.exists(os.path.join(run_dir, "run.json")) else None
+    except ValueError:
+        rr = None
+    if not isinstance(rr, dict) or rr.get("from", "") != "" or rr.get("control"):
+        return None, ["the producer is not a fresh, uncontrolled run"]
+    for k in range(int(failed_index), 0, -1):
+        miss = [x for x in ("%d.json" % k, "%d.obs.json" % k, "%d.t3.json" % k) if not os.path.exists(os.path.join(run_dir, x))]
+        if miss:
+            skips.append("%d: missing %s" % (k, miss))
+            continue
+        try:
+            pt_, ob, t3 = (load(os.path.join(run_dir, "%d%s.json" % (k, x))) for x in ("", ".obs", ".t3"))
+            if not all(isinstance(x, dict) for x in (pt_, ob, t3)) or not _int(t3.get("at_game_ms")):
+                raise TypeError("a point / observation / +3 s sample of the wrong shape")
+            if t3.get("failed_before") or int(t3.get("at_game_ms", 0)) < 3000:
+                skips.append("%d: its +3 s sample has a FAIL in it / is short" % k)
+                continue
+            why = refusal(ob, None, pt_) + layer1(ob)
+        except (ValueError, TypeError, AttributeError, KeyError) as e:
+            # GPT results audit F4: a malformed reference is a recorded skip, never a crash
+            skips.append("%d: unreadable / malformed (%s)" % (k, e))
+            continue
+        if why:
+            skips.append("%d: %s" % (k, "; ".join(why)[:160]))
+            continue
+        return k, skips
+    skips.append("no point from step %d back to step 1 can be resumed" % int(failed_index))
+    return None, skips
+
+
+def default_start(points_dir, walk, ident):
+    """autoq piece 3 (+ GPT audit #5): THE decision for a walk run with no --from / --fresh (tools/live.py, both the
+    --gate-check and the walk call). -> {"from": step name or None, "point": id, "mode": resume / repair / fresh, "why"}"""
+    fresh = {"from": None, "point": "", "mode": "fresh"}
+    lf = os.path.join(points_dir, "%s_last_fail.json" % walk.get("name", "walk"))
+    if not os.path.exists(lf):
+        return dict(fresh, why="no failed run on record")
+    try:
+        last = load(lf)
+    except ValueError:
+        return dict(fresh, why="last_fail unreadable")
+    bad = validate_last_fail(last)
+    if bad:
+        return dict(fresh, why="last_fail malformed: %s" % "; ".join(bad))
+    if last.get("fresh_next"):
+        return dict(fresh, why=str(last["fresh_next"]))
+    pid, why0 = fresh_root(points_dir, str(last.get("point", "")))
+    if pid is None:
+        return dict(fresh, why=why0)
+    if not pid.rsplit("/", 1)[1].isdigit():
+        return dict(fresh, why="point ID %r has no step index" % pid)
+    k = int(pid.rsplit("/", 1)[1])
+    names = [s.get("name", "") for s in walk.get("steps", [])]
+    if k < 1 or k >= len(names):
+        return dict(fresh, why="point %s is not a step of this walk" % pid)
+    why, k_, _prun, note = admit(points_dir, walk, names[k], pid, ident)
+    if why:
+        return dict(fresh, why="point %s refused: %s" % (pid, "; ".join(why)[:300]))
+    q = qualified(points_dir, pid, k, ident)
+    if q:
+        return dict(fresh, why="point %s not qualified: %s" % (pid, "; ".join(q)))
+    return {"from": names[k], "point": pid, "mode": "repair" if note.startswith("REPAIR") else "resume",
+            "why": note or "qualified point, the identical walk"}
 
 
 # ---- receipts -----------------------------------------------------------------------------------
@@ -823,6 +1174,13 @@ def judge_resume(point_run, k, resume_run, cfg=None, repair=False):
            "protocol": "%s/%s" % (point.get("resume_v"), point.get("seed_proto"))}
     out["refusal"] = refusal(p_obs, cfg, point)
     prod = load(os.path.join(point_run, "run.json")).get("identity") or {}
+    try:
+        cw = classify_walk(load(os.path.join(point_run, "walk.json")), load(os.path.join(resume_run, "walk.json")), k)
+    except OSError:
+        cw = {"mode": "refuse", "k_changed": True, "why": "a walk.json is missing"}
+    out["walk"] = cw
+    if cw["mode"] == "refuse" or (cw["mode"] == "repair") != bool(repair):
+        out["refusal"] = out["refusal"] + ["walk: %s (%s run)" % (cw["why"], "REPAIR" if repair else "SAME")]
     keys = ("schema", "game", "bin", "testcode", "tools", "profile") + (() if repair else ("test",))
     out["identity"] = ["%s: producer %s, resume %s" % (k_, prod.get(k_), out["resume_identity"].get(k_))
                        for k_ in keys if not prod.get(k_) or prod.get(k_) != out["resume_identity"].get(k_)]
@@ -837,16 +1195,40 @@ def judge_resume(point_run, k, resume_run, cfg=None, repair=False):
     else:
         out["layer2_final"], out["layer2_release"] = [], []
     layers = ["refusal", "identity", "layer1", "layer2", "layer2_final", "layer2_release"]
-    if repair:
-        out["layer3"], out["next_step"], out["repair"] = [], [], True
+    ft = os.path.join(point_run, "%d.t3.json" % k)
+    rt = os.path.join(resume_run, "%d.t3.json" % k)
+    ft3 = load(ft) if os.path.exists(ft) else None
+    out["repair"] = bool(repair)
+    out["not_applicable"] = []
+    # layer 3 and next_step whenever their reference actions are unchanged (a REPAIR of a later step keeps them)
+    if not repair:
+        sp_ok, sp_why = True, ""
+    elif cw["mode"] != "repair":
+        sp_ok, sp_why = False, "the walk is not a REPAIR of the producer's"
     else:
-        ft = os.path.join(point_run, "%d.t3.json" % k)
-        rt = os.path.join(resume_run, "%d.t3.json" % k)
-        out["layer3"] = layer3(load(ft) if os.path.exists(ft) else None, load(rt) if os.path.exists(rt) else None, cfg)
+        sp_ok, sp_why = spill_ok(load(os.path.join(point_run, "walk.json")), load(os.path.join(resume_run, "walk.json")), k, ft3)
+    if sp_ok:
+        out["layer3"] = layer3(ft3, load(rt) if os.path.exists(rt) else None, cfg)
+        layers.append("layer3")
+    else:
+        out["layer3"] = []
+        out["not_applicable"].append("layer3: " + sp_why)
+    if not repair or not cw.get("k_changed", True):
         fl = open(os.path.join(point_run, "walk.log"), encoding="utf-8").read().splitlines() if os.path.exists(os.path.join(point_run, "walk.log")) else []
         rl = open(os.path.join(resume_run, "walk.log"), encoding="utf-8").read().splitlines() if os.path.exists(os.path.join(resume_run, "walk.log")) else []
         out["next_step"] = next_step(fl, rl, point.get("live_step", ""), cfg)
-        layers += ["layer3", "next_step"]
+        layers.append("next_step")
+    else:
+        out["next_step"] = []
+        out["not_applicable"].append("next_step: step %d's actions changed" % k)
+    if not repair:
+        # autoq (GPT audit #3): the resume ends as the producer did (structured end records)
+        pe, re_ = os.path.join(point_run, "end.json"), os.path.join(resume_run, "end.json")
+        out["outcome"] = outcome(load(pe) if os.path.exists(pe) else None, load(re_) if os.path.exists(re_) else None, k)
+        layers.append("outcome")
+    else:
+        out["outcome"] = []
+        out["not_applicable"].append("outcome: the walk changed (a REPAIR)")
     bad = [x for x in layers if out[x]]
     ok = "REPAIR" if repair else "SAME"
     out["verdict"] = "REFUSED" if (out["refusal"] or out["identity"] or out["layer1"]) else (ok if not bad else "DIFFERENT")

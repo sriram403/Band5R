@@ -233,7 +233,8 @@ def main():
     rec("frames: _done_f unset vs set", "DIFFERENT", "SAME" if not d else "DIFFERENT", d[:1])
     d = wg.layer2(fr(16000, (380, 3471), 300), dict(fr(900, (380, 3471), 300), meta=dict(o["meta"], physics_frames=900)) if False else setf(fr(900, (380, 3471), 300), **{"van.attack._hold_start": "{player:0: 15620, player:1: 12529}"}))
     rec("frames: raw stamps from the old process (not rebased)", "DIFFERENT", "SAME" if not d else "DIFFERENT", d[:1])
-    # --- receipts, boundary, REPAIR (synthetic run folders under appdata/rv1ctl/work)
+    # --- receipts, boundary, REPAIR (synthetic run folders under appdata/rv1ctl/work; their rejudge off, see receipt())
+    wg.TRUST_STORED_VERDICT = True
     shutil.rmtree(CTL, ignore_errors=True)
     pts = os.path.join(CTL, "points")
     prun = os.path.join(pts, "ghat_ctl_prod")
@@ -254,6 +255,14 @@ def main():
               "resume_identity": dict(ident), "point_sha": sha, "gate_hash": gh, "protocol": "rv1/seed-v1"}
         r_.update(over)
         json.dump(r_, open(os.path.join(rd, "%d.gate.json" % K), "w"))
+        # autoq: a receipt counts only next to its complete run folder (run.json bound to the point and pid, walk.json,
+        # a valid end.json); these receipts are synthetic, so their rejudge is off here (TRUST_STORED_VERDICT): the
+        # rejudge itself is proved on real saved runs in autoq_controls.py
+        json.dump({"run": name, "identity": dict(r_["resume_identity"]), "pid": pid, "control": [], "from": walk["steps"][K]["name"],
+                   "from_point": pid_}, open(os.path.join(rd, "run.json"), "w"))
+        json.dump(walk, open(os.path.join(rd, "walk.json"), "w"))
+        json.dump({"status": "DONE", "failed_index": -1, "failed_step": "", "kind": "", "check": "", "text": "",
+                   "outcomes": [], "steps": len(walk["steps"]), "from": walk["steps"][K]["name"]}, open(os.path.join(rd, "end.json"), "w"))
 
     fixed = copy.deepcopy(walk)
     fixed["steps"][K]["do"] = fixed["steps"][K]["do"][:-1] + [{"do": "wait", "s": 0.1}]
@@ -280,6 +289,10 @@ def main():
     why, note = repair()
     rec("REPAIR: DIFFERENT / other protocol / other test code receipts", "REFUSED", "REFUSED" if why else "ADMIT")
     receipt("r8", 18)
+    why, note = repair()
+    # autoq (GPT audit #5): a valid DIFFERENT receipt next to the SAMEs disqualifies the point
+    rec("REPAIR: 2 SAME + a valid DIFFERENT receipt (autoq: disqualified)", "REFUSED", "REFUSED" if why else "ADMIT", "; ".join(why)[:140])
+    shutil.rmtree(os.path.join(pts, "r5"))
     why, note = repair()
     rec("REPAIR clean: 2 valid receipts, actions-only change", "ADMIT", "REFUSED" if why else "ADMIT", "; ".join(why)[:140] or note)
     rec("  ... noted as REPAIR", True, note.startswith("REPAIR"))

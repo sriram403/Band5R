@@ -16,3 +16,6 @@ tools/_last_playtest.log
 tools/godot/Godot_v*_linux.x86_64
 tools/_headless_data/
 tools/_gym_playtest.log
+# Python bytecode anywhere (an import wrote tools/__pycache__ and changed the tools identity mid-qualification, 2026-11-17)
+__pycache__/
+*.pyc

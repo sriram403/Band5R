@@ -745,3 +745,20 @@ Task: `notes/speed_research/merge_tools_task.md`. `speed-t34` (`fd4ae18`) merged
   audit (release check, exceptions by identity, coverage, client identity; controls 106/106) and the stick-only flush
   (`3053aa1`): F3 + R1 + R2 **SAME on every layer**, X1 / X2 DIFFERENT, REPAIR of main's walk to DONE
   (`speed_research/resume_fix_result.md`). Not run: other walks under the new stick flush (walk timings shift by a tick).
+
+## 2026-11-17 / 11-24 auto-qualify resume points (branch `autoq` in `dev`; NOT merged)
+- **Changed:** tools + test code only, no game code. `tools/method/autoq.py` (new: qualifies a failed walk's point in 2 new
+  games), `restore_check.py` (new: wide diagnostic for a new puzzle), `race_bench.sh/.py` (new check), `autoq_controls.py`
+  (new, 51); `walkgate.py` (walk bound by content, widened REPAIR + spill rule, outcome layer, receipts: control runs
+  excluded and a valid DIFFERENT disqualifies, `pick_point`, `default_start`); `live.py` (one start decision, auto-fresh
+  with the reason, child / probe flags, live layer 3 on a REPAIR when its window is unchanged, STALLED after 30 s with no
+  result); `play_walk.sh` (autoq after a FAILED walk); LiveControl (end.json, failure kinds, no last_fail in child mode,
+  stop_after, `needs` from earlier steps only, GATE_DROP=groups, wide observation, **every rename retried**); GateObs.wide;
+  root `.gitignore` (bytecode).
+- **Could break:** every walk's default start (a stale point now goes fresh instead of exit 5); `needs` re-arming (a walk
+  whose later step defined a watch an earlier step needed now fails "no earlier step expects"); receipts without a
+  run.json beside them no longer count; old points (identity changed) refused.
+- **Tests:** offline autoq 81/81 (16 guards each seen failing when off; rejudge proved on the real saved runs; lane-lock race 20/20 one winner), rv1 149/149; `tools/method/lanelock.py` new (every walk now holds its lane); live on ghat
+  (`speed_research/autoq_result.md`): planted typo at step 15 -> walk-back to 13; planted hearing gap -> NOT QUALIFIED
+  -> fresh; clean -> QUALIFIED (2 SAME + outcome); restore check clean / planted; REPAIR to DONE; race bench old 3/3
+  lost, fixed 3/3 landed; STALLED backstop offline. Not run: a second walk; the LIVE_GROUPS hypothesis live.

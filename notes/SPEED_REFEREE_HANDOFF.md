@@ -15,7 +15,13 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 > D:\mine\Agentics\Skills\AGENTS.md. Then follow "Next steps" in the hand-off, one at a time, and report to the user short and plain,
 > A / B with your pick.
 
-## LIVE (2026-11-17 ~22:50): RESUME v1 IN MAIN (pushed `842f494`); NEXT = AUTO-QUALIFY (the user: A, new thread)
+## LIVE (2026-11-24): AUTO-QUALIFY BUILT + PROVED (branch `autoq` in `dev`, not merged)
+`speed_research/autoq_result.md`: spec v2 (GPT-6.1 Sol audit: BUILD WITH CHANGES, all 8 taken); ghat proof: planted typo at step 15 ->
+walk-back to point 13 -> planted hearing gap NOT QUALIFIED / clean QUALIFIED (2 SAME + same outcome) -> plain rerun REPAIRs to DONE;
+restore check (wide diagnostic); the lost-result rename race found + fixed (race_bench: old 3/3 lost, fixed 3/3 landed). 28.3 game min
+(14.4 of it the stuck game). Next: GPT results audit -> the user's merge -> push; then the held-pot and engine-on adapters.
+
+## (before) LIVE (2026-11-17 ~22:50): RESUME v1 IN MAIN (pushed `842f494`); NEXT = AUTO-QUALIFY (the user: A, new thread)
 **Next job (the user chose A, 2026-11-17):** make qualifying automatic, so nobody sets resume points by hand:
 1. a walk fails at step N -> the tool itself resumes point N twice in NEW games (background, ~1 game min); each must
    reproduce the same outcome (the same FAIL) -> 2 SAME receipts = qualified; else it says so and the next run is fresh;

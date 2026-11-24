@@ -71,6 +71,14 @@ var _events: Array = []          ## [who, "sees"/"hears", text] for the watcher
 var _fail := ""                  ## the watched run's first failure ("" = none)
 var _log: Array = []             ## the watched run's PASS / FAIL lines
 var _walk_name := ""
+var _fail_kind := ""             ## autoq (2026-11-17): what failed: expect / watch / do / limit / needs / gate / abort / break / van_stuck / naresh / taken
+var _fail_check := ""            ## the check / rule / command that failed (no diagnostics)
+var _fail_i := -1                ## the step index running when it failed
+var _cur_i := -1                 ## the step running now
+var _outcomes: Array = []        ## [step index, "PASS"/"FAIL", check] in order (end.json)
+var _no_last_fail := false       ## autoq child / probe runs never write or delete last_fail
+var _stopped := false            ## a runtime stop_after ended the walk early (restore check probes)
+var _wide := false               ## WIDE_OBS: the generic diagnostic observation at points and after a restore
 var rv                           ## ResumeV1 (resume fix v1, 2026-11-17)
 
 
@@ -159,7 +167,7 @@ func _heartbeat() -> void:
 		var f := FileAccess.open(dir + "/heartbeat.tmp", FileAccess.WRITE)
 		f.store_string(JSON.stringify({"pid": OS.get_process_id(), "physics_frames": Engine.get_physics_frames(), "wall_ms": Time.get_ticks_msec()}))
 		f.close()
-		DirAccess.rename_absolute(dir + "/heartbeat.tmp", dir + "/heartbeat.json")
+		_replace(dir + "/heartbeat.tmp", dir + "/heartbeat.json")
 		await pt.get_tree().create_timer(0.5, true, false, true).timeout
 
 
@@ -168,7 +176,7 @@ func _write(d: Dictionary) -> void:
 	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	f.store_string(JSON.stringify(d, "  "))
 	f.close()
-	DirAccess.rename_absolute(tmp, dir + "/res.json")
+	_replace(tmp, dir + "/res.json")
 
 
 func _v3(v) -> Vector3:
@@ -374,7 +382,7 @@ func _break_after(nm: String, s: float) -> void:
 	while PlayTest.gms() - g0 < int(s * 1000.0):
 		await pt.get_tree().physics_frame
 	if _fail == "":
-		_failed("deliberate break (test-only control) %.1f game s into '%s'" % [s, nm])
+		_failed("deliberate break (test-only control) %.1f game s into '%s'" % [s, nm], "break", nm)
 
 
 func _spawn_helper(fn: String, args: Array) -> void:
@@ -452,9 +460,13 @@ func _release() -> void:
 		pt.pad_button(b, false)
 
 
-func _failed(why: String) -> void:
+func _failed(why: String, kind: String = "other", check: String = "") -> void:
 	if _fail == "":
 		_fail = why
+		_fail_kind = kind
+		_fail_check = check
+		_fail_i = _cur_i
+		_outcomes.append([_cur_i, "FAIL", kind + ":" + check])
 		_say("FAIL " + why)
 		# T4 v2: cancel helpers and close the input gate at once (before the failure picture)
 		pt.cancel_inputs("walk FAIL: " + why.substr(0, 80))
@@ -562,11 +574,21 @@ func _restore_live(point: Dictionary) -> void:
 				(cr as Node3D).reset_physics_interpolation()
 
 
+## autoq (2026-11-17): a rename onto a file the client is reading fails on Windows; one failed rename lost a walk's
+## result (the client waited 13 min). Retry until it lands (~2 s at most, blocking: the writes are small); say so if not.
+func _replace(tmp: String, path: String) -> void:
+	for k in 200:
+		if DirAccess.rename_absolute(tmp, path) == OK:
+			return
+		OS.delay_msec(10)
+	push_error("LiveControl: could not replace %s (still locked after 2 s)" % path)
+
+
 func _json_out(path: String, d: Dictionary) -> void:
 	var f := FileAccess.open(path + ".tmp", FileAccess.WRITE)
 	f.store_string(JSON.stringify(d, "", true, true))
 	f.close()
-	DirAccess.rename_absolute(path + ".tmp", path)
+	_replace(path + ".tmp", path)
 
 
 ## The +3 game s sample of a step (layer 3's evidence): taken while the step's actions run.
@@ -603,9 +625,27 @@ func _gate_verdict(path: String):
 	return JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
 
 
+## autoq: the test-only controls a run was started with (their receipts never count: walkgate)
+func _controls(msg: Dictionary) -> Array:
+	var out: Array = []
+	for k in ["drop", "perturb", "fail_at", "l2_continue"]:
+		if msg.has(k) and not (msg[k] is Array and (msg[k] as Array).is_empty()) and not (msg[k] is Dictionary and (msg[k] as Dictionary).is_empty()) and not (msg[k] is bool and not msg[k]):
+			out.append(k)
+	return out
+
+
 func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictionary:
 	_walk_name = String(walk.get("name", "walk"))
 	_fail = ""
+	_fail_kind = ""
+	_fail_check = ""
+	_fail_i = -1
+	_cur_i = -1
+	_outcomes.clear()
+	_no_last_fail = bool(msg.get("no_last_fail", false))
+	_stopped = false
+	_wide = bool(msg.get("wide", false))
+	var stop_after := int(msg.get("stop_after", -1))
 	_log.clear()
 	pt.open_inputs()
 	pt.flush_inputs = true
@@ -622,7 +662,9 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 	var identity: Dictionary = msg.get("identity", {})
 	_json_out(rdir + "/walk.json", walk)
 	_json_out(rdir + "/run.json", {"run": _run, "walk": _walk_name, "identity": identity, "from": from,
-		"from_point": String(msg.get("from_point", "")), "pid": OS.get_process_id(), "recording": Engine.get_write_movie_path()})
+		"from_point": String(msg.get("from_point", "")), "pid": OS.get_process_id(), "recording": Engine.get_write_movie_path(),
+		"mode": String(msg.get("mode", "")), "no_last_fail": _no_last_fail, "stop_after": int(msg.get("stop_after", -1)),
+		"wide": bool(msg.get("wide", false)), "control": _controls(msg)})
 	for old in ["walk.log", "abort"]:
 		if FileAccess.file_exists(dir + "/" + old):
 			DirAccess.remove_absolute(dir + "/" + old)
@@ -652,10 +694,13 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 		if typeof(point) != TYPE_DICTIONARY or String(point.get("live_step", "")) != from:
 			return {"ok": false, "fail": "point %s is not step '%s'" % [pid, from], "log": []}
 		gate = {"point": pid, "l2": "%s/%d.l2.json" % [rdir, start]}
+		_cur_i = start
 		SaveGame.apply(pt.boot, point)
 		# a puzzle's live state the game's own save leaves out or rewinds
 		# (#6: a save mid-encounter goes back before the bend; Problem isn't saved)
-		_restore_live(point)
+		# autoq restore-check control (TEST ONLY): GATE_DROP=groups skips it, as a new puzzle missing from LIVE_GROUPS would
+		if not "groups" in msg.get("drop", []):
+			_restore_live(point)
 		# the creatures aren't in a game save: put them back where they were
 		# (after a resume they started elsewhere, which changed the situation)
 		var crs := pt.get_tree().get_nodes_in_group("creature")
@@ -704,6 +749,8 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 			rv.apply_clock(point, drop)
 		# T4 v2 layer 2: observe NOW, before any game time passes (rv1: after 2 paused frames for deferred work)
 		_json_out("%s/%d.restored.obs.json" % [rdir, start], GateObs.observe(pt, {"test.@open_watches": "[]", "test.@needs": "[]"}))
+		if _wide:
+			_json_out("%s/%d.restored.wide.json" % [rdir, start], GateObs.wide(pt))
 		_say("gate: restored observation written (%s)" % String(gate["point"]))
 		var pert: Dictionary = msg.get("perturb", {})
 		if not rv1:
@@ -720,7 +767,7 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 			_say("gate control (TEST ONLY): layer 1+2 %s, continuing to show layer 3" % String(v.get("verdict", "")))
 		elif typeof(v) != TYPE_DICTIONARY or String(v.get("verdict", "")) != "SAME":
 			_failed("gate: %s before any input (%s)" % ["no layer 1+2 verdict in 30 s" if typeof(v) != TYPE_DICTIONARY else "layer 1+2 " + String(v.get("verdict", "?")),
-				"" if typeof(v) != TYPE_DICTIONARY else String(v.get("why", "")).substr(0, 200)])
+				"" if typeof(v) != TYPE_DICTIONARY else String(v.get("why", "")).substr(0, 200)], "gate", "layer1+2")
 		else:
 			_say("gate: layer 1+2 SAME (%s)" % String(gate["point"]))
 		if rv1 and _fail == "":
@@ -732,7 +779,7 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 			if typeof(vf) != TYPE_DICTIONARY or String(vf.get("verdict", "")) != "SAME":
 				if not bool(msg.get("l2_continue", false)):
 					_failed("gate: final pre-input check %s (%s)" % ["missing" if typeof(vf) != TYPE_DICTIONARY else String(vf.get("verdict", "?")),
-						"" if typeof(vf) != TYPE_DICTIONARY else String(vf.get("why", "")).substr(0, 200)])
+						"" if typeof(vf) != TYPE_DICTIONARY else String(vf.get("why", "")).substr(0, 200)], "gate", "final")
 			else:
 				_say("gate: final pre-input check SAME (%s)" % String(gate["point"]))
 			rv.apply_clock(point, drop)
@@ -750,7 +797,7 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 					if not rel["fields"].has(k):
 						moved.append(String(k) + " (gone)")
 				if not moved.is_empty() and not bool(msg.get("l2_continue", false)):
-					_failed("gate: release check: changed while waiting for the verdict: %s" % ", ".join(moved.slice(0, 8)))
+					_failed("gate: release check: changed while waiting for the verdict: %s" % ", ".join(moved.slice(0, 8)), "gate", "release")
 				elif moved.is_empty():
 					_say("gate: release check SAME (%s)" % String(gate["point"]))
 			# test-only control (layer 3): move an actor after the release check, just before the step
@@ -773,10 +820,11 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 	var i := start
 	while i < steps.size() and _fail == "":
 		if FileAccess.file_exists(dir + "/abort"):
-			_failed("the client saw in the log: " + FileAccess.get_file_as_string(dir + "/abort").strip_edges())
+			_failed("the client saw in the log: " + FileAccess.get_file_as_string(dir + "/abort").strip_edges(), "abort", "client")
 			break
 		var st: Dictionary = steps[i]
 		var nm := String(st.get("name", "step %d" % i))
+		_cur_i = i
 		# T4 v2: the boundary's independent observation, in the same tick as the point (no await between)
 		var open_w: Array = []
 		for w0 in ctx["watches"]:
@@ -785,6 +833,10 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 		for nd0 in st.get("needs", []):
 			if not ctx["passed"].has(nd0):
 				needs_open.append(String(nd0))
+		# the wide diagnostic (WIDE_OBS) BEFORE the point, same tick: its capture time never sits between the point's
+		# clocks and the step's start (a resume lines its clocks up with the point)
+		if _wide:
+			_json_out("%s/%d.wide.json" % [rdir, i], GateObs.wide(pt))
 		var obs0 := GateObs.observe(pt, {"test.@open_watches": JSON.stringify(open_w), "test.@needs": JSON.stringify(needs_open)})
 		_json_out("%s/%d.obs.json" % [rdir, i], obs0)
 		var point := SaveGame.collect(pt.boot, true)
@@ -820,12 +872,14 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 				# a watch from a step before the resume point: arm it now (a
 				# resumed run waited 23 min for a watch nobody had armed)
 				var plan := {}
-				for st2 in steps:
+				# autoq (GPT audit #1): the nearest definition BEFORE this step (it took the last one in the whole
+				# walk, so a later step's edit could change what an earlier step re-arms)
+				for st2 in steps.slice(0, i):
 					for e2 in st2.get("expect", []):
 						if String(e2.get("name", "")) == need:
 							plan = e2
 				if plan.is_empty():
-					_failed("%s needs '%s', which no step expects" % [nm, need])
+					_failed("%s needs '%s', which no earlier step expects" % [nm, need], "needs", need)
 					break
 				ctx["watches"].append({"name": need, "expr": String(plan.get("expr", "true")), "step": nm,
 					"within_ms": int(float(plan.get("within", 5.0)) * 1000.0), "from": pt.clk()})
@@ -851,7 +905,7 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 				break
 			var r: Dictionary = await _do(c)
 			if not bool(r.get("ok", true)):
-				_failed("%s: '%s' did not work %s" % [nm, String(c.get("do", "")), JSON.stringify(c)])
+				_failed("%s: '%s' did not work %s" % [nm, String(c.get("do", "")), JSON.stringify(c)], "do", "%d:%s" % [st.get("do", []).find(c), String(c.get("do", ""))])
 		for e in st.get("expect", []):
 			if _fail != "":
 				break
@@ -865,14 +919,19 @@ func _run_walk(walk: Dictionary, from: String, msg: Dictionary = {}) -> Dictiona
 				if bool(_eval(w["expr"])):
 					ctx["passed"][w["name"]] = true
 					_say("PASS %s (%.1f s)" % [w["name"], pt.el_ms(w["from"]) / 1000.0])
+					_outcomes.append([_cur_i, "PASS", String(w["name"])])
 				elif pt.el_ms(w["from"]) > int(w["within_ms"]):
-					_failed("%s: expected '%s' (%s) within %.0f s" % [nm, w["name"], w["expr"], within])
+					_failed("%s: expected '%s' (%s) within %.0f s" % [nm, w["name"], w["expr"], within], "expect", String(w["name"]))
 				else:
 					await pt.wait(0.1)
 		if _fail == "":
 			i += 1
+			if stop_after >= 0 and i > stop_after:
+				_stopped = true
+				_say("stopped after step %s (stop_after, a probe)" % nm)
+				break
 	# the open watches still get their time once the steps are done
-	while _fail == "" and not ctx["watches"].is_empty() and not FileAccess.file_exists(dir + "/abort"):
+	while _fail == "" and not _stopped and not ctx["watches"].is_empty() and not FileAccess.file_exists(dir + "/abort"):
 		await pt.wait(0.1)
 	ctx["running"] = false
 	return await _end_walk(steps, i, from, t0)
@@ -901,8 +960,15 @@ func _end_walk(steps: Array, i: int, from: String, t0: Vector2i) -> Dictionary:
 	_say("%s %s in %.0f s" % ["FAILED" if _fail != "" else "DONE", _walk_name, pt.el_ms(t0) / 1000.0])
 	var failed_step := String(steps[mini(i, steps.size() - 1)].get("name", "")) if _fail != "" and steps.size() > 0 else ""
 	# where the next run starts by default (tools/live.py: resume from the last failed step)
+	# autoq (GPT audit #3): the run's structured end record
+	if _run != "":
+		_json_out("%s/points/%s/end.json" % [dir, _run], {"status": "FAILED" if _fail != "" else ("STOPPED" if _stopped else "DONE"),
+			"failed_index": _fail_i if _fail != "" else -1, "failed_step": failed_step, "kind": _fail_kind, "check": _fail_check,
+			"text": _fail, "outcomes": _outcomes.duplicate(), "steps": steps.size(), "from": from})
 	var lf := "%s/points/%s_last_fail.json" % [dir, _walk_name]
-	if _fail != "":
+	if _no_last_fail or _stopped:
+		pass                             # autoq child / probe: last_fail is the producer's, never touched here
+	elif _fail != "":
 		var ff := FileAccess.open(lf, FileAccess.WRITE)
 		ff.store_string(JSON.stringify({"step": failed_step, "index": mini(i, steps.size() - 1), "fail": _fail,
 			"from": from, "at": Time.get_datetime_string_from_system(), "run": _run,
@@ -927,7 +993,7 @@ func _watcher(ctx: Dictionary) -> void:
 	while bool(ctx["running"]) and _fail == "":
 		await pt.wait(0.1)
 		if FileAccess.file_exists(dir + "/abort"):
-			_failed("the client saw in the log: " + FileAccess.get_file_as_string(dir + "/abort").strip_edges())
+			_failed("the client saw in the log: " + FileAccess.get_file_as_string(dir + "/abort").strip_edges(), "abort", "client")
 			break
 		# read fresh each tick: there's no Naresh before a jump, and a jump
 		# makes a new one (the first watcher read him once and died on it).
@@ -939,15 +1005,16 @@ func _watcher(ctx: Dictionary) -> void:
 		var allow: Array = ctx["allow"]
 		var watches: Array = ctx["watches"]
 		if ctx.has("step_from") and pt.el_ms(ctx["step_from"]) > int(ctx["step_max_ms"]):
-			_failed("step %s took longer than its limit" % ctx["step_name"])
+			_failed("step %s took longer than its limit" % ctx["step_name"], "limit", String(ctx["step_name"]))
 			break
 		for w in watches.duplicate():
 			if bool(_eval(w["expr"])):
 				ctx["passed"][w["name"]] = true
 				watches.erase(w)
 				_say("PASS %s (%.1f s, watched)" % [w["name"], pt.el_ms(w["from"]) / 1000.0])
+				_outcomes.append([_cur_i, "PASS", String(w["name"])])
 			elif pt.el_ms(w["from"]) > int(w["within_ms"]):
-				_failed("%s: expected '%s' (%s) in time (watched)" % [w["step"], w["name"], w["expr"]])
+				_failed("%s: expected '%s' (%s) in time (watched)" % [w["step"], w["name"], w["expr"]], "watch", String(w["name"]))
 		# the van: someone driving with the throttle down, and it doesn't move
 		# for 5 s = stuck (the skill's "nothing that should move stands still")
 		var c: Camper = pt.camper()
@@ -955,7 +1022,7 @@ func _watcher(ctx: Dictionary) -> void:
 		if pushing and van_mark != Vector3.INF and c.global_position.distance_to(van_mark) < 0.3:
 			van_still += 0.1
 			if van_still > 5.0 and not "van_still" in allow:
-				_failed("the van stuck for 5 s, throttle down: " + await pt.van_stuck_report())
+				_failed("the van stuck for 5 s, throttle down: " + await pt.van_stuck_report(), "van_stuck", "van")
 				break
 		elif c != null:
 			van_still = 0.0
@@ -965,12 +1032,12 @@ func _watcher(ctx: Dictionary) -> void:
 		for ev in _events:
 			var t := String(ev[2])
 			if ev[1] == "hears" and t in GIVE_UP and not t in allow:
-				_failed("Naresh: '%s' (%s at %s, job '%s')" % [t, Naresh.State.keys()[n.state], _f3(n.global_position), n.job])
+				_failed("Naresh: '%s' (%s at %s, job '%s')" % [t, Naresh.State.keys()[n.state], _f3(n.global_position), n.job], "naresh", t)
 			elif ev[1] == "sees" and t.begins_with("You wake up") and not "taken" in allow:
-				_failed("%s was taken: %s" % [ev[0], t])
+				_failed("%s was taken: %s" % [ev[0], t], "taken", String(ev[0]))
 		_events.clear()
 		if n.state == Naresh.State.TAKEN and not "naresh_taken" in allow:
-			_failed("Naresh was taken (near %s)" % n.taken_near)
+			_failed("Naresh was taken (near %s)" % n.taken_near, "taken", "naresh")
 			break
 		# Naresh should be moving: on his way somewhere, or following someone far off
 		var moving := n.state == Naresh.State.GO or (n.state == Naresh.State.FOLLOW and n.leader != null
@@ -978,7 +1045,7 @@ func _watcher(ctx: Dictionary) -> void:
 		if moving and mark != Vector3.INF and n.global_position.distance_to(mark) < 0.3:
 			still += 0.1
 			if still > 6.0 and not "naresh_still" in allow:
-				_failed("Naresh stuck for 6 s in %s at %s (job '%s')" % [Naresh.State.keys()[n.state], _f3(n.global_position), n.job])
+				_failed("Naresh stuck for 6 s in %s at %s (job '%s')" % [Naresh.State.keys()[n.state], _f3(n.global_position), n.job], "naresh", "still")
 		else:
 			still = 0.0
 			mark = n.global_position
