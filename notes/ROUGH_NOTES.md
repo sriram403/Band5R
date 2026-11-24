@@ -836,3 +836,8 @@ happened, the fix, and the habit to keep.
   Fix: every rename retried until it lands (and an error printed if it never does); the client stops a walk whose end line
   is printed but whose result doesn't come in 30 s; my watches emit "SILENT 60 s" too. Habit: watch for the line that
   should come, not only the lines that do (silence is not success).
+- **2026-11-24 (autoq merge), I pushed a syntax error: the heredoc trap, again.** Assumed: a one-line Python patch through a
+  Bash heredoc was safe. Reality: `'\n'` inside the patch became a real line break in the patched file; the next
+  command ran the broken file, but I had chained commit + push behind it, so the break reached GitHub (`59b9651`) and was
+  fixed 2 min later. Fix: patches with an escape go through the Write / Edit tools; a parse check gates every commit of a
+  patched Python file. Habit: never chain `commit && push` after a run whose output I haven't read.

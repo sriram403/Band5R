@@ -509,9 +509,8 @@ def main():
     miss = [x for x in need if not os.path.isdir(x)]
     if miss:
         # the evidence is run data (appdata/, not in git): copy the saved ghat runs from the copy that made them
-        print("autoq controls: the saved ghat runs are missing here: %s
-  copy them from ../dev/appdata/playtest/FindingNaresh/live/points/ "
-              "(or set AQ_SRC / AQ_REAL); TEST, not a verdict" % ", ".join(os.path.basename(x) for x in miss))
+        print("autoq controls: the saved ghat runs are missing here: %s" % ", ".join(os.path.basename(x) for x in miss))
+        print("  copy them from ../dev/appdata/playtest/FindingNaresh/live/points/ (or set AQ_SRC / AQ_REAL); TEST, not a verdict")
         return 2
     prod, ident, walk, end = setup()
     cases(prod, ident, walk, end)
