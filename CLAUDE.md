@@ -12,7 +12,7 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
 - **The algorithm, in order:** question every requirement (who asked for
   it?), delete what isn't needed, simplify, speed up the cycle, automate last.
 - **Keep the machine busy and the loop short:** build in the second copy
-  (`../MPG_dev`, a git worktree on its own branch) while long tests run here;
+  (`../dev`, a git worktree on its own branch) while long tests run here;
   run the quick check for a change first, the long runs last.
 - **Measure, then decide.** Numbers before opinions; an unexplained result is
   a question, not a pass.
@@ -104,15 +104,16 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
 
 ## Two copies of the project
 
-- `MPG` (branch `main`): the long test runs, pushes.
-- `MPG_dev` (branch per milestone part, e.g. `e3`): building the next part.
+- Folders (2026-11-20): everything lives in `D:/mine/Agentics/T3_Code_Works/FindingNaresh/`: `main/` (was `MPG`), `dev/` (was `MPG_dev`), `speed_replay/`, `extras/` (referee, review logs / shots). Old notes saying `MPG` / `../MPG_dev` mean `main` / `../dev`.
+- `main` (branch `main`): the long test runs, pushes.
+- `dev` (branch per milestone part, e.g. `e3`): building the next part.
   It has its own `appdata/` (tests there don't touch this copy's runs) and a
   copy of `tools/godot` (not in git). Merge into `main` when the part is done.
 - Two game instances at once work on this PC (measured 2026-09-27: 112 fps
   in one while the other ran the full world test). A frame-rate check that
   fails while both run is rerun alone before it is believed.
 - Always check which folder a file is written to: a new file for the dev
-  branch written into `MPG` sat outside the branch (2026-09-27).
+  branch written into `main` sat outside the branch (2026-09-27).
 - **Test tools (speed research, in main 2026-11-17): `notes/TESTING_METHOD.md` v7.** Ghat suite: `ROLE=final SPEED=fast tools/method_run.sh ghat` (fast + nodraw for heat / net only, two lanes); proofs: `python tools/method/prove_ghat.py <group>` (27 rows, each alone); judges `tools/method/t3_gate.py`; walks `tools/play_walk.sh` / `tools/record_walk.sh <w> --fresh` (fresh takes for acceptance); `LANE=b` a second game; `tools/method/stop_lane.sh`, `cpu_sampler.ps1` (note the CPU load beside every timing).
 - **Resume v1 (the user: A, 2026-11-17): a walk resumes SAME from a QUALIFIED point.** A save point restores exactly
   (`scripts/dev/ResumeV1.gd`: bodies, vars, clocks as ages, hearing, a paused hold + final + release checks, seed-v1);

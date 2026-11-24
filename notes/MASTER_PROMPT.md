@@ -10,7 +10,8 @@ assume an untested limit, the algorithm; also in `CLAUDE.md`),
 `notes/POLISH.md` (agreed changes for after the milestones),
 `README.md`, `FUTURE.md`, `CREDITS.md`, `design/map_plan_v1.png`, and only then the
 original spec `Finding_Naresh_Game_Demo_Build_Prompt.md`, all in
-`D:\mine\Agentics\T3_Code_Works\MPG`. Then continue from section 6. Everything below
+`D:\mine\Agentics\T3_Code_Works\FindingNaresh\main` (was `MPG` until 2026-11-20; old notes
+saying `MPG` / `../MPG_dev` mean `main` / `../dev`). Then continue from section 6. Everything below
 is established fact unless it says otherwise.
 
 **This file is kept current** (rule 11): it is updated whenever a part is finished and
@@ -328,8 +329,8 @@ they/them.
   F1 → Story jumps to any Bessi step set the world up (`Story._bessi_state_for`)
   and put both players, Naresh and the van at the step (`DevMenu.go_to_step`).
   Tests: `set:bessi` (11 scenarios), `t_bessi_save`, `t_bessi_run` (Full).
-- **Working in two copies (user, 2026-09-27):** `MPG` runs the long tests,
-  `../MPG_dev` (a git worktree, branch per part) builds the next part at the
+- **Working in two copies (user, 2026-09-27):** `main` runs the long tests,
+  `../dev` (a git worktree, branch per part) builds the next part at the
   same time; two game instances measured fine (112 vs 144 fps). The user's
   principles: `notes/PRINCIPLES.md`, `CLAUDE.md`.
 
@@ -411,7 +412,7 @@ they/them.
 18. **Work from first principles (user, 2026-09-27):** `notes/PRINCIPLES.md`.
     Break a problem down, test the assumption with the smallest experiment,
     then decide; never assume a limit (speed, cost) you haven't measured.
-    Build in `../MPG_dev` (a git worktree) while long tests run in `MPG`.
+    Build in `../dev` (a git worktree) while long tests run in `main`.
 17. **At the end of each milestone (user, changed 2026-10-15):** follow the
     `project-memory` skill §4 (`D:\mine\Agentics\Skills`): update the notes,
     suggest a new thread in a short message, wait 3 min; no answer → carry
@@ -1019,7 +1020,7 @@ threads with good notes instead of one long one, 2026-10-04). Then:
    `notes/TEST_PUZZLES.md` (the sheet the user plays from), the mistake
    log in `notes/ROUGH_NOTES.md` and `notes/TESTING_METHOD.md` (v5 and the
    walk-writing notes).
-2. Check `git status` and `git log -3` in `MPG` and `../MPG_dev`.
+2. Check `git status` and `git log -3` in `main` and `../dev`.
 3. Tell the user in two or three plain lines where things stand and what
    comes next (section 6). Don't start new work unasked.
 
