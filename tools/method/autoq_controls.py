@@ -505,6 +505,14 @@ REAL_GUARDS = [   # the B1 guards, on the real saved runs
 
 
 def main():
+    need = [F3] + [os.path.join(REAL, r) for r in (REAL_P,) + REAL_R]
+    miss = [x for x in need if not os.path.isdir(x)]
+    if miss:
+        # the evidence is run data (appdata/, not in git): copy the saved ghat runs from the copy that made them
+        print("autoq controls: the saved ghat runs are missing here: %s
+  copy them from ../dev/appdata/playtest/FindingNaresh/live/points/ "
+              "(or set AQ_SRC / AQ_REAL); TEST, not a verdict" % ", ".join(os.path.basename(x) for x in miss))
+        return 2
     prod, ident, walk, end = setup()
     cases(prod, ident, walk, end)
     print("--- the rejudge on the real saved ghat runs (GPT results audit B1)")
