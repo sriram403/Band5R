@@ -44,6 +44,8 @@ GROUPS = {
     "fog_sight": ("ghat_heat", "fog_sees_far,one_corner", {"fog_sees_far": ["ghat_heat/x_in_the_fog_it_doesn_t_see_someone_25_m_off_suspicion_x_1_i"]}),
     "warn": ("ghat_heat", "no_min_warn,one_corner", {"no_min_warn": ["ghat_heat/x_even_from_15_m_it_stares_first_x_s_to_hide_before_it_reach"]}),
     "round": ("ghat_looks", "round_through", {"round_through": ["ghat_looks/from_the_far_side_it_walks_round_the_van_to_the_other_window"]}),
+    # the step-9 hang (2026-11-25): a waypoint kept from the far side, handed over at the van's nose
+    "nose": ("ghat_looks", "stale_via", {"stale_via": ["ghat_looks/handed_its_round_at_the_van_s_nose_with_a_waypoint_from_the_"]}),
     "hold": ("ghat_net", "hold_through", {"hold_through": ["ghat_net/p2_keeps_holding_a_moment_after_the_net_stays_on_work_x_s"]}),
     "listen": ("ghat_spring", "no_listen", {"no_listen": ["ghat_spring/it_listens_before_it_comes_back_time_to_throw_the_net_on_and"]}),
     "stow": ("ghat_jug", "stow_live", {"stow_live": ["ghat_jug/the_jug_rode_up_the_ghat_in_its_place_on_the_rack_x_m_from_i"]}),

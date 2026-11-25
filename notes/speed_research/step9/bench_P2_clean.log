@@ -1,0 +1,16 @@
+[test] adapter=NVIDIA GeForce RTX 3060  refresh=144Hz  window=(1600, 900) at (160, 77)  pads=[]
+[test] route length 802 m, 401 samples
+[test] ---- ghat_round_nose_bench ----
+[test] mem: video 477 MB, textures 263 MB, static 456 MB, objects 78869
+[test] PASS  F1 -> Puzzles -> 6: both in the van at the foot of the ghat, no Problem yet
+[test] PASS  the engine starts ('')
+[test] PASS  the engine off, the van still
+[test] round from the nose (waypoint kept from the far side): past the passenger's back corner true in 9.8 s, closest to the body 0.42 m, now at (2.33, 3.60), via -1, state WANDER
+[test] PASS  handed its round at the van's nose with a waypoint from the far side, it walks round the van, not into it (closest 0.42 m, its body 0.3 m)
+[test] bench: Problem state WANDER, suspicion 0.00, van interest 0.0, phase circle
+[test] time ghat_round_nose_bench 13.3 s
+[speed] ghat_round_nose_bench: game 13.3 s in wall 10.2 s = 1.31x; frames drawn 797 over 797 physics frames (pictures 0, nodraw re-arms 0, nodraw false)
+[rig] quit: failures=0
+[test] window ended at (160, 77)
+[test] ==== 0 failure(s) ====
+==== RUN 'ghat_round_nose_bench': 1 segment(s), 1 scenario(s), 0 failure(s) ====
