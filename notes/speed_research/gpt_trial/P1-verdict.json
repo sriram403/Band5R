@@ -1,0 +1,75 @@
+{
+ "status": "FAIL",
+ "code": 1,
+ "inv": "prove_nose_20261125_154412_5152",
+ "part": "1x",
+ "fixture": "stale_via",
+ "asked": [
+  "ghat_looks"
+ ],
+ "started": [
+  "ghat_looks"
+ ],
+ "ended": [],
+ "failed_ids": [
+  "ghat_looks/handed_its_round_at_the_van_s_nose_with_a_waypoint_from_the_"
+ ],
+ "passed_ids": [
+  "ghat_looks/at_the_back_it_crouches_down_and_sniffs_x_sniffs",
+  "ghat_looks/at_the_windows_and_the_bonnet_it_leans_in_x_rad",
+  "ghat_looks/boiled_it_hisses_like_a_kettle",
+  "ghat_looks/f1_puzzles_6_both_in_the_van_at_the_foot_of_the_ghat_no_prob",
+  "ghat_looks/from_the_far_side_it_walks_round_the_van_to_the_other_window",
+  "ghat_looks/it_comes_to_the_van",
+  "ghat_looks/it_goes_round_the_van_stopping_at_the_bonnet_both_windows_an",
+  "ghat_looks/its_body_stays_put_its_head_follows_the_van_x_deg_off",
+  "ghat_looks/its_eyes_go_from_dim_to_bright_and_the_whine_rises_x_x",
+  "ghat_looks/problem_appears_among_the_trees_x_s",
+  "ghat_looks/the_engine_starts_x",
+  "ghat_looks/the_hot_engine_ticks_faster_as_it_heats_every_x_s_x_s_x_tick"
+ ],
+ "conditions": [
+  {
+   "status": "FAIL",
+   "kind": "check",
+   "id": "ghat_looks/handed_its_round_at_the_van_s_nose_with_a_waypoint_from_the_",
+   "scen": "ghat_looks",
+   "text": "check failed: 'handed its round at the van's nose with a waypoint from the far side, it walks round the van, not into it (closest 0.16 m, its body 0.3 m)' (ghat_looks/handed_its_round_at_the_van_s_nose_with_a_waypoint_from_the_), owner=UNRESOLVED"
+  },
+  {
+   "status": "INCOMPLETE",
+   "kind": "early",
+   "id": null,
+   "scen": null,
+   "text": "EARLY STOP (T2): every expected FAIL is on record (ghat_looks/handed_its_round_at_the_van_s_nose_with_a_waypoint_from_the_); detection complete, the rest not run"
+  },
+  {
+   "status": "INCOMPLETE",
+   "kind": "ledger",
+   "id": null,
+   "scen": null,
+   "text": "stopped in ghat_looks at wait#2986 (started, never ended)"
+  },
+  {
+   "status": "INCOMPLETE",
+   "kind": "ledger",
+   "id": null,
+   "scen": null,
+   "text": "required checks never ran in ghat_looks: 5 of 18 missing: ghat_looks/under_the_tarp_it_gives_up_only_after_a_full_round_of_the_va, ghat_looks/giving_up_it_slumps_head_down_x_rad, ghat_looks/leaning_in_at_a_window_its_face_stays_outside_the_glass_clos, ghat_looks/it_turns_away_slowly_fastest_x_deg_s, ghat_looks/its_eyes_dim_and_the_whine_falls"
+  }
+ ],
+ "early_stop": true,
+ "expect_ids": [
+  "ghat_looks/handed_its_round_at_the_van_s_nose_with_a_waypoint_from_the_"
+ ],
+ "kill": [
+  "taskkill #1 rc 0: SUCCESS: The process with PID 20344 (child process of PID 11068) has been terminated.",
+  "process 20344 gone 0.7 s after the first kill"
+ ],
+ "kill_ok": true,
+ "godot_left_after": [],
+ "wrapper_rc": 3,
+ "drained": true,
+ "closed_late": [],
+ "evidence": "D:/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/method/runs/20261125_154413_ghat_k3_stale_via_1x"
+}
