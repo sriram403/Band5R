@@ -892,3 +892,7 @@ happened, the fix, and the habit to keep.
   regression: 81/81 in a clean clone (with `AQ_SRC` / `AQ_REAL` at dev's points and an empty `appdata/playtest/
   FindingNaresh/live/`). Habit: a suite run beside a live walk reads its lane-lock row as SKIPPED; read the row before
   calling it a failure.
+- **2026-11-25 (step9 round 3), `git add notes` took other threads' files.** It staged the referee's live walk files
+  (`step9/referee/`, `held5*_proof/cpu.stop`) into my notes commit. Caught in `git show --stat`; un-done with a soft
+  reset of that local commit (files left on disk, untracked as before, not read). Habit: `git add <each file>` by name in
+  a shared folder, never a directory, and `git diff --cached --stat` before every commit.

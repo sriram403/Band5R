@@ -279,4 +279,7 @@ the control only passed on my machine; the heredoc rule broken again, no harm; t
   `appdata/` and the history exist (here, yes).
 
 ## Round 3 commits (branch `step9`, no merge, no push)
-`d01aa93` item 1 · `1e8844e` item 2 · this report + notes (hash in the line below, added in the commit after it).
+`d01aa93` item 1 · `1e8844e` item 2 · `bb0c76d` this report + notes · the commit after it adds this line and a 4th
+mistake-log entry (`git add notes` had staged the referee's files; un-done before anything left this copy).
+
+Round 3 last commit: `bb0c76d` (report); see `git log -1` for the line-only commit after it.
