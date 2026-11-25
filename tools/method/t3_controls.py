@@ -585,12 +585,17 @@ def g_sentinel():
 def g_walknames():
     import walkgate
     live = os.path.join(ROOT, "tools", "live")
-    # the planted bug: the ghat walk as it was before the fix (steps 17 / 18 reused 14's and 16's names)
-    old_src = subprocess.run(["git", "-C", ROOT, "show", "5e70d40:tools/live/ghat.json"], capture_output=True, text=True)
-    if old_src.returncode != 0:
-        rec("walknames the old ghat walk (5e70d40) readable", "read", "missing", old_src.stderr.strip())
+    # the planted bug: the ghat walk as it was before the fix (steps 17 / 18 reused 14's and 16's names), and the
+    # coolant evidence, from a TRACKED fixture (round 3, GPT reservation 1: no git history, no git-ignored appdata/);
+    # its sources: tools/method/fixtures/make_step9_walknames.py (--check re-derives it where they exist)
+    fx_path = os.path.join(HERE, "fixtures", "step9_walknames.json")
+    try:
+        fx = json.load(open(fx_path, encoding="utf-8"))
+        old = fx["old_walk"]
+        vals = [float(fx["coolant"][k]["value"]) for k in ("17", "18")]
+    except (OSError, KeyError, TypeError, ValueError) as e:
+        rec("walknames the tracked fixture readable", "read", "missing", "%s: %s" % (fx_path, e))
         return
-    old = json.loads(old_src.stdout)
     rep = walkgate.repeated_names(old)
     rec("walknames old ghat.json (17 / 18 reuse 14 / 16)", "2 repeated", "%d repeated" % len(rep), rep)
     rec("walknames ... names the right steps", "14,17 + 16,18",
@@ -621,19 +626,8 @@ def g_walknames():
                            cwd=ROOT, capture_output=True, text=True)
         got = ("REFUSED %d" if "REFUSED (walk)" in r.stdout else "ACCEPTED %d") % r.returncode
         rec("walknames live.py --gate-check, %s ghat walk" % tag, want, got, r.stdout.strip()[:150])
-    # step 18's new test can fail: judged on the van's coolant at the real save points of the tester's fresh walk
-    # (point 17 = step 18's start, after one pot; point 18 = step 19's start, after two)
-    pts = os.path.join(ROOT, "appdata", "playtest", "FindingNaresh", "live", "points", "ghat_20261125_143834_19960")
-    vals = []
-    for i in (17, 18):
-        try:
-            vals.append(float(json.load(open(os.path.join(pts, "%d.json" % i), encoding="utf-8"))["camper"]["coolant"]))
-        except (OSError, KeyError, TypeError, ValueError) as e:
-            vals.append(None)
-            note = "%s/%d.json: %s" % (pts, i, e)
-    if None in vals:
-        rec("walknames step 18's coolant evidence present", "present", "missing", note)
-        return
+    # step 18's new test can fail: judged on the van's coolant at the real save points of the tester's fresh walk R7
+    # (fixture: point 17 = step 18's start, after one pot, 0.675; point 18 = step 19's start, after two, 1.0)
     e18 = new["steps"][17]["expect"][0]["expr"]
     e18_old = old["steps"][17]["expect"][0]["expr"]
     test = lambda expr, c: bool(eval(expr.replace("camper().coolant", repr(c)), {"__builtins__": {}}))   # one comparison
