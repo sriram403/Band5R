@@ -34,6 +34,9 @@ being built and tested), so this always shows where the work is right now.
 - [ ] **PARKED (the user back 2026-11-25 02:35 PM, wants game dev; referee's pick A): the held re-proof** (branch
       `held`, tip `ad07579`, not merged; `held5_result.md` + `held_build_report.md` "The referee's proof (M8)"), its two
       results audits (part 5b), and the ENGINE-ON adapter thread. Test tooling only; resume it when the user asks.
+- [x] **Engine: Godot for now (the user, 2026-11-25 03:08 PM: A).** UE5 asked about; the referee's view: puzzles and the
+      creature still being designed, Godot's fast AI loop + the proven test robot win now; UE5's win is the look. At the
+      art stage: rebuild ONE scene (the ghat: fog, van, creature) in UE5 as a ~1-day trial, compare look + AI speed, decide.
 - [ ] **Speed up the creature's search (the user asked 2026-11-25 02:09 PM; referee's pick A, after step 9 merges):**
       `Hearing.gd` line 29 reads the PC clock, not the game clock, so fast mode would hear over the wrong time. A: hearing
       on the game clock (small game-code fix, plant + GPT review), then step 9 normal vs fast side by side, several runs,
