@@ -129,3 +129,5 @@ R4 / R5 (Surprise 6) are unwatched on screen; (c) the walk's steps 17 / 18 are u
 - The ~20-seed bench sweep (budget); hang point 1 again (the builder's B2 covers it).
 - Whether the waypoint flips show as a visible twitch.
 - Other creatures (they don't use the ghat's round).
+
+Report + evidence commit: `1be5ca0` (this line added in the commit after it).
