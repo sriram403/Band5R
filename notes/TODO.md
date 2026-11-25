@@ -6,7 +6,15 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
-- [~] **2026-11-25 01:50 PM: the step-9 game hang (branch `step9` in `dev`, from main; the user: A).** Problem sometimes
+- [ ] **2026-11-25 03:20 PM: NEXT = talk with the user (back, wants game dev).** Engine: Godot for now. Tooling (held
+      re-proof, engine-on adapter) parked below. Open small items: two older controls need git-ignored `appdata/` in a
+      clean clone (t3 `sentinel` reads `appdata/t34/`; `rv1_controls.py` needs `appdata/rv1ctl/src2`): give them tracked
+      fixtures like `tools/method/fixtures/step9_walknames.json`; `make_step9_walknames.py --check` only works in `dev`
+      (its R7 sources live there). The creature-search speed-up (hearing on the game clock), pick A.
+- [x] **2026-11-25 03:19 PM: the step-9 hang FIXED, merged into main and pushed (`6ac0655`).** Rounds 1-3 on `step9`;
+      tester (Claude) + referee blind: PASS WITH RESERVATIONS; GPT Astra 6.2: DON'T SIGN -> SIGN WITH RESERVATIONS, all
+      closed. Video `dev/appdata/videos/ghat.mp4` (step 9 2:04-3:11) + `ghat_step9.mp4`. ~36 game min in all.
+- [x] **2026-11-25 01:50 PM: the step-9 game hang (branch `step9` in `dev`, from main; the user: A).** Problem sometimes
       never gives up at ghat step 9 (2 of ~10 fresh producers). Bench builder Claude Opus 5.5 high (`speed_research/step9_build_task.md`):
       bench first, reproduce, plain bug -> fix + plant; design choice -> two blind specs. Then GPT Astra 6.2 audit, merge
       + push (bug fix), video of step 9. After it: the held re-proof (branch `held`, not merged; `held5_result.md`).

@@ -896,3 +896,15 @@ happened, the fix, and the habit to keep.
   (`step9/referee/`, `held5*_proof/cpu.stop`) into my notes commit. Caught in `git show --stat`; un-done with a soft
   reset of that local commit (files left on disk, untracked as before, not read). Habit: `git add <each file>` by name in
   a shared folder, never a directory, and `git diff --cached --stat` before every commit.
+- **2026-11-25 (referee), a GPT child's account decides what it will do.** Assumed: the user's choice (GPT as the
+  TESTER) in the task file was enough. Reality: on the work account (the only one with GPT Astra 6.2) GPT refused: that
+  account's own instructions forbid running this game and reading the skills library; it wrote INCOMPLETE (`12eb319`).
+  The personal Codex has no Astra (gpt-6-luna, gpt-5.6-terra / luna), and switching models unasked is not allowed. Fix: a
+  fresh Claude tester; GPT audited the results (both models still checked it). Habit: before giving a GPT child a role
+  that runs the game or reads the library, check which account has the model and what that account's rules allow.
+- **2026-11-25 (referee), my expected range came from walks, not from the cause.** Declared 57-72 s for every bench give-up;
+  two good points gave up at 44.0 / 54.9 s, each matching its own pre-fix walk. The give-up time is set by the van urge
+  left at step 9 (8-24 s), so the real range is ~44-69 s. Habit: build an expected range from the variable that drives it
+  (here the urge), and check a miss against that run's own baseline before calling it a failure.
+- **2026-11-25 (referee), the heredoc slip, mine too.** I appended the two entries above with Python through a Bash
+  heredoc, the very slip the round-3 builder logged. No harm (an append, no escapes, tail checked). Habit: Edit / Write.
