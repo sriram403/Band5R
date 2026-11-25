@@ -75,7 +75,7 @@ live part + rv1, no gate), seeds the RNG with that point's seed, runs `walk_brea
 | B1 | hang 190738 | fast | hangs if the start state decides | **NO GIVE-UP in 190 s**, pressed on the nose, goal pt 3 at 7.68 m (walk: 7.6) | 190 | 110 + boot |
 | P1 | round_nose bench, plant `stale_via` | fast | new check FAILS | **FAIL** 0.18 m, 30 s | 33.5 | 25.8 + boot |
 | P2 | round_nose bench, clean | fast | new check PASSES | **PASS** 9.8 s, 0.42 m | 13.3 | 10.2 + boot |
-| B2 | hang 190738, fixed | fast | gives up ~57-72 s | **GAVE UP 68.6 s** (dropped waypoint 3 at 24.4 s, went round, 4 posed stops) | 69 | 41 + boot |
+| B2 | hang 190738, fixed | fast | gives up ~57-72 s | **GAVE UP 68.6 s** (dropped waypoint 3 at ~~24.4 s~~ **23.25 s**, still VAN; see Corrections; went round, 4 posed stops) | 69 | 41 + boot |
 
 Bench seeds before / after: hang point 1 seed 78848943: before NO GIVE-UP, after 68.6 s. Good point seed 390248480:
 57.0 s (before the fix only). The ~20-seed sweep was NOT run (budget, below).
@@ -115,6 +115,27 @@ Problem circles the van at 7 m for 8-24 s before its round. With the fix this is
 - **B:** keep it: the circling first is a creepy "it sizes the van up" moment; step 9 varies 57-72 s.
 - My pick: **B** for now (it plays well and is no longer a trap); A if the user wants step 9 tighter and steadier.
   It changes what the players see, so it's the user's / two blind specs' call.
+
+## Corrections after audit (round 2, 2026-11-25; GPT `step9_code_audit_gpt.md` findings 3-4, the tester's proof)
+
+- **Timing (B2, `step9/bench_B2.log`):** the fix dropped waypoint 3 at **23.25 s** (line 23: `via_k 3 -> 0`, state
+  still **VAN**, at (-1.16, -6.44)), not 24.4 s. WANDER took over at **24.37 s** (line 25) and inherited waypoint 0;
+  short waypoint / straight-line switches (7 / -1) around 24.7-26.2 s settled, and corner 5 advanced to 6 at **34.03 s**
+  (line 35). Two separate events: the fix acts while Problem is still circling, the hand-over comes ~1.1 s later.
+- **What the nose check proves:** `_ghat_round_nose` is a **reduced fixture**: it seeds position, stop 5 and waypoint 3
+  (B1's state at hand-over) only, not velocities, the detour state or the earlier orbit. The real-state evidence is the
+  B1 / B2 restore of the hang's own step-9 save point (before: no give-up in 190 s; after: 68.6 s), and the tester's R1
+  on hang point 2 (68.3 s).
+- **Limited guarantee:** `_crosses_van` samples the line at 11 points, so a line can graze a corner of the padded box
+  between two samples (GPT's example, flat van frame: (-2, -3.3) to ring point 7 (2.4, -4.6) is inside the box from
+  0.091 to 0.154 of the way, between samples 1/12 and 2/12). That is a missed margin, not a seen collision. There is
+  no general progress guarantee either: from a hop, a spot inside the margin or a tilted van it can pick the same
+  blocked nearest point again. **No code change unless a new jam is seen;** then an exact segment / box test and a
+  reachable leg (outward allowed when starting inside the margin), keeping a held target while its leg stays clear.
+- **The planted side's follow-on failures:** in the tester's prove row (R6 planted, `stale_via`) the nose check FAILED
+  on its id and 3 later checks failed after it: the tarp give-up ("1 stops"), the slump, the eyes dim. A stuck
+  creature carries into every later check of the scenario; only the nose check's FAIL is the proof, the 3 others are
+  knock-ons, expected while the plant is on (the clean side passed all 18).
 
 ## Commits (branch `step9`, no merge, no push)
 

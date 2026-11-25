@@ -772,6 +772,14 @@ Task: `notes/speed_research/merge_tools_task.md`. `speed-t34` (`fd4ae18`) merged
 - **Could break:** Problem's round wherever a held waypoint's line crosses the van (only after it was moved off its
   round: VAN / CURIOUS states, an unstick hop); in a normal round that line never crosses, so nothing else changes.
   `ghat_looks` now runs ~10 s more before its tarp give-up check (it starts that from stop 5, not at stop 6).
+  **Limited guarantee (audit):** the 11-sample line test can miss a line grazing a corner of the box, and there is no
+  general progress guarantee (it can re-pick a blocked point after a hop / from inside the margin / on a tilt); no code
+  change unless a new jam is seen, then an exact segment / box test.
 - **Tests:** bench plant FAIL (pressed on the nose 0.18 m) / clean PASS (9.8 s, 0.42 m); the hang's own step-9 point
-  gave up at 68.6 s (before: none in 190 s); a fresh ghat walk to step 10 (`speed_research/step9_build_report.md`).
-  Not run: `ghat_looks` whole (its new call and its later give-up timing), ~20 bench seeds.
+  gave up at 68.6 s (before: none in 190 s; the waypoint dropped at 23.25 s, still VAN; WANDER at 24.37 s); a fresh
+  ghat walk to step 10 (`speed_research/step9_build_report.md`). The nose check is a **reduced fixture** (position /
+  stop / waypoint only); the B1 / B2 restore is the real-state evidence. Tester (`step9_test_report.md`): hang point 2
+  gave up 68.3 s, 4 good points within ~1 s of their own walks; prove row `nose` planted FAIL on its id (+3 knock-on
+  FAILs: tarp give-up, slump, eyes dim: the stuck creature carries on), clean `ghat_looks` PASS 18/18; a fresh recorded
+  walk DONE. Round 2: `nose` in the gate's MATRIX (it owned 27 of 28 plants; now 28 / 28, `matrix_owners.py`),
+  `t3_controls.py` inventory 27 -> 28. Not run: ~20 bench seeds.
