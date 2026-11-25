@@ -902,6 +902,10 @@ happened, the fix, and the habit to keep.
   The personal Codex has no Astra (gpt-6-luna, gpt-5.6-terra / luna), and switching models unasked is not allowed. Fix: a
   fresh Claude tester; GPT audited the results (both models still checked it). Habit: before giving a GPT child a role
   that runs the game or reads the library, check which account has the model and what that account's rules allow.
+  **Correction (03:35 PM, after reading `~/.codex-work/AGENTS.md`):** the work account only forbids skill libraries /
+  personal folders; the game-run refusal came from this project's own `AGENTS.md` line, which didn't yet carry the
+  user's exception. I told the user "the work account refuses game runs" without reading its file. Habit: quote the
+  rule's file and line before saying who blocked what. The user chose A: retry on the work account.
 - **2026-11-25 (referee), my expected range came from walks, not from the cause.** Declared 57-72 s for every bench give-up;
   two good points gave up at 44.0 / 54.9 s, each matching its own pre-fix walk. The give-up time is set by the van urge
   left at step 9 (8-24 s), so the real range is ~44-69 s. Habit: build an expected range from the variable that drives it

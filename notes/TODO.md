@@ -34,7 +34,9 @@ being built and tested), so this always shows where the work is right now.
       **02:18 PM: GPT tester blocked:** on the work account it refused (that account's own rules: no game runs, no
       skills library; `step9_gpt_test_report.md` INCOMPLETE, `12eb319`); the personal Codex has no Astra 6.2 (only
       gpt-6-luna, gpt-5.6-terra / luna). So a fresh Claude tester runs `step9_claude_test_task.md`, GPT Astra audits its
-      results. **For the user, later:** A) allow the GPT tester on the work account, B) try gpt-6-luna on personal (pick: B).
+      results. **Corrected 03:35 PM:** the game-run refusal came from THIS project's `AGENTS.md` ("GPT doesn't run the
+      game", the exception not yet written); the work account's file only forbids the skills library. **The user: A
+      (03:35 PM): the GPT tester runs on the work account**, skill rules inline in its task file; parked with the tooling.
       **Round 2 builder done (`step9_build_report.md` "Round 2", 0 game min):** `nose` in the gate's MATRIX (owners
       28/28, controls 27 -> 28); report + ledger corrections; ghat steps 17 / 18 really checked (own names, step 18
       `coolant > 0.99`) and `tools/live.py` refuses a walk with repeated pass names. t3 137/137, rv1 149/149, autoq
