@@ -6,6 +6,10 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [~] **2026-11-25 01:50 PM: the step-9 game hang (branch `step9` in `dev`, from main; the user: A).** Problem sometimes
+      never gives up at ghat step 9 (2 of ~10 fresh producers). Bench builder Claude Opus 5.5 high (`speed_research/step9_build_task.md`):
+      bench first, reproduce, plain bug -> fix + plant; design choice -> two blind specs. Then GPT Astra 6.2 audit, merge
+      + push (bug fix), video of step 9. After it: the held re-proof (branch `held`, not merged; `held5_result.md`).
 - [ ] **NEXT EXPERIMENT (the user, 2026-11-24): GPT as the TESTER.** News: GPT Astra (or Sol) is strong at testing / computer use, weak at game dev. Try a GPT model running the test part (walks, watched runs, judging) while Claude still builds; compare with Claude on the same job. After the adapters (held pot, engine on).
 - [x] **2026-11-24: auto-qualify resume points: MERGED into main and pushed (`a4b87b8`, the user: C)** (was branch `autoq`; `speed_research/autoq_result.md`): failed walk -> nearest resumable point qualified in 2 new games -> default REPAIR to DONE; planted bad restore -> NOT QUALIFIED -> fresh; restore check for new puzzles; found + fixed the lost-result rename race (race_bench). Controls autoq 51/51, rv1 149/149; 28.3 game min. Waiting: GPT-6.1 Sol results audit, then the user's merge A / B. Next: the held-pot and engine-on adapters.
 - [x] 2026-11-17: resume v1 merged into main and pushed (`842f494`).
