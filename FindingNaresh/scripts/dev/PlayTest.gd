@@ -4999,6 +4999,44 @@ func t_ghat_step9_bench() -> void:
 	check(gave, "step-9 bench: it gave up (%.1f s)" % game_s(t0))
 
 
+## The step-9 hang (2026-11-25): its own circling of the van (VAN state) carried Problem to the van's nose
+## while its round kept a ring point it had chosen on the driver's side; from the nose the straight line to
+## it crosses the van and it pushed at the nose for good. Declared: put at the nose with that stop and
+## waypoint by code (the bench's B1 state at hand-over). It must choose again and walk round, never into it.
+func _ghat_round_nose(g: Ghat, c: Camper, cr: Creature) -> void:
+	var nose := c._body_root.global_transform * Vector3(0.6, 0.0, -6.5)
+	cr.global_position = Vector3(nose.x, Landscape.ground(nose.x, nose.z) + 0.05, nose.z)
+	cr.reset_physics_interpolation()
+	g.stop_k = 5
+	g.at_stop = false
+	g._via_k = 3
+	var closest := 9.0
+	var t0 := clk()
+	while g.stop_k == 5 and el_ms(t0) < 30000:
+		await physics_frames(2)
+		var lp := c._body_root.global_transform.affine_inverse() * cr.global_position
+		closest = minf(closest, maxf(absf(lp.x) - 1.2, absf(lp.z) - 3.0))
+	var lp2 := c._body_root.global_transform.affine_inverse() * cr.global_position
+	log_line("round from the nose (waypoint kept from the far side): past the passenger's back corner %s in %.1f s, closest to the body %.2f m, now at (%.2f, %.2f), via %d, state %s" % [
+		g.stop_k != 5, game_s(t0), closest, lp2.x, lp2.z, g._via_k, Creature.State.keys()[cr.state]])
+	check(g.stop_k != 5 and closest > Creature.BODY_R, "handed its round at the van's nose with a waypoint from the far side, it walks round the van, not into it (closest %.2f m, its body %.1f m)" % [closest, Creature.BODY_R])
+
+
+## Bench for _ghat_round_nose alone (2026-11-25, test only; the plant / clean proof without ghat_looks' ~6 min):
+## F1 to the ghat, the engine off, Problem put out and set circling (declared, by code), then the check.
+func t_ghat_round_nose_bench() -> void:
+	var g := await _ghat_start()
+	var c := camper()
+	await tap(KEY_X, 0.25)
+	await wait(1.0)
+	check(not c.engine_on and c.linear_velocity.length() < 0.5, "the engine off, the van still")
+	g._spawn_problem(g.road.point(g.hairpins[g.seen_hp()]), c)
+	var cr := g.problem
+	g._set_phase("circle")
+	await _ghat_round_nose(g, c, cr)
+	log_line("bench: Problem state %s, suspicion %.2f, van interest %.1f, phase %s" % [Creature.State.keys()[cr.state], cr.suspicion, cr.van_interest, g.phase])
+
+
 ## The end of the game's slow turn round the van (Homecoming.show_end).
 func show_credits() -> void:
 	var hc := get_tree().get_first_node_in_group("homecoming")
@@ -5915,6 +5953,7 @@ func t_ghat_looks() -> void:
 		closest = minf(closest, maxf(absf(lp.x) - 1.2, absf(lp.z) - 3.0))
 	log_line("round from the far side: reached the passenger's window %s in %.1f s, closest to the body %.2f m" % [g.at_stop and g.stop_k == 6, (el_ms(t0)) / 1000.0, closest])
 	check(g.at_stop and g.stop_k == 6 and closest > Creature.BODY_R, "from the far side it walks round the van to the other window, not into it (closest %.2f m, its body %.1f m)" % [closest, Creature.BODY_R])
+	await _ghat_round_nose(g, c, cr)
 	# tarped and quiet: it gives up, visibly
 	c.attack.set_tarp(true)
 	t0 = clk()

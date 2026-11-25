@@ -386,17 +386,16 @@ func _round_waypoint(van: Camper, spot: Vector3) -> Vector3:
 		return spot
 	var inv := van._body_root.global_transform.affine_inverse()
 	var a := inv * problem.global_position
-	var b := inv * spot
-	var blocked := false
-	for i in range(1, 12):
-		var q := a.lerp(b, i / 12.0)
-		if absf(q.x) < 1.6 and absf(q.z) < 3.5:      # the body, with a margin for its own width
-			blocked = true
-			break
-	if not blocked:
+	if not _crosses_van(a, inv * spot):
 		_via_k = -1
 		return spot
 	var n := ROUND.size()
+	# the ring point it was making for lies across the van from here: it was
+	# taken elsewhere while it kept it (its own circling of the van, a hop out
+	# of a jam), so it chooses again from where it stands (2026-11-25: kept from
+	# the driver's side, it pushed at the van's nose for good, step-9 hang)
+	if _via_k >= 0 and not Plant.on("stale_via") and _crosses_van(a, inv * _round_point(van, _via_k)):
+		_via_k = -1
 	if _via_k < 0:
 		# start at the ring point nearest to it
 		var nd := INF
@@ -414,6 +413,16 @@ func _round_waypoint(van: Camper, spot: Vector3) -> Vector3:
 		_via_k = (_via_k + (1 if fwd <= n / 2 else -1) + n) % n
 		w = _round_point(van, _via_k)
 	return w
+
+
+## The straight line from `a` to `b` (both in the van body's frame) crosses the
+## van: its body, with a margin for Problem's own width.
+static func _crosses_van(a: Vector3, b: Vector3) -> bool:
+	for i in range(1, 12):
+		var q := a.lerp(b, i / 12.0)
+		if absf(q.x) < 1.6 and absf(q.z) < 3.5:
+			return true
+	return false
 
 
 ## L5: what it touched stays on the van (once per stop, per encounter).
