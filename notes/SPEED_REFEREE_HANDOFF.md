@@ -15,7 +15,9 @@ limit at risk. **Before anything else in the new thread: check GTA is closed and
 > D:\mine\Agentics\Skills\AGENTS.md. Then follow "Next steps" in the hand-off, one at a time, and report to the user short and plain,
 > A / B with your pick.
 
-## LIVE (2026-11-25 03:20 PM): STEP-9 HANG FIXED, IN MAIN (pushed `6ac0655`). Tooling PARKED: the held adapter (branch `held`, tip `ad07579`, not merged; needs main merged in + a FRESH producer: the ghat walk file changed) and the engine-on adapter wait for the user. The user is back and wants game dev; Godot for now. GPT-as-tester: next try on the work account (the user: A, 2026-11-25 03:35 PM; try 1 stopped on this project's own "GPT doesn't run the game" line, now amended; the work account only forbids the skills library, so inline the skill rules); see `notes/TODO.md`.
+## LIVE (2026-11-25 evening): TESTING FIRST (the user). Live play on `livept` in `dev` (not merged; re-audit 3 DON'T SIGN, 4 lane items, round 4 after trial 3); trial 2 4 / 4; trial 3 next in a NEW thread (calibration -> sealed key + rubric -> 12 scored + 2 realtime sessions -> GPT vs Claude + "is live AI testing like a human"). Details: `notes/TODO.md` "Right now".
+
+## (before) LIVE (2026-11-25 03:20 PM): STEP-9 HANG FIXED, IN MAIN (pushed `6ac0655`). Tooling PARKED: the held adapter (branch `held`, tip `ad07579`, not merged; needs main merged in + a FRESH producer: the ghat walk file changed) and the engine-on adapter wait for the user. The user is back and wants game dev; Godot for now. GPT-as-tester: next try on the work account (the user: A, 2026-11-25 03:35 PM; try 1 stopped on this project's own "GPT doesn't run the game" line, now amended; the work account only forbids the skills library, so inline the skill rules); see `notes/TODO.md`.
 
 ## (before) LIVE (2026-11-24 ~17:20): AUTO-QUALIFY IN MAIN (pushed `a4b87b8`, the user: C). NEXT (new thread): the held-pot and engine-on adapters; then the GPT-as-tester experiment (TODO)
 

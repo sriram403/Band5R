@@ -6,6 +6,23 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [ ] **2026-11-25 ~06:30 PM: TESTING FIRST, game dev after (the user: "finish all these testing thing first ... once
+      i'm satisfied then we'll talk about game dev").** Order (the user: A): (1) live play (branch `livept` in `dev`,
+      NOT merged) -> (2) trial 3 -> (3) the creature-search speed-up; later: held + engine-on save points, leftovers.
+      The user's key questions: **GPT vs Claude, which is the better tester; is live AI testing good like a human?**
+      - **GPT as tester, trial 1 (script tester): passed** (`speed_research/gpt_tester_trial_result.md`, in main).
+      - **Live play built** (`tools/live_from_point.sh`, `notes/LIVE_PLAY.md` on `livept`): start at a save point,
+        paused turns, player-only commands, sealed plant, private session folders. **Trial 2: 4 / 4 right**
+        (`live_trial_result.md`: GPT caught stale_via at 39 s, Claude 56 s, no false alarm; found by playing: the fuel
+        drain + bonnet marks have nothing on screen explaining them = readability notes for later; caveat: shared folder).
+      - **livept audits:** 9 findings -> round 2 -> 5 -> round 3 (`b8ee002`) -> **re-audit 3 DON'T SIGN, 4 lane /
+        concurrency items** (`livept_reaudit3_gpt.md`). **The user chose C:** trial 3 runs from `livept` now; round 4
+        (those 4) after; merge only when GPT signs.
+      - **Trial 3:** plan `trial3_plan.md`, GPT audit RUN WITH CHANGES (`trial3_plan_audit_gpt.md`: clean twins, no
+        expected outcomes in briefs, sealed rubric, rows /8 lean_close-or-stale_via, /12 keeps_interest, /17 no_fix,
+        12 scored + 2 realtime). Next: calibration (`trial3_calibrate_task.md`, a Claude builder, branch `trial3` from
+        `livept`), then the referee seals the key + rubric, then the sessions.
+      - **New thread (the user, ~06:30 PM):** trial 3 runs there.
 - [x] **2026-11-25 03:45 PM: walked the user through how the AI tests the game** (new thread; skills learning-skill,
       me, testing-and-verification, project-memory). The user asked for it in chat, not as an app ("just explain here
       simply"), so a half-built learning page was deleted unpublished. Covered: robot players + walks, checks / frozen
