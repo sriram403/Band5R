@@ -104,9 +104,10 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   **Exception, GPT as the TESTER (the user: A, 2026-11-25 02:04 PM; the experiment in `notes/TODO.md`):** a GPT child
   whose task file is a TESTER task (first: `notes/speed_research/step9_gpt_test_task.md`) RUNS the game's tests and
   walks and judges them; it still writes no game code and no test code. **Runs on the work account (the user: A,
-  2026-11-25 03:35 PM)**, the only one with GPT Astra 6.2. That account's own file forbids reading the skills library
-  (not running games), so the tester's task file carries the skill rules it needs inline. (Try 1 stopped only because
-  this exception wasn't written here yet; the personal Codex has no Astra.)
+  2026-11-25 03:35 PM)**, the only one with GPT Astra 6.2. GPT has every skill too (linked into `~/.agents/skills`):
+  a GPT task file names skills to LOAD BY NAME, never the library path `D:\mine\Agentics\Skills\...` (the work
+  account's file forbids reading the library folder itself). (Try 1 stopped because this exception wasn't written here
+  yet and its task pointed at the library path; the personal Codex has no Astra.)
 - **Both plan, each audits the other; the main thread referees (the user: A, 2026-11-24).** A design before a build
   gets two blind specs (a Claude child + a GPT child), each model audits the other's, the main thread merges by
   applying the audits' exact changes (disputes to the user) and writes no spec of its own; a fresh Claude builder
