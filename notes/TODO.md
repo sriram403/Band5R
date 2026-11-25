@@ -6,6 +6,12 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [x] **2026-11-25 03:45 PM: walked the user through how the AI tests the game** (new thread; skills learning-skill,
+      me, testing-and-verification, project-memory). The user asked for it in chat, not as an app ("just explain here
+      simply"), so a half-built learning page was deleted unpublished. Covered: robot players + walks, checks / frozen
+      manifest / verdicts, planted bugs + MATRIX, the step-9 bench, save points + resume + auto-qualify, watching (game
+      minutes, CPU), videos, who does what, step 9 start to finish, why runs look slow (30 km/h by design, filming every
+      frame, Hearing.gd on the PC clock) and what "tooling" means. Asked: what to build next in the game.
 - [ ] **2026-11-25 03:20 PM: NEXT = talk with the user (back, wants game dev).** Engine: Godot for now. Tooling (held
       re-proof, engine-on adapter) parked below. Open small items: two older controls need git-ignored `appdata/` in a
       clean clone (t3 `sentinel` reads `appdata/t34/`; `rv1_controls.py` needs `appdata/rv1ctl/src2`): give them tracked
