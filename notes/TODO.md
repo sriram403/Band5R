@@ -20,6 +20,13 @@ being built and tested), so this always shows where the work is right now.
       game"):** GPT Astra 6.2 high runs the after-fix tests (bench seeds, the fresh walk through step 9, the step-9
       video) and writes a verdict; the referee watches the SAME runs and writes its own verdict blind; compare. The fix's
       code audit is a separate fresh GPT child. ~0 extra game min.
+      **02:16 PM: both GPT children started** (`step9_gpt_test_task.md`, budget ~25 game min: bench points incl. hang
+      point 2, `prove_ghat.py nose`, a fresh recorded walk = the video; `step9_code_audit_task.md`, read-only).
+      Referee's blind verdict goes in `extras/referee/step9_referee_verdict.md`.
+- [ ] **Speed up the creature's search (the user asked 2026-11-25 02:09 PM; referee's pick A, after step 9 merges):**
+      `Hearing.gd` line 29 reads the PC clock, not the game clock, so fast mode would hear over the wrong time. A: hearing
+      on the game clock (small game-code fix, plant + GPT review), then step 9 normal vs fast side by side, several runs,
+      same outcome and give-up time -> fast for steps 9 and 12 (~1.5 min saved per ghat walk). B: leave it at 1x.
 - [ ] **Creatures on a nav mesh (Godot NavigationRegion3D / NavigationAgent3D), a later design job** (asked by the user
       2026-11-25; referee's pick "later", no answer yet): the game has none; creatures walk straight with a hand-made ring
       round the van. A moving van needs an obstacle or re-bake; changes every creature: two blind specs + the user's look.

@@ -14,8 +14,11 @@ FIRST: load these skills (by name, from `D:\mine\Agentics\Skills\skills\<name>\S
 testing-and-verification, game-dev (+ `references\godot.md` "Physics and 3D"), project-memory.
 
 ## Roles
-- **You: GPT Astra 6.2, high, the TESTER.** A one-off exception the user chose (A, 2026-11-25 02:04 PM) to the rule
-  "GPT doesn't run the game": you run the after-fix tests and judge them. You write no game code and no test code.
+- **You: GPT Astra 6.2, high, the TESTER.** An exception the user chose (A, 2026-11-25 02:04 PM) to the rule
+  "GPT doesn't run the game", now written into the project's own `AGENTS.md` and `CLAUDE.md` (right under "GPT plans,
+  Claude builds": "Exception, GPT as the TESTER") and `notes/TODO.md` ("GPT as the TESTER, first try"): you run the
+  after-fix tests and judge them. You write no game code and no test code. (Try 1 ran on the work account, whose own
+  rules stopped it: `step9_gpt_test_report.md` commit `12eb319`; overwrite that report.)
   Something broken? Report it with the evidence; don't fix it.
 - **Referee:** the main thread (Claude). It watches the same runs and writes its own verdict blind; the two are compared.
 - A separate GPT child audits the fix's code. You don't need to.
