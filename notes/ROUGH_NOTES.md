@@ -918,7 +918,11 @@ happened, the fix, and the habit to keep.
   another note. (Proposed to the user: a PreToolUse hook refusing Python-through-heredoc edits of tracked files.)
 - **2026-11-25 (referee), times estimated, not read.** Twice I wrote a time ("02:20 PM", "03:21 PM") without reading the
   clock; the real times were 02:18 / 03:19. The rule says read it every time, in the same tool call. Habit: no time in a
-  message or note unless a `Get-Date` in this turn produced it.
+  message or note unless a `Get-Date` in this turn produced it. **Rule changed by the user (2026-11-25 ~05:15 PM):**
+  updates now open with the time LEFT on the current task ("⏱ ~8 min left: ..."), not the clock (`me` skill v8).
+- **2026-11-25 (referee), the guard's first version blocked a commit message.** `no_shell_patch.py` matched "sed -i"
+  inside a quoted commit message. Fixed (quoted text blanked before the check), 14 / 14 cases. Habit: test a guard on
+  text that MENTIONS the thing as well as on the thing.
 - **2026-11-25 (referee), blind by instruction, not by the tool.** Live trial 2 gave every session one shared shots
   folder; later sessions could see earlier sessions' pictures (GPT's audit found it after the trial). Each was told to
   read only its own and none cited another's, but a blind test must be blind by construction. Habit: before a blind
