@@ -876,3 +876,19 @@ happened, the fix, and the habit to keep.
   small" for the rule. Reality: I wrote it as Python through a Bash heredoc, which the task forbids (the heredoc trap
   above). No harm this time (no escapes, asserts matched once, diff only the two strings). Fix: none needed. Habit:
   the rule has no size limit: any text edit goes through Edit / Write, even a line number.
+- **2026-11-25 (step9 round 3), a control that passed only on my machine.** Assumed (round 2): a control judged on
+  "real evidence" (a historical commit + a run's save points) is a portable check. Reality (GPT re-audit): `appdata/` is
+  git-ignored and a shallow / fresh clone has no `5e70d40`, so it read 0/1 in a clean clone. Fix: the evidence copied
+  into a tracked fixture with provenance (`tools/method/fixtures/step9_walknames.json`, its builder `--check`s it
+  against the sources); 13/13 in a `--depth 1` clone. Also seen, not fixed (older, outside the task): t3's `sentinel`
+  row and the whole `rv1_controls.py` read `appdata/` too. Habit: run a new control once in a `git clone --depth 1`
+  of the branch before calling it a check; evidence it needs goes into a tracked fixture.
+- **2026-11-25 (step9 round 3), the heredoc rule again.** I wrote two small Python patch scripts through Bash heredocs
+  (`<<'EOF'`) a round after logging the same slip. No harm (no backslashes in them, each replaced string asserted to
+  match once, diffs checked). Habit (repeat): Edit / Write for every text change; a shell patch script only as a file
+  written with Write.
+- **2026-11-25 (step9 round 3), a suite's miss from the running walk.** `autoq_controls.py` read 80/81 in `dev`: its
+  `play_walk.sh` lane-lock row skips itself when a real `lane.lock` exists, and the referee's ghat walk held it. Not a
+  regression: 81/81 in a clean clone (with `AQ_SRC` / `AQ_REAL` at dev's points and an empty `appdata/playtest/
+  FindingNaresh/live/`). Habit: a suite run beside a live walk reads its lane-lock row as SKIPPED; read the row before
+  calling it a failure.

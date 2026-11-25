@@ -798,3 +798,9 @@ Task: `notes/speed_research/merge_tools_task.md`. `speed-t34` (`fd4ae18`) merged
   new accepted; watch / unnamed / step-name / case cases; `live.py --gate-check` REFUSED 7 old / ACCEPTED 0 new; step
   18's test False at 0.675, True at 1.000 on the tester's real points); guard off in memory: 5 BAD. t3 137/137,
   rv1 149/149, autoq 81/81. Not run: the walk itself (budget; offline only).
+- **Round 3 (GPT re-audit reservation 1):** the `walknames` control now reads a TRACKED fixture,
+  `tools/method/fixtures/step9_walknames.json` (the old ghat walk from `5e70d40` + R7's coolant 0.6750000000000003 /
+  1.0 at points 17 / 18, with sha256 provenance; built / re-checked by `make_step9_walknames.py [--check]`), not git
+  history or `appdata/`. Could break: nothing in the game; the control only. Tests: 13/13 in `dev` and in a clean
+  `--depth 1` clone without `appdata/` (the old control: 0/1 there); guard off 5 BAD; t3 137/137, rv1 149/149, autoq
+  80/81 in `dev` (the lane-lock row SKIPPED: the referee's walk held the real lock) and 81/81 in the clean clone.

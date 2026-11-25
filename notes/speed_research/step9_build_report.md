@@ -229,3 +229,54 @@ no general progress guarantee; no code change unless a new jam, then an exact se
 `67ee0b1` item 1 · `5cc1ae0` item 2 · `fa52f92` item 3 · `02ab97e` item 4 + this report (this line added in the commit after it).
 
 Round 2 last commit: `02ab97e`
+
+# Round 3 (2026-11-25, Claude Opus 5.5, high, builder; task `step9_fix3_task.md`)
+
+Skills loaded first: testing-and-verification, project-memory. Input: `step9_reaudit_gpt.md` (SIGN WITH RESERVATIONS),
+reservations 1 and 3. **0 game minutes**: no game started. The 2 Godot processes seen throughout (pids 6704, 19944)
+are the referee's walk; their count was checked after each control run. No merge, no push.
+
+## 1. The walknames control reads a tracked fixture (reservation 1) · `d01aa93`
+- New `tools/method/fixtures/step9_walknames.json` (17 KB, tracked): the whole old ghat walk (`5e70d40:tools/live/ghat.json`,
+  its sha256), needed whole because the end-to-end `live.py --gate-check` row hands it to the client, plus R7's coolant
+  values **0.6750000000000003** (point 17 = step 18's start) and **1.0** (point 18 = step 19's start), each with run id
+  `ghat_20261125_143834_19960`, point path and the point file's sha256. Built by the new
+  `tools/method/fixtures/make_step9_walknames.py`; `--check` re-derives it from the sources and says whether they still
+  match (run here: "fixture matches its sources"). My pick: the whole old walk rather than a cut-down example, so the
+  client row tests the real file that was refused.
+- `tools/method/t3_controls.py:587-598` (`g_walknames`): loads the fixture (old walk + both values) instead of
+  `git show 5e70d40` and the appdata points; the step-18 rows (lines 631-636) use the fixture values. The rows are unchanged.
+
+| run | where | result |
+|---|---|---|
+| `t3_controls.py walknames`, new | `dev` | **13 / 13** |
+| `t3_controls.py walknames`, new | clean `git clone --depth 1 --branch step9` (1 commit, no `appdata/`, no `5e70d40`) | **13 / 13** |
+| `t3_controls.py walknames`, old (`f6c0d84`'s file) | the same clean clone | **0 / 1** (`invalid object name '5e70d40'`) |
+| guard off in memory (`walkgate.repeated_names` -> `[]`) | `dev` | **5 BAD of 13**, the same 5 in-process refusal rows as round 2 |
+
+**Suites in `dev`:** `t3_controls.py` **137 / 137**, `rv1_controls.py` **149 / 149**, `autoq_controls.py` **80 / 81**
+(its 14 guard-OFF BAD lines are expected). The 1 miss is `B2: play_walk.sh refuses a game while the lane's qualification
+runs`, which returns SKIPPED when a real `lane.lock` exists, and the referee's ghat walk held it (`owner play_walk`,
+pid 20044, since 15:08). This code is untouched in round 3. The same suite in the clean clone (with `AQ_SRC` / `AQ_REAL`
+at dev's saved points, read-only, and an empty `appdata/playtest/FindingNaresh/live/` for the planted lock) read
+**81 / 81**, that row `got 3`.
+- **Seen, not fixed (older, outside this task):** in the clean clone t3's `sentinel R4's real lane b log present` row
+  (reads `appdata/t34/`) is BAD (135 / 136), and `rv1_controls.py` crashes (needs `appdata/rv1ctl/src2`, or `RV1_SRC`).
+  These are the same kind of gap as reservation 1, for the referee to decide on.
+
+## 2. The timing words (reservation 3) · `1e8844e`
+- `step9_test_report.md:46-50`: R2 **and** R3 are below the prediction (44.0, 54.9 against 57-72 s). The urge left sets
+  the give-up time: 44.0-68.3 s over R1-R5. 57-72 s held only for urges of 18 s and more. Surprise 1 (`:102-105`) says the same.
+- `step9_build_report.md:116-119` (option B): the measured give-up range **~44-69 s** game time on the bench (R1-R5
+  44.0-68.3, B2 68.6; urge 8.1-24.0 s), said to be the give-up time, not the whole walk step (+ its 4 s wait). Also
+  `:87` (W1), where "normal 61-72" read like a give-up range: now it says that is the whole step incl. the wait.
+
+Notes: `notes/CHANGE_LEDGER.md` (round 3 lines under the walknames entry), `notes/ROUGH_NOTES.md` (3 mistake-log entries:
+the control only passed on my machine; the heredoc rule broken again, no harm; the autoq row skipped beside a live walk).
+
+## What I could NOT test
+- Nothing needed a game. The fixture's values are copies; `--check` proves they still match R7's points only where
+  `appdata/` and the history exist (here, yes).
+
+## Round 3 commits (branch `step9`, no merge, no push)
+`d01aa93` item 1 · `1e8844e` item 2 · this report + notes (hash in the line below, added in the commit after it).
