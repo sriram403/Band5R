@@ -4907,6 +4907,98 @@ func walk_breath_bot(max_s: float) -> void:
 	pad_button(JOY_BUTTON_B, false)
 
 
+## Step-9 bench (2026-11-25, test only; notes/speed_research/step9_build_task.md): Problem sometimes never gave
+## up at ghat walk step 9. Restores a ghat walk's step-9 save point (STEP9_POINT = <points>/<run>/8.json) the way
+## a resume does (SaveGame.apply + LiveControl's live part + rv1; no gate: a bench, not a resume receipt), seeds
+## the global RNG (STEP9_SEED, default the point's own seed, as the walk does), then plays step 9 as the walk
+## does (walk_breath_bot alongside, until it gives up, 190 s) and logs what decides the give-up: a row every 2 s
+## plus every change of its state / stop / waypoint and every sound it hears. STEP9_PUSH="dx,dz" moves Problem
+## (van frame) right after the restore: other seeds of the same start. It reports; the one check is the give-up.
+func t_ghat_step9_bench() -> void:
+	var path := OS.get_environment("STEP9_POINT")
+	var point = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+	check(typeof(point) == TYPE_DICTIONARY and String(point.get("live_step", "")).begins_with("9 "), "the step-9 point %s reads" % path)
+	if typeof(point) != TYPE_DICTIONARY:
+		return
+	boot._on_joy_changed(0, true)        # the walk's setup: P2 on a pad
+	await wait(0.5)
+	var lc := LiveControl.new(self)
+	SaveGame.apply(boot, point)
+	lc._restore_live(point)
+	var crs := get_tree().get_nodes_in_group("creature")
+	var was: Array = point.get("live_creatures", [])
+	for k in mini(crs.size(), was.size()):
+		(crs[k] as Node3D).global_position = Vector3(float(was[k][0]), float(was[k][1]), float(was[k][2]))
+	var rv1 := String(point.get("resume_v", "")) == "rv1"
+	if rv1:
+		lc.rv.restore(point, [])
+	var tree := get_tree()
+	if rv1:
+		tree.paused = true
+		await tree.process_frame
+		await tree.process_frame
+		lc.rv.apply_clock(point, [])
+	var g := gh()
+	var c := camper()
+	var pr := g.problem
+	var push := OS.get_environment("STEP9_PUSH")
+	if push != "" and pr != null:
+		var dd := push.split(",")
+		var to := c._body_root.global_transform.basis * Vector3(float(dd[0]), 0.0, float(dd[1]))
+		to.y = 0.0
+		pr.global_position += to
+		pr.global_position.y = Landscape.ground(pr.global_position.x, pr.global_position.z) + 0.05
+		pr.reset_physics_interpolation()
+	if rv1:
+		lc.rv.apply_clock(point, [])
+		tree.paused = false
+	var sd := int(OS.get_environment("STEP9_SEED")) if OS.get_environment("STEP9_SEED") != "" else int(point.get("rng_seed", 0))
+	seed(sd)
+	var loc := func(p: Vector3) -> String:
+		var q := c._body_root.global_transform.affine_inverse() * p
+		return "(%.2f,%.2f)" % [q.x, q.z]
+	log_line("[s9] point %s seed %d push '%s'; phase %s, Problem %s state %s sus %.2f, van yaw %.1f" % [path.get_file(), sd, push, g.phase,
+		loc.call(pr.global_position) if pr != null else "-", Creature.State.keys()[pr.state] if pr != null else "-",
+		pr.suspicion if pr != null else 0.0, rad_to_deg(c.global_rotation.y)])
+	walk_breath_bot(190.0)               # alongside, as the walk's spawn
+	var t0 := clk()
+	var next_row := 0
+	var heard := Hearing.last_id()
+	var prev := ""
+	var shots := 0
+	while g.phase != "leave" and el_ms(t0) < 190000 and g.problem != null:
+		await get_tree().physics_frame
+		var t := game_s(t0)
+		for s in Hearing.since(heard):
+			heard = maxi(heard, int(s["id"]))
+			var dh := (s["pos"] as Vector3).distance_to(pr.global_position)
+			log_line("[s9] %.2f sound '%s' at %s r %.0f, %.1f m from it (%s)" % [t, s["what"], loc.call(s["pos"]), float(s["radius"]), dh, "heard" if dh <= float(s["radius"]) else "not heard"])
+		var key_now := "%s|%d|%s|%d|%s|%d" % [Creature.State.keys()[pr.state], g.stop_k, g.at_stop, g._via_k, g.breath_state, g.stops_done]
+		if key_now != prev:
+			log_line("[s9] %.2f change: state %s stop_k %d at_stop %s via_k %d breath %s stops_done %d (pos %s)" % [t, Creature.State.keys()[pr.state],
+				g.stop_k, g.at_stop, g._via_k, g.breath_state, g.stops_done, loc.call(pr.global_position)])
+			prev = key_now
+		if game_s(t0) * 1000.0 >= next_row:
+			next_row += 2000
+			var gl := pr.goal_now
+			log_line("[s9] %.1f phase %s pt %.1f quiet %.1f stops %d stop_k %d at %s st %.1f via %d %s | %s sus %.2f nt %.2f pos %s v %.2f goal %s to_goal %.2f noticed %s | stuck %.2f det %d dt %.2f | seen %d breath %s/%d restarts %d sniff %.2f/%d" % [
+				t, g.phase, g.phase_t, g.quiet_t, g.stops_done, g.stop_k, g.at_stop, g._stop_t, g._via_k,
+				loc.call(g._round_via) if g._round_via != Vector3.INF else "-", Creature.State.keys()[pr.state], pr.suspicion, pr._noticed_t,
+				loc.call(pr.global_position), Vector2(pr.velocity.x, pr.velocity.z).length(), loc.call(gl),
+				Vector2(gl.x - pr.global_position.x, gl.z - pr.global_position.z).length(), loc.call(pr.last_noticed),
+				pr._stuck_t, pr._detours, pr._detour_t, pr.seen_now.size(), g.breath_state, g.breath_events, g.search_restarts, pr._sniff_t, pr.sniffs])
+		# the hang moment, from an angle that shows it: above the van's front-left corner, and from the side
+		if shots == 0 and t > 100.0 and g.phase != "leave":
+			shots = 1
+			var at := pr.global_position + Vector3.UP * 1.2
+			await obs_shot("s9_hang_front", c._body_root.global_transform * Vector3(-4.5, 6.5, -9.0), at)
+			await obs_shot("s9_hang_side", c._body_root.global_transform * Vector3(-9.0, 3.0, -2.0), at)
+	var gave := g.phase == "leave"
+	log_line("[s9] RESULT %s at %.1f game s (%.1f wall s): stops %d quiet %.1f restarts %d breath events %d" % ["GAVE UP" if gave else "NO GIVE-UP",
+		game_s(t0), wall_s(t0), g.stops_done, g.quiet_t, g.search_restarts, g.breath_events])
+	check(gave, "step-9 bench: it gave up (%.1f s)" % game_s(t0))
+
+
 ## The end of the game's slow turn round the van (Homecoming.show_end).
 func show_credits() -> void:
 	var hc := get_tree().get_first_node_in_group("homecoming")
