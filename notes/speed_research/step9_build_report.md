@@ -142,3 +142,84 @@ Problem circles the van at 7 m for 8-24 s before its round. With the fix this is
 `15d5cfe` bench · `db70d9c` fix + plant + check · `043d5cc` prove row, manifest, bench logs · `bc14d21` this report + notes.
 
 Last code commit: `043d5cc`; report commit: `bc14d21` (this line added in the commit after it).
+
+# Round 2 (2026-11-25, Claude Opus 5.5, high, builder; task `step9_fix2_task.md`)
+
+Skills loaded first: testing-and-verification, project-memory. Inputs: `step9_code_audit_gpt.md` (DON'T SIGN),
+`held5_results_audit_gpt.md`, `step9_test_report.md` (PASS WITH RESERVATIONS). **0 game minutes** (everything offline;
+no Godot started, `tasklist` checked after each client call). No merge, no push.
+
+## 1. The gate owns the new proof (GPT finding 1, blocking) · `67ee0b1`
+- `tools/method/prove_ghat.py:88` `MATRIX`: `"nose"` beside `"round"` (28 rows); line 32's comment says 27 + `nose` = 28.
+- `tools/method/t3_controls.py:512-513`: the inventory control 27 -> 28 ("main's 27 + stale_via").
+- New `tools/method/matrix_owners.py` (read-only, GPT's check as a tool): the gate's plant discovery
+  (`t3_gate.plant_rows`) vs MATRIX owners; exit 1 on a gap.
+
+| check | before (HEAD `5e70d40`) | after |
+|---|---|---|
+| owners (`matrix_owners.py`; before = the same check on HEAD's `prove_ghat.py`) | 28 discovered, **27 owned**, no owner: `stale_via` | **28 / 28**, no gaps, none owned twice; `stale_via` -> `nose` |
+| `t3_controls.py matrix` | **3 / 6** (clean 27/28 incomplete; the cap_text row also NOT DONE stale_via; inventory 28 vs 27) | **6 / 6** (clean 28/28 complete) |
+
+Other suites (expected all-as-expected, declared before): `t3_controls.py` all **124 / 124**, `rv1_controls.py`
+**149 / 149**, `autoq_controls.py` **81 / 81** (its 14 BAD lines are its guard-OFF negatives, the same 14 before and
+after). `t1fix_controls.py` **can't run in this copy**: it stops at blocker 1 (`combine_parts.py`) because its archived
+run `appdata/method/runs/20261111_111720_ghat_k3_fast` is in neither `dev` nor `main`; pre-existing, before any
+MATRIX code, and it reads only `GROUPS` (unchanged for the old rows). Mistake log entry written.
+
+## 2. Report corrections (GPT findings 3-4) · `5cc1ae0`
+"Corrections after audit" above (and the B2 row marked in place): waypoint dropped at **23.25 s** (still VAN,
+`bench_B2.log` line 23), WANDER at 24.37 s, corner 5 -> 6 at 34.03 s; the nose check is a **reduced fixture**, the
+B1 / B2 restore the real-state evidence; the **limited guarantee** (11 samples can miss a grazing corner, GPT's example;
+no general progress guarantee; no code change unless a new jam, then an exact segment / box test); the planted side's
+3 knock-on FAILs (tarp give-up, slump, eyes dim). `notes/CHANGE_LEDGER.md`'s step-9 entry says the same.
+
+## 3. The walk's steps 17 / 18 (the tester's Surprise 4) · `fa52f92`
+- **Where:** `FindingNaresh/scripts/dev/LiveControl.gd:918` waits `while ... not ctx["passed"].has(name)`, one passed
+  set per walk; `tools/live/make_ghat.py` `refill()` and `pour()` reused `trip()`'s "P2 holds a full pot" (step 14) and
+  step 16's "the water went in", so 17 / 18 were never judged. Scan of all 20 walks in `tools/live`: only `ghat.json`.
+- **Found on the way (fixed, "fix what you see"):** renamed alone, step 18 still couldn't fail: its test
+  `camper().coolant > 0.3` is already true after the FIRST pot. The van's coolant at the step save points of 25 saved
+  walks: **0.050** at step 16's start -> **0.675** at 17's -> **0.675** at 18's -> **1.000** at 19's (same in every
+  run). So step 18 now expects **`camper().coolant > 0.99`** ("the water went in again, the radiator full"), which fails
+  at 0.675 and passes at 1.000. Step 17's test was already able to fail (the pot is empty after the first pour: the
+  radiator took all 2.5 L). Mistake log entry written.
+- **Changed:** `make_ghat.py:71-85, 141` (step 17 "P2 holds a full pot again"; `pour(n, again)`), `ghat.json`
+  regenerated with `python tools/live/make_ghat.py` (diff: exactly those 3 lines). `tools/method/walkgate.py:700`
+  `repeated_names(walk)` (pass names as the driver makes them: an expect's name, else its step's; watches included;
+  repeated step names too, since `--from` picks by name); `tools/live.py:144-150`: `--walk` refuses such a walk
+  (exit 7) right after loading, before the gate or any launch, so `play_walk.sh` / `record_walk.sh` stop at their
+  `--gate-check` line. My pick: refuse in the client, not the game driver: every walk goes through it, and it's offline.
+- **Refuse / accept demo (no game):**
+  ```
+  $ python tools/live.py --gate-check --fresh --walk tools/live/ghat.json     # the old file
+  REFUSED (walk): pass name 'P2 holds a full pot' in steps 14, 17; pass name 'the water went in' in steps 16, 18:
+  the driver skips a name already passed, so the later step is never checked; give each its own name (...)
+  exit 7
+  $ python tools/live.py --gate-check --fresh --walk tools/live/ghat.json     # regenerated
+  GATE CHECK: fresh walk
+  exit 0
+  ```
+- **Its own control** (the rule "every issue gets a check"): `t3_controls.py walknames`, **13 / 13**: the old
+  `ghat.json` (from `5e70d40`) refused naming steps 14,17 + 16,18; the new one accepted; every walk in `tools/live`
+  accepted; a watch reusing a name, an unnamed expect taking its step's name, two steps with one name all refused; case
+  differences allowed (the driver's keys are exact); `live.py --gate-check` REFUSED 7 old / ACCEPTED 0 new; step 18's
+  new test False at 0.675 and True at 1.000 on the tester's real points (`ghat_20261125_143834_19960/17.json`,
+  `18.json`), the old one True at 0.675. **Guard switched off in memory:** 5 BAD (every in-process refusal row).
+- Suites after item 3: t3 **137 / 137**, rv1 **149 / 149**, autoq **81 / 81**, owners 28 / 28.
+- **Note:** this changes the walk file and the tools, so the ghat's saved points no longer match identity: the held
+  branch needs a fresh producer (already planned), and autoq qualifies afresh on the new walk. The walk itself was
+  NOT run (budget; the task asked for offline only), so steps 17 / 18 judged live are unseen until the next ghat walk.
+
+## 4. Noted, not fixed (task item 4)
+- The bench (`t_ghat_step9_bench`) fires the H2 heat rule right after loading a save (needle 60 deg vs engine 126 C:
+  the needle hasn't caught up with the restored hot engine). Bench only: not in the walk, not in `ghat_looks`.
+- The game window took focus for 1.8 s during step 9 of the tester's recorded walk (`R7_game.log`, `[focus] app_in`
+  131.6 s, `app_out` 133.4 s); cause unknown, the walk wasn't disturbed.
+
+## What I could NOT test
+- The ghat walk with the new steps 17 / 18 live (offline proof only: real saved coolant values, no game run).
+- `t1fix_controls.py` (its archived evidence isn't in this copy).
+- A real certifying matrix (a final suite + all 28 proofs on the frozen tree); the controls prove the gate's logic.
+
+## Round 2 commits (branch `step9`, no merge, no push)
+`67ee0b1` item 1 · `5cc1ae0` item 2 · `fa52f92` item 3 · this report: the commit after `fa52f92` (hash on the last line).

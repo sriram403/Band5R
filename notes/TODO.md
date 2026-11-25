@@ -27,6 +27,10 @@ being built and tested), so this always shows where the work is right now.
       skills library; `step9_gpt_test_report.md` INCOMPLETE, `12eb319`); the personal Codex has no Astra 6.2 (only
       gpt-6-luna, gpt-5.6-terra / luna). So a fresh Claude tester runs `step9_claude_test_task.md`, GPT Astra audits its
       results. **For the user, later:** A) allow the GPT tester on the work account, B) try gpt-6-luna on personal (pick: B).
+      **Round 2 builder done (`step9_build_report.md` "Round 2", 0 game min):** `nose` in the gate's MATRIX (owners
+      28/28, controls 27 -> 28); report + ledger corrections; ghat steps 17 / 18 really checked (own names, step 18
+      `coolant > 0.99`) and `tools/live.py` refuses a walk with repeated pass names. t3 137/137, rv1 149/149, autoq
+      81/81. Next: GPT Astra 6.2 re-audit; the held branch needs a fresh producer (walk file changed).
 - [ ] **PARKED (the user back 2026-11-25 02:35 PM, wants game dev; referee's pick A): the held re-proof** (branch
       `held`, tip `ad07579`, not merged; `held5_result.md` + `held_build_report.md` "The referee's proof (M8)"), its two
       results audits (part 5b), and the ENGINE-ON adapter thread. Test tooling only; resume it when the user asks.
