@@ -1,0 +1,91 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+Vulkan 1.4.357 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 3060
+
+Movie Maker mode enabled, recording movie in 1600×900 @ 25 FPS...
+[PlayTest] window behind in 1220 ms
+[World] roads 164 ms
+WARNING: Realtime Skies can only use a radiance size of 256. Radiance size will be set to 256 internally.
+   at: set_radiance_size (servers/rendering/renderer_rd/environment/sky.cpp:594)
+   GDScript backtrace (most recent call first):
+       [0] _environment (res://scripts/world/LevelBuilder.gd:278)
+       [1] build (res://scripts/world/LevelBuilder.gd:40)
+       [2] _ready (res://scripts/core/Boot.gd:90)
+[World] terrain 2272 ms
+[World] road meshes 215 ms
+[World] undergrowth: 53367 trees, 35667 links
+[World] undergrowth 1365 ms
+[World] scatter 3466 ms
+[ramp] the hut's floor is 0.14 m above the ground at the door
+[World] landmarks 647 ms
+[Boot] world built in 9335 ms
+[Boot] user data: D:/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/playtest/FindingNaresh
+[test] adapter=NVIDIA GeForce RTX 3060  refresh=144Hz  window=(1600, 900) at (160, 77)  pads=[]
+[test] route length 802 m, 401 samples
+[live] ready, commands in D:/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/playtest/FindingNaresh/live/cmd.json
+[walk] step 1 F1 Puzzles: the ghat: both in the van at the foot of the hairpins (0 s, frame 72)
+[test] menu: Puzzles → ' 6. The ghat pace notes' (6. The ghat pace notes: reset, the story at its step, you're there.)
+[walk] PASS both in, no Problem yet (0.0 s)
+[walk] step 2 P2 swings the nav to read the pace notes; the engine on (4 s, frame 182)
+[walk] PASS nav swung, engine on (0.0 s)
+[walk] step 3 up the hill into the fog, stop at the old milestone (7 s, frame 243)
+[focus] app_out at 15150 ms, physics frame 909
+[focus] win_out at 15150 ms, physics frame 909
+[focus] app_in at 39350 ms, physics frame 2361
+[focus] win_in at 39350 ms, physics frame 2361
+[focus] app_out at 40000 ms, physics frame 2400
+[focus] win_out at 40000 ms, physics frame 2400
+[test] drive: 54 s, 392 m, off-road max 2.7 m, now (877.9235, 4.911885, -24.08458), fuel 68.3 L
+[walk] PASS stopped by the milestone, parked (0.0 s)
+[walk] step 4 P1 out: Naresh's note on the milestone (63 s, frame 1649)
+[walk] PASS the note read (0.0 s)
+[walk] step 5 back in, on up the hairpins (74 s, frame 1919)
+[walk] PASS P1 driving again (0.0 s)
+[walk] step 6 hairpin 1: something tall in the trees turns its head to follow the van; the needle climbs; the engine dies in the fog (78 s, frame 2034)
+[test] drive: 11 s, 80 m, off-road max 3.0 m, now (951.1589, 11.61384, 16.28769), fuel 67.9 L
+[test] drive: 17 s, 146 m, off-road max 5.9 m, now (931.3494, 21.58765, -89.25298), fuel 66.0 L
+[walk] PASS seen, boiled dry, parked (0.0 s)
+[walk] step 7 both out: the old shade net over the van, one corner each (111 s, frame 2859)
+[walk] PASS the van under the net (0.0 s)
+[walk] step 8 both back in, keep still (119 s, frame 3053)
+[walk] PASS both hidden inside (0.0 s)
+[walk] step 9 it comes out of the fog, goes round the van, leans in at the windows (hold your breath), sniffs at the back, and gives up (121 s, frame 3106)
+[focus] app_in at 131600 ms, physics frame 7896
+[focus] win_in at 131600 ms, physics frame 7896
+[focus] app_out at 133433 ms, physics frame 8006
+[focus] win_out at 133433 ms, physics frame 8006
+WARNING: [Physics interpolation] Interpolated Camera3D triggered from outside physics process: "/root/Main/World/Camper/RearMirrorView/RearMirrorCam" (possibly benign).
+   at: _notification (scene/3d/camera_3d.cpp:218)
+[walk] PASS it gave up, nothing given away (0.0 s)
+[walk] step 10 out, net off; P1 opens the radiator cap while it still hisses: WHOOSH, and it hears (189 s, frame 4787)
+[walk] PASS the cap blew, it's coming back (0.0 s)
+[walk] step 11 net on again, in, hide well (198 s, frame 5011)
+[walk] PASS hidden again (0.0 s)
+[walk] step 12 it searches again, and gives up again (206 s, frame 5218)
+[walk] PASS it gave up again (0.0 s)
+[walk] step 13 out, net off; P1 waits by the bonnet for the hissing to stop (250 s, frame 6332)
+[walk] PASS net off (0.0 s)
+[walk] step 14 P2 down the road to the spring: the pot, filled at the pipe, back to the van (256 s, frame 6477)
+[walk] PASS P2 holds a full pot (0.0 s)
+[walk] step 15 the hissing stops (275 s, frame 6951)
+[walk] PASS cool enough (0.0 s)
+[walk] step 16 P2 pours the water into the radiator (309 s, frame 7805)
+[walk] PASS the water went in (0.0 s)
+[walk] step 17 not full yet: P2 back down to the spring with the pot, fills it again (312 s, frame 7876)
+[walk] step 18 P2 pours the water into the radiator (330 s, frame 8334)
+[walk] step 19 the radiator full again: in, start up, on over the pass (333 s, frame 8404)
+[test] drive: 22 s, 130 m, off-road max 3.6 m, now (1048.373, 26.72958, -82.2245), fuel 56.9 L
+[walk] PASS over the pass, running, both aboard (0.0 s)
+[walk] step 20 stopped past the pass: the marks it left on the van (362 s, frame 9118)
+[walk] PASS the marks are on the van (0.0 s)
+[walk] DONE ghat in 372 s
+--------------------------------------------------------------------------------
+Done recording movie at path: D:/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/videos/ghat.parts/part1.avi
+9439 frames at 25 FPS (movie length: 00:06:17:14), recorded in 00:10:10 (61% of real-time speed).
+CPU render time: 3.22 seconds (average: 0.34 ms/frame)
+GPU render time: 1.58 seconds (average: 0.17 ms/frame)
+Encoding time: 123.78 seconds (average: 13.11 ms/frame)
+--------------------------------------------------------------------------------
+WARNING: 51 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 4 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

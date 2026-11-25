@@ -1,0 +1,10 @@
+RESULT: PASS (exit 0): ghat_looks profile k3
+  asked 1 (ghat_looks) / started 1 / ended 1 (ghat_looks); wall 184 s; beats 305; game pid 11044
+  startup: first beat 16.1 s after the game launched (limit 45 s)
+  ghat_looks: 18 / 18 required checks ran
+  rules in ghat_looks (evaluated / windows / errors / findings): H1 9300/0/0/0  H2 9300/0/0/0  H3 8781/0/0/0
+  godot processes left after the run: none
+  Scope: ghat_looks, profile k3. Claims: the run was alive, in control and complete; every required #6 check ran and held (the heat only while it's interested, the breakdown before the pass at three driving profiles, the net hides the van and you see out, the heat stops when it gives up, coolant or water fixes it, over the pass; and every issue found while building); H1-H3 held wherever they looked
+  Declared setup (not proven): F1 -> Puzzles -> 6 (the user's own way in); the van carried 70 m short of hairpin 1 (ghat_looks, the coolant scenarios); the net put on with set_tarp in ghat_heat / ghat_looks / the coolant scenarios (pulling it is ghat_net's); both seated with enter_seat to hide; carried to the spring and back (place_player / face_point); save and load through SaveGame.collect / apply, not a file; the 0 exact source lines are in frozen.json scope.declared_setup_lines
+  NOT PROVEN: what a player sees and feels (judged from the recorded walk); the fog's look; sound levels; walking to the spring (carried); a real file save (the save scenario covers files); the other creature encounters under the heat rule (only the gym's `van`)
+  Evidence: D:/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/method/runs/20261125_143428_ghat_k3

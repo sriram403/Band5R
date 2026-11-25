@@ -1,0 +1,15 @@
+RESULT: FAIL (exit 1): check failed: 'handed its round at the van's nose with a waypoint from the far side, it walks round the van, not into it (closest 0.16 m, its body 0.3 m)' (ghat_looks/handed_its_round_at_the_van_s_nose_with_a_waypoint_from_the_), owner=UNRESOLVED [began +159.7s game 135.2s]
+  asked 1 (ghat_looks) / started 1 / ended 1 (ghat_looks); wall 235 s; beats 408; game pid 7460
+  startup: first beat 15.6 s after the game launched (limit 45 s)
+  every condition, in the order it began (status, began, detected):
+    FAIL        +159.7s game 135.2s  check failed: 'handed its round at the van's nose with a waypoint from the far side, it walks round the van, not into it (closest 0.16 m, its body 0.3 m)' (ghat_looks/handed_its_round_at_the_van_s_nose_with_a_waypoint_from_the_), owner=UNRESOLVED  <== headline
+    FAIL        +229.9s game 205.4s  check failed: 'under the tarp it gives up, only after a full round of the van (1 stops)' (ghat_looks/under_the_tarp_it_gives_up_only_after_a_full_round_of_the_va), owner=UNRESOLVED
+    FAIL        +231.9s game 207.4s  check failed: 'giving up it slumps, head down (0.00 rad)' (ghat_looks/giving_up_it_slumps_head_down_x_rad), owner=UNRESOLVED
+    FAIL        +231.9s game 207.4s  check failed: 'its eyes dim and the whine falls' (ghat_looks/its_eyes_dim_and_the_whine_falls), owner=UNRESOLVED
+  ghat_looks: 18 / 18 required checks ran
+  rules in ghat_looks (evaluated / windows / errors / findings): H1 12434/0/0/0  H2 12434/0/0/0  H3 11931/0/0/0
+  godot processes left after the run: none
+  Scope: ghat_looks, profile k3. Claims: the run was alive, in control and complete; every required #6 check ran and held (the heat only while it's interested, the breakdown before the pass at three driving profiles, the net hides the van and you see out, the heat stops when it gives up, coolant or water fixes it, over the pass; and every issue found while building); H1-H3 held wherever they looked
+  Declared setup (not proven): F1 -> Puzzles -> 6 (the user's own way in); the van carried 70 m short of hairpin 1 (ghat_looks, the coolant scenarios); the net put on with set_tarp in ghat_heat / ghat_looks / the coolant scenarios (pulling it is ghat_net's); both seated with enter_seat to hide; carried to the spring and back (place_player / face_point); save and load through SaveGame.collect / apply, not a file; the 0 exact source lines are in frozen.json scope.declared_setup_lines
+  NOT PROVEN: what a player sees and feels (judged from the recorded walk); the fog's look; sound levels; walking to the spring (carried); a real file save (the save scenario covers files); the other creature encounters under the heat rule (only the gym's `van`)
+  Evidence: D:/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/method/runs/20261125_142923_ghat_k3_stale_via
