@@ -23,6 +23,10 @@ being built and tested), so this always shows where the work is right now.
       **02:16 PM: both GPT children started** (`step9_gpt_test_task.md`, budget ~25 game min: bench points incl. hang
       point 2, `prove_ghat.py nose`, a fresh recorded walk = the video; `step9_code_audit_task.md`, read-only).
       Referee's blind verdict goes in `extras/referee/step9_referee_verdict.md`.
+      **02:20 PM: GPT tester blocked:** on the work account it refused (that account's own rules: no game runs, no
+      skills library; `step9_gpt_test_report.md` INCOMPLETE, `12eb319`); the personal Codex has no Astra 6.2 (only
+      gpt-6-luna, gpt-5.6-terra / luna). So a fresh Claude tester runs `step9_claude_test_task.md`, GPT Astra audits its
+      results. **For the user, later:** A) allow the GPT tester on the work account, B) try gpt-6-luna on personal (pick: B).
 - [ ] **Speed up the creature's search (the user asked 2026-11-25 02:09 PM; referee's pick A, after step 9 merges):**
       `Hearing.gd` line 29 reads the PC clock, not the game clock, so fast mode would hear over the wrong time. A: hearing
       on the game clock (small game-code fix, plant + GPT review), then step 9 normal vs fast side by side, several runs,
