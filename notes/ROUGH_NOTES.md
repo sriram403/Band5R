@@ -841,3 +841,19 @@ happened, the fix, and the habit to keep.
   command ran the broken file, but I had chained commit + push behind it, so the break reached GitHub (`59b9651`) and was
   fixed 2 min later. Fix: patches with an escape go through the Write / Edit tools; a parse check gates every commit of a
   patched Python file. Habit: never chain `commit && push` after a run whose output I haven't read.
+- **2026-11-25 (step9, bench builder), SOLVED: Problem never gave up at ghat step 9 (2 of ~10 fresh walks). A game bug.**
+  Assumed (task list): its senses through the glass, or the global-RNG sniff timer. Reality (bench `ghat_step9_bench`,
+  restoring the hang run's own step-9 save point; B1 hung exactly as the walk did): at step 9's start Problem still has
+  its own urge to circle the van (`van_interest`, from engine sounds; its patience `_van_memory` is a global-RNG draw,
+  20-40 s, made when it spawns in step 6). While it circles in VAN state the ghat's round keeps its bookkeeping: on the
+  driver's side it picked ring point 3 as its waypoint, then the circling carried it on to the van's NOSE; the waypoint
+  was "kept until reached" and never re-checked, so from the nose it walked straight at point 3 through the van and
+  pushed at the nose for good (side-steps alternate left / right and never clear an edge). Both hangs had the two
+  longest urges left at step 9 (24.3 / 24.0 s; the 8 good runs 8.1-20.8 s). Fix (`Ghat._round_waypoint`): a held
+  waypoint whose line crosses the van is chosen again from where it stands. B2 (same point, same seed) gave up at 68.6 s.
+  Plant `stale_via`, check `_ghat_round_nose` (ghat_looks + `ghat_round_nose_bench`): planted FAIL 0.18 m, clean PASS.
+  Habits: (1) a "kept until reached" target needs the same validity test as the moment it was chosen (a fix that adds
+  memory adds a stale-memory bug); (2) a part's bookkeeping that runs while its actor isn't following it (VAN / CURIOUS
+  states ignore the director) goes stale: re-check at hand-over; (3) a "random" 2-in-10 failure: compare EVERY saved
+  number at the step's start across runs (here `van_interest` separated them at once), then replay the hang's own save
+  point on a bench: it reproduced first time.

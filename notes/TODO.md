@@ -12,6 +12,10 @@ being built and tested), so this always shows where the work is right now.
       + push (bug fix), video of step 9. After it: the held re-proof (branch `held`, not merged; `held5_result.md`).
       Cause (bench B1, 14:01): a stale ring point (`_via_k` 3, far side of the van) kept from the van orbit; Problem
       pressed on the van's nose for good, stops_done 0, quiet 184 s (sight / hearing / breath ruled out).
+      **Builder done (`speed_research/step9_build_report.md`):** plain bug, fixed (`Ghat._round_waypoint` re-checks the
+      held waypoint); plant `stale_via` FAIL / clean PASS on `ghat_round_nose_bench`; hang point now gives up 68.6 s;
+      fresh walk W1 step 9 PASS in 72 s (a hang-prone draw); ~9 game min. Open: `ghat_looks` whole + `prove_ghat.py
+      nose` not run; design question A / B (a directed Problem's own van circling) in the report.
       **GPT as the TESTER, first try (the user: A, 2026-11-25 02:04 PM; a one-off exception to "GPT doesn't run the
       game"):** GPT Astra 6.2 high runs the after-fix tests (bench seeds, the fresh walk through step 9, the step-9
       video) and writes a verdict; the referee watches the SAME runs and writes its own verdict blind; compare. The fix's

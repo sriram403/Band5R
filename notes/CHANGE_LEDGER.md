@@ -762,3 +762,16 @@ Task: `notes/speed_research/merge_tools_task.md`. `speed-t34` (`fd4ae18`) merged
   (`speed_research/autoq_result.md`): planted typo at step 15 -> walk-back to 13; planted hearing gap -> NOT QUALIFIED
   -> fresh; clean -> QUALIFIED (2 SAME + outcome); restore check clean / planted; REPAIR to DONE; race bench old 3/3
   lost, fixed 3/3 landed; STALLED backstop offline. Not run: a second walk; the LIVE_GROUPS hypothesis live.
+
+## 2026-11-25 step-9 hang: Problem's stale round waypoint (branch `step9` in `dev`; NOT merged)
+- **Changed (game):** `Ghat._round_waypoint` re-checks the ring point it holds: if the straight line to it crosses the
+  van, it chooses again (nearest) from where it stands; the crossing test is one helper `_crosses_van` (same box as
+  before). Plant `stale_via` (Plant.gd). **Test:** `_ghat_round_nose` (new check, called in `ghat_looks` right after the
+  far-side round check), `t_ghat_round_nose_bench` (that check alone), `t_ghat_step9_bench` (restores a ghat walk's
+  step-9 point, logs the give-up); `prove_ghat.py` row `nose`; `frozen.json` re-frozen (ghat_looks 17 -> 18, total 125).
+- **Could break:** Problem's round wherever a held waypoint's line crosses the van (only after it was moved off its
+  round: VAN / CURIOUS states, an unstick hop); in a normal round that line never crosses, so nothing else changes.
+  `ghat_looks` now runs ~10 s more before its tarp give-up check (it starts that from stop 5, not at stop 6).
+- **Tests:** bench plant FAIL (pressed on the nose 0.18 m) / clean PASS (9.8 s, 0.42 m); the hang's own step-9 point
+  gave up at 68.6 s (before: none in 190 s); a fresh ghat walk to step 10 (`speed_research/step9_build_report.md`).
+  Not run: `ghat_looks` whole (its new call and its later give-up timing), ~20 bench seeds.
