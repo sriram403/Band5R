@@ -507,7 +507,8 @@ def g_matrix():
     probs, out = t3_gate.matrix(fz, frozen, full, root=root, now=now)
     st = dict((p, s) for p, s, _ in out)
     rec("matrix a new plant (new_hole) with no matrix group", "NOT DONE", st.get("new_hole", "absent"), [w for p, _, w in out if p == "new_hole"])
-    rec("matrix the game's plant rows (main's 27)", "27", str(len(t3_gate.plant_rows())), t3_gate.plant_rows())
+    # 27 -> 28 (2026-11-25): the step-9 hang's plant stale_via, its matrix row 'nose'
+    rec("matrix the game's plant rows (main's 27 + stale_via)", "28", str(len(t3_gate.plant_rows())), t3_gate.plant_rows())
 
 
 # ---- test-only flags sealed out of acceptance runs (F9) ------------------------------------------

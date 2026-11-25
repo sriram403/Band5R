@@ -29,7 +29,7 @@ INVS = os.path.join(ROOT, "appdata", "method", "inv")
 
 # group: (scenarios, plants, {plant: [its own exact ids: manifest check id or rule id]})
 GROUPS = {
-    # main's 27 plant rows (#6 day 2 + L6 finishing, 2026-11-10), each check by its exact manifest id (speedtools merge,
+    # main's 27 plant rows (#6 day 2 + L6 finishing, 2026-11-10) + the step-9 'nose' (stale_via, 2026-11-25) = 28, each check by its exact manifest id (speedtools merge,
     # 2026-11-17: the ids rebuilt from main's scenarios, tools/method/freeze_ghat.py). Batch groups are for diagnosis.
     "heat_always": ("ghat_heat", "heat_always,one_corner", {"heat_always": ["ghat_heat/x_no_heat_or_leak_from_it_before_it_sees_the_van_x_c_x_l_min", "H1"]}),
     "stall_hud": ("ghat_heat", "hud_heat,one_flat", {"hud_heat": ["ghat_heat/x_hot_with_it_watching_no_temp_cool_bars_no_engine_hot_banne"]}),
@@ -85,7 +85,7 @@ def behavioural(plants):
 # F8: the exact proof matrix, one group per plant row (every row proved alone, D2 A). The batch groups above
 # stay for diagnosis; they never certify a member by themselves.
 MATRIX = ["heat_always", "stall_hud", "solo_fog_short", "solo_seen_h2", "solo_keeps_interest", "lean", "solo_fast_turn",
-          "solo_one_layer_net", "solo_tail_flush", "fog_sight", "warn", "round", "hold", "listen", "stow",
+          "solo_one_layer_net", "solo_tail_flush", "fog_sight", "warn", "round", "nose", "hold", "listen", "stow",
           "solo_leave_sees", "solo_no_breath_lock", "solo_round_skip", "solo_no_fix", "solo_free_coolant", "solo_needle_stuck",
           "jug_c", "solo_seat_compare", "solo_cap_text", "window", "solo_marks_pile", "solo_marks_unsaved"]
 

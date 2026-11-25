@@ -857,3 +857,11 @@ happened, the fix, and the habit to keep.
   states ignore the director) goes stale: re-check at hand-over; (3) a "random" 2-in-10 failure: compare EVERY saved
   number at the step's start across runs (here `van_interest` separated them at once), then replay the hang's own save
   point on a bench: it reproduced first time.
+- **2026-11-25 (step9 round 2), a new proof group that the gate didn't own.** Assumed (the builder): adding the prove
+  row `nose` to `prove_ghat.py` GROUPS was enough. Reality (GPT's audit): the final gate certifies only `MATRIX` rows;
+  28 plants discovered, 27 owned, so even a PROVED `nose` read NOT DONE, and `t3_controls.py matrix` went 3 BAD (nobody
+  ran it). Fix: `nose` in MATRIX beside `round`, the inventory control 27 -> 28, `tools/method/matrix_owners.py` (plants
+  discovered vs MATRIX owners, exit 1 on a gap). Habit: a new plant = GROUPS + MATRIX + the inventory count, then run
+  `t3_controls.py matrix` and `matrix_owners.py` before the commit. Also seen: `t1fix_controls.py` can't run in this
+  copy (its archived run `20261111_111720_ghat_k3_fast` is in neither `dev` nor `main`; it stops at blocker 1, before
+  anything MATRIX-related; it reads only GROUPS). Habit: a control suite that needs archived evidence says so up front.
