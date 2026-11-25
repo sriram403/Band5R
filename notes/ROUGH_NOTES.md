@@ -912,3 +912,23 @@ happened, the fix, and the habit to keep.
   (here the urge), and check a miss against that run's own baseline before calling it a failure.
 - **2026-11-25 (referee), the heredoc slip, mine too.** I appended the two entries above with Python through a Bash
   heredoc, the very slip the round-3 builder logged. No harm (an append, no escapes, tail checked). Habit: Edit / Write.
+- **2026-11-25 (referee), a logged lesson isn't a followed lesson.** The heredoc-patch rule sits in 3 skills and this
+  project's rules, yet it was broken 3 times today (round-2 builder, round-3 builder, me). Reading a rule doesn't stop a
+  habit in the moment. Habit: a slip that repeats after it's logged gets a tool that stops it (a hook / a check), not
+  another note. (Proposed to the user: a PreToolUse hook refusing Python-through-heredoc edits of tracked files.)
+- **2026-11-25 (referee), times estimated, not read.** Twice I wrote a time ("02:20 PM", "03:21 PM") without reading the
+  clock; the real times were 02:18 / 03:19. The rule says read it every time, in the same tool call. Habit: no time in a
+  message or note unless a `Get-Date` in this turn produced it.
+- **2026-11-25 (referee), blind by instruction, not by the tool.** Live trial 2 gave every session one shared shots
+  folder; later sessions could see earlier sessions' pictures (GPT's audit found it after the trial). Each was told to
+  read only its own and none cited another's, but a blind test must be blind by construction. Habit: before a blind
+  trial, list every file / folder / output a player can reach and make each session's private; then grep what each
+  session wrote for the others' names.
+- **2026-11-25 (referee), monitors: noisy, and one watched the wrong file.** A monitor that echoed every `rig.txt` beat
+  and every new shot flooded the chat; another waited for an `exit` line in a file the command never wrote to (the
+  exit went to the background task's output), so it never ended. Habit: a watch emits only results / failures /
+  silence (every Nth progress line at most), and its end condition is tested against the file the command really writes.
+- **2026-11-25 (referee), a trial plan that couldn't show its bug.** My trial-3 draft sealed `no_fix` at step 16; GPT's
+  audit showed the first pot only reaches 67.5 % coolant, under the 75 % repair threshold, so the bug can't show there.
+  Habit: for each planted bug in a test design, trace in the code WHEN and WHERE its effect reaches the screen from the
+  chosen moment before calling the session valid.
