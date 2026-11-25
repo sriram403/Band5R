@@ -222,4 +222,6 @@ no general progress guarantee; no code change unless a new jam, then an exact se
 - A real certifying matrix (a final suite + all 28 proofs on the frozen tree); the controls prove the gate's logic.
 
 ## Round 2 commits (branch `step9`, no merge, no push)
-`67ee0b1` item 1 · `5cc1ae0` item 2 · `fa52f92` item 3 · this report: the commit after `fa52f92` (hash on the last line).
+`67ee0b1` item 1 · `5cc1ae0` item 2 · `fa52f92` item 3 · `02ab97e` item 4 + this report (this line added in the commit after it).
+
+Round 2 last commit: `02ab97e`
