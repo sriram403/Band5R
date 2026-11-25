@@ -1,0 +1,47 @@
+{
+ "status": "PASS",
+ "code": 0,
+ "inv": "20261125_154724_36002",
+ "part": "1x",
+ "fixture": "",
+ "asked": [
+  "ghat_looks"
+ ],
+ "started": [
+  "ghat_looks"
+ ],
+ "ended": [
+  "ghat_looks"
+ ],
+ "failed_ids": [],
+ "passed_ids": [
+  "ghat_looks/at_the_back_it_crouches_down_and_sniffs_x_sniffs",
+  "ghat_looks/at_the_windows_and_the_bonnet_it_leans_in_x_rad",
+  "ghat_looks/boiled_it_hisses_like_a_kettle",
+  "ghat_looks/f1_puzzles_6_both_in_the_van_at_the_foot_of_the_ghat_no_prob",
+  "ghat_looks/from_the_far_side_it_walks_round_the_van_to_the_other_window",
+  "ghat_looks/giving_up_it_slumps_head_down_x_rad",
+  "ghat_looks/handed_its_round_at_the_van_s_nose_with_a_waypoint_from_the_",
+  "ghat_looks/it_comes_to_the_van",
+  "ghat_looks/it_goes_round_the_van_stopping_at_the_bonnet_both_windows_an",
+  "ghat_looks/it_turns_away_slowly_fastest_x_deg_s",
+  "ghat_looks/its_body_stays_put_its_head_follows_the_van_x_deg_off",
+  "ghat_looks/its_eyes_dim_and_the_whine_falls",
+  "ghat_looks/its_eyes_go_from_dim_to_bright_and_the_whine_rises_x_x",
+  "ghat_looks/leaning_in_at_a_window_its_face_stays_outside_the_glass_clos",
+  "ghat_looks/problem_appears_among_the_trees_x_s",
+  "ghat_looks/the_engine_starts_x",
+  "ghat_looks/the_hot_engine_ticks_faster_as_it_heats_every_x_s_x_s_x_tick",
+  "ghat_looks/under_the_tarp_it_gives_up_only_after_a_full_round_of_the_va"
+ ],
+ "conditions": [],
+ "early_stop": false,
+ "expect_ids": [],
+ "kill": [],
+ "kill_ok": null,
+ "godot_left_after": [],
+ "wrapper_rc": 0,
+ "drained": true,
+ "closed_late": [],
+ "evidence": "D:/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/method/runs/20261125_154726_ghat_k3_1x"
+}
