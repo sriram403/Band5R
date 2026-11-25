@@ -10,6 +10,8 @@ Groups:
   proof     t3_gate.py proof on the same kind of receipts
   obs       t3_gate.py obstable on a small table
   sentinel  sentinel_workers.py (lane_sentinel.sh's workload judge) on R4's real lane b log and its pair
+  walknames walkgate.repeated_names + tools/live.py --gate-check: a walk whose pass names repeat is refused
+            (the ghat's old 17 / 18), every walk now accepted; step 18's test judged on real saved coolant
   python tools/method/t3_controls.py [ident manifest final proof obs sentinel ...]
 """
 import json
@@ -579,8 +581,69 @@ def g_sentinel():
     rec("sentinel no worker walk at all", "REFUSED", "ACCEPTED" if r.returncode == 0 else "REFUSED", r.stdout.strip())
 
 
+# ---- a walk's pass names are each its own (step-9 round 2, the tester's finding, 2026-11-25) -------
+def g_walknames():
+    import walkgate
+    live = os.path.join(ROOT, "tools", "live")
+    # the planted bug: the ghat walk as it was before the fix (steps 17 / 18 reused 14's and 16's names)
+    old_src = subprocess.run(["git", "-C", ROOT, "show", "5e70d40:tools/live/ghat.json"], capture_output=True, text=True)
+    if old_src.returncode != 0:
+        rec("walknames the old ghat walk (5e70d40) readable", "read", "missing", old_src.stderr.strip())
+        return
+    old = json.loads(old_src.stdout)
+    rep = walkgate.repeated_names(old)
+    rec("walknames old ghat.json (17 / 18 reuse 14 / 16)", "2 repeated", "%d repeated" % len(rep), rep)
+    rec("walknames ... names the right steps", "14,17 + 16,18",
+        "14,17 + 16,18" if any("steps 14, 17" in r for r in rep) and any("steps 16, 18" in r for r in rep) else "other", rep)
+    new = json.load(open(os.path.join(live, "ghat.json"), encoding="utf-8"))
+    rec("walknames ghat.json now", "0 repeated", "%d repeated" % len(walkgate.repeated_names(new)), walkgate.repeated_names(new))
+    bad = []
+    for fn in sorted(os.listdir(live)):
+        if fn.endswith(".json"):
+            w = json.load(open(os.path.join(live, fn), encoding="utf-8"))
+            if isinstance(w, dict) and "steps" in w and walkgate.repeated_names(w):
+                bad.append(fn)
+    rec("walknames every walk in tools/live", "none repeat", ", ".join(bad) or "none repeat")
+    ex = lambda n, e="true", **k: dict({"name": n, "expr": e, "within": 1}, **k)
+    rec("walknames a watch's name reused by a later expect", "1 repeated", "%d repeated" % len(walkgate.repeated_names(
+        {"steps": [{"name": "a", "expect": [ex("x", watch=True)]}, {"name": "b", "expect": [ex("x")]}]})))
+    rec("walknames an unnamed expect (its step's name) = another's name", "1 repeated", "%d repeated" % len(walkgate.repeated_names(
+        {"steps": [{"name": "a", "expect": [{"expr": "true"}]}, {"name": "b", "expect": [ex("a")]}]})))
+    rec("walknames two steps with one name (--from can't tell them)", "1 repeated", "%d repeated" % len(walkgate.repeated_names(
+        {"steps": [{"name": "a", "expect": [ex("x")]}, {"name": "a", "expect": [ex("y")]}]})))
+    rec("walknames same text, different case (the driver's keys are exact)", "0 repeated", "%d repeated" % len(walkgate.repeated_names(
+        {"steps": [{"name": "a", "expect": [ex("x")]}, {"name": "b", "expect": [ex("X")]}]})))
+    # end to end through the client: tools/live.py --gate-check refuses before any launch (no game)
+    d = fresh("walknames")
+    wr(os.path.join(d, "ghat_old.json"), old)
+    for tag, p, want in (("old", os.path.join(d, "ghat_old.json"), "REFUSED 7"), ("new", os.path.join(live, "ghat.json"), "ACCEPTED 0")):
+        r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "live.py"), "--gate-check", "--fresh", "--walk", p],
+                           cwd=ROOT, capture_output=True, text=True)
+        got = ("REFUSED %d" if "REFUSED (walk)" in r.stdout else "ACCEPTED %d") % r.returncode
+        rec("walknames live.py --gate-check, %s ghat walk" % tag, want, got, r.stdout.strip()[:150])
+    # step 18's new test can fail: judged on the van's coolant at the real save points of the tester's fresh walk
+    # (point 17 = step 18's start, after one pot; point 18 = step 19's start, after two)
+    pts = os.path.join(ROOT, "appdata", "playtest", "FindingNaresh", "live", "points", "ghat_20261125_143834_19960")
+    vals = []
+    for i in (17, 18):
+        try:
+            vals.append(float(json.load(open(os.path.join(pts, "%d.json" % i), encoding="utf-8"))["camper"]["coolant"]))
+        except (OSError, KeyError, TypeError, ValueError) as e:
+            vals.append(None)
+            note = "%s/%d.json: %s" % (pts, i, e)
+    if None in vals:
+        rec("walknames step 18's coolant evidence present", "present", "missing", note)
+        return
+    e18 = new["steps"][17]["expect"][0]["expr"]
+    e18_old = old["steps"][17]["expect"][0]["expr"]
+    test = lambda expr, c: bool(eval(expr.replace("camper().coolant", repr(c)), {"__builtins__": {}}))   # one comparison
+    rec("walknames step 18 new test before the 2nd pour (%.3f)" % vals[0], "False", str(test(e18, vals[0])), e18)
+    rec("walknames step 18 new test after it (%.3f)" % vals[1], "True", str(test(e18, vals[1])), e18)
+    rec("walknames step 18 OLD test before the 2nd pour (could never fail)", "True", str(test(e18_old, vals[0])), e18_old)
+
+
 GROUPS = {"ident": g_ident, "manifest": g_manifest, "final": g_final, "proof": g_proof, "obs": g_obs,
-          "sentinel": g_sentinel, "matrix": g_matrix, "seal": g_seal}
+          "sentinel": g_sentinel, "matrix": g_matrix, "seal": g_seal, "walknames": g_walknames}
 
 
 def main(a):

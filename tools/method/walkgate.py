@@ -697,6 +697,23 @@ def walk_hash(walk):
     return hashlib.sha256(json.dumps(_canon(walk), sort_keys=True).encode()).hexdigest()[:16]
 
 
+def repeated_names(walk):
+    """step-9 round 2 (the tester, 2026-11-25): the driver keeps ONE set of passed names per walk
+    (LiveControl.gd: `while not ctx["passed"].has(name)`), so a name that an earlier step already passed is
+    skipped, never checked (the ghat's steps 17 / 18 reused 14's and 16's). The names as the driver makes them:
+    an expect's "name", else its step's name, else "step <i>"; watches included (they share the set).
+    -> ["'<name>' in steps <i>, <j>", ...] (empty = every pass name is its own); step names repeated too (--from)."""
+    seen, steps_seen = {}, {}
+    for i, st in enumerate(walk.get("steps", []) if isinstance(walk, dict) else []):
+        nm = str(st.get("name", "step %d" % i))
+        steps_seen.setdefault(nm, []).append(i + 1)
+        for e in st.get("expect", []):
+            seen.setdefault(str(e.get("name", nm)), []).append(i + 1)
+    out = ["pass name '%s' in steps %s" % (n, ", ".join(str(x) for x in at)) for n, at in seen.items() if len(at) > 1]
+    out += ["step name '%s' at steps %s" % (n, ", ".join(str(x) for x in at)) for n, at in steps_seen.items() if len(at) > 1]
+    return out
+
+
 def classify_walk(old, new, k):
     """How a walk now relates to the producer's walk, for a resume from point k:
     same    -> identical content

@@ -783,3 +783,18 @@ Task: `notes/speed_research/merge_tools_task.md`. `speed-t34` (`fd4ae18`) merged
   FAILs: tarp give-up, slump, eyes dim: the stuck creature carries on), clean `ghat_looks` PASS 18/18; a fresh recorded
   walk DONE. Round 2: `nose` in the gate's MATRIX (it owned 27 of 28 plants; now 28 / 28, `matrix_owners.py`),
   `t3_controls.py` inventory 27 -> 28. Not run: ~20 bench seeds.
+
+## 2026-11-25 the ghat walk's steps 17 / 18 really checked; a walk with repeated pass names refused (branch `step9`; NOT merged)
+- **Changed (walk + tools, no game code):** `tools/live/make_ghat.py` -> `ghat.json`: step 17 expects "P2 holds a full
+  pot again", step 18 "the water went in again, the radiator full" with `camper().coolant > 0.99` (was 14's / 16's
+  names, so the driver skipped both as already passed; and 18's old `> 0.3` was true before the pour: 0.675 after
+  one pot, 1.000 after two). `tools/method/walkgate.py` `repeated_names` + `tools/live.py --walk`: a walk whose pass
+  names (or step names) repeat is REFUSED (exit 7) before any launch, so `play_walk.sh` / `record_walk.sh` stop at
+  their `--gate-check`. Found by the tester (`step9_test_report.md` Surprise 4); older than the step-9 fix.
+- **Could break:** the ghat walk now really judges steps 17 / 18 (a walk that "passed" there before may fail there
+  now, which is the point); the walk file and the tools changed, so old ghat points' identity no longer matches: the
+  held branch / autoq need a fresh producer (already planned). Other walks: all 20 in `tools/live` accepted.
+- **Tests:** `python tools/method/t3_controls.py walknames` 13/13 (old ghat.json refused naming steps 14,17 + 16,18;
+  new accepted; watch / unnamed / step-name / case cases; `live.py --gate-check` REFUSED 7 old / ACCEPTED 0 new; step
+  18's test False at 0.675, True at 1.000 on the tester's real points); guard off in memory: 5 BAD. t3 137/137,
+  rv1 149/149, autoq 81/81. Not run: the walk itself (budget; offline only).

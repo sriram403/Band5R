@@ -865,3 +865,10 @@ happened, the fix, and the habit to keep.
   `t3_controls.py matrix` and `matrix_owners.py` before the commit. Also seen: `t1fix_controls.py` can't run in this
   copy (its archived run `20261111_111720_ghat_k3_fast` is in neither `dev` nor `main`; it stops at blocker 1, before
   anything MATRIX-related; it reads only GROUPS). Habit: a control suite that needs archived evidence says so up front.
+- **2026-11-25 (step9 round 2), a renamed check that still couldn't fail.** Assumed (the task's recommended fix):
+  unique pass names for ghat steps 17 / 18 make them checked. Reality: step 18's test `camper().coolant > 0.3` was
+  already true before P2 poured (the walk's save points, 25 runs: 0.050 -> 0.675 after the first pot -> 0.675 at step
+  18's start -> 1.000 after the second), so a renamed step 18 would PASS at once with or without the pour. Fix: step 18
+  expects `coolant > 0.99` (fails at 0.675, passes at 1.000), judged in `t3_controls.py walknames` on the real points.
+  Habit: when a skipped check is switched back on, ask whether it can fail in the state it now runs in; the save
+  points at every step are free offline evidence for that.
