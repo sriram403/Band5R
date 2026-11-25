@@ -27,6 +27,9 @@ being built and tested), so this always shows where the work is right now.
       skills library; `step9_gpt_test_report.md` INCOMPLETE, `12eb319`); the personal Codex has no Astra 6.2 (only
       gpt-6-luna, gpt-5.6-terra / luna). So a fresh Claude tester runs `step9_claude_test_task.md`, GPT Astra audits its
       results. **For the user, later:** A) allow the GPT tester on the work account, B) try gpt-6-luna on personal (pick: B).
+- [ ] **PARKED (the user back 2026-11-25 02:35 PM, wants game dev; referee's pick A): the held re-proof** (branch
+      `held`, tip `ad07579`, not merged; `held5_result.md` + `held_build_report.md` "The referee's proof (M8)"), its two
+      results audits (part 5b), and the ENGINE-ON adapter thread. Test tooling only; resume it when the user asks.
 - [ ] **Speed up the creature's search (the user asked 2026-11-25 02:09 PM; referee's pick A, after step 9 merges):**
       `Hearing.gd` line 29 reads the PC clock, not the game clock, so fast mode would hear over the wrong time. A: hearing
       on the game clock (small game-code fix, plant + GPT review), then step 9 normal vs fast side by side, several runs,
