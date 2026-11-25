@@ -6,6 +6,44 @@ Updated live as each small step lands (sub-steps are added under an item while i
 being built and tested), so this always shows where the work is right now.
 
 ## Right now
+- [~] **2026-11-25 01:50 PM: the step-9 game hang (branch `step9` in `dev`, from main; the user: A).** Problem sometimes
+      never gives up at ghat step 9 (2 of ~10 fresh producers). Bench builder Claude Opus 5.5 high (`speed_research/step9_build_task.md`):
+      bench first, reproduce, plain bug -> fix + plant; design choice -> two blind specs. Then GPT Astra 6.2 audit, merge
+      + push (bug fix), video of step 9. After it: the held re-proof (branch `held`, not merged; `held5_result.md`).
+      Cause (bench B1, 14:01): a stale ring point (`_via_k` 3, far side of the van) kept from the van orbit; Problem
+      pressed on the van's nose for good, stops_done 0, quiet 184 s (sight / hearing / breath ruled out).
+      **Builder done (`speed_research/step9_build_report.md`):** plain bug, fixed (`Ghat._round_waypoint` re-checks the
+      held waypoint); plant `stale_via` FAIL / clean PASS on `ghat_round_nose_bench`; hang point now gives up 68.6 s;
+      fresh walk W1 step 9 PASS in 72 s (a hang-prone draw); ~9 game min. Open: `ghat_looks` whole + `prove_ghat.py
+      nose` not run; design question A / B (a directed Problem's own van circling) in the report.
+      **GPT as the TESTER, first try (the user: A, 2026-11-25 02:04 PM; a one-off exception to "GPT doesn't run the
+      game"):** GPT Astra 6.2 high runs the after-fix tests (bench seeds, the fresh walk through step 9, the step-9
+      video) and writes a verdict; the referee watches the SAME runs and writes its own verdict blind; compare. The fix's
+      code audit is a separate fresh GPT child. ~0 extra game min.
+      **02:16 PM: both GPT children started** (`step9_gpt_test_task.md`, budget ~25 game min: bench points incl. hang
+      point 2, `prove_ghat.py nose`, a fresh recorded walk = the video; `step9_code_audit_task.md`, read-only).
+      Referee's blind verdict goes in `extras/referee/step9_referee_verdict.md`.
+      **02:18 PM: GPT tester blocked:** on the work account it refused (that account's own rules: no game runs, no
+      skills library; `step9_gpt_test_report.md` INCOMPLETE, `12eb319`); the personal Codex has no Astra 6.2 (only
+      gpt-6-luna, gpt-5.6-terra / luna). So a fresh Claude tester runs `step9_claude_test_task.md`, GPT Astra audits its
+      results. **For the user, later:** A) allow the GPT tester on the work account, B) try gpt-6-luna on personal (pick: B).
+      **Round 2 builder done (`step9_build_report.md` "Round 2", 0 game min):** `nose` in the gate's MATRIX (owners
+      28/28, controls 27 -> 28); report + ledger corrections; ghat steps 17 / 18 really checked (own names, step 18
+      `coolant > 0.99`) and `tools/live.py` refuses a walk with repeated pass names. t3 137/137, rv1 149/149, autoq
+      81/81. Next: GPT Astra 6.2 re-audit; the held branch needs a fresh producer (walk file changed).
+- [ ] **PARKED (the user back 2026-11-25 02:35 PM, wants game dev; referee's pick A): the held re-proof** (branch
+      `held`, tip `ad07579`, not merged; `held5_result.md` + `held_build_report.md` "The referee's proof (M8)"), its two
+      results audits (part 5b), and the ENGINE-ON adapter thread. Test tooling only; resume it when the user asks.
+- [x] **Engine: Godot for now (the user, 2026-11-25 03:08 PM: A).** UE5 asked about; the referee's view: puzzles and the
+      creature still being designed, Godot's fast AI loop + the proven test robot win now; UE5's win is the look. At the
+      art stage: rebuild ONE scene (the ghat: fog, van, creature) in UE5 as a ~1-day trial, compare look + AI speed, decide.
+- [ ] **Speed up the creature's search (the user asked 2026-11-25 02:09 PM; referee's pick A, after step 9 merges):**
+      `Hearing.gd` line 29 reads the PC clock, not the game clock, so fast mode would hear over the wrong time. A: hearing
+      on the game clock (small game-code fix, plant + GPT review), then step 9 normal vs fast side by side, several runs,
+      same outcome and give-up time -> fast for steps 9 and 12 (~1.5 min saved per ghat walk). B: leave it at 1x.
+- [ ] **Creatures on a nav mesh (Godot NavigationRegion3D / NavigationAgent3D), a later design job** (asked by the user
+      2026-11-25; referee's pick "later", no answer yet): the game has none; creatures walk straight with a hand-made ring
+      round the van. A moving van needs an obstacle or re-bake; changes every creature: two blind specs + the user's look.
 - [ ] **NEXT EXPERIMENT (the user, 2026-11-24): GPT as the TESTER.** News: GPT Astra (or Sol) is strong at testing / computer use, weak at game dev. Try a GPT model running the test part (walks, watched runs, judging) while Claude still builds; compare with Claude on the same job. After the adapters (held pot, engine on).
 - [x] **2026-11-24: auto-qualify resume points: MERGED into main and pushed (`a4b87b8`, the user: C)** (was branch `autoq`; `speed_research/autoq_result.md`): failed walk -> nearest resumable point qualified in 2 new games -> default REPAIR to DONE; planted bad restore -> NOT QUALIFIED -> fresh; restore check for new puzzles; found + fixed the lost-result rename race (race_bench). Controls autoq 51/51, rv1 149/149; 28.3 game min. Waiting: GPT-6.1 Sol results audit, then the user's merge A / B. Next: the held-pot and engine-on adapters.
 - [x] 2026-11-17: resume v1 merged into main and pushed (`842f494`).

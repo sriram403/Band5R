@@ -762,3 +762,45 @@ Task: `notes/speed_research/merge_tools_task.md`. `speed-t34` (`fd4ae18`) merged
   (`speed_research/autoq_result.md`): planted typo at step 15 -> walk-back to 13; planted hearing gap -> NOT QUALIFIED
   -> fresh; clean -> QUALIFIED (2 SAME + outcome); restore check clean / planted; REPAIR to DONE; race bench old 3/3
   lost, fixed 3/3 landed; STALLED backstop offline. Not run: a second walk; the LIVE_GROUPS hypothesis live.
+
+## 2026-11-25 step-9 hang: Problem's stale round waypoint (branch `step9` in `dev`; NOT merged)
+- **Changed (game):** `Ghat._round_waypoint` re-checks the ring point it holds: if the straight line to it crosses the
+  van, it chooses again (nearest) from where it stands; the crossing test is one helper `_crosses_van` (same box as
+  before). Plant `stale_via` (Plant.gd). **Test:** `_ghat_round_nose` (new check, called in `ghat_looks` right after the
+  far-side round check), `t_ghat_round_nose_bench` (that check alone), `t_ghat_step9_bench` (restores a ghat walk's
+  step-9 point, logs the give-up); `prove_ghat.py` row `nose`; `frozen.json` re-frozen (ghat_looks 17 -> 18, total 125).
+- **Could break:** Problem's round wherever a held waypoint's line crosses the van (only after it was moved off its
+  round: VAN / CURIOUS states, an unstick hop); in a normal round that line never crosses, so nothing else changes.
+  `ghat_looks` now runs ~10 s more before its tarp give-up check (it starts that from stop 5, not at stop 6).
+  **Limited guarantee (audit):** the 11-sample line test can miss a line grazing a corner of the box, and there is no
+  general progress guarantee (it can re-pick a blocked point after a hop / from inside the margin / on a tilt); no code
+  change unless a new jam is seen, then an exact segment / box test.
+- **Tests:** bench plant FAIL (pressed on the nose 0.18 m) / clean PASS (9.8 s, 0.42 m); the hang's own step-9 point
+  gave up at 68.6 s (before: none in 190 s; the waypoint dropped at 23.25 s, still VAN; WANDER at 24.37 s); a fresh
+  ghat walk to step 10 (`speed_research/step9_build_report.md`). The nose check is a **reduced fixture** (position /
+  stop / waypoint only); the B1 / B2 restore is the real-state evidence. Tester (`step9_test_report.md`): hang point 2
+  gave up 68.3 s, 4 good points within ~1 s of their own walks; prove row `nose` planted FAIL on its id (+3 knock-on
+  FAILs: tarp give-up, slump, eyes dim: the stuck creature carries on), clean `ghat_looks` PASS 18/18; a fresh recorded
+  walk DONE. Round 2: `nose` in the gate's MATRIX (it owned 27 of 28 plants; now 28 / 28, `matrix_owners.py`),
+  `t3_controls.py` inventory 27 -> 28. Not run: ~20 bench seeds.
+
+## 2026-11-25 the ghat walk's steps 17 / 18 really checked; a walk with repeated pass names refused (branch `step9`; NOT merged)
+- **Changed (walk + tools, no game code):** `tools/live/make_ghat.py` -> `ghat.json`: step 17 expects "P2 holds a full
+  pot again", step 18 "the water went in again, the radiator full" with `camper().coolant > 0.99` (was 14's / 16's
+  names, so the driver skipped both as already passed; and 18's old `> 0.3` was true before the pour: 0.675 after
+  one pot, 1.000 after two). `tools/method/walkgate.py` `repeated_names` + `tools/live.py --walk`: a walk whose pass
+  names (or step names) repeat is REFUSED (exit 7) before any launch, so `play_walk.sh` / `record_walk.sh` stop at
+  their `--gate-check`. Found by the tester (`step9_test_report.md` Surprise 4); older than the step-9 fix.
+- **Could break:** the ghat walk now really judges steps 17 / 18 (a walk that "passed" there before may fail there
+  now, which is the point); the walk file and the tools changed, so old ghat points' identity no longer matches: the
+  held branch / autoq need a fresh producer (already planned). Other walks: all 20 in `tools/live` accepted.
+- **Tests:** `python tools/method/t3_controls.py walknames` 13/13 (old ghat.json refused naming steps 14,17 + 16,18;
+  new accepted; watch / unnamed / step-name / case cases; `live.py --gate-check` REFUSED 7 old / ACCEPTED 0 new; step
+  18's test False at 0.675, True at 1.000 on the tester's real points); guard off in memory: 5 BAD. t3 137/137,
+  rv1 149/149, autoq 81/81. Not run: the walk itself (budget; offline only).
+- **Round 3 (GPT re-audit reservation 1):** the `walknames` control now reads a TRACKED fixture,
+  `tools/method/fixtures/step9_walknames.json` (the old ghat walk from `5e70d40` + R7's coolant 0.6750000000000003 /
+  1.0 at points 17 / 18, with sha256 provenance; built / re-checked by `make_step9_walknames.py [--check]`), not git
+  history or `appdata/`. Could break: nothing in the game; the control only. Tests: 13/13 in `dev` and in a clean
+  `--depth 1` clone without `appdata/` (the old control: 0/1 there); guard off 5 BAD; t3 137/137, rv1 149/149, autoq
+  80/81 in `dev` (the lane-lock row SKIPPED: the referee's walk held the real lock) and 81/81 in the clean clone.

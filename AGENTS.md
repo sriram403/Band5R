@@ -101,6 +101,11 @@ architecture) and `notes/TODO.md` ("Right now"). Lessons: `notes/LESSONS.md`.
   test code and doesn't run the game: it designs, audits, reviews and writes a spec in a file; a
   Claude builder builds exactly that and reports what it had to change. (AI limit, 2026-11: re-test
   on newer models.) Skill: `game-dev` §1.6. **The GPT model (the user, 2026-11-24): GPT Astra 6.2, high** (`gpt-6.2-astra`) for every GPT role.
+  **Exception, GPT as the TESTER (the user: A, 2026-11-25 02:04 PM; the experiment in `notes/TODO.md`):** a GPT child
+  whose task file is a TESTER task (first: `notes/speed_research/step9_gpt_test_task.md`) RUNS the game's tests and
+  walks and judges them; it still writes no game code and no test code. Not runnable yet (2026-11-25): GPT Astra 6.2
+  is only on the work account, whose own rules stop it running this game or reading the skills library; the personal
+  Codex account has no Astra. Until the user picks a way, a fresh Claude tests and GPT Astra audits the results.
 - **Both plan, each audits the other; the main thread referees (the user: A, 2026-11-24).** A design before a build
   gets two blind specs (a Claude child + a GPT child), each model audits the other's, the main thread merges by
   applying the audits' exact changes (disputes to the user) and writes no spec of its own; a fresh Claude builder

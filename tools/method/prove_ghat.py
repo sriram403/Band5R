@@ -29,7 +29,7 @@ INVS = os.path.join(ROOT, "appdata", "method", "inv")
 
 # group: (scenarios, plants, {plant: [its own exact ids: manifest check id or rule id]})
 GROUPS = {
-    # main's 27 plant rows (#6 day 2 + L6 finishing, 2026-11-10), each check by its exact manifest id (speedtools merge,
+    # main's 27 plant rows (#6 day 2 + L6 finishing, 2026-11-10) + the step-9 'nose' (stale_via, 2026-11-25) = 28, each check by its exact manifest id (speedtools merge,
     # 2026-11-17: the ids rebuilt from main's scenarios, tools/method/freeze_ghat.py). Batch groups are for diagnosis.
     "heat_always": ("ghat_heat", "heat_always,one_corner", {"heat_always": ["ghat_heat/x_no_heat_or_leak_from_it_before_it_sees_the_van_x_c_x_l_min", "H1"]}),
     "stall_hud": ("ghat_heat", "hud_heat,one_flat", {"hud_heat": ["ghat_heat/x_hot_with_it_watching_no_temp_cool_bars_no_engine_hot_banne"]}),
@@ -44,6 +44,8 @@ GROUPS = {
     "fog_sight": ("ghat_heat", "fog_sees_far,one_corner", {"fog_sees_far": ["ghat_heat/x_in_the_fog_it_doesn_t_see_someone_25_m_off_suspicion_x_1_i"]}),
     "warn": ("ghat_heat", "no_min_warn,one_corner", {"no_min_warn": ["ghat_heat/x_even_from_15_m_it_stares_first_x_s_to_hide_before_it_reach"]}),
     "round": ("ghat_looks", "round_through", {"round_through": ["ghat_looks/from_the_far_side_it_walks_round_the_van_to_the_other_window"]}),
+    # the step-9 hang (2026-11-25): a waypoint kept from the far side, handed over at the van's nose
+    "nose": ("ghat_looks", "stale_via", {"stale_via": ["ghat_looks/handed_its_round_at_the_van_s_nose_with_a_waypoint_from_the_"]}),
     "hold": ("ghat_net", "hold_through", {"hold_through": ["ghat_net/p2_keeps_holding_a_moment_after_the_net_stays_on_work_x_s"]}),
     "listen": ("ghat_spring", "no_listen", {"no_listen": ["ghat_spring/it_listens_before_it_comes_back_time_to_throw_the_net_on_and"]}),
     "stow": ("ghat_jug", "stow_live", {"stow_live": ["ghat_jug/the_jug_rode_up_the_ghat_in_its_place_on_the_rack_x_m_from_i"]}),
@@ -83,7 +85,7 @@ def behavioural(plants):
 # F8: the exact proof matrix, one group per plant row (every row proved alone, D2 A). The batch groups above
 # stay for diagnosis; they never certify a member by themselves.
 MATRIX = ["heat_always", "stall_hud", "solo_fog_short", "solo_seen_h2", "solo_keeps_interest", "lean", "solo_fast_turn",
-          "solo_one_layer_net", "solo_tail_flush", "fog_sight", "warn", "round", "hold", "listen", "stow",
+          "solo_one_layer_net", "solo_tail_flush", "fog_sight", "warn", "round", "nose", "hold", "listen", "stow",
           "solo_leave_sees", "solo_no_breath_lock", "solo_round_skip", "solo_no_fix", "solo_free_coolant", "solo_needle_stuck",
           "jug_c", "solo_seat_compare", "solo_cap_text", "window", "solo_marks_pile", "solo_marks_unsaved"]
 

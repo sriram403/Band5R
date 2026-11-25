@@ -1,0 +1,52 @@
+ok: 0 game(s) on the PC, lane 'a' free
+GATE CHECK: fresh walk
+RUN ghat_20261125_143834_19960 (points: D:\mine\Agentics\T3_Code_Works\FindingNaresh\dev\tools\..\appdata\playtest\FindingNaresh\live\points\ghat_20261125_143834_19960)
+step 1 F1 Puzzles: the ghat: both in the van at the foot of the hairpins (0 s, frame 72)
+PASS both in, no Problem yet (0.0 s)
+step 2 P2 swings the nav to read the pace notes; the engine on (4 s, frame 182)
+PASS nav swung, engine on (0.0 s)
+step 3 up the hill into the fog, stop at the old milestone (7 s, frame 243)
+PASS stopped by the milestone, parked (0.0 s)
+step 4 P1 out: Naresh's note on the milestone (63 s, frame 1649)
+PASS the note read (0.0 s)
+step 5 back in, on up the hairpins (74 s, frame 1919)
+PASS P1 driving again (0.0 s)
+step 6 hairpin 1: something tall in the trees turns its head to follow the van; the needle climbs; the engine dies in the fog (78 s, frame 2034)
+PASS seen, boiled dry, parked (0.0 s)
+step 7 both out: the old shade net over the van, one corner each (111 s, frame 2859)
+PASS the van under the net (0.0 s)
+step 8 both back in, keep still (119 s, frame 3053)
+PASS both hidden inside (0.0 s)
+step 9 it comes out of the fog, goes round the van, leans in at the windows (hold your breath), sniffs at the back, and gives up (121 s, frame 3106)
+PASS it gave up, nothing given away (0.0 s)
+step 10 out, net off; P1 opens the radiator cap while it still hisses: WHOOSH, and it hears (189 s, frame 4787)
+PASS the cap blew, it's coming back (0.0 s)
+step 11 net on again, in, hide well (198 s, frame 5011)
+PASS hidden again (0.0 s)
+step 12 it searches again, and gives up again (206 s, frame 5218)
+PASS it gave up again (0.0 s)
+step 13 out, net off; P1 waits by the bonnet for the hissing to stop (250 s, frame 6332)
+PASS net off (0.0 s)
+step 14 P2 down the road to the spring: the pot, filled at the pipe, back to the van (256 s, frame 6477)
+PASS P2 holds a full pot (0.0 s)
+step 15 the hissing stops (275 s, frame 6951)
+PASS cool enough (0.0 s)
+step 16 P2 pours the water into the radiator (309 s, frame 7805)
+PASS the water went in (0.0 s)
+step 17 not full yet: P2 back down to the spring with the pot, fills it again (312 s, frame 7876)
+step 18 P2 pours the water into the radiator (330 s, frame 8334)
+step 19 the radiator full again: in, start up, on over the pass (333 s, frame 8404)
+PASS over the pass, running, both aboard (0.0 s)
+step 20 stopped past the pass: the marks it left on the van (362 s, frame 9118)
+PASS the marks are on the van (0.0 s)
+DONE ghat in 372 s
+RESULT: ok
+run ghat_20261125_143834_19960; inputs sent 26952, dropped by the gate 0, held at the failure picture []
+p1: {"binoculars":true,"held":"","ladder":false,"pos":[1042.7,26.0,-83.3],"prompt":"","seat":"","torch":false,"yaw":-95.0,"zoom":1.0}
+p2: {"binoculars":true,"held":"","ladder":false,"pos":[1049.9,27.3,-81.1],"prompt":"[B]  Release handbrake     [X]  Get out     [LB]  Swap seats     [RB]  Journal","seat":"passenger","torch":false,"yaw":84.0,"zoom":1.0}
+creatures: []
+story: {"id":"to_tower","text":"Over the pass towards the sea: stop at the coast watchtower"}
+stop: lane 'a' game gone (verified)
+game lifetime ~612 s; recorded in 00:10:10 (61% of real-time speed)
+PART 1: ghat_20261125_143834_19960, 20 steps, DONE, 377.56 s, recorded in 00:10:10 (61% of real-time speed)
+JOINED 1 part(s) -> D:/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/videos/ghat.mp4 (377.600 s; parts sum 377.578 s); joins:

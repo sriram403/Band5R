@@ -769,7 +769,7 @@
    ],
    "expect": [
     {
-     "name": "P2 holds a full pot",
+     "name": "P2 holds a full pot again",
      "expr": "p2().held != null and p2().held.litres > 2.3",
      "within": 110
     }
@@ -800,8 +800,8 @@
    ],
    "expect": [
     {
-     "name": "the water went in",
-     "expr": "camper().coolant > 0.3",
+     "name": "the water went in again, the radiator full",
+     "expr": "camper().coolant > 0.99",
      "within": 25
     }
    ]

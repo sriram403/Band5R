@@ -1,0 +1,55 @@
+invocation 20261125_143427_11183 -> /d/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/method/inv/20261125_143427_11183
+method: ghat_looks, profile k3, speed 1x, lane a -> /d/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/method/runs/20261125_143428_ghat_k3
+expected ~3-4 min (ramp,c2_more; c2_more alone ~2 min incl. the ~40 s compile); maximum: the phase deadlines + kill, cap 600 s
+[method 14:34:29] launched run_test.sh ghat_looks (wrapper pid 9032), args '--method-profile=k3'
+[method 14:34:29] t=  0s scen=None pf=None paused=None beat_age=- log 0 B (grew 0 s ago) open=0 last=
+[method 14:34:34] t=  5s scen=None pf=None paused=None beat_age=- log 0 B (grew 5 s ago) open=0 last=
+[method 14:34:39] game launched
+[method 14:34:39] t= 10s scen=None pf=None paused=None beat_age=- log 41 B (grew 0 s ago) open=0 last=
+[method 14:34:44] t= 15s scen=None pf=None paused=None beat_age=- log 195 B (grew 4 s ago) open=0 last=
+[method 14:34:49] t= 20s scen=None pf=None paused=None beat_age=- log 722 B (grew 1 s ago) open=0 last=
+[method 14:34:54] t= 25s scen=None pf=None paused=None beat_age=- log 1043 B (grew 0 s ago) open=0 last=
+[method 14:34:55] scenario started: ghat_looks
+[method 14:34:55] first beat, game pid 11044, 16.1 s after launch
+[method 14:34:59] t= 30s scen=ghat_looks pf=274 paused=0 beat_age=0.0s log 1454 B (grew 3 s ago) open=1 last=frames#7
+[method 14:35:04] t= 35s scen=ghat_looks pf=578 paused=0 beat_age=0.0s log 1506 B (grew 1 s ago) open=1 last=frames#7
+[method 14:35:09] t= 40s scen=ghat_looks pf=881 paused=0 beat_age=0.0s log 1793 B (grew 4 s ago) open=1 last=shot:ghat_look_watch#9
+[method 14:35:15] t= 45s scen=ghat_looks pf=1186 paused=0 beat_age=0.0s log 1793 B (grew 9 s ago) open=1 last=shot:ghat_look_watch#9
+[method 14:35:20] t= 50s scen=ghat_looks pf=1492 paused=0 beat_age=0.0s log 1793 B (grew 14 s ago) open=1 last=shot:ghat_look_watch#9
+[method 14:35:25] t= 55s scen=ghat_looks pf=1799 paused=0 beat_age=0.0s log 1929 B (grew 1 s ago) open=2 last=wait#18
+[method 14:35:30] t= 60s scen=ghat_looks pf=2102 paused=0 beat_age=0.0s log 1929 B (grew 6 s ago) open=2 last=wait#38
+[method 14:35:35] t= 66s scen=ghat_looks pf=2405 paused=0 beat_age=0.0s log 1929 B (grew 11 s ago) open=2 last=wait#58
+[method 14:35:40] t= 71s scen=ghat_looks pf=2709 paused=0 beat_age=0.0s log 1929 B (grew 16 s ago) open=2 last=wait#78
+[method 14:35:45] t= 76s scen=ghat_looks pf=3014 paused=0 beat_age=0.0s log 1929 B (grew 21 s ago) open=2 last=wait#98
+[method 14:35:50] t= 81s scen=ghat_looks pf=3317 paused=0 beat_age=0.0s log 2184 B (grew 1 s ago) open=2 last=frames#146
+[method 14:35:55] t= 86s scen=ghat_looks pf=3620 paused=0 beat_age=0.0s log 2184 B (grew 6 s ago) open=2 last=frames#300
+[method 14:36:00] t= 91s scen=ghat_looks pf=3926 paused=0 beat_age=0.0s log 2184 B (grew 11 s ago) open=2 last=frames#454
+[method 14:36:05] t= 96s scen=ghat_looks pf=4228 paused=0 beat_age=0.5s log 2184 B (grew 16 s ago) open=2 last=shot:ghat_look_stop6_lean#603
+[method 14:36:11] t=101s scen=ghat_looks pf=4538 paused=0 beat_age=0.0s log 2227 B (grew 5 s ago) open=2 last=frames#760
+[method 14:36:16] t=107s scen=ghat_looks pf=4844 paused=0 beat_age=0.0s log 2270 B (grew 2 s ago) open=2 last=frames#912
+[method 14:36:21] t=112s scen=ghat_looks pf=5150 paused=0 beat_age=0.0s log 2270 B (grew 7 s ago) open=2 last=frames#1065
+[method 14:36:26] t=117s scen=ghat_looks pf=5453 paused=0 beat_age=0.0s log 2313 B (grew 3 s ago) open=2 last=frames#1216
+[method 14:36:31] t=122s scen=ghat_looks pf=5759 paused=0 beat_age=0.0s log 2313 B (grew 8 s ago) open=2 last=frames#1370
+[method 14:36:36] t=127s scen=ghat_looks pf=6066 paused=0 beat_age=0.0s log 2667 B (grew 1 s ago) open=2 last=frames#1520
+[method 14:36:41] t=132s scen=ghat_looks pf=6370 paused=0 beat_age=0.0s log 2882 B (grew 2 s ago) open=2 last=frames#1674
+[method 14:36:47] t=137s scen=ghat_looks pf=6675 paused=0 beat_age=0.0s log 2882 B (grew 7 s ago) open=2 last=frames#1828
+[method 14:36:52] t=142s scen=ghat_looks pf=6979 paused=0 beat_age=0.0s log 3110 B (grew 3 s ago) open=2 last=frames#1982
+[method 14:36:57] t=148s scen=ghat_looks pf=7313 paused=0 beat_age=0.0s log 3110 B (grew 8 s ago) open=2 last=frames#2135
+[method 14:37:02] t=153s scen=ghat_looks pf=7617 paused=0 beat_age=0.0s log 3444 B (grew 4 s ago) open=2 last=wait#2182
+[method 14:37:07] t=158s scen=ghat_looks pf=7922 paused=0 beat_age=0.0s log 3444 B (grew 9 s ago) open=2 last=wait#2202
+[method 14:37:12] t=163s scen=ghat_looks pf=8227 paused=0 beat_age=0.0s log 3444 B (grew 14 s ago) open=2 last=wait#2221
+[method 14:37:17] t=168s scen=ghat_looks pf=8531 paused=0 beat_age=0.0s log 3444 B (grew 19 s ago) open=2 last=wait#2241
+[method 14:37:22] t=173s scen=ghat_looks pf=8835 paused=0 beat_age=0.0s log 3444 B (grew 24 s ago) open=2 last=wait#2261
+[method 14:37:27] t=178s scen=ghat_looks pf=9140 paused=0 beat_age=0.0s log 3569 B (grew 1 s ago) open=1 last=shot:ghat_look_slump#2270
+[method 14:37:30] scenario ended: ghat_looks
+RESULT: PASS (exit 0): ghat_looks profile k3
+  asked 1 (ghat_looks) / started 1 / ended 1 (ghat_looks); wall 184 s; beats 305; game pid 11044
+  startup: first beat 16.1 s after the game launched (limit 45 s)
+  ghat_looks: 18 / 18 required checks ran
+  rules in ghat_looks (evaluated / windows / errors / findings): H1 9300/0/0/0  H2 9300/0/0/0  H3 8781/0/0/0
+  godot processes left after the run: none
+  Scope: ghat_looks, profile k3. Claims: the run was alive, in control and complete; every required #6 check ran and held (the heat only while it's interested, the breakdown before the pass at three driving profiles, the net hides the van and you see out, the heat stops when it gives up, coolant or water fixes it, over the pass; and every issue found while building); H1-H3 held wherever they looked
+  Declared setup (not proven): F1 -> Puzzles -> 6 (the user's own way in); the van carried 70 m short of hairpin 1 (ghat_looks, the coolant scenarios); the net put on with set_tarp in ghat_heat / ghat_looks / the coolant scenarios (pulling it is ghat_net's); both seated with enter_seat to hide; carried to the spring and back (place_player / face_point); save and load through SaveGame.collect / apply, not a file; the 0 exact source lines are in frozen.json scope.declared_setup_lines
+  NOT PROVEN: what a player sees and feels (judged from the recorded walk); the fog's look; sound levels; walking to the spring (carried); a real file save (the save scenario covers files); the other creature encounters under the heat rule (only the gym's `van`)
+  Evidence: D:/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/method/runs/20261125_143428_ghat_k3
+capture inventory: 6 row(s), 6 current, 6 copied -> D:/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/method/runs/20261125_143428_ghat_k3\capture_inventory.json

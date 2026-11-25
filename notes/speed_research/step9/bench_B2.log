@@ -1,0 +1,75 @@
+[test] adapter=NVIDIA GeForce RTX 3060  refresh=144Hz  window=(1600, 900) at (160, 77)  pads=[]
+[test] route length 802 m, 401 samples
+[test] ---- ghat_step9_bench ----
+[test] mem: video 477 MB, textures 263 MB, static 456 MB, objects 78869
+[test] PASS  the step-9 point D:/mine/Agentics/T3_Code_Works/FindingNaresh/dev/appdata/playtest/FindingNaresh/live/points/ghat_20261124_190738_7904/8.json reads
+[test] [s9] point 8.json seed 78848943 push ''; phase come, Problem (14.95,10.67) state CURIOUS sus 0.35, van yaw -20.6
+[test] [s9] 0.02 change: state CURIOUS stop_k 0 at_stop false via_k -1 breath  stops_done 0 (pos (14.95,10.67))
+[test] [s9] 0.0 phase come pt 10.1 quiet 0.0 stops 0 stop_k 0 at false st 0.0 via -1 - | CURIOUS sus 0.35 nt 0.60 pos (14.95,10.67) v 0.00 goal (3.27,2.29) to_goal 14.28 noticed (3.27,2.29) | stuck 0.12 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 2.0 phase come pt 12.1 quiet 0.0 stops 0 stop_k 0 at false st 0.0 via -1 - | CURIOUS sus 0.35 nt 2.58 pos (11.95,8.53) v 1.90 goal (3.27,2.29) to_goal 10.62 noticed (3.27,2.29) | stuck 0.08 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 4.0 phase come pt 14.1 quiet 0.0 stops 0 stop_k 0 at false st 0.0 via -1 - | CURIOUS sus 0.35 nt 4.58 pos (8.88,6.35) v 1.90 goal (3.27,2.29) to_goal 6.87 noticed (3.27,2.29) | stuck 0.13 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 5.55 change: state CURIOUS stop_k 5 at_stop false via_k -1 breath  stops_done 0 (pos (6.50,4.66))
+[test] [s9] 6.0 phase circle pt 0.4 quiet 0.4 stops 0 stop_k 5 at false st 0.0 via -1 (2.40,4.29) | CURIOUS sus 0.35 nt 6.58 pos (5.81,4.17) v 1.90 goal (3.27,2.29) to_goal 3.11 noticed (3.27,2.29) | stuck 0.18 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 7.32 change: state VAN stop_k 5 at_stop false via_k -1 breath  stops_done 0 (pos (4.48,3.25))
+[test] [s9] 8.0 phase circle pt 2.4 quiet 2.4 stops 0 stop_k 5 at false st 0.0 via -1 (2.40,4.29) | VAN sus 0.25 nt 8.58 pos (4.10,4.27) v 1.60 goal (2.89,6.36) to_goal 2.48 noticed (3.27,2.29) | stuck 0.22 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 10.0 phase circle pt 4.4 quiet 4.4 stops 0 stop_k 5 at false st 0.0 via -1 (2.40,4.29) | VAN sus 0.11 nt 10.58 pos (1.65,6.24) v 1.60 goal (-0.59,6.96) to_goal 2.38 noticed (3.27,2.29) | stuck 0.18 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 12.0 phase circle pt 6.4 quiet 6.4 stops 0 stop_k 5 at false st 0.0 via -1 (2.40,4.29) | VAN sus 0.00 nt 12.58 pos (-1.50,6.42) v 1.60 goal (-3.82,5.85) to_goal 2.37 noticed (3.27,2.29) | stuck 0.07 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 14.0 phase circle pt 8.4 quiet 8.4 stops 0 stop_k 5 at false st 0.0 via -1 (2.40,4.29) | VAN sus 0.00 nt 14.58 pos (-4.33,5.00) v 1.60 goal (-6.12,3.39) to_goal 2.37 noticed (3.27,2.29) | stuck 0.20 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 16.0 phase circle pt 10.5 quiet 10.5 stops 0 stop_k 5 at false st 0.0 via -1 (2.40,4.29) | VAN sus 0.00 nt 16.58 pos (-6.14,2.41) v 1.60 goal (-7.00,0.14) to_goal 2.37 noticed (3.27,2.29) | stuck 0.07 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 16.03 change: state VAN stop_k 5 at_stop false via_k 3 breath  stops_done 0 (pos (-6.16,2.36))
+[test] [s9] 18.0 phase circle pt 12.5 quiet 12.5 stops 0 stop_k 5 at false st 0.0 via 3 (-2.40,4.28) | VAN sus 0.00 nt 18.58 pos (-6.53,-0.73) v 1.60 goal (-6.26,-3.12) to_goal 2.37 noticed (3.27,2.29) | stuck 0.20 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 20.0 phase circle pt 14.5 quiet 14.5 stops 0 stop_k 5 at false st 0.0 via 3 (-2.40,4.28) | VAN sus 0.00 nt 20.58 pos (-5.42,-3.69) v 1.60 goal (-4.07,-5.68) to_goal 2.37 noticed (3.27,2.29) | stuck 0.07 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 22.0 phase circle pt 16.5 quiet 16.5 stops 0 stop_k 5 at false st 0.0 via 3 (-2.40,4.28) | VAN sus 0.00 nt 22.58 pos (-3.04,-5.79) v 1.60 goal (-0.94,-6.92) to_goal 2.37 noticed (3.27,2.29) | stuck 0.02 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 23.25 change: state VAN stop_k 5 at_stop false via_k 0 breath  stops_done 0 (pos (-1.16,-6.44))
+[test] [s9] 24.0 phase circle pt 18.5 quiet 18.5 stops 0 stop_k 5 at false st 0.0 via 0 (0.00,-5.42) | VAN sus 0.00 nt 24.58 pos (0.04,-6.55) v 1.60 goal (2.41,-6.55) to_goal 2.37 noticed (3.27,2.29) | stuck 0.02 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 24.37 change: state WANDER stop_k 5 at_stop false via_k 0 breath  stops_done 0 (pos (0.59,-6.50))
+[test] [s9] 24.70 change: state WANDER stop_k 5 at_stop false via_k 7 breath  stops_done 0 (pos (0.43,-6.18))
+[test] [s9] 25.77 change: state WANDER stop_k 5 at_stop false via_k -1 breath  stops_done 0 (pos (1.34,-5.45))
+[test] [s9] 26.0 phase circle pt 20.5 quiet 20.5 stops 0 stop_k 5 at false st 0.0 via -1 (2.40,4.29) | WANDER sus 0.00 nt 26.58 pos (1.37,-5.19) v 1.10 goal (2.40,4.29) to_goal 9.50 noticed (3.27,2.29) | stuck 0.08 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 26.15 change: state WANDER stop_k 5 at_stop false via_k 7 breath  stops_done 0 (pos (1.40,-5.04))
+[test] [s9] 26.22 change: state WANDER stop_k 5 at_stop false via_k -1 breath  stops_done 0 (pos (1.45,-5.00))
+[test] [s9] 28.0 phase circle pt 22.5 quiet 22.5 stops 0 stop_k 5 at false st 0.0 via -1 (2.40,4.29) | WANDER sus 0.00 nt 28.58 pos (1.65,-3.03) v 1.10 goal (2.40,4.29) to_goal 7.34 noticed (3.27,2.29) | stuck 0.22 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 30.0 phase circle pt 24.4 quiet 24.4 stops 0 stop_k 5 at false st 0.0 via -1 (2.40,4.29) | WANDER sus 0.00 nt 30.58 pos (1.88,-0.83) v 1.10 goal (2.40,4.29) to_goal 5.13 noticed (3.27,2.29) | stuck 0.02 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 32.0 phase circle pt 26.4 quiet 26.4 stops 0 stop_k 5 at false st 0.0 via -1 (2.40,4.29) | WANDER sus 0.00 nt 32.58 pos (2.10,1.37) v 1.10 goal (2.40,4.29) to_goal 2.92 noticed (3.27,2.29) | stuck 0.18 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 34.0 phase circle pt 28.4 quiet 28.4 stops 0 stop_k 5 at false st 0.0 via -1 (2.40,4.29) | WANDER sus 0.00 nt 34.58 pos (2.33,3.57) v 1.10 goal (2.40,4.29) to_goal 0.71 noticed (3.27,2.29) | stuck 0.35 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 34.03 change: state WANDER stop_k 6 at_stop false via_k -1 breath  stops_done 0 (pos (2.33,3.61))
+[test] [s9] 36.0 phase circle pt 30.4 quiet 30.4 stops 0 stop_k 6 at false st 0.0 via -1 (2.60,-1.62) | WANDER sus 0.00 nt 36.58 pos (2.45,1.46) v 1.10 goal (2.60,-1.62) to_goal 3.07 noticed (3.27,2.29) | stuck 0.08 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 38.0 phase circle pt 32.4 quiet 32.4 stops 0 stop_k 6 at false st 0.0 via -1 (2.60,-1.62) | WANDER sus 0.00 nt 38.58 pos (2.56,-0.74) v 1.10 goal (2.60,-1.62) to_goal 0.88 noticed (3.27,2.29) | stuck 0.25 det 0 dt 0.00 | seen 0 breath /0 restarts 0 sniff 0.40/0
+[test] [s9] 38.18 change: state WANDER stop_k 6 at_stop true via_k -1 breath  stops_done 0 (pos (2.57,-0.92))
+[test] [s9] 38.20 change: state WANDER stop_k 6 at_stop true via_k -1 breath wait stops_done 0 (pos (2.57,-0.92))
+[test] [s9] 38.23 change: state WANDER stop_k 6 at_stop true via_k -1 breath holding stops_done 0 (pos (2.57,-0.92))
+[test] [s9] 40.0 phase circle pt 34.4 quiet 34.4 stops 0 stop_k 6 at true st 1.8 via -1 (2.60,-1.62) | WANDER sus 0.00 nt 40.58 pos (2.57,-0.92) v 0.00 goal (2.57,-0.92) to_goal 0.00 noticed (3.27,2.29) | stuck 0.05 det 0 dt 0.00 | seen 0 breath holding/0 restarts 0 sniff 0.40/0
+[test] [s9] 41.70 change: state WANDER stop_k 7 at_stop false via_k -1 breath done stops_done 1 (pos (2.57,-0.94))
+[test] [s9] 42.0 phase circle pt 36.4 quiet 36.4 stops 1 stop_k 7 at false st 3.5 via -1 (2.40,-4.62) | WANDER sus 0.00 nt 42.58 pos (2.55,-1.27) v 1.10 goal (2.40,-4.62) to_goal 3.35 noticed (3.27,2.29) | stuck 0.00 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 0.40/0
+[test] [s9] 44.0 phase circle pt 38.4 quiet 38.4 stops 1 stop_k 7 at false st 3.5 via -1 (2.40,-4.62) | WANDER sus 0.00 nt 44.58 pos (2.46,-3.46) v 1.10 goal (2.40,-4.62) to_goal 1.16 noticed (3.27,2.29) | stuck 0.17 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 0.40/0
+[test] [s9] 44.45 change: state WANDER stop_k 0 at_stop false via_k -1 breath done stops_done 1 (pos (2.43,-3.95))
+[test] [s9] 46.0 phase circle pt 40.4 quiet 40.4 stops 1 stop_k 0 at false st 3.5 via -1 (0.00,-5.42) | WANDER sus 0.00 nt 46.58 pos (0.97,-4.83) v 1.10 goal (0.00,-5.42) to_goal 1.14 noticed (3.27,2.29) | stuck 0.28 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 0.40/0
+[test] [s9] 46.42 change: state WANDER stop_k 0 at_stop true via_k -1 breath done stops_done 1 (pos (0.60,-5.06))
+[test] [s9] 48.0 phase circle pt 42.4 quiet 42.4 stops 1 stop_k 0 at true st 1.6 via -1 (0.00,-5.42) | WANDER sus 0.00 nt 48.58 pos (0.60,-5.06) v 0.00 goal (0.60,-5.06) to_goal 0.00 noticed (3.27,2.29) | stuck 0.32 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 0.40/0
+[test] [s9] 49.93 change: state WANDER stop_k 1 at_stop false via_k -1 breath done stops_done 2 (pos (0.58,-5.07))
+[test] [s9] 50.0 phase circle pt 44.4 quiet 44.4 stops 2 stop_k 1 at false st 3.5 via -1 (-2.40,-4.61) | WANDER sus 0.00 nt 50.58 pos (0.51,-5.05) v 1.10 goal (-2.40,-4.61) to_goal 2.94 noticed (3.27,2.29) | stuck 0.02 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 0.40/0
+[test] [s9] 52.0 phase circle pt 46.4 quiet 46.4 stops 2 stop_k 1 at false st 3.5 via -1 (-2.40,-4.61) | WANDER sus 0.00 nt 52.58 pos (-1.67,-4.72) v 1.10 goal (-2.40,-4.61) to_goal 0.74 noticed (3.27,2.29) | stuck 0.18 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 0.40/0
+[test] [s9] 52.07 change: state WANDER stop_k 2 at_stop false via_k -1 breath done stops_done 2 (pos (-1.74,-4.71))
+[test] [s9] 54.0 phase circle pt 48.4 quiet 48.4 stops 2 stop_k 2 at false st 3.5 via -1 (-2.60,-1.61) | WANDER sus 0.00 nt 54.58 pos (-2.31,-2.66) v 1.10 goal (-2.60,-1.61) to_goal 1.08 noticed (3.27,2.29) | stuck 0.28 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 0.40/0
+[test] [s9] 54.37 change: state WANDER stop_k 2 at_stop true via_k -1 breath done stops_done 2 (pos (-2.41,-2.28))
+[test] [s9] 54.38 change: state WANDER stop_k 2 at_stop true via_k -1 breath wait stops_done 2 (pos (-2.41,-2.28))
+[test] [s9] 54.43 change: state WANDER stop_k 2 at_stop true via_k -1 breath holding stops_done 2 (pos (-2.41,-2.28))
+[test] [s9] 56.0 phase circle pt 50.4 quiet 50.4 stops 2 stop_k 2 at true st 1.6 via -1 (-2.60,-1.61) | WANDER sus 0.00 nt 56.58 pos (-2.41,-2.28) v 0.00 goal (-2.41,-2.28) to_goal 0.00 noticed (3.27,2.29) | stuck 0.27 det 0 dt 0.00 | seen 0 breath holding/0 restarts 0 sniff 0.40/0
+[test] [s9] 57.88 change: state WANDER stop_k 3 at_stop false via_k -1 breath done stops_done 3 (pos (-2.42,-2.27))
+[test] [s9] 58.0 phase circle pt 52.4 quiet 52.4 stops 3 stop_k 3 at false st 3.5 via -1 (-2.40,4.28) | WANDER sus 0.00 nt 58.58 pos (-2.42,-2.14) v 1.10 goal (-2.40,4.28) to_goal 6.41 noticed (3.27,2.29) | stuck 0.03 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 0.40/0
+[test] [s9] 60.0 phase circle pt 54.4 quiet 54.4 stops 3 stop_k 3 at false st 3.5 via -1 (-2.40,4.28) | WANDER sus 0.00 nt 60.58 pos (-2.41,0.07) v 1.10 goal (-2.40,4.28) to_goal 4.20 noticed (3.27,2.29) | stuck 0.20 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 0.40/0
+[test] [s9] 62.0 phase circle pt 56.4 quiet 56.4 stops 3 stop_k 3 at false st 3.5 via -1 (-2.40,4.28) | WANDER sus 0.00 nt 62.58 pos (-2.41,2.28) v 1.10 goal (-2.40,4.28) to_goal 2.00 noticed (3.27,2.29) | stuck 0.00 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 0.40/0
+[test] [s9] 63.20 change: state WANDER stop_k 4 at_stop false via_k -1 breath done stops_done 3 (pos (-2.40,3.61))
+[test] [s9] 64.0 phase circle pt 58.4 quiet 58.4 stops 3 stop_k 4 at false st 3.5 via -1 (0.00,4.88) | WANDER sus 0.00 nt 64.58 pos (-1.62,4.02) v 1.10 goal (0.00,4.88) to_goal 1.84 noticed (3.27,2.29) | stuck 0.12 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 0.40/0
+[test] [s9] 65.05 change: state WANDER stop_k 4 at_stop true via_k -1 breath done stops_done 3 (pos (-0.62,4.55))
+[test] [s9] 66.0 phase circle pt 60.4 quiet 60.4 stops 3 stop_k 4 at true st 1.0 via -1 (0.00,4.88) | WANDER sus 0.00 nt 66.58 pos (-0.62,4.55) v 0.00 goal (-0.62,4.55) to_goal 0.00 noticed (3.27,2.29) | stuck 0.05 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 1.50/1
+[test] [s9] 68.0 phase circle pt 62.4 quiet 62.4 stops 3 stop_k 4 at true st 2.9 via -1 (0.00,4.88) | WANDER sus 0.00 nt 68.58 pos (-0.62,4.55) v 0.00 goal (-0.62,4.55) to_goal 0.00 noticed (3.27,2.29) | stuck 0.05 det 0 dt 0.00 | seen 0 breath done/0 restarts 0 sniff 1.60/2
+[test] [s9] 68.57 change: state WANDER stop_k 5 at_stop false via_k -1 breath done stops_done 4 (pos (-0.62,4.55))
+[test] [s9] RESULT GAVE UP at 68.6 game s (40.5 wall s): stops 4 quiet 0.0 restarts 0 breath events 0
+[test] PASS  step-9 bench: it gave up (68.6 s)
+[test] time ghat_step9_bench 69.2 s
+[speed] ghat_step9_bench: game 69.2 s in wall 41.1 s = 1.68x; frames drawn 4152 over 4152 physics frames (pictures 0, nodraw re-arms 0, nodraw false)
+[rig] quit: failures=0
+[test] window ended at (160, 77)
+[test] ==== 0 failure(s) ====
+==== RUN 'ghat_step9_bench': 1 segment(s), 1 scenario(s), 0 failure(s) ====

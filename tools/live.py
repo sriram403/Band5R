@@ -140,10 +140,17 @@ def main() -> int:
             walk = json.load(f)
         del args[i:i + 2]
         timeout = max(timeout, 3600.0)
+        import walkgate
+        # step-9 round 2 (2026-11-25): the driver skips a pass name already passed, so a repeated one is a
+        # step never checked (the ghat's 17 / 18): refuse the walk before any launch or gate work
+        rep = walkgate.repeated_names(walk)
+        if rep:
+            print("REFUSED (walk): %s: the driver skips a name already passed, so the later step is never "
+                  "checked; give each its own name (tools/live/make_<walk>.py, then regenerate)" % "; ".join(rep), flush=True)
+            return 7
         # By default a walk resumes from the step its last run failed at (the
         # user, 2026-11-10: a model restarted 10 trial plays from step 1 though
         # the save points were there). --fresh starts over; --from picks a step.
-        import walkgate
         ident = gate_identity(walk)
         explicit = walk_from is not None
         if walk_from is None and not fresh:

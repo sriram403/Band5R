@@ -71,13 +71,18 @@ def refill(n):
     return {"name": "%d not full yet: P2 back down to the spring with the pot, fills it again" % n, "max": 120,
             "do": [walk(2, "expr:pipe_stand()", 0.5, 50)] + look(2, "expr:pipe_at()", 0.3)
                   + [pad("X", 5.8), wait(0.3), walk(2, "expr:van_side(3.0, 1.5)", 0.8, 50), walk(2, "expr:van_side(1.2, -5.6)", 0.8, 20)],
-            "expect": [{"name": "P2 holds a full pot", "expr": "p2().held != null and p2().held.litres > 2.3", "within": 110}]}
+            # its own pass name (step-9 round 2, 2026-11-25): with trip()'s name the driver skipped it as already passed
+            "expect": [{"name": "P2 holds a full pot again", "expr": "p2().held != null and p2().held.litres > 2.3", "within": 110}]}
 
 
-def pour(n):
+def pour(n, again=False):
+    # the second pour gets its own pass name (same reason as refill's; tools/live.py refuses a walk that repeats one)
+    # and its own test: the first pot already leaves the radiator at 0.675 (> 0.3), so "> 0.3" could never fail
+    # here; two pots fill it (1.000). Measured at the steps' save points of 25 walks (0.050 -> 0.675 -> 1.000).
     return {"name": "%d P2 pours the water into the radiator" % n, "max": 30,
             "do": look(2, "expr:bonnet_at()", 0.4) + [pad("X", 1.8), wait(0.5)],     # 2.5 L pours in ~1.6 s; X held on an empty pot drops it
-            "expect": [{"name": "the water went in", "expr": "camper().coolant > 0.3", "within": 25}]}
+            "expect": [{"name": "the water went in again, the radiator full" if again else "the water went in",
+                        "expr": "camper().coolant > 0.99" if again else "camper().coolant > 0.3", "within": 25}]}
 
 
 steps = [
@@ -133,7 +138,7 @@ steps = [
      "expect": [{"name": "cool enough", "expr": "camper().temp <= 104.0", "within": 128}]},
     pour(16),
     refill(17),
-    pour(18),
+    pour(18, again=True),
     {"name": "19 the radiator full again: in, start up, on over the pass", "max": 90,
      "do": [walk(2, "expr:van_side(3.6, -3.6)", 0.8, 20), pad("X"), wait(0.8),     # the empty pot down at the roadside (take 2: X at the door dropped it instead of sitting, P2 was left behind)
             walk(2, "expr:van_side(2.9, -1.8)", 0.6, 10), wait(0.3)]
