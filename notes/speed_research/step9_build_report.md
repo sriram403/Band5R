@@ -84,7 +84,8 @@ Bench seeds before / after: hang point 1 seed 78848943: before NO GIVE-UP, after
 
 W1 `AUTOQ=0 tools/play_walk.sh ghat --fresh` (run `ghat_20261125_140707_6788`, `step9/walk_W1.log`): steps 1-8 PASS;
 **step 9 PASS "it gave up, nothing given away"**: step 9 at 122 s, step 10 at 194 s = **72 s** incl. the 4 s wait, so
-the give-up ~68 s in (normal 61-72), on a hang-prone draw (urge 24.0 s). Step 10 also PASSED; stopped at step 11's
+the give-up ~68 s in (the task's "normal 61-72 s" is the whole step incl. the wait; give-ups measured ~44-69 s, by
+urge left), on a hang-prone draw (urge 24.0 s). Step 10 also PASSED; stopped at step 11's
 start: killed play_walk / live.py / Godot, `stop_lane.sh` (game gone, verified), `tasklist`: no Godot; the stale lane
 lock released with its own token; `tools/live/ghat.json` restored with `git checkout`.
 
@@ -112,7 +113,10 @@ own)", yet engine / horn sounds still set its van urge (`Creature._listen` -> `_
 Problem circles the van at 7 m for 8-24 s before its round. With the fix this is harmless, but it is how step 9 plays.
 - **A:** a directed creature ignores the van urge (gate `_want_van` on `not director.is_valid()`): it comes straight
   to its round; step 9 ~8-24 s shorter, the same every time, matches the comment.
-- **B:** keep it: the circling first is a creepy "it sizes the van up" moment; step 9 varies 57-72 s.
+- **B:** keep it: the circling first is a creepy "it sizes the van up" moment; Problem's give-up time varies with the
+  van urge left: measured **~44-69 s** game time on the bench (R1-R5 44.0-68.3 s, B2 68.6 s; urge 8.1-24.0 s). That is
+  the give-up time, not the whole walk step: the step adds its 4 s wait (W1: give-up ~68 s, step 72 s). *(Round 3
+  correction: this line said "step 9 varies 57-72 s".)*
 - My pick: **B** for now (it plays well and is no longer a trap); A if the user wants step 9 tighter and steadier.
   It changes what the players see, so it's the user's / two blind specs' call.
 

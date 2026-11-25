@@ -43,9 +43,11 @@ game running (`step9/test/cpu.tsv`). Bench logs: `step9/test/R<n>_bench.log`; wr
   (24.5-25.9 s) and it walks off round the passenger side, posed stops at 37.9 (passenger window, breath held), 46.1
   (bonnet), 54.1 (driver window, breath held), 64.8 (back), gives up 68.3 s. Never pressed on the nose.
 - **R2-R5:** each gave up within 0.3-1 s of its own walk's (pre-fix) give-up, so the fix changed nothing on good draws.
-- **My expectation was wrong for R2** (declared 57-72 s, got 44.0): with only 8.1 s of urge it skips most of the circling
-  and its round starts at ~8 s instead of ~24 s; its own walk took the same 44 s. The 57-72 range holds only for urges of
-  ~14 s and more. Not a fix problem (Surprises).
+- **My expectation was wrong for R2 AND R3** (declared 57-72 s, got **44.0** and **54.9**; round 3 correction after
+  the GPT re-audit, which caught R3): with less van urge left (8.1 s, 13.9 s) Problem circles the van for less time and
+  starts its round sooner (R2 at ~8 s instead of ~24 s); each gave up with its own walk's time (44 s, 55 s). The urge left
+  sets the give-up time: measured **44.0-68.3 s** over R1-R5 (urge 8.1-24.0 s); 57-72 s held only for R1, R4, R5
+  (urges 18 s and more). Not a fix problem (Surprises).
 - Every bench run logged, right after the restore, `[ghatwatch] FIRE H2: the temperature needle reads 60 deg, the engine
   is at 126.0 C` (the needle not yet caught up with a restored hot engine). The bench scenario has no gate on it and 0
   failures; a bench-only artifact, not in the walk (R7 game log has no FIRE line). Surprises.
@@ -97,9 +99,10 @@ About **19 game min** of the ~25 budget: bench 5.8 (349 s wall incl. boot), prov
 walk 6.2 game min (10.3 wall at 61 %). CPU 43-62 % mean while a game ran; never two games.
 
 ## Surprises (for the referee's mistake log)
-1. **Assumed** every good point gives up in 57-72 s -> **reality:** the low-urge point (8.1 s) gives up in 44 s, the same
-   as its own walk -> the range only holds for urges of ~14 s and more -> **habit:** declare a bench run's expected time
-   from that point's own walk, not from a range of other runs.
+1. **Assumed** every good point gives up in 57-72 s -> **reality:** the two lower-urge points give up sooner, each with
+   its own walk's time: 8.1 s -> 44.0 s (R2), 13.9 s -> 54.9 s (R3; this report first listed only R2, corrected in round 3
+   after the GPT re-audit) -> the range only holds for urges of ~18 s and more -> **habit:** declare a bench run's
+   expected time from that point's own walk, not from a range of other runs.
 2. **Assumed** `prove_ghat.py <row>` proves both sides -> **reality:** it runs only the planted side and prints PROVED on
    that alone -> the clean side run separately (`GHAT=<scenario> tools/method_run.sh ghat`) -> **habit:** read what a
    proof script runs before counting its PROVED as "plant FAIL + clean PASS".
