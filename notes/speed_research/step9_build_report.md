@@ -118,4 +118,6 @@ Problem circles the van at 7 m for 8-24 s before its round. With the fix this is
 
 ## Commits (branch `step9`, no merge, no push)
 
-`15d5cfe` bench · `db70d9c` fix + plant + check · `043d5cc` prove row, manifest, bench logs · then this report + notes.
+`15d5cfe` bench · `db70d9c` fix + plant + check · `043d5cc` prove row, manifest, bench logs · `bc14d21` this report + notes.
+
+Last code commit: `043d5cc`; report commit: `bc14d21` (this line added in the commit after it).
