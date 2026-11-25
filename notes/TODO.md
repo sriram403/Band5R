@@ -10,6 +10,15 @@ being built and tested), so this always shows where the work is right now.
       never gives up at ghat step 9 (2 of ~10 fresh producers). Bench builder Claude Opus 5.5 high (`speed_research/step9_build_task.md`):
       bench first, reproduce, plain bug -> fix + plant; design choice -> two blind specs. Then GPT Astra 6.2 audit, merge
       + push (bug fix), video of step 9. After it: the held re-proof (branch `held`, not merged; `held5_result.md`).
+      Cause (bench B1, 14:01): a stale ring point (`_via_k` 3, far side of the van) kept from the van orbit; Problem
+      pressed on the van's nose for good, stops_done 0, quiet 184 s (sight / hearing / breath ruled out).
+      **GPT as the TESTER, first try (the user: A, 2026-11-25 02:04 PM; a one-off exception to "GPT doesn't run the
+      game"):** GPT Astra 6.2 high runs the after-fix tests (bench seeds, the fresh walk through step 9, the step-9
+      video) and writes a verdict; the referee watches the SAME runs and writes its own verdict blind; compare. The fix's
+      code audit is a separate fresh GPT child. ~0 extra game min.
+- [ ] **Creatures on a nav mesh (Godot NavigationRegion3D / NavigationAgent3D), a later design job** (asked by the user
+      2026-11-25; referee's pick "later", no answer yet): the game has none; creatures walk straight with a hand-made ring
+      round the van. A moving van needs an obstacle or re-bake; changes every creature: two blind specs + the user's look.
 - [ ] **NEXT EXPERIMENT (the user, 2026-11-24): GPT as the TESTER.** News: GPT Astra (or Sol) is strong at testing / computer use, weak at game dev. Try a GPT model running the test part (walks, watched runs, judging) while Claude still builds; compare with Claude on the same job. After the adapters (held pot, engine on).
 - [x] **2026-11-24: auto-qualify resume points: MERGED into main and pushed (`a4b87b8`, the user: C)** (was branch `autoq`; `speed_research/autoq_result.md`): failed walk -> nearest resumable point qualified in 2 new games -> default REPAIR to DONE; planted bad restore -> NOT QUALIFIED -> fresh; restore check for new puzzles; found + fixed the lost-result rename race (race_bench). Controls autoq 51/51, rv1 149/149; 28.3 game min. Waiting: GPT-6.1 Sol results audit, then the user's merge A / B. Next: the held-pot and engine-on adapters.
 - [x] 2026-11-17: resume v1 merged into main and pushed (`842f494`).
